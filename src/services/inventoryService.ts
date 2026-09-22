@@ -690,6 +690,12 @@ export const addItem = async (
     if (typeName in ExportFlavour) {
         return addCustomization(inventory, typeName);
     }
+    // A handful of FlavourItems were never exported into the pinned public-export data, e.g. the
+    // KAVATSSCHROEDINGER glyph (see static/fixed_responses/glyphsCodes.json). Their path still identifies which
+    // family they belong to, so match on the known Flavour base-type paths rather than rejecting the item.
+    if (FLAVOUR_ITEM_PATH_PREFIXES.some(x => typeName.startsWith(x))) {
+        return addCustomization(inventory, typeName);
+    }
     if (
         typeName in ExportUpgrades ||
         getSyncedUpgrade(typeName) !== undefined ||
@@ -2113,6 +2119,30 @@ export const addEquipment = <K extends TEquipmentKey>(
     inventoryChanges[category].push(inventory[category][index].toJSON<IEquipmentClient>());
     return inventoryChanges;
 };
+
+// Path roots of every FlavourItem family. Used to recognise a FlavourItem whose own entry is missing from the
+// pinned public-export data, so it can still be stored in FlavourItems instead of being rejected.
+// Note that a family's base class path is not the same as its instance path: AvatarImageItem for instance lives
+// under /Lotus/Types/StoreItems/AvatarImages.
+const FLAVOUR_ITEM_PATH_PREFIXES = [
+    "/Lotus/Interface/Graphics/CustomUI/",
+    "/Lotus/Types/Game/ActionFigureDioramas/",
+    "/Lotus/Types/Game/CatbrowPet/",
+    "/Lotus/Types/Game/KubrowPet/Colors/",
+    "/Lotus/Types/Game/NotePacks/",
+    "/Lotus/Types/Game/PoseSets/",
+    "/Lotus/Types/Game/QuartersWallpapers/",
+    "/Lotus/Types/Game/ShipScenes/",
+    "/Lotus/Types/Items/Arcade/",
+    "/Lotus/Types/Items/Emotes/",
+    "/Lotus/Types/Items/Events/",
+    "/Lotus/Types/Items/Titles/",
+    "/Lotus/Types/Items/VideoWallBackdrops/",
+    "/Lotus/Types/Items/VideoWallSoundscapes/",
+    "/Lotus/Types/StoreItems/AvatarImages/",
+    "/Lotus/Types/StoreItems/SuitCustomizations/",
+    "/Lotus/Upgrades/Skins/"
+] as const;
 
 const addCustomization = (
     inventory: TInventoryDatabaseDocument,

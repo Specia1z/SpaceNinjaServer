@@ -1,6 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreBinaries": ["tsgo", "ncp"],
-  "ignoreFiles": ["scripts/update-translations.cjs", "scripts/generate-supplementalDict.js", "static/webui/**"],
+  "ignoreFiles": [
+    "scripts/update-translations.cjs",
+    "scripts/generate-supplementalDict.js",
+    "scripts/verify-ingame-redeem.mjs",
+    "static/webui/**"
+  ],
   "ignoreDependencies": ["warframe-riven-info"]
 }
