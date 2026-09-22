@@ -79,6 +79,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/webui/admin-data" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_adminData"></a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/redeem-codes" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_redeemCodes"></a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -2060,6 +2063,125 @@
                     </section>
                 </div>
             </div>
+            <div data-route="/webui/redeem-codes" data-title-tag="navbar_redeemCodes">
+                <div class="d-none admin-hide">
+                    <p data-loc="cheats_administratorRequirement"></p>
+                </div>
+                <div class="d-none admin-show">
+                    <section class="mb-4">
+                        <h4 data-loc="admin_redeemCodes"></h4>
+                        <p class="text-body-secondary" data-loc="admin_redeemCodesDescription"></p>
+                        <form id="admin-redeem-form" onsubmit="saveAdminRedeemCode();return false;">
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-redeem-code" data-loc="admin_redeemCode"></label>
+                                <input class="form-control" id="admin-redeem-code" required autocomplete="off" maxlength="64" placeholder="WELCOME-2026" />
+                                <div class="form-text" data-loc="admin_redeemCodeHint"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-redeem-label" data-loc="admin_redeemLabel"></label>
+                                <input class="form-control" id="admin-redeem-label" autocomplete="off" maxlength="200" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-redeem-rewards" data-loc="admin_redeemRewards"></label>
+                                <textarea class="form-control font-monospace" id="admin-redeem-rewards" rows="4" required list="datalist-admin-redeem-rewards" placeholder="/Lotus/Types/Items/MiscItems/Forma, 3&#10;/Lotus/Types/Recipes/WarframeRecipes/ExcaliburPrimeBlueprint"></textarea>
+                                <div class="form-text" data-loc="admin_redeemRewardsHint"></div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-redeem-expires" data-loc="admin_expiresAt"></label>
+                                    <input class="form-control" id="admin-redeem-expires" type="datetime-local" />
+                                    <div class="form-text" data-loc="admin_expiresAtHint"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-redeem-max-uses" data-loc="admin_maxUses"></label>
+                                    <input class="form-control" id="admin-redeem-max-uses" type="number" min="0" step="1" value="0" />
+                                    <div class="form-text" data-loc="admin_maxUsesHint"></div>
+                                </div>
+                                <div class="col-md-4 d-flex flex-column justify-content-end gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" id="admin-redeem-enabled" type="checkbox" checked />
+                                        <label class="form-check-label" for="admin-redeem-enabled" data-loc="admin_enabled"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" type="submit" data-loc="admin_saveRedeemCode"></button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="resetAdminRedeemForm();" data-loc="admin_clearForm"></button>
+                            </div>
+                        </form>
+                    </section>
+                    <hr />
+                    <section class="mb-4">
+                        <h4 data-loc="admin_batchGenerate"></h4>
+                        <p class="text-body-secondary" data-loc="admin_batchGenerateDescription"></p>
+                        <form id="admin-redeem-batch-form" onsubmit="generateAdminRedeemCodes();return false;">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label" for="admin-redeem-batch-count" data-loc="admin_batchCount"></label>
+                                    <input class="form-control" id="admin-redeem-batch-count" type="number" min="1" max="500" step="1" value="10" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="admin-redeem-batch-length" data-loc="admin_codeLength"></label>
+                                    <input class="form-control" id="admin-redeem-batch-length" type="number" min="4" max="64" step="1" value="16" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="admin-redeem-batch-prefix" data-loc="admin_codePrefix"></label>
+                                    <input class="form-control" id="admin-redeem-batch-prefix" autocomplete="off" maxlength="24" placeholder="WELCOME-" />
+                                    <div class="form-text" data-loc="admin_codePrefixHint"></div>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button class="btn btn-primary w-100" type="submit" data-loc="admin_generateCodes"></button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-redeem-batch-rewards" data-loc="admin_redeemRewards"></label>
+                                <textarea class="form-control font-monospace" id="admin-redeem-batch-rewards" rows="4" required placeholder="/Lotus/Types/Items/MiscItems/Forma, 3"></textarea>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-redeem-batch-expires" data-loc="admin_expiresAt"></label>
+                                    <input class="form-control" id="admin-redeem-batch-expires" type="datetime-local" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-redeem-batch-max-uses" data-loc="admin_maxUses"></label>
+                                    <input class="form-control" id="admin-redeem-batch-max-uses" type="number" min="0" step="1" value="1" />
+                                    <div class="form-text" data-loc="admin_maxUsesHint"></div>
+                                </div>
+                                <div class="col-md-4 d-flex flex-column justify-content-end gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" id="admin-redeem-batch-enabled" type="checkbox" checked />
+                                        <label class="form-check-label" for="admin-redeem-batch-enabled" data-loc="admin_enabled"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-success d-none" id="admin-redeem-batch-result"></div>
+                        </form>
+                    </section>
+                    <hr />
+                    <section>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h4 class="mb-0" data-loc="admin_existingCodes"></h4>
+                            <button class="btn btn-outline-secondary btn-sm" type="button" onclick="loadAdminRedeemCodes();" data-loc="admin_refreshStatus"></button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th data-loc="admin_redeemCode"></th>
+                                        <th data-loc="admin_redeemLabel"></th>
+                                        <th data-loc="admin_redeemRewards"></th>
+                                        <th data-loc="admin_redeemUsage"></th>
+                                        <th data-loc="admin_expiresAt"></th>
+                                        <th data-loc="admin_storeState"></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-redeem-codes"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </div>
         <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     </div>
@@ -2128,6 +2250,7 @@
     </datalist>
     <datalist id="datalist-usernames"></datalist>
     <datalist id="datalist-admin-store-items"></datalist>
+    <datalist id="datalist-admin-redeem-rewards"></datalist>
     <script src="/webui/libs/jquery-3.6.0.min.js"></script>
     <script src="/webui/libs/whirlpool-js.min.js"></script>
     <script src="/webui/libs/single.js"></script>

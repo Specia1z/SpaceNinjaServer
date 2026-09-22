@@ -15,6 +15,7 @@ import { runSelfTests } from "./services/selfTestService.ts";
 import { initializeStoreOverrides } from "./services/storeOverrideService.ts";
 import { initializeAdminItemData } from "./services/adminItemDataService.ts";
 import { initializeCraftingConfigs } from "./services/craftingConfigService.ts";
+import { initializeRedeemCodes } from "./services/redeemCodeService.ts";
 
 try {
     loadConfig();
@@ -94,7 +95,12 @@ if (args.test) {
         logger.info("Connected to MongoDB (version unknown)");
     }
     syncConfigWithDatabase();
-    await Promise.all([initializeStoreOverrides(), initializeAdminItemData(), initializeCraftingConfigs()]);
+    await Promise.all([
+        initializeStoreOverrides(),
+        initializeAdminItemData(),
+        initializeCraftingConfigs(),
+        initializeRedeemCodes()
+    ]);
 
     try {
         await startWebServer();

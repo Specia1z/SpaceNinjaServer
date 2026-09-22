@@ -664,6 +664,9 @@ function fetchItemList() {
                 });
             const storeDatalist = document.getElementById("datalist-admin-store-items");
             storeDatalist.innerHTML = "";
+            // The redeem-code reward field accepts the same uniqueNames, so it shares this list.
+            const redeemDatalist = document.getElementById("datalist-admin-redeem-rewards");
+            redeemDatalist.innerHTML = "";
             [...storeItems.entries()]
                 .sort((a, b) => a[1].localeCompare(b[1]))
                 .forEach(([uniqueName, name]) => {
@@ -671,6 +674,10 @@ function fetchItemList() {
                     option.value = uniqueName;
                     option.textContent = name;
                     storeDatalist.appendChild(option);
+                    const redeemOption = document.createElement("option");
+                    redeemOption.value = uniqueName;
+                    redeemOption.textContent = name;
+                    redeemDatalist.appendChild(redeemOption);
                 });
 
             const getAddDict = locTag => {
@@ -3789,6 +3796,201 @@ function resetAdminCraftingConfig() {
     document.getElementById("admin-crafting-keep-blueprints").checked = false;
     updateAdminCraftingFormState();
 }
+
+let adminRedeemCodes = [];
+
+// Accepts either "ItemType" (count 1) or "ItemType, Count" per line, so an operator can paste a simple list.
+function parseAdminRewardLines(id) {
+    const lines = document
+        .getElementById(id)
+        .value.split("\n")
+        .map(line => line.trim())
+        .filter(line => line);
+    if (!lines.length) throw new Error(loc("admin_redeemRewardsRequired"));
+    return lines.map((line, index) => {
+        const comma = line.lastIndexOf(",");
+        const itemType = (comma == -1 ? line : line.slice(0, comma)).trim();
+        if (!itemType.startsWith("/Lotus/")) {
+            throw new Error(
+                loc("admin_redeemInvalidReward")
+                    .replace("|LINE|", index + 1)
+                    .replace("|ITEM|", itemType)
+            );
+        }
+        if (comma == -1) return { ItemType: itemType, ItemCount: 1 };
+        const itemCount = Number(line.slice(comma + 1).trim());
+        if (!Number.isInteger(itemCount) || itemCount == 0) {
+            throw new Error(loc("admin_redeemInvalidCount").replace("|LINE|", index + 1));
+        }
+        return { ItemType: itemType, ItemCount: itemCount };
+    });
+}
+
+function formatAdminRewards(rewards) {
+    return (rewards ?? []).map(reward => `${reward.ItemType} x${reward.ItemCount}`).join("\n");
+}
+
+function formatAdminUsage(code) {
+    const uses = `${code.Uses} / ${code.MaxUses > 0 ? code.MaxUses : loc("admin_unlimited")}`;
+    return uses;
+}
+
+function resetAdminRedeemForm() {
+    document.getElementById("admin-redeem-form").reset();
+    document.getElementById("admin-redeem-enabled").checked = true;
+}
+
+function editAdminRedeemCode(code) {
+    document.getElementById("admin-redeem-code").value = code.Code;
+    document.getElementById("admin-redeem-label").value = code.Label ?? "";
+    document.getElementById("admin-redeem-rewards").value = formatAdminRewards(code.Rewards);
+    document.getElementById("admin-redeem-expires").value = code.ExpiresAt
+        ? new Date(code.ExpiresAt).toISOString().slice(0, 16)
+        : "";
+    document.getElementById("admin-redeem-max-uses").value = code.MaxUses ?? 0;
+    document.getElementById("admin-redeem-enabled").checked = code.Enabled;
+    document.getElementById("admin-redeem-code").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function copyAdminRedeemCode(code) {
+    navigator.clipboard.writeText(code).then(
+        () => toast(loc("admin_codeCopied"), "success"),
+        () => toast(loc("admin_codeCopyFailed"), "danger")
+    );
+}
+
+function renderAdminRedeemCodes() {
+    const tbody = document.getElementById("admin-redeem-codes");
+    tbody.innerHTML = "";
+    adminRedeemCodes.forEach(code => {
+        const row = document.createElement("tr");
+        const codeCell = row.insertCell();
+        codeCell.className = "font-monospace text-break";
+        codeCell.textContent = code.Code;
+        row.insertCell().textContent = code.Label ?? "";
+        const rewardsCell = row.insertCell();
+        rewardsCell.className = "text-break small";
+        rewardsCell.textContent = formatAdminRewards(code.Rewards);
+        row.insertCell().textContent = formatAdminUsage(code);
+        row.insertCell().textContent = formatAdminDate(code.ExpiresAt);
+        const stateCell = row.insertCell();
+        const state = code.Enabled ? loc("admin_enabled") : loc("admin_disabled");
+        const expired = code.ExpiresAt && new Date(code.ExpiresAt).getTime() <= Date.now();
+        stateCell.textContent = expired ? `${state} / ${loc("admin_expired")}` : state;
+        const actions = row.insertCell();
+        actions.className = "text-nowrap";
+        const copyButton = document.createElement("button");
+        copyButton.className = "btn btn-sm btn-outline-secondary me-2";
+        copyButton.textContent = loc("admin_copy");
+        copyButton.onclick = () => copyAdminRedeemCode(code.Code);
+        actions.appendChild(copyButton);
+        const editButton = document.createElement("button");
+        editButton.className = "btn btn-sm btn-outline-primary me-2";
+        editButton.textContent = loc("admin_edit");
+        editButton.onclick = () => editAdminRedeemCode(code);
+        actions.appendChild(editButton);
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "btn btn-sm btn-outline-danger";
+        deleteButton.textContent = loc("admin_delete");
+        deleteButton.onclick = () => deleteAdminRedeemCode(code.Code);
+        actions.appendChild(deleteButton);
+        tbody.appendChild(row);
+    });
+}
+
+async function loadAdminRedeemCodes() {
+    adminRedeemCodes = await $.get("/custom/admin/redeem-codes?" + window.authz);
+    renderAdminRedeemCodes();
+}
+
+async function saveAdminRedeemCode() {
+    let payload;
+    try {
+        payload = {
+            Code: document.getElementById("admin-redeem-code").value.trim(),
+            Label: document.getElementById("admin-redeem-label").value.trim(),
+            Rewards: parseAdminRewardLines("admin-redeem-rewards"),
+            ExpiresAt: optionalAdminDate("admin-redeem-expires"),
+            MaxUses: Number(document.getElementById("admin-redeem-max-uses").value),
+            Enabled: document.getElementById("admin-redeem-enabled").checked
+        };
+    } catch (error) {
+        toast(error.message, "danger");
+        return;
+    }
+    try {
+        await $.post({
+            url: "/custom/admin/redeem-codes?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify(payload)
+        });
+        resetAdminRedeemForm();
+        await loadAdminRedeemCodes();
+        toast(loc("admin_redeemCodeSaved"), "success");
+    } catch (error) {
+        toast(error.responseText || loc("settings_changeFailed"), "danger");
+    }
+}
+
+async function generateAdminRedeemCodes() {
+    let payload;
+    try {
+        payload = {
+            Count: Number(document.getElementById("admin-redeem-batch-count").value),
+            CodeLength: Number(document.getElementById("admin-redeem-batch-length").value),
+            Prefix: document.getElementById("admin-redeem-batch-prefix").value.trim(),
+            Rewards: parseAdminRewardLines("admin-redeem-batch-rewards"),
+            ExpiresAt: optionalAdminDate("admin-redeem-batch-expires"),
+            MaxUses: Number(document.getElementById("admin-redeem-batch-max-uses").value),
+            Enabled: document.getElementById("admin-redeem-batch-enabled").checked
+        };
+    } catch (error) {
+        toast(error.message, "danger");
+        return;
+    }
+    try {
+        const result = await $.post({
+            url: "/custom/admin/redeem-codes/generate?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify(payload)
+        });
+        const el = document.getElementById("admin-redeem-batch-result");
+        el.textContent = result.codes.map(code => code.Code).join("\n");
+        el.classList.remove("d-none");
+        await loadAdminRedeemCodes();
+        toast(loc("admin_codesGenerated").replace("|COUNT|", result.codes.length), "success");
+    } catch (error) {
+        toast(error.responseText || loc("settings_changeFailed"), "danger");
+    }
+}
+
+async function deleteAdminRedeemCode(code) {
+    if (!confirm(loc("admin_deleteRedeemCodeConfirm").replace("|CODE|", code))) return;
+    await $.post({
+        url: "/custom/admin/redeem-codes/delete?" + window.authz,
+        contentType: "application/json",
+        data: JSON.stringify({ Code: code })
+    });
+    await loadAdminRedeemCodes();
+}
+
+single.getRoute("/webui/redeem-codes").on("beforeload", function () {
+    awaitAuthz().then(async () => {
+        const config = await getServerConfig();
+        if (!config) {
+            $(".admin-hide").removeClass("d-none");
+            $(".admin-show").addClass("d-none");
+            return;
+        }
+        $(".admin-hide").addClass("d-none");
+        $(".admin-show").removeClass("d-none");
+        try {
+            await loadAdminRedeemCodes();
+        } catch (error) {
+            toast(error.responseText || loc("settings_changeFailed"), "danger");
+        }
+    });
+});
 
 single.getRoute("/webui/admin-data").on("beforeload", function () {
     awaitAuthz().then(async () => {

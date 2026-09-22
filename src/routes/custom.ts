@@ -67,6 +67,14 @@ import { setUmbraEchoesController } from "../controllers/custom/setUmbraEchoesCo
 import { setAccountCheatController } from "../controllers/custom/setAccountCheatController.ts";
 import { setGuildCheatController } from "../controllers/custom/setGuildCheatController.ts";
 
+import {
+    deleteRedeemCodeController,
+    generateRedeemCodesController,
+    listRedeemCodesController,
+    redeemCodeController,
+    saveRedeemCodeController
+} from "../controllers/custom/redeemCodeController.ts";
+
 import { getConfigController, setConfigController } from "../controllers/custom/configController.ts";
 
 const customRouter = express.Router();
@@ -104,6 +112,7 @@ customRouter.get("/getRegisteredLosers", getRegisteredLosersController);
 customRouter.get("/admin/item-data/status", getAdminItemDataStatusController);
 customRouter.get("/admin/store-overrides", listStoreOverridesController);
 customRouter.get("/admin/crafting-config", getCraftingConfigController);
+customRouter.get("/admin/redeem-codes", listRedeemCodesController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -131,6 +140,10 @@ customRouter.post("/admin/store-overrides", saveStoreOverrideController);
 customRouter.post("/admin/store-overrides/delete", deleteStoreOverrideController);
 customRouter.post("/admin/crafting-config", saveCraftingConfigController);
 customRouter.post("/admin/crafting-config/delete", deleteCraftingConfigController);
+customRouter.post("/admin/redeem-codes", saveRedeemCodeController);
+customRouter.post("/admin/redeem-codes/generate", generateRedeemCodesController);
+customRouter.post("/admin/redeem-codes/delete", deleteRedeemCodeController);
+customRouter.post("/redeemCode", redeemCodeController);
 
 customRouter.post("/changePassword", changePasswordController);
 customRouter.post("/changeEmail", changeEmailController);
