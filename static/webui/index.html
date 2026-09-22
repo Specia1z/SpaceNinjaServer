@@ -76,6 +76,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/webui/users" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="admin_users"></a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/admin-data" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_adminData"></a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -1919,6 +1922,144 @@
                     </div>
                 </div>
             </div>
+            <div data-route="/webui/admin-data" data-title-tag="navbar_adminData">
+                <div class="d-none admin-hide">
+                    <p data-loc="cheats_administratorRequirement"></p>
+                </div>
+                <div class="d-none admin-show">
+                    <section class="mb-4">
+                        <h4 data-loc="admin_itemData"></h4>
+                        <p class="text-body-secondary" data-loc="admin_itemDataDescription"></p>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label" for="admin-game-version" data-loc="admin_gameVersion"></label>
+                                <select class="form-select" id="admin-game-version" onchange="setAdminGameVersion();"></select>
+                            </div>
+                            <div class="col-md-7 d-flex gap-2">
+                                <button class="btn btn-primary" id="admin-item-sync" onclick="syncAdminItemData();" data-loc="admin_syncNow"></button>
+                                <button class="btn btn-outline-secondary" onclick="loadAdminItemDataStatus();" data-loc="admin_refreshStatus"></button>
+                            </div>
+                        </div>
+                        <div class="mt-3" id="admin-item-data-status"></div>
+                    </section>
+                    <hr />
+                    <section class="mb-4">
+                        <h4 data-loc="admin_crafting"></h4>
+                        <p class="text-body-secondary" data-loc="admin_craftingDescription"></p>
+                        <form id="admin-crafting-form" onsubmit="saveAdminCraftingConfig();return false;">
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-crafting-speed" data-loc="admin_buildSpeed"></label>
+                                    <select class="form-select" id="admin-crafting-speed" onchange="updateAdminCraftingFormState();">
+                                        <option value="default" data-loc="admin_speedDefault"></option>
+                                        <option value="instant" data-loc="admin_speedInstant"></option>
+                                        <option value="custom" data-loc="admin_speedCustom"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-crafting-seconds" data-loc="admin_buildSeconds"></label>
+                                    <input class="form-control" id="admin-crafting-seconds" type="number" min="0" step="1" />
+                                    <div class="form-text" data-loc="admin_buildSecondsHint"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-crafting-multiplier" data-loc="admin_costMultiplier"></label>
+                                    <input class="form-control" id="admin-crafting-multiplier" type="number" min="0" max="100" step="0.1" value="1" />
+                                    <div class="form-text" data-loc="admin_costMultiplierHint"></div>
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-crafting-rush-cost" data-loc="admin_rushCost"></label>
+                                    <select class="form-select" id="admin-crafting-rush-cost" onchange="updateAdminCraftingFormState();">
+                                        <option value="stock" data-loc="admin_rushCostStock"></option>
+                                        <option value="free" data-loc="admin_rushCostFree"></option>
+                                        <option value="custom" data-loc="admin_rushCostCustom"></option>
+                                    </select>
+                                    <div class="form-text" data-loc="admin_rushCostHint"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="admin-crafting-rush-platinum" data-loc="admin_rushCostPlatinum"></label>
+                                    <input class="form-control" id="admin-crafting-rush-platinum" type="number" min="0" step="1" />
+                                    <div class="form-text" data-loc="admin_rushCostPlatinumHint"></div>
+                                </div>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" id="admin-crafting-keep-blueprints" type="checkbox" />
+                                <label class="form-check-label" for="admin-crafting-keep-blueprints" data-loc="admin_keepBlueprints"></label>
+                                <div class="form-text" data-loc="admin_keepBlueprintsHint"></div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" type="submit" data-loc="admin_saveOverride"></button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="resetAdminCraftingConfig();" data-loc="admin_resetCrafting"></button>
+                            </div>
+                        </form>
+                        <div class="alert alert-info mt-3 mb-0 d-none" id="admin-crafting-effective"></div>
+                    </section>
+                    <hr />
+                    <section>
+                        <h4 data-loc="admin_storeOverrides"></h4>
+                        <p class="text-body-secondary" data-loc="admin_storeOverridesDescription"></p>
+                        <form id="admin-store-form" onsubmit="saveAdminStoreOverride();return false;">
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-store-type" data-loc="admin_storeItem"></label>
+                                <input class="form-control" id="admin-store-type" list="datalist-admin-store-items" required autocomplete="off" placeholder="/Lotus/Weapons/..." />
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label" for="admin-store-discount" data-loc="admin_discountPercent"></label>
+                                    <input class="form-control" id="admin-store-discount" type="number" min="0" max="100" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="admin-store-premium" data-loc="admin_premiumPrice"></label>
+                                    <input class="form-control" id="admin-store-premium" type="number" min="0" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label" for="admin-store-regular" data-loc="admin_regularPrice"></label>
+                                    <input class="form-control" id="admin-store-regular" type="number" min="0" />
+                                </div>
+                                <div class="col-md-3 d-flex flex-column justify-content-end gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" id="admin-store-enabled" type="checkbox" checked />
+                                        <label class="form-check-label" for="admin-store-enabled" data-loc="admin_overrideEnabled"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" id="admin-store-listed" type="checkbox" checked />
+                                        <label class="form-check-label" for="admin-store-listed" data-loc="admin_storeListed"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="admin-store-start" data-loc="admin_startDate"></label>
+                                    <input class="form-control" id="admin-store-start" type="datetime-local" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="admin-store-end" data-loc="admin_endDate"></label>
+                                    <input class="form-control" id="admin-store-end" type="datetime-local" />
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" type="submit" data-loc="admin_saveOverride"></button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="resetAdminStoreForm();" data-loc="admin_clearForm"></button>
+                            </div>
+                        </form>
+                        <div class="table-responsive mt-4">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th data-loc="admin_storeItem"></th>
+                                        <th data-loc="admin_storeState"></th>
+                                        <th data-loc="admin_storePricing"></th>
+                                        <th data-loc="admin_storeSchedule"></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-store-overrides"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </div>
         <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     </div>
@@ -1936,6 +2077,7 @@
     <datalist id="datalist-KubrowPets"></datalist>
     <datalist id="datalist-QuestKeys"></datalist>
     <datalist id="datalist-miscitems"></datalist>
+    <datalist id="datalist-Bundles"></datalist>
     <datalist id="datalist-mods"></datalist>
     <datalist id="datalist-archonCrystalUpgrades"></datalist>
     <datalist id="datalist-OperatorAmps"></datalist>
@@ -1985,6 +2127,7 @@
         <option>Alchemy</option>
     </datalist>
     <datalist id="datalist-usernames"></datalist>
+    <datalist id="datalist-admin-store-items"></datalist>
     <script src="/webui/libs/jquery-3.6.0.min.js"></script>
     <script src="/webui/libs/whirlpool-js.min.js"></script>
     <script src="/webui/libs/single.js"></script>

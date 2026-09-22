@@ -32,6 +32,16 @@ import { removeItemsController } from "../controllers/custom/removeItemsControll
 import { retroactivelyApplyCheatController } from "../controllers/api/retroactivelyApplyCheatController.ts";
 import { retroactivelyApplyGuildCheatController } from "../controllers/custom/retroactivelyApplyGuildCheatController.ts";
 import { getRegisteredLosersController } from "../controllers/custom/getRegisteredLosersController.ts";
+import {
+    deleteCraftingConfigController,
+    deleteStoreOverrideController,
+    getAdminItemDataStatusController,
+    getCraftingConfigController,
+    listStoreOverridesController,
+    saveCraftingConfigController,
+    saveStoreOverrideController,
+    syncAdminItemDataController
+} from "../controllers/custom/adminDataController.ts";
 
 import { abilityOverrideController } from "../controllers/custom/abilityOverrideController.ts";
 import { createMessageController } from "../controllers/custom/createMessageController.ts";
@@ -91,6 +101,9 @@ customRouter.get("/removeItems", removeItemsController);
 customRouter.get("/retroactivelyApplyCheat", retroactivelyApplyCheatController);
 customRouter.get("/retroactivelyApplyGuildCheat", retroactivelyApplyGuildCheatController);
 customRouter.get("/getRegisteredLosers", getRegisteredLosersController);
+customRouter.get("/admin/item-data/status", getAdminItemDataStatusController);
+customRouter.get("/admin/store-overrides", listStoreOverridesController);
+customRouter.get("/admin/crafting-config", getCraftingConfigController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -113,6 +126,11 @@ customRouter.post("/setInvigoration", setInvigorationController);
 customRouter.post("/setUmbraEchoes", setUmbraEchoesController);
 customRouter.post("/setAccountCheat", setAccountCheatController);
 customRouter.post("/setGuildCheat", setGuildCheatController);
+customRouter.post("/admin/item-data/sync", syncAdminItemDataController);
+customRouter.post("/admin/store-overrides", saveStoreOverrideController);
+customRouter.post("/admin/store-overrides/delete", deleteStoreOverrideController);
+customRouter.post("/admin/crafting-config", saveCraftingConfigController);
+customRouter.post("/admin/crafting-config/delete", deleteCraftingConfigController);
 
 customRouter.post("/changePassword", changePasswordController);
 customRouter.post("/changeEmail", changeEmailController);

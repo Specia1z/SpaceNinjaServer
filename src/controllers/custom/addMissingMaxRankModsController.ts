@@ -4,10 +4,12 @@ import type { RequestHandler } from "express";
 import { ExportArcanes, ExportAvionics, ExportUpgrades } from "warframe-public-export-plus";
 import { broadcastInventoryUpdate } from "../../services/wsService.ts";
 import { supplementalUpgrades } from "../../services/itemDataService.ts";
+import { getAdminItemData } from "../../services/adminItemDataService.ts";
 
 export const addMissingMaxRankModsController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
     const inventory = await getInventory(accountId, "Upgrades");
+    const adminItemData = await getAdminItemData("en");
 
     const maxOwnedRanks: Record<string, number> = {};
     for (const upgrade of inventory.Upgrades) {
@@ -20,7 +22,11 @@ export const addMissingMaxRankModsController: RequestHandler = async (req, res) 
         }
     }
 
-    for (const [uniqueName, data] of Object.entries({ ...ExportUpgrades, ...supplementalUpgrades })) {
+    for (const [uniqueName, data] of Object.entries({
+        ...ExportUpgrades,
+        ...adminItemData.upgrades,
+        ...supplementalUpgrades
+    })) {
         if (data.fusionLimit != 0 && data.type != "PARAZON" && maxOwnedRanks[uniqueName] != data.fusionLimit) {
             inventory.Upgrades.push({
                 ItemType: uniqueName,

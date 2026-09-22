@@ -171,7 +171,9 @@ const claimCompletedRecipe = async (
         const end = Math.trunc(pendingRecipe.CompletionDate.getTime() / 1000);
         const start = end - recipe.buildTime;
         const secondsElapsed = Math.trunc(Date.now() / 1000) - start;
-        const progress = secondsElapsed / recipe.buildTime;
+        // An instant recipe has buildTime 0, which would make this 0/0. Such a recipe is already finished the
+        // moment it starts, so there is no progress to scale by and the flat cost applies.
+        const progress = recipe.buildTime > 0 ? secondsElapsed / recipe.buildTime : 1;
         logger.debug(`rushing recipe at ${Math.trunc(progress * 100)}% completion`);
         // U18 introduced rush cost scaling, don't use it for older versions.
         if (version_compare(buildLabel, "2015.12.03.00.00") >= 0) {

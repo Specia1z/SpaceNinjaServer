@@ -50,6 +50,7 @@ import { Types } from "mongoose";
 import { BL_LATEST } from "../constants/gameVersions.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import { applyLiveWorldState, getLiveDailyDealForPurchase } from "./liveWorldStateService.ts";
+import { isStoreItemListed } from "./storeOverrideService.ts";
 
 const getStoreItemCategory = (storeItem: string): string => {
     const storeItemString = getSubstringFromKeyword(storeItem, "StoreItems/");
@@ -130,6 +131,39 @@ export const handlePurchase = async (
         purchaseRequest.PurchaseParams.StoreItem == "/Lotus/StoreItems/Weapons/Tenno/Melee/Brass Knuckles/BrassKnuckles"
     ) {
         purchaseRequest.PurchaseParams.StoreItem = "/Lotus/StoreItems/Weapons/Tenno/Melee/BrassKnuckles/BrassKnuckles";
+    }
+
+    if (
+        purchaseRequest.PurchaseParams.Source == ePurchaseSource.Market ||
+        purchaseRequest.PurchaseParams.Source == ePurchaseSource.Arsenal
+    ) {
+        if (
+            !Number.isInteger(purchaseRequest.PurchaseParams.Quantity) ||
+            purchaseRequest.PurchaseParams.Quantity <= 0
+        ) {
+            throw new Error("invalid purchase quantity");
+        }
+        let overrideTypeName = purchaseRequest.PurchaseParams.StoreItem;
+        if (overrideTypeName.startsWith("/Lotus/StoreItems/") || overrideTypeName in ExportBoosters) {
+            overrideTypeName = fromStoreItem(overrideTypeName);
+        }
+        if (!isStoreItemListed(overrideTypeName)) {
+            throw new Error("item is not currently listed in the market");
+        }
+        const authoritativePrice = getPrice(
+            purchaseRequest.PurchaseParams.StoreItem,
+            purchaseRequest.PurchaseParams.Quantity,
+            purchaseRequest.PurchaseParams.Durability,
+            purchaseRequest.PurchaseParams.UsePremium,
+            purchaseRequest.buildLabel
+        );
+        if (
+            purchaseRequest.PurchaseParams.ExpectedPrice !== undefined &&
+            purchaseRequest.PurchaseParams.ExpectedPrice !== authoritativePrice
+        ) {
+            throw new Error("market price changed; refresh the market and try again");
+        }
+        purchaseRequest.PurchaseParams.ExpectedPrice = authoritativePrice;
     }
 
     const prePurchaseInventoryChanges: IInventoryChanges = {};

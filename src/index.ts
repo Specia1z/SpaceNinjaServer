@@ -12,6 +12,9 @@ import { repoDir } from "./helpers/pathHelper.ts";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import { args } from "./helpers/commandLineArguments.ts";
 import { runSelfTests } from "./services/selfTestService.ts";
+import { initializeStoreOverrides } from "./services/storeOverrideService.ts";
+import { initializeAdminItemData } from "./services/adminItemDataService.ts";
+import { initializeCraftingConfigs } from "./services/craftingConfigService.ts";
 
 try {
     loadConfig();
@@ -91,6 +94,7 @@ if (args.test) {
         logger.info("Connected to MongoDB (version unknown)");
     }
     syncConfigWithDatabase();
+    await Promise.all([initializeStoreOverrides(), initializeAdminItemData(), initializeCraftingConfigs()]);
 
     try {
         await startWebServer();

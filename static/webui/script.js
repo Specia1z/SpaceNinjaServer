@@ -623,7 +623,13 @@ const areItemsUnambiguous = (items, stringifier) => {
 
 function fetchItemList() {
     window.itemListPromise = new Promise(resolve => {
-        const req = $.get("/custom/getItemLists?lang=" + window.lang);
+        const gameVersion = localStorage.getItem("adminGameVersion") ?? "latest";
+        const req = $.get(
+            "/custom/getItemLists?lang=" +
+                encodeURIComponent(window.lang) +
+                "&gameVersion=" +
+                encodeURIComponent(gameVersion)
+        );
         req.done(async data => {
             await dictPromise;
 
@@ -646,6 +652,26 @@ function fetchItemList() {
             document.getElementById("worldState.nightwaveOverride").innerHTML = "";
 
             const missingAdditionalDict = new Set();
+
+            const storeItems = new Map();
+            Object.values(data)
+                .filter(Array.isArray)
+                .flat()
+                .forEach(item => {
+                    if (item && item.uniqueName && item.name && !storeItems.has(item.uniqueName)) {
+                        storeItems.set(item.uniqueName, item.name);
+                    }
+                });
+            const storeDatalist = document.getElementById("datalist-admin-store-items");
+            storeDatalist.innerHTML = "";
+            [...storeItems.entries()]
+                .sort((a, b) => a[1].localeCompare(b[1]))
+                .forEach(([uniqueName, name]) => {
+                    const option = document.createElement("option");
+                    option.value = uniqueName;
+                    option.textContent = name;
+                    storeDatalist.appendChild(option);
+                });
 
             const getAddDict = locTag => {
                 const item = data.AdditionalDict.find(i => i.uniqueName === locTag);
@@ -3504,6 +3530,280 @@ single.getRoute("/webui/cheats").on("beforeload", function () {
                 $(".admin-show").addClass("d-none");
             }
         });
+    });
+});
+
+let adminStoreOverrides = [];
+
+function formatAdminDate(value) {
+    return value ? new Date(value).toLocaleString() : loc("admin_noLimit");
+}
+
+function optionalAdminNumber(id) {
+    const value = document.getElementById(id).value;
+    return value === "" ? undefined : Number(value);
+}
+
+function optionalAdminDate(id) {
+    const value = document.getElementById(id).value;
+    return value ? new Date(value).toISOString() : undefined;
+}
+
+async function loadAdminItemDataStatus() {
+    const status = await $.get("/custom/admin/item-data/status?" + window.authz);
+    const versionSelect = document.getElementById("admin-game-version");
+    const selectedVersion = localStorage.getItem("adminGameVersion") ?? "latest";
+    versionSelect.innerHTML = "";
+    const latestOption = document.createElement("option");
+    latestOption.value = "latest";
+    latestOption.textContent = loc("admin_latestVersion");
+    versionSelect.appendChild(latestOption);
+    status.gameVersions.forEach(version => {
+        const option = document.createElement("option");
+        option.value = version;
+        option.textContent = version;
+        versionSelect.appendChild(option);
+    });
+    versionSelect.value = [...versionSelect.options].some(option => option.value == selectedVersion)
+        ? selectedVersion
+        : "latest";
+
+    const counts = status.counts;
+    document.getElementById("admin-item-data-status").textContent = loc("admin_itemDataStatus")
+        .replace("|SOURCE|", status.source)
+        .replace("|SYNCED_AT|", status.syncedAt ? new Date(status.syncedAt).toLocaleString() : loc("admin_never"))
+        .replace("|WARFRAMES|", counts.warframes ?? 0)
+        .replace("|WEAPONS|", counts.weapons ?? 0)
+        .replace("|MODS|", counts.upgrades ?? 0)
+        .replace("|SENTINELS|", counts.sentinels ?? 0);
+    document.getElementById("admin-item-sync").disabled = status.running;
+}
+
+async function syncAdminItemData() {
+    const button = document.getElementById("admin-item-sync");
+    button.disabled = true;
+    try {
+        await $.post({
+            url: "/custom/admin/item-data/sync?" + window.authz,
+            contentType: "application/json",
+            data: "{}"
+        });
+        fetchItemList();
+        await window.itemListPromise;
+        await loadAdminItemDataStatus();
+        toast(loc("admin_syncComplete"), "success");
+    } catch (error) {
+        toast(error.responseText || loc("admin_syncFailed"), "danger");
+    } finally {
+        button.disabled = false;
+    }
+}
+
+function setAdminGameVersion() {
+    localStorage.setItem("adminGameVersion", document.getElementById("admin-game-version").value);
+    fetchItemList();
+    window.itemListPromise.then(() => toast(loc("admin_filterApplied"), "success"));
+}
+
+function resetAdminStoreForm() {
+    document.getElementById("admin-store-form").reset();
+    document.getElementById("admin-store-enabled").checked = true;
+    document.getElementById("admin-store-listed").checked = true;
+}
+
+function editAdminStoreOverride(index) {
+    const override = adminStoreOverrides[index];
+    document.getElementById("admin-store-type").value = override.TypeName;
+    document.getElementById("admin-store-enabled").checked = override.Enabled;
+    document.getElementById("admin-store-listed").checked = override.Listed;
+    document.getElementById("admin-store-discount").value = override.DiscountPercent ?? "";
+    document.getElementById("admin-store-premium").value = override.PremiumPrice ?? "";
+    document.getElementById("admin-store-regular").value = override.RegularPrice ?? "";
+    document.getElementById("admin-store-start").value = override.StartDate
+        ? new Date(override.StartDate).toISOString().slice(0, 16)
+        : "";
+    document.getElementById("admin-store-end").value = override.EndDate
+        ? new Date(override.EndDate).toISOString().slice(0, 16)
+        : "";
+    document.getElementById("admin-store-type").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function renderAdminStoreOverrides() {
+    const tbody = document.getElementById("admin-store-overrides");
+    tbody.innerHTML = "";
+    adminStoreOverrides.forEach((override, index) => {
+        const row = document.createElement("tr");
+        const itemCell = row.insertCell();
+        itemCell.textContent = override.TypeName;
+        itemCell.className = "text-break";
+        row.insertCell().textContent = [
+            override.Enabled ? loc("admin_enabled") : loc("admin_disabled"),
+            override.Listed ? loc("admin_listed") : loc("admin_unlisted")
+        ].join(" / ");
+        row.insertCell().textContent = loc("admin_pricingSummary")
+            .replace("|DISCOUNT|", override.DiscountPercent ?? 0)
+            .replace("|PREMIUM|", override.PremiumPrice ?? "-")
+            .replace("|REGULAR|", override.RegularPrice ?? "-");
+        row.insertCell().textContent = `${formatAdminDate(override.StartDate)} - ${formatAdminDate(override.EndDate)}`;
+        const actions = row.insertCell();
+        actions.className = "text-nowrap";
+        const editButton = document.createElement("button");
+        editButton.className = "btn btn-sm btn-outline-primary me-2";
+        editButton.textContent = loc("admin_edit");
+        editButton.onclick = () => editAdminStoreOverride(index);
+        actions.appendChild(editButton);
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "btn btn-sm btn-outline-danger";
+        deleteButton.textContent = loc("admin_delete");
+        deleteButton.onclick = () => deleteAdminStoreOverride(override.TypeName);
+        actions.appendChild(deleteButton);
+        tbody.appendChild(row);
+    });
+}
+
+async function loadAdminStoreOverrides() {
+    adminStoreOverrides = await $.get("/custom/admin/store-overrides?" + window.authz);
+    renderAdminStoreOverrides();
+}
+
+async function saveAdminStoreOverride() {
+    const payload = {
+        TypeName: document.getElementById("admin-store-type").value.trim(),
+        Enabled: document.getElementById("admin-store-enabled").checked,
+        Listed: document.getElementById("admin-store-listed").checked,
+        DiscountPercent: optionalAdminNumber("admin-store-discount"),
+        PremiumPrice: optionalAdminNumber("admin-store-premium"),
+        RegularPrice: optionalAdminNumber("admin-store-regular"),
+        StartDate: optionalAdminDate("admin-store-start"),
+        EndDate: optionalAdminDate("admin-store-end")
+    };
+    try {
+        await $.post({
+            url: "/custom/admin/store-overrides?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify(payload)
+        });
+        resetAdminStoreForm();
+        await loadAdminStoreOverrides();
+        toast(loc("admin_overrideSaved"), "success");
+    } catch (error) {
+        toast(error.responseText || loc("settings_changeFailed"), "danger");
+    }
+}
+
+async function deleteAdminStoreOverride(typeName) {
+    if (!confirm(loc("admin_deleteOverrideConfirm").replace("|ITEM|", typeName))) return;
+    await $.post({
+        url: "/custom/admin/store-overrides/delete?" + window.authz,
+        contentType: "application/json",
+        data: JSON.stringify({ TypeName: typeName })
+    });
+    await loadAdminStoreOverrides();
+}
+
+function updateAdminCraftingFormState() {
+    const speed = document.getElementById("admin-crafting-speed").value;
+    const secondsInput = document.getElementById("admin-crafting-seconds");
+    secondsInput.disabled = speed != "custom";
+    if (speed != "custom") secondsInput.value = "";
+
+    const rushCost = document.getElementById("admin-crafting-rush-cost").value;
+    const platinumInput = document.getElementById("admin-crafting-rush-platinum");
+    platinumInput.disabled = rushCost != "custom";
+    if (rushCost != "custom") platinumInput.value = "";
+}
+
+async function loadAdminCraftingConfig() {
+    const data = await $.get("/custom/admin/crafting-config?" + window.authz);
+    const serverWide = (data.configs ?? []).find(config => config.Key == "server");
+    if (serverWide) {
+        document.getElementById("admin-crafting-speed").value = serverWide.SpeedMode;
+        document.getElementById("admin-crafting-seconds").value = serverWide.BuildTimeSeconds ?? 0;
+        document.getElementById("admin-crafting-multiplier").value = serverWide.CostMultiplier ?? 1;
+        document.getElementById("admin-crafting-rush-cost").value = serverWide.RushCostMode ?? "stock";
+        document.getElementById("admin-crafting-rush-platinum").value = serverWide.RushCostPlatinum ?? 0;
+        document.getElementById("admin-crafting-keep-blueprints").checked = !!serverWide.KeepBlueprints;
+    } else {
+        resetAdminCraftingConfig();
+    }
+    updateAdminCraftingFormState();
+
+    const effective = data.effective;
+    const el = document.getElementById("admin-crafting-effective");
+    const parts = [];
+    if (effective.buildTime === undefined) {
+        parts.push(loc("admin_effectiveStockTime"));
+    } else if (effective.buildTime === 0) {
+        parts.push(loc("admin_effectiveInstant"));
+    } else {
+        parts.push(loc("admin_effectiveSeconds").replace("|SECONDS|", effective.buildTime));
+    }
+    parts.push(loc("admin_effectiveCost").replace("|MULT|", effective.buildPriceMultiplier));
+    if (effective.skipBuildTimePrice === undefined) {
+        parts.push(loc("admin_effectiveRushStock"));
+    } else if (effective.skipBuildTimePrice === 0) {
+        parts.push(loc("admin_effectiveRushFree"));
+    } else {
+        parts.push(loc("admin_effectiveRush").replace("|PLATINUM|", effective.skipBuildTimePrice));
+    }
+    parts.push(effective.consumeOnUse === false ? loc("admin_effectiveKeepBlueprints") : loc("admin_effectiveConsumeBlueprints"));
+    el.textContent = loc("admin_effectiveSummary").replace("|DETAILS|", parts.join(loc("admin_effectiveSeparator")));
+    el.classList.remove("d-none");
+}
+
+async function saveAdminCraftingConfig() {
+    const speed = document.getElementById("admin-crafting-speed").value;
+    const rushCost = document.getElementById("admin-crafting-rush-cost").value;
+    const payload = {
+        SpeedMode: speed,
+        BuildTimeSeconds: speed == "custom" ? Number(document.getElementById("admin-crafting-seconds").value) : 0,
+        CostMultiplier: Number(document.getElementById("admin-crafting-multiplier").value),
+        RushCostMode: rushCost,
+        RushCostPlatinum: rushCost == "custom" ? Number(document.getElementById("admin-crafting-rush-platinum").value) : 0,
+        KeepBlueprints: document.getElementById("admin-crafting-keep-blueprints").checked
+    };
+    try {
+        await $.post({
+            url: "/custom/admin/crafting-config?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify(payload)
+        });
+        await loadAdminCraftingConfig();
+        toast(loc("admin_craftingSaved"), "success");
+    } catch (error) {
+        toast(error.responseText || loc("settings_changeFailed"), "danger");
+    }
+}
+
+function resetAdminCraftingConfig() {
+    document.getElementById("admin-crafting-speed").value = "default";
+    document.getElementById("admin-crafting-seconds").value = "";
+    document.getElementById("admin-crafting-multiplier").value = 1;
+    document.getElementById("admin-crafting-rush-cost").value = "stock";
+    document.getElementById("admin-crafting-rush-platinum").value = "";
+    document.getElementById("admin-crafting-keep-blueprints").checked = false;
+    updateAdminCraftingFormState();
+}
+
+single.getRoute("/webui/admin-data").on("beforeload", function () {
+    awaitAuthz().then(async () => {
+        const config = await getServerConfig();
+        if (!config) {
+            $(".admin-hide").removeClass("d-none");
+            $(".admin-show").addClass("d-none");
+            return;
+        }
+        $(".admin-hide").addClass("d-none");
+        $(".admin-show").removeClass("d-none");
+        try {
+            await Promise.all([
+                loadAdminItemDataStatus(),
+                loadAdminStoreOverrides(),
+                loadAdminCraftingConfig()
+            ]);
+        } catch (error) {
+            toast(error.responseText || loc("settings_changeFailed"), "danger");
+        }
     });
 });
 

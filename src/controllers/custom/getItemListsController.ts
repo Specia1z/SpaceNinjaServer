@@ -31,11 +31,7 @@ import {
     ExportRegions,
     ExportRelics,
     ExportResources,
-    ExportSentinels,
-    ExportSyndicates,
-    ExportUpgrades,
-    ExportWarframes,
-    ExportWeapons
+    ExportSyndicates
 } from "warframe-public-export-plus";
 import { evolutionWeapons, permanentEvolutionWeapons } from "../../constants/evolutionWeapons.ts";
 import supplementalDict from "../../../static/fixed_responses/supplementalDict/index.json" with { type: "json" };
@@ -43,6 +39,7 @@ import varzia from "../../constants/varzia.ts";
 import suitDefaultUpgrades from "../../constants/suitDefaultUpgrades.ts";
 import { pseudoRecipeToOwnedRecipeMap } from "../../services/foundryService.ts";
 import { nightwaveTagToSeasonName } from "../../services/worldStateService.ts";
+import { getAdminItemData, getGameVersionCutoff, isAvailableAt } from "../../services/adminItemDataService.ts";
 
 interface ListedItem {
     uniqueName: string;
@@ -95,6 +92,7 @@ interface ItemLists {
     Nodes: ListedItem[];
     NightwaveTags: ListedItem[];
     AdditionalDict: ListedItem[];
+    Bundles: ListedItem[];
     //circuitGameModes: ListedItem[];
     blueprintAndItem: string;
 }
@@ -110,8 +108,11 @@ const toTitleCase = (str: string): string => {
     return str.replace(/[^\s-]+/g, word => word.charAt(0).toUpperCase() + word.substring(1).toLowerCase());
 };
 
-const getItemListsController: RequestHandler = (req, response) => {
-    const lang = getDict(typeof req.query.lang == "string" ? req.query.lang : "en");
+const getItemListsController: RequestHandler = async (req, response) => {
+    const language = typeof req.query.lang == "string" ? req.query.lang : "en";
+    const adminItemData = await getAdminItemData(language);
+    const lang = { ...getDict(language), ...adminItemData.dictionary };
+    const versionCutoff = getGameVersionCutoff(req.query.gameVersion);
     const res: ItemLists = {
         Suits: [],
         LongGuns: [],
@@ -142,6 +143,7 @@ const getItemListsController: RequestHandler = (req, response) => {
         Nodes: [],
         NightwaveTags: [],
         AdditionalDict: [],
+        Bundles: [],
         /*circuitGameModes: [
             {
                 uniqueName: "Survival",
@@ -180,7 +182,8 @@ const getItemListsController: RequestHandler = (req, response) => {
         ...Object.values(ExportDojoRecipes.rooms).flatMap(r => r.ingredients.map(i => i.ItemType)),
         ...Object.values(ExportDojoRecipes.decos).flatMap(d => d.ingredients.map(i => i.ItemType))
     ]);
-    for (const [uniqueName, item] of Object.entries({ ...ExportWarframes, ...supplementalSuits })) {
+    for (const [uniqueName, item] of Object.entries({ ...adminItemData.warframes, ...supplementalSuits })) {
+        if (!isAvailableAt(item, versionCutoff)) continue;
         if (item.productCategory != "SpecialItems") {
             res[item.productCategory].push({
                 uniqueName,
@@ -199,7 +202,7 @@ const getItemListsController: RequestHandler = (req, response) => {
             }
         });
     }
-    for (const [uniqueName, item] of Object.entries(ExportSentinels)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.sentinels)) {
         if (item.productCategory == "Sentinels" || item.productCategory == "KubrowPets") {
             res[item.productCategory].push({
                 uniqueName,
@@ -208,7 +211,8 @@ const getItemListsController: RequestHandler = (req, response) => {
             });
         }
     }
-    for (const [uniqueName, item] of Object.entries(ExportWeapons)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.weapons)) {
+        if (!isAvailableAt(item, versionCutoff)) continue;
         if (item.partType) {
             if (!uniqueName.split("/")[7]?.startsWith("PvPVariant")) {
                 // not a pvp variant
@@ -389,7 +393,8 @@ const getItemListsController: RequestHandler = (req, response) => {
         }
     }
 
-    for (const [uniqueName, upgrade] of Object.entries({ ...ExportUpgrades, ...supplementalUpgrades })) {
+    for (const [uniqueName, upgrade] of Object.entries({ ...adminItemData.upgrades, ...supplementalUpgrades })) {
+        if (!isAvailableAt(upgrade, versionCutoff)) continue;
         const mod: ListedItem = {
             uniqueName,
             name: getString(upgrade.name, lang),
@@ -637,6 +642,16 @@ const getItemListsController: RequestHandler = (req, response) => {
         res.AdditionalDict.push({
             uniqueName,
             name: getString(uniqueName, lang)
+        });
+    }
+
+    // Bundles are store items in their own right and are what the in-game market sells as packages, so the admin
+    // store override editor needs them listed. Bundles that are not marketed are skipped to keep the list useful.
+    for (const [uniqueName, bundle] of Object.entries(adminItemData.bundles)) {
+        if (bundle.excludeFromMarket) continue;
+        res.Bundles.push({
+            uniqueName,
+            name: getString(bundle.name ?? uniqueName, lang)
         });
     }
 

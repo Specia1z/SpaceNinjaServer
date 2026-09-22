@@ -91,6 +91,7 @@ import {
 } from "../helpers/inventoryHelpers.ts";
 import { addQuestKey, completeQuest } from "./questService.ts";
 import { handleBundleAcquisition } from "./purchaseService.ts";
+import { getSyncedSentinel, getSyncedUpgrade, getSyncedWeapon } from "./adminItemDataService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
 import {
     generateRewardSeed,
@@ -691,6 +692,7 @@ export const addItem = async (
     }
     if (
         typeName in ExportUpgrades ||
+        getSyncedUpgrade(typeName) !== undefined ||
         typeName in ExportArcanes ||
         typeName in U5Modules ||
         typeName in supplementalUpgrades ||
@@ -769,8 +771,9 @@ export const addItem = async (
             Consumables: consumablesChanges
         };
     }
-    if (typeName in ExportWeapons) {
-        const weapon = ExportWeapons[typeName];
+    const syncedWeapon = getSyncedWeapon(typeName);
+    if (typeName in ExportWeapons || syncedWeapon) {
+        const weapon = syncedWeapon ?? ExportWeapons[typeName];
         const inventoryChanges: IInventoryChanges = {};
         if (weapon.oneTimePurchasable) {
             handleOneTimePurchasable(inventory, typeName, inventoryChanges);
@@ -1428,9 +1431,9 @@ export const giveMoaPetDefaultWeapon = (
     premiumPurchase: boolean,
     inventoryChanges: IInventoryChanges
 ): void => {
-    const weapon = ExportSentinels[moaPetsItemType].defaultWeapon;
+    const weapon = (getSyncedSentinel(moaPetsItemType) ?? ExportSentinels[moaPetsItemType]).defaultWeapon;
     if (weapon) {
-        const category = ExportWeapons[weapon].productCategory;
+        const category = (getSyncedWeapon(weapon) ?? ExportWeapons[weapon]).productCategory;
         addEquipment(inventory, category, weapon, undefined, inventoryChanges);
         combineInventoryChanges(
             inventoryChanges,
@@ -1446,18 +1449,19 @@ const addSentinel = (
     premiumPurchase: boolean,
     inventoryChanges: IInventoryChanges = {}
 ): IInventoryChanges => {
+    const sentinel = getSyncedSentinel(sentinelName) ?? ExportSentinels[sentinelName];
     // Sentinel itself occupies a slot in the sentinels bin
     combineInventoryChanges(inventoryChanges, occupySlot(inventory, eInventorySlot.SENTINELS, premiumPurchase));
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (ExportSentinels[sentinelName]?.defaultWeapon) {
-        addSentinelWeapon(inventory, ExportSentinels[sentinelName].defaultWeapon, premiumPurchase, inventoryChanges);
+    if (sentinel?.defaultWeapon) {
+        addSentinelWeapon(inventory, sentinel.defaultWeapon, premiumPurchase, inventoryChanges);
     }
 
     const configs: IItemConfig[] = applyDefaultUpgrades(
         inventory,
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        ExportSentinels[sentinelName]?.defaultUpgrades,
+        sentinel?.defaultUpgrades,
         inventoryChanges
     );
 

@@ -87,6 +87,9 @@ import { shouldDoServerQol } from "./configService.ts";
 import { buildLabelToVersionInt, wikiDateToBuildVersionInt } from "../helpers/versionHelper.ts";
 import baro from "../constants/baro.ts";
 import type { Mutable } from "../utils/ts-utils.ts";
+import { getCraftingOverride } from "./craftingConfigService.ts";
+import { getActiveStoreOverride } from "./storeOverrideService.ts";
+import { getSyncedBundle, getSyncedWarframe } from "./adminItemDataService.ts";
 
 export type WeaponTypeInternal =
     | "LongGuns"
@@ -4740,7 +4743,28 @@ export const getRecipe = (uniqueName: string, buildLabel: string): IRecipe | und
             }
         }
     }
-    return data;
+    return applyCraftingOverride(uniqueName, data);
+};
+
+// Applies the server operator's crafting policy. Returns `data` untouched when no policy is configured, so the
+// stock behaviour is preserved exactly.
+const applyCraftingOverride = (recipeTypeName: string, data: IRecipe | undefined): IRecipe | undefined => {
+    if (!data) return data;
+    const override = getCraftingOverride(recipeTypeName);
+    const changes: Partial<IRecipe> = {};
+    if (override.buildTime !== undefined) {
+        changes.buildTime = override.buildTime;
+    }
+    if (override.buildPriceMultiplier !== 1) {
+        changes.buildPrice = Math.round(data.buildPrice * override.buildPriceMultiplier);
+    }
+    if (override.skipBuildTimePrice !== undefined) {
+        changes.skipBuildTimePrice = override.skipBuildTimePrice;
+    }
+    if (override.consumeOnUse !== undefined) {
+        changes.consumeOnUse = override.consumeOnUse;
+    }
+    return Object.keys(changes).length ? { ...data, ...changes } : data;
 };
 
 export const getSyndicate = async (tag: string, buildLabel: string): Promise<ISyndicate | undefined> => {
@@ -5075,7 +5099,7 @@ export const getBundle = (uniqueName: string, buildLabel: string): IBundle | und
         };
     }
 
-    return ExportBundles[uniqueName];
+    return getSyncedBundle(uniqueName) ?? ExportBundles[uniqueName];
 };
 
 export const getBoosterPack = async (
@@ -5340,7 +5364,10 @@ export const getMissionDeck = (uniqueName: string, buildLabel: string): Readonly
 };
 
 export const getPowerSuit = (uniqueName: string): IPowersuit | undefined => {
-    return ExportWarframes[uniqueName] ?? supplementalSuits[uniqueName];
+    return (
+        getSyncedWarframe(uniqueName) ??
+        (uniqueName in ExportWarframes ? ExportWarframes[uniqueName] : supplementalSuits[uniqueName])
+    );
 };
 
 const u7WeaponCosts: Record<string, number> = {
@@ -5388,19 +5415,71 @@ export const getPrice = (
     buildLabel: string
 ): number => {
     const isBundle = storeItemName in ExportBundles;
-    let internalName = isBundle ? storeItemName : fromStoreItem(storeItemName);
+    const internalName = isBundle ? storeItemName : fromStoreItem(storeItemName);
+
+    // A store override either states an absolute price (discount already applied) or a discount percentage
+    // to apply to the regular price. Both are honored here so that admins can configure only a percentage.
+    const storeOverride = getActiveStoreOverride(internalName);
+    if (storeOverride) {
+        const overridePrice = usePremium ? storeOverride.PremiumPrice : storeOverride.RegularPrice;
+        if (overridePrice !== undefined) return overridePrice * quantity;
+        if (storeOverride.DiscountPercent !== undefined) {
+            return applyDiscount(
+                getUndiscountedPrice(storeItemName, quantity, durability, usePremium, buildLabel),
+                storeOverride.DiscountPercent,
+                quantity,
+                internalName
+            );
+        }
+    }
 
     {
         const { FlashSales } = getWorldState(buildLabel);
         const flashSale = FlashSales.find(s => s.TypeName == internalName);
         if (flashSale) {
-            if (usePremium && flashSale.PremiumOverride) {
+            if (flashSale.Discount !== undefined) {
+                return applyDiscount(
+                    getUndiscountedPrice(storeItemName, quantity, durability, usePremium, buildLabel),
+                    flashSale.Discount,
+                    quantity,
+                    internalName
+                );
+            }
+            if (usePremium && flashSale.PremiumOverride !== undefined) {
                 return flashSale.PremiumOverride * quantity;
-            } else if (!usePremium && flashSale.RegularOverride) {
+            } else if (!usePremium && flashSale.RegularOverride !== undefined) {
                 return flashSale.RegularOverride * quantity;
             }
         }
     }
+
+    return getUndiscountedPrice(storeItemName, quantity, durability, usePremium, buildLabel);
+};
+
+// Rounds a discounted price the way the game client does: the unit price is discounted first, then multiplied.
+const applyDiscount = (
+    undiscountedTotal: number,
+    discountPercent: number,
+    quantity: number,
+    typeName: string
+): number => {
+    const undiscountedUnitPrice = undiscountedTotal / quantity;
+    const discountedUnitPrice = Math.round(undiscountedUnitPrice * (1 - discountPercent / 100));
+    if (discountedUnitPrice <= 0 && undiscountedUnitPrice > 0) {
+        logger.warn(`discount of ${discountPercent}% results in a non-positive price for ${typeName}`);
+    }
+    return discountedUnitPrice * quantity;
+};
+
+const getUndiscountedPrice = (
+    storeItemName: string,
+    quantity: number,
+    durability: number,
+    usePremium: boolean,
+    buildLabel: string
+): number => {
+    const isBundle = storeItemName in ExportBundles;
+    let internalName = isBundle ? storeItemName : fromStoreItem(storeItemName);
 
     if (storeItemName in ExportBoosters) {
         return 40 * (durability + 1);
@@ -5429,10 +5508,12 @@ export const getPrice = (
     let price: number | undefined;
     if (isBundle) {
         const bundle = getBundle(storeItemName, buildLabel)!;
-        if (usePremium && bundle.platinumCost) {
-            price = ExportBundles[storeItemName].platinumCost;
-        } else if (!usePremium && bundle.creditsCost) {
-            price = ExportBundles[storeItemName].creditsCost;
+        // A bundle that states its own aggregate price already reflects the package discount, so it must not be
+        // discounted again by a store override or flash sale. Bundles priced by summing their components can be.
+        if (usePremium && bundle.platinumCost !== undefined) {
+            return bundle.platinumCost * quantity;
+        } else if (!usePremium && bundle.creditsCost !== undefined) {
+            return bundle.creditsCost * quantity;
         } else {
             let sum = 0;
             for (const component of bundle.components) {

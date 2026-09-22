@@ -10,6 +10,7 @@ import { getAccountForRequest, getBuildLabel } from "../../services/loginService
 import { BL_LATEST } from "../../constants/gameVersions.ts";
 import { getInventory2 } from "../../services/inventoryService.ts";
 import { applyLiveWorldState, refreshLiveWorldState } from "../../services/liveWorldStateService.ts";
+import { applyStoreOverrides } from "../../services/storeOverrideService.ts";
 
 export const worldStateController: RequestHandler = async (req, res) => {
     let buildLabel: string;
@@ -43,6 +44,7 @@ export const worldStateController: RequestHandler = async (req, res) => {
         refreshLiveWorldState()
     ]);
     applyLiveWorldState(worldState);
+    applyStoreOverrides(worldState, buildLabel);
 
     if (elionWorkaroundNeeded) {
         worldState.Alerts.push({
