@@ -40,7 +40,7 @@
     "warframe-riven-info": "^0.1.2",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
-    "ws": "^8.18.2"
+    "ws": "^8.21.3"
   },
   "optionalDependencies": {
     "@types/express": "^5",
