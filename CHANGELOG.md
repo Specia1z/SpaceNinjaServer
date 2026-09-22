@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Containers failed to start with `exec: "/app/docker-entrypoint.sh": permission denied`, because the checkout records the script without its executable bit and `COPY` preserves source permissions. Both the git mode and the `Dockerfile` now set it.
 - Docker deployments installed from the image alone failed with `no configuration file provided`, because `docker pull` does not fetch the Compose file.
 - Rush cost scaling divided by zero on instant recipes, producing a `NaN` Platinum price.
+- The administrator item picker listed every translation string from `AdditionalDict` as if it were a grantable item, so searching `Platinum` offered `/Lotus/Language/Dojo/TradeTypePlatinum` — the Dojo trade-type label. Picking it could only ever fail. Language labels are now excluded from the search index.
 
 ### Security
 

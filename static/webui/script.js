@@ -10,6 +10,18 @@
 
 const webUITranslations = ["en", "ru", "fr", "de", "zh", "es", "uk", "pl"];
 const allPermissions = [];
+
+// Currencies are addressed by inventory field name rather than unique name, so they have no localised entry in
+// the item search index and would otherwise render as a bare identifier. Declared up here because the search
+// index is built during startup, well before the admin screens are wired up.
+const CURRENCY_LABELS = {
+    RegularCredits: "currency_RegularCredits",
+    PremiumCredits: "currency_PremiumCredits",
+    PremiumCreditsFree: "currency_PremiumCreditsFree",
+    FusionPoints: "currency_FusionPoints",
+    CrewShipFusionPoints: "currency_CrewShipFusionPoints",
+    PrimeTokens: "currency_PrimeTokens"
+};
 document.querySelectorAll("[data-enabling-permission]").forEach(elm => {
     const perm = elm.getAttribute("data-enabling-permission");
     if (allPermissions.indexOf(perm) == -1) {
@@ -653,10 +665,13 @@ function fetchItemList() {
 
             const missingAdditionalDict = new Set();
 
+            // AdditionalDict holds /Lotus/Language/... UI labels (rank names, damage types, the clan trade-type
+            // "Platinum"), not grantable items. Flattening it in would let an operator pick something that
+            // inevitably fails server-side, so it is skipped here and consumed separately via getAddDict.
             const storeItems = new Map();
-            Object.values(data)
-                .filter(Array.isArray)
-                .flat()
+            Object.entries(data)
+                .filter(([type, value]) => type != "AdditionalDict" && Array.isArray(value))
+                .flatMap(([, value]) => value)
                 .forEach(item => {
                     if (item && item.uniqueName && item.name && !storeItems.has(item.uniqueName)) {
                         storeItems.set(item.uniqueName, item.name);
@@ -670,6 +685,19 @@ function fetchItemList() {
                 name,
                 searchName: name.toLowerCase()
             }));
+
+            // Currencies are not items, so they are absent from the exported data. Add them so operators can find
+            // them by name in any picker that funnels through addItem, notably the redeem-code reward field.
+            // The field name is searchable too, so pasting "PremiumCredits" from the docs also works.
+            for (const [uniqueName, locKey] of Object.entries(CURRENCY_LABELS)) {
+                const name = loc(locKey);
+                window.itemSearchIndex.push({
+                    uniqueName,
+                    name,
+                    searchName: `${name.toLowerCase()} ${uniqueName.toLowerCase()}`
+                });
+            }
+            window.itemSearchIndex.sort((a, b) => a.name.localeCompare(b.name));
 
             const getAddDict = locTag => {
                 const item = data.AdditionalDict.find(i => i.uniqueName === locTag);
@@ -3607,6 +3635,7 @@ function setAdminGameVersion() {
 // Used anywhere an admin needs to see what a unique name actually is.
 function itemDisplayLabel(uniqueName) {
     if (!uniqueName) return "";
+    if (CURRENCY_LABELS[uniqueName]) return loc(CURRENCY_LABELS[uniqueName]);
     const entry = (window.itemSearchIndex ?? []).find(x => x.uniqueName === uniqueName);
     return entry && entry.name ? `${entry.name} (${uniqueName})` : uniqueName;
 }
@@ -3633,6 +3662,10 @@ function setupAdminItemPicker(inputId, resolvedId) {
         const uniqueName = input.value.trim();
         if (!uniqueName) {
             resolved.textContent = "";
+            return;
+        }
+        if (CURRENCY_LABELS[uniqueName]) {
+            resolved.textContent = loc(CURRENCY_LABELS[uniqueName]);
             return;
         }
         const entry = (window.itemSearchIndex ?? []).find(x => x.uniqueName === uniqueName);
@@ -3896,6 +3929,21 @@ function resetAdminCraftingConfig() {
 
 let adminRedeemCodes = [];
 
+// Currencies are plain numbers on the inventory rather than entries in the item data, so they are addressed by
+// field name instead of by unique name. Kept in sync with CURRENCY_ITEM_NAMES in src/services/inventoryService.ts.
+const CURRENCY_ITEM_NAMES = [
+    "RegularCredits",
+    "PremiumCredits",
+    "PremiumCreditsFree",
+    "FusionPoints",
+    "CrewShipFusionPoints",
+    "PrimeTokens"
+];
+
+function isRedeemableRewardType(itemType) {
+    return itemType.startsWith("/Lotus/") || CURRENCY_ITEM_NAMES.includes(itemType);
+}
+
 // Accepts either "ItemType" (count 1) or "ItemType, Count" per line, so an operator can paste a simple list.
 function parseAdminRewardLines(id) {
     const lines = document
@@ -3907,7 +3955,7 @@ function parseAdminRewardLines(id) {
     return lines.map((line, index) => {
         const comma = line.lastIndexOf(",");
         const itemType = (comma == -1 ? line : line.slice(0, comma)).trim();
-        if (!itemType.startsWith("/Lotus/")) {
+        if (!isRedeemableRewardType(itemType)) {
             throw new Error(
                 loc("admin_redeemInvalidReward")
                     .replace("|LINE|", index + 1)
