@@ -59,7 +59,7 @@
     "eslint": "^10",
     "eslint-plugin-prettier": "^5.2.5",
     "knip": "^6.12.2",
-    "prettier": "^3.5.3",
+    "prettier": "^3.9.8",
     "tree-kill": "^1.2.2",
     "typescript": "^5.9.3"
   }
