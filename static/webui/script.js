@@ -662,23 +662,14 @@ function fetchItemList() {
                         storeItems.set(item.uniqueName, item.name);
                     }
                 });
-            const storeDatalist = document.getElementById("datalist-admin-store-items");
-            storeDatalist.innerHTML = "";
-            // The redeem-code reward field accepts the same uniqueNames, so it shares this list.
-            const redeemDatalist = document.getElementById("datalist-admin-redeem-rewards");
-            redeemDatalist.innerHTML = "";
-            [...storeItems.entries()]
-                .sort((a, b) => a[1].localeCompare(b[1]))
-                .forEach(([uniqueName, name]) => {
-                    const option = document.createElement("option");
-                    option.value = uniqueName;
-                    option.textContent = name;
-                    storeDatalist.appendChild(option);
-                    const redeemOption = document.createElement("option");
-                    redeemOption.value = uniqueName;
-                    redeemOption.textContent = name;
-                    redeemDatalist.appendChild(redeemOption);
-                });
+
+            // Index every listed item by localised name so the admin pickers can be searched in the UI language
+            // rather than by pasting a unique name. Entries are lower-cased because matching is case-insensitive.
+            window.itemSearchIndex = [...storeItems.entries()].map(([uniqueName, name]) => ({
+                uniqueName,
+                name,
+                searchName: name.toLowerCase()
+            }));
 
             const getAddDict = locTag => {
                 const item = data.AdditionalDict.find(i => i.uniqueName === locTag);
@@ -3612,6 +3603,103 @@ function setAdminGameVersion() {
     window.itemListPromise.then(() => toast(loc("admin_filterApplied"), "success"));
 }
 
+// Renders "Localised name (uniqueName)" for an item, falling back to the raw unique name when it is unknown.
+// Used anywhere an admin needs to see what a unique name actually is.
+function itemDisplayLabel(uniqueName) {
+    if (!uniqueName) return "";
+    const entry = (window.itemSearchIndex ?? []).find(x => x.uniqueName === uniqueName);
+    return entry && entry.name ? `${entry.name} (${uniqueName})` : uniqueName;
+}
+
+// Wire an admin item picker: the operator types either a localised name or a unique name, gets live
+// suggestions, and the field's true value stays the unique name so the existing submit code is unchanged.
+//
+// `inputId` is a text input whose `value` remains the canonical unique name. A read-only "resolved" hint next to
+// it shows the localised name so the operator can confirm they picked what they meant.
+function setupAdminItemPicker(inputId, resolvedId) {
+    const input = document.getElementById(inputId);
+    const resolved = resolvedId ? document.getElementById(resolvedId) : null;
+    const list = document.createElement("div");
+    list.className = "list-group position-absolute w-100 shadow-sm d-none";
+    list.style.zIndex = "1050";
+    list.style.maxHeight = "18rem";
+    list.style.overflowY = "auto";
+    // The host needs to be a positioning context for the dropdown.
+    input.parentElement.classList.add("position-relative");
+    input.parentElement.appendChild(list);
+
+    const updateResolved = () => {
+        if (!resolved) return;
+        const uniqueName = input.value.trim();
+        if (!uniqueName) {
+            resolved.textContent = "";
+            return;
+        }
+        const entry = (window.itemSearchIndex ?? []).find(x => x.uniqueName === uniqueName);
+        resolved.textContent = entry ? entry.name : loc("admin_itemUnknownName");
+    };
+
+    const hideList = () => {
+        list.classList.add("d-none");
+        list.innerHTML = "";
+    };
+
+    const choose = item => {
+        input.value = item.uniqueName;
+        updateResolved();
+        hideList();
+    };
+
+    const renderMatches = () => {
+        const query = input.value.trim().toLowerCase();
+        if (!query) {
+            hideList();
+            return;
+        }
+        // Rank exact unique-name and prefix matches first, then anything containing the query in either the
+        // localised name or the unique name, so typing Chinese and typing a path both work.
+        const matches = (window.itemSearchIndex ?? [])
+            .filter(x => x.searchName.includes(query) || x.uniqueName.toLowerCase().includes(query))
+            .sort((a, b) => {
+                const rank = x => (x.uniqueName.toLowerCase() === query ? 0 : x.searchName.startsWith(query) ? 1 : 2);
+                return rank(a) - rank(b) || a.name.localeCompare(b.name);
+            })
+            .slice(0, 50);
+        if (!matches.length) {
+            hideList();
+            return;
+        }
+        list.innerHTML = "";
+        for (const item of matches) {
+            const option = document.createElement("button");
+            option.type = "button";
+            option.className = "list-group-item list-group-item-action py-1";
+            const name = document.createElement("div");
+            name.textContent = item.name;
+            const path = document.createElement("div");
+            path.className = "small text-body-secondary text-break font-monospace";
+            path.textContent = item.uniqueName;
+            option.appendChild(name);
+            option.appendChild(path);
+            option.onmousedown = event => {
+                // mousedown fires before the input blurs, so the click is not lost.
+                event.preventDefault();
+                choose(item);
+            };
+            list.appendChild(option);
+        }
+        list.classList.remove("d-none");
+    };
+
+    input.addEventListener("input", () => {
+        renderMatches();
+        updateResolved();
+    });
+    input.addEventListener("focus", renderMatches);
+    input.addEventListener("blur", () => setTimeout(hideList, 150));
+    updateResolved();
+}
+
 function resetAdminStoreForm() {
     document.getElementById("admin-store-form").reset();
     document.getElementById("admin-store-enabled").checked = true;
@@ -3621,6 +3709,8 @@ function resetAdminStoreForm() {
 function editAdminStoreOverride(index) {
     const override = adminStoreOverrides[index];
     document.getElementById("admin-store-type").value = override.TypeName;
+    // Keep the resolved-name hint in sync with the programmatic value change.
+    document.getElementById("admin-store-type").dispatchEvent(new Event("input"));
     document.getElementById("admin-store-enabled").checked = override.Enabled;
     document.getElementById("admin-store-listed").checked = override.Listed;
     document.getElementById("admin-store-discount").value = override.DiscountPercent ?? "";
@@ -3641,8 +3731,15 @@ function renderAdminStoreOverrides() {
     adminStoreOverrides.forEach((override, index) => {
         const row = document.createElement("tr");
         const itemCell = row.insertCell();
-        itemCell.textContent = override.TypeName;
-        itemCell.className = "text-break";
+        // Show the localised name first so the table reads in the operator's language, with the unique name kept
+        // underneath because that is what the server actually matches on.
+        const itemName = document.createElement("div");
+        itemName.textContent = itemDisplayLabel(override.TypeName);
+        const itemPath = document.createElement("div");
+        itemPath.className = "small text-body-secondary text-break font-monospace";
+        itemPath.textContent = override.TypeName;
+        itemCell.appendChild(itemName);
+        itemCell.appendChild(itemPath);
         row.insertCell().textContent = [
             override.Enabled ? loc("admin_enabled") : loc("admin_disabled"),
             override.Listed ? loc("admin_listed") : loc("admin_unlisted")
@@ -3827,7 +3924,25 @@ function parseAdminRewardLines(id) {
 }
 
 function formatAdminRewards(rewards) {
+    // Editing keeps the unique name, because that is what the server stores. A name-only line would be
+    // ambiguous the moment two items share a display name.
     return (rewards ?? []).map(reward => `${reward.ItemType} x${reward.ItemCount}`).join("\n");
+}
+
+// Read-only rendering for tables: localised name first, unique name beneath for reference.
+function renderAdminRewardList(rewards) {
+    const container = document.createElement("div");
+    for (const reward of rewards ?? []) {
+        const line = document.createElement("div");
+        line.className = "mb-1";
+        line.textContent = `${itemDisplayLabel(reward.ItemType)} x${reward.ItemCount}`;
+        const path = document.createElement("div");
+        path.className = "small text-body-secondary text-break font-monospace";
+        path.textContent = reward.ItemType;
+        line.appendChild(path);
+        container.appendChild(line);
+    }
+    return container;
 }
 
 function formatAdminUsage(code) {
@@ -3835,9 +3950,33 @@ function formatAdminUsage(code) {
     return uses;
 }
 
+// Appends the picked item (with its default count of 1) as a new line in the given reward textarea, so an
+// operator can build a reward list by searching names instead of editing the textarea by hand.
+function appendAdminRewardTo(pickerId, textareaId) {
+    const picker = document.getElementById(pickerId);
+    const uniqueName = picker.value.trim();
+    if (!uniqueName) return;
+    const textarea = document.getElementById(textareaId);
+    const line = `${uniqueName}, 1`;
+    textarea.value = textarea.value.trim() ? `${textarea.value.trim()}\n${line}` : line;
+    picker.value = "";
+    picker.dispatchEvent(new Event("input"));
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+}
+
+function appendAdminRedeemReward() {
+    appendAdminRewardTo("admin-redeem-type", "admin-redeem-rewards");
+}
+
+function appendAdminRedeemBatchReward() {
+    appendAdminRewardTo("admin-redeem-batch-type", "admin-redeem-batch-rewards");
+}
+
 function resetAdminRedeemForm() {
     document.getElementById("admin-redeem-form").reset();
     document.getElementById("admin-redeem-enabled").checked = true;
+    document.getElementById("admin-redeem-type").dispatchEvent(new Event("input"));
 }
 
 function editAdminRedeemCode(code) {
@@ -3869,8 +4008,7 @@ function renderAdminRedeemCodes() {
         codeCell.textContent = code.Code;
         row.insertCell().textContent = code.Label ?? "";
         const rewardsCell = row.insertCell();
-        rewardsCell.className = "text-break small";
-        rewardsCell.textContent = formatAdminRewards(code.Rewards);
+        rewardsCell.appendChild(renderAdminRewardList(code.Rewards));
         row.insertCell().textContent = formatAdminUsage(code);
         row.insertCell().textContent = formatAdminDate(code.ExpiresAt);
         const stateCell = row.insertCell();
@@ -3986,6 +4124,11 @@ single.getRoute("/webui/redeem-codes").on("beforeload", function () {
         $(".admin-show").removeClass("d-none");
         try {
             await loadAdminRedeemCodes();
+            // Called after the list resolves so window.itemSearchIndex is populated.
+            window.itemListPromise.then(() => {
+                setupAdminItemPicker("admin-redeem-type", "admin-redeem-type-resolved");
+                setupAdminItemPicker("admin-redeem-batch-type", "admin-redeem-batch-type-resolved");
+            });
         } catch (error) {
             toast(error.responseText || loc("settings_changeFailed"), "danger");
         }
@@ -4004,6 +4147,7 @@ single.getRoute("/webui/admin-data").on("beforeload", function () {
         $(".admin-show").removeClass("d-none");
         try {
             await Promise.all([loadAdminItemDataStatus(), loadAdminStoreOverrides(), loadAdminCraftingConfig()]);
+            setupAdminItemPicker("admin-store-type", "admin-store-type-resolved");
         } catch (error) {
             toast(error.responseText || loc("settings_changeFailed"), "danger");
         }

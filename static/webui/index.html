@@ -2005,7 +2005,9 @@
                         <form id="admin-store-form" onsubmit="saveAdminStoreOverride();return false;">
                             <div class="mb-3">
                                 <label class="form-label" for="admin-store-type" data-loc="admin_storeItem"></label>
-                                <input class="form-control" id="admin-store-type" list="datalist-admin-store-items" required autocomplete="off" placeholder="/Lotus/Weapons/..." />
+                                <input class="form-control" id="admin-store-type" required autocomplete="off" placeholder="/Lotus/Weapons/..." />
+                                <div class="form-text" id="admin-store-type-resolved"></div>
+                                <div class="form-text" data-loc="admin_storeItemHint"></div>
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-3">
@@ -2082,8 +2084,17 @@
                                 <input class="form-control" id="admin-redeem-label" autocomplete="off" maxlength="200" />
                             </div>
                             <div class="mb-3">
+                                <label class="form-label" for="admin-redeem-type" data-loc="admin_rewardPicker"></label>
+                                <div class="input-group">
+                                    <input class="form-control" id="admin-redeem-type" autocomplete="off" placeholder="Forma / /Lotus/Types/Items/..." />
+                                    <button class="btn btn-outline-secondary" type="button" onclick="appendAdminRedeemReward();" data-loc="admin_rewardAdd"></button>
+                                </div>
+                                <div class="form-text" id="admin-redeem-type-resolved"></div>
+                                <div class="form-text" data-loc="admin_rewardPickerHint"></div>
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label" for="admin-redeem-rewards" data-loc="admin_redeemRewards"></label>
-                                <textarea class="form-control font-monospace" id="admin-redeem-rewards" rows="4" required list="datalist-admin-redeem-rewards" placeholder="/Lotus/Types/Items/MiscItems/Forma, 3&#10;/Lotus/Types/Recipes/WarframeRecipes/ExcaliburPrimeBlueprint"></textarea>
+                                <textarea class="form-control font-monospace" id="admin-redeem-rewards" rows="4" required placeholder="/Lotus/Types/Items/MiscItems/Forma, 3&#10;/Lotus/Types/Recipes/WarframeRecipes/ExcaliburPrimeBlueprint"></textarea>
                                 <div class="form-text" data-loc="admin_redeemRewardsHint"></div>
                             </div>
                             <div class="row g-3 mb-3">
@@ -2132,6 +2143,14 @@
                                 <div class="col-md-3 d-flex align-items-end">
                                     <button class="btn btn-primary w-100" type="submit" data-loc="admin_generateCodes"></button>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-redeem-batch-type" data-loc="admin_rewardPicker"></label>
+                                <div class="input-group">
+                                    <input class="form-control" id="admin-redeem-batch-type" autocomplete="off" placeholder="Forma / /Lotus/Types/Items/..." />
+                                    <button class="btn btn-outline-secondary" type="button" onclick="appendAdminRedeemBatchReward();" data-loc="admin_rewardAdd"></button>
+                                </div>
+                                <div class="form-text" id="admin-redeem-batch-type-resolved"></div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label" for="admin-redeem-batch-rewards" data-loc="admin_redeemRewards"></label>
@@ -2249,8 +2268,6 @@
         <option>Alchemy</option>
     </datalist>
     <datalist id="datalist-usernames"></datalist>
-    <datalist id="datalist-admin-store-items"></datalist>
-    <datalist id="datalist-admin-redeem-rewards"></datalist>
     <script src="/webui/libs/jquery-3.6.0.min.js"></script>
     <script src="/webui/libs/whirlpool-js.min.js"></script>
     <script src="/webui/libs/single.js"></script>

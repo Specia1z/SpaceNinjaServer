@@ -507,6 +507,11 @@ dict = {
     admin_codeCopyFailed: `无法复制兑换码。`,
     admin_redeemCodeSaved: `兑换码已保存。`,
     admin_deleteRedeemCodeConfirm: `确定要删除兑换码 |CODE| 吗？`,
+    admin_rewardPicker: `按名称添加奖励`,
+    admin_rewardAdd: `添加`,
+    admin_rewardPickerHint: `可输入中文名称或 unique name 搜索，然后加入下方列表。`,
+    admin_itemUnknownName: `该 unique name 没有对应的名称。`,
+    admin_storeItemHint: `可输入中文名称或 unique name 搜索。保存的是 unique name。`,
 
     AVATAR_ABILITY_DURATION: `技能持续时间`,
     AVATAR_ABILITY_EFFICIENCY: `技能效率`,

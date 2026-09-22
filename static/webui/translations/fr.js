@@ -507,6 +507,11 @@ dict = {
     admin_codeCopyFailed: `[UNTRANSLATED] Could not copy the code.`,
     admin_redeemCodeSaved: `[UNTRANSLATED] Redemption code saved.`,
     admin_deleteRedeemCodeConfirm: `[UNTRANSLATED] Delete the redemption code |CODE|?`,
+    admin_rewardPicker: `[UNTRANSLATED] Add a reward by name`,
+    admin_rewardAdd: `[UNTRANSLATED] Add`,
+    admin_rewardPickerHint: `[UNTRANSLATED] Search by localised name or unique name, then add it to the list below.`,
+    admin_itemUnknownName: `[UNTRANSLATED] Name unknown for this unique name.`,
+    admin_storeItemHint: `[UNTRANSLATED] Search by localised name or unique name. The unique name is what gets saved.`,
 
     AVATAR_ABILITY_DURATION: `Durée de Pouvoir`,
     AVATAR_ABILITY_EFFICIENCY: `Efficacité de Pouvoir`,
