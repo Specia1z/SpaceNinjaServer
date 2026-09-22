@@ -3,12 +3,12 @@ import { model, Schema } from "mongoose";
 // Options deliberately avoid mirroring the raw recipe fields. A private server operator wants to express intent
 // ("make building quick", "make building cheap"), not to know that buildTime is measured in seconds and that
 // skipBuildTimePrice is a Platinum cost that scales with elapsed progress.
-export type TCraftingSpeedMode = "default" | "instant" | "custom";
+type TCraftingSpeedMode = "default" | "instant" | "custom";
 
 // The Platinum cost of rushing a build is orthogonal to how long the build takes, so it gets its own mode rather
 // than being derived from SpeedMode. "stock" keeps the per-recipe value from the game data (typically 25/50),
 // "free" makes rushing cost nothing, "custom" charges RushCostPlatinum instead.
-export type TCraftingRushCostMode = "stock" | "free" | "custom";
+type TCraftingRushCostMode = "stock" | "free" | "custom";
 
 export interface ICraftingConfig {
     // Identifies this document. A single shared document is used for the server-wide policy.

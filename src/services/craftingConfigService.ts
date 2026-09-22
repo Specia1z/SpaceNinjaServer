@@ -25,10 +25,9 @@ export const initializeCraftingConfigs = async (): Promise<void> => {
     }
 };
 
-export const getServerWideCraftingConfig = (): ICraftingConfig | undefined => configs.get(SERVER_WIDE_CRAFTING_KEY);
+const getServerWideCraftingConfig = (): ICraftingConfig | undefined => configs.get(SERVER_WIDE_CRAFTING_KEY);
 
-export const getCraftingConfigForRecipe = (recipeTypeName: string): ICraftingConfig | undefined =>
-    configs.get(recipeTypeName);
+const getCraftingConfigForRecipe = (recipeTypeName: string): ICraftingConfig | undefined => configs.get(recipeTypeName);
 
 export const listCraftingConfigs = async (): Promise<ICraftingConfig[]> => {
     return CraftingConfig.find().sort({ Key: 1 }).lean();

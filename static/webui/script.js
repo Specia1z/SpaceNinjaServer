@@ -3746,7 +3746,11 @@ async function loadAdminCraftingConfig() {
     } else {
         parts.push(loc("admin_effectiveRush").replace("|PLATINUM|", effective.skipBuildTimePrice));
     }
-    parts.push(effective.consumeOnUse === false ? loc("admin_effectiveKeepBlueprints") : loc("admin_effectiveConsumeBlueprints"));
+    parts.push(
+        effective.consumeOnUse === false
+            ? loc("admin_effectiveKeepBlueprints")
+            : loc("admin_effectiveConsumeBlueprints")
+    );
     el.textContent = loc("admin_effectiveSummary").replace("|DETAILS|", parts.join(loc("admin_effectiveSeparator")));
     el.classList.remove("d-none");
 }
@@ -3759,7 +3763,8 @@ async function saveAdminCraftingConfig() {
         BuildTimeSeconds: speed == "custom" ? Number(document.getElementById("admin-crafting-seconds").value) : 0,
         CostMultiplier: Number(document.getElementById("admin-crafting-multiplier").value),
         RushCostMode: rushCost,
-        RushCostPlatinum: rushCost == "custom" ? Number(document.getElementById("admin-crafting-rush-platinum").value) : 0,
+        RushCostPlatinum:
+            rushCost == "custom" ? Number(document.getElementById("admin-crafting-rush-platinum").value) : 0,
         KeepBlueprints: document.getElementById("admin-crafting-keep-blueprints").checked
     };
     try {
@@ -3796,11 +3801,7 @@ single.getRoute("/webui/admin-data").on("beforeload", function () {
         $(".admin-hide").addClass("d-none");
         $(".admin-show").removeClass("d-none");
         try {
-            await Promise.all([
-                loadAdminItemDataStatus(),
-                loadAdminStoreOverrides(),
-                loadAdminCraftingConfig()
-            ]);
+            await Promise.all([loadAdminItemDataStatus(), loadAdminStoreOverrides(), loadAdminCraftingConfig()]);
         } catch (error) {
             toast(error.responseText || loc("settings_changeFailed"), "danger");
         }

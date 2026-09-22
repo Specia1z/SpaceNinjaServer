@@ -44,11 +44,6 @@ export const getActiveStoreOverride = (typeName: string): IStoreOverride | undef
     return override && isActive(override) ? override : undefined;
 };
 
-export const getStoreOverridePrice = (typeName: string, usePremium: boolean): number | undefined => {
-    const override = getActiveStoreOverride(typeName);
-    return usePremium ? override?.PremiumPrice : override?.RegularPrice;
-};
-
 export const isStoreItemListed = (typeName: string): boolean => {
     return getActiveStoreOverride(typeName)?.Listed !== false;
 };
