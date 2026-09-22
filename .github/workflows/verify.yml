@@ -31,3 +31,18 @@ jobs:
                     git --no-pager diff
                     exit 1
                   fi
+            - name: Require a changelog entry for source changes
+              if: github.event_name == 'pull_request'
+              run: |
+                  base="origin/${{ github.base_ref }}"
+                  git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+                  if git diff --quiet "$base"...HEAD -- src/ static/webui/ config-vanilla.json; then
+                    echo "No changes to source, WebUI or configuration; no changelog entry needed."
+                    exit 0
+                  fi
+                  if git diff --quiet "$base"...HEAD -- CHANGELOG.md; then
+                    echo "This change touches src/, static/webui/ or config-vanilla.json but does not update CHANGELOG.md."
+                    echo "Add an entry under the Unreleased heading. See CONTRIBUTING.md."
+                    exit 1
+                  fi
+                  echo "Changelog updated."
