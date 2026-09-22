@@ -126,7 +126,14 @@ Compose 包含四个服务：
 - `warframe-irc-server`：保留 `openwf/warframe-irc-server` 上游镜像。
 - `warframe-hub-server`：保留 `openwf/warframe-hub-server` 上游镜像。
 
-拉取镜像并启动完整服务：
+只拉了镜像的服务器上，`docker compose up` 会因为找不到编排文件而报 `no configuration file provided`：compose 文件在仓库里，不在镜像里。用部署脚本一步拉取编排文件并建好数据目录：
+
+```bash
+mkdir -p /opt/spaceninjaserver && cd /opt/spaceninjaserver
+curl -fsSL https://raw.githubusercontent.com/Specia1z/SpaceNinjaServer/main/deploy.sh | bash
+```
+
+若已经 clone 了仓库，脚本会直接使用仓库内的 compose 文件，等价于：
 
 ```bash
 docker compose pull

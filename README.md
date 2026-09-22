@@ -47,6 +47,15 @@ The server can also be run with Docker Compose. The included compose file starts
 
 Images for this fork are published to `ghcr.io/specia1z/spaceninjaserver` for `linux/amd64` and `linux/arm64`. The `latest` tag tracks `main`, while every build also receives an immutable commit-SHA tag.
 
+On a server that has only pulled the image, there is nothing for `docker compose up` to read yet: the compose file ships in this repository, not inside the image. Use the deploy script to fetch it and create the data directories in one step.
+
+```bash
+mkdir -p /opt/spaceninjaserver && cd /opt/spaceninjaserver
+curl -fsSL https://raw.githubusercontent.com/Specia1z/SpaceNinjaServer/main/deploy.sh | bash
+```
+
+When the repository is already checked out, the same script uses the local compose file and is equivalent to:
+
 ```bash
 docker compose pull
 docker compose up -d
