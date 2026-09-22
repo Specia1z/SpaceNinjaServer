@@ -60,6 +60,12 @@ docker compose up -d --build
 
 Only the SpaceNinjaServer image is maintained in this repository. Compose intentionally retains `openwf/warframe-irc-server` and `openwf/warframe-hub-server` for chat and Hub networking, plus the official MongoDB image. The first launch creates `docker-data/conf/config.json` automatically.
 
+## Releases
+
+GitHub Releases provide self-contained archives for Windows x64, Linux x64/ARM64, and macOS x64/ARM64. Each archive includes the compiled server, production dependencies, and the matching Node.js runtime. Extract the archive and run `start.cmd` on Windows or `./start.sh` on Linux and macOS. The launcher creates `config.json` from the vanilla template on first use.
+
+Download `SHA256SUMS.txt` from the same release to verify an archive before running it. MongoDB remains configurable: the vanilla configuration starts a local embedded instance, while production deployments can use an external MongoDB connection string.
+
 ## Configuration
 
 Copy `config-vanilla.json` to `config.json` before the first launch. `config.json` is intentionally ignored by Git because it commonly contains local addresses, administrator names, certificates, and deployment-specific settings.

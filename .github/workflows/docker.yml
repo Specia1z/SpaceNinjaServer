@@ -3,6 +3,8 @@ on:
     push:
         branches:
             - main
+        tags:
+            - "v*"
     workflow_dispatch:
 
 permissions:
@@ -33,5 +35,6 @@ jobs:
                   tags: |
                       ghcr.io/specia1z/spaceninjaserver:latest
                       ghcr.io/specia1z/spaceninjaserver:${{ github.sha }}
+                      ghcr.io/specia1z/spaceninjaserver:${{ github.ref_name }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max

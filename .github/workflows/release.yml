@@ -1,0 +1,107 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - "v*"
+
+permissions:
+    contents: write
+
+concurrency:
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        env:
+            NODE_VERSION: 24.8.0
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v5
+            - name: Setup Node.js
+              uses: actions/setup-node@v5
+              with:
+                  node-version: "24.8.0"
+                  cache: npm
+            - name: Install dependencies
+              run: npm ci --no-audit
+            - name: Verify and build
+              run: |
+                  cp config-vanilla.json config.json
+                  npm run verify
+                  npm run build
+                  node --enable-source-maps build/src/index.js --test
+                  rm config.json
+            - name: Keep production dependencies
+              run: |
+                  npm prune --omit=dev --omit=optional --no-audit
+                  rm -rf node_modules/.bin
+            - name: Package platform archives
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  version="${GITHUB_REF_NAME#v}"
+                  stage="${RUNNER_TEMP}/release-stage"
+                  downloads="${RUNNER_TEMP}/node-downloads"
+                  mkdir -p dist "$stage" "$downloads"
+
+                  package_target() {
+                      local platform="$1"
+                      local arch="$2"
+                      local node_platform="$3"
+                      local node_archive="$4"
+                      local package="SpaceNinjaServer-v${version}-${platform}-${arch}"
+                      local package_dir="${stage}/${package}"
+                      local node_dir="node-v${NODE_VERSION}-${node_platform}-${arch}"
+
+                      mkdir -p "$package_dir"
+                      cp -R build static node_modules "$package_dir/"
+                      cp config-vanilla.json package.json package-lock.json LICENSE README.md README.zh-CN.md CHANGELOG.md "$package_dir/"
+                      date -u '+%d %B %Y' > "${package_dir}/BUILD_DATE"
+
+                      curl --fail --location --silent --show-error \
+                          "https://nodejs.org/dist/v${NODE_VERSION}/${node_dir}.${node_archive}" \
+                          --output "${downloads}/${node_dir}.${node_archive}"
+
+                      if [[ "$platform" == "windows" ]]; then
+                          unzip -q "${downloads}/${node_dir}.${node_archive}" -d "$downloads"
+                          cp "${downloads}/${node_dir}/node.exe" "$package_dir/node.exe"
+                          cp scripts/release/start.cmd "$package_dir/start.cmd"
+                          (cd "$stage" && zip -qr "${GITHUB_WORKSPACE}/dist/${package}.zip" "$package")
+                      else
+                          tar -xf "${downloads}/${node_dir}.${node_archive}" -C "$downloads"
+                          cp "${downloads}/${node_dir}/bin/node" "$package_dir/node"
+                          cp scripts/release/start.sh "$package_dir/start.sh"
+                          chmod +x "$package_dir/node" "$package_dir/start.sh"
+                          tar -C "$stage" -czf "dist/${package}.tar.gz" "$package"
+                      fi
+
+                      rm -rf "$package_dir" "${downloads}/${node_dir}"
+                  }
+
+                  package_target windows x64 win zip
+                  package_target linux x64 linux tar.xz
+                  package_target linux arm64 linux tar.xz
+                  package_target macos x64 darwin tar.gz
+                  package_target macos arm64 darwin tar.gz
+
+                  (cd dist && sha256sum *.zip *.tar.gz > SHA256SUMS.txt)
+            - name: Upload packaged builds
+              uses: actions/upload-artifact@v4
+              with:
+                  name: SpaceNinjaServer-${{ github.ref_name }}
+                  path: dist/*
+                  if-no-files-found: error
+                  retention-days: 14
+            - name: Publish GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  name: SpaceNinjaServer ${{ github.ref_name }}
+                  body_path: .github/release-notes/${{ github.ref_name }}.md
+                  files: dist/*
+                  fail_on_unmatched_files: true
+                  make_latest: true

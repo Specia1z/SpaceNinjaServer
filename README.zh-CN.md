@@ -168,6 +168,17 @@ docker compose down
 
 不要使用 `docker compose down -v`，除非你明确希望删除相关卷中的数据。
 
+## 多平台 Release
+
+GitHub Releases 提供 Windows x64、Linux x64/ARM64、macOS Intel 和 macOS Apple Silicon 五种运行包。每个包都包含已编译服务、生产依赖和对应的 Node.js 运行时，不需要另行安装 Node.js。
+
+下载并解压对应平台文件后：
+
+- Windows：运行 `start.cmd`。
+- Linux/macOS：运行 `./start.sh`。
+
+启动脚本会在首次运行时从 `config-vanilla.json` 创建 `config.json`。同一 Release 中的 `SHA256SUMS.txt` 可用于校验附件完整性。默认模板可启动本地内嵌 MongoDB，生产环境也可以改为外部 MongoDB 连接字符串。
+
 ## 实时世界状态
 
 在 `config.json` 中启用：
