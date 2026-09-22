@@ -235,16 +235,43 @@ const getRandomRewardByChance = (pool: readonly IReward[], rng?: SRng): IRngResu
     return getRandomReward(pool as readonly IRngResult[]);
 };
 
-const addMissionPlatinumReward = (inventory: TInventoryDatabaseDocument): void => {
+// Rolls the configured platinum reward chance. An unset or 100 chance means "always award", so existing
+// configurations keep behaving exactly as before.
+const rollMissionPlatinumRewardChance = (): boolean => {
+    const chance = config.missionPlatinumRewardChance ?? 100;
+    if (chance >= 100) return true;
+    if (chance <= 0) return false;
+    return Math.random() * 100 < chance;
+};
+
+// Returns the platinum credited directly to the balance, which the caller has to report as an inventory change.
+// Platinum routed to the inbox is delivered by dispatchPendingPremiumCredits instead and needs no delta here.
+const addMissionPlatinumReward = (inventory: TInventoryDatabaseDocument): number => {
     const min = Math.max(0, Math.trunc(config.missionPlatinumRewardMin ?? 0));
     const max = Math.max(min, Math.trunc(config.missionPlatinumRewardMax ?? min));
-    if (max == 0) return;
+    if (max == 0) return 0;
+
+    if (!rollMissionPlatinumRewardChance()) {
+        logger.debug(
+            `mission completion platinum reward skipped by chance (${config.missionPlatinumRewardChance ?? 100}%)`
+        );
+        return 0;
+    }
 
     const amount = getRandomInt(min, max);
-    if (amount > 0) {
-        inventory.pendingPremiumCredits = (inventory.pendingPremiumCredits ?? 0) + amount;
-        logger.debug(`mission completion platinum reward: ${amount}`);
+    if (amount <= 0) return 0;
+
+    // Defaults to crediting the platinum silently. The inbox path stays available behind an opt-in flag because
+    // the mail is a re-purposed "found items" message that most server operators do not want for every mission.
+    if (!config.missionPlatinumRewardSendMail) {
+        inventory.PremiumCredits += amount;
+        logger.debug(`mission completion platinum reward: ${amount} (credited directly)`);
+        return amount;
     }
+
+    inventory.pendingPremiumCredits = (inventory.pendingPremiumCredits ?? 0) + amount;
+    logger.debug(`mission completion platinum reward: ${amount} (queued for inbox)`);
+    return 0;
 };
 
 //type TMissionInventoryUpdateKeys = keyof IMissionInventoryUpdateRequest;
@@ -1276,8 +1303,15 @@ export const addMissionRewards = async (
         return { MissionRewards: [], AffiliationMods };
     }
 
+    let missionCompletionCredits = 0;
+
+    // Declared here rather than after the drops are rolled, because the platinum delta has to be folded into the
+    // same InventoryChanges object the rest of this function builds up.
+    const inventoryChanges: IInventoryChanges = {};
+    let platinumReward = 0;
+
     if (missionStatus === undefined || missionStatus == "GS_SUCCESS") {
-        addMissionPlatinumReward(inventory);
+        platinumReward = addMissionPlatinumReward(inventory);
     }
 
     //TODO: check double reward merging
@@ -1291,12 +1325,14 @@ export const addMissionRewards = async (
         firstCompletion
     );
     logger.debug("random mission drops:", MissionRewards);
-    const inventoryChanges: IInventoryChanges = {};
+
+    if (platinumReward > 0) {
+        inventoryChanges.PremiumCredits = (inventoryChanges.PremiumCredits ?? 0) + platinumReward;
+    }
+
     const isSteelPath = missions?.Tier || alerts?.Tier;
     let SyndicateXPItemReward;
     let ConquestCompletedMissionsCount;
-
-    let missionCompletionCredits = 0;
 
     if (rewardInfo.alertId) {
         let alert = await getAlertByOid(rewardInfo.alertId, buildVersionToInt(buildLabel));

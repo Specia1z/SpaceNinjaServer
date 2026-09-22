@@ -36,6 +36,8 @@
   "skipClanKeyCrafting": false,
   "missionPlatinumRewardMin": 0,
   "missionPlatinumRewardMax": 0,
+  "missionPlatinumRewardChance": 100,
+  "missionPlatinumRewardSendMail": false,
   "autoCompleteQuestsAndUnlockMissions": false,
   "newAccountStarterPack": false,
   "noMasteryRankUpCooldown": false,

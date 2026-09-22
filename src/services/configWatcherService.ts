@@ -187,6 +187,15 @@ export const validateConfig = (): void => {
         config.missionPlatinumRewardMax = config.missionPlatinumRewardMin;
         modified = true;
     }
+    if (
+        config.missionPlatinumRewardChance !== undefined &&
+        (!Number.isFinite(config.missionPlatinumRewardChance) ||
+            config.missionPlatinumRewardChance < 0 ||
+            config.missionPlatinumRewardChance > 100)
+    ) {
+        config.missionPlatinumRewardChance = 100;
+        modified = true;
+    }
     if (config.webui?.defaultLanguage) {
         if (
             ["en", "de", "es", "fr", "it", "ja", "ko", "pl", "pt", "ru", "tr", "uk", "zh", "tc", "th"].indexOf(

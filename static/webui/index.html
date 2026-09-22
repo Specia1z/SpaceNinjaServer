@@ -1322,6 +1322,19 @@
                                             <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
                                         </div>
                                     </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigFloat('missionPlatinumRewardChance'); return false;">
+                                        <label class="form-label" for="missionPlatinumRewardChance" data-loc="cheats_missionPlatinumRewardChance"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionPlatinumRewardChance" type="number" min="0" max="100" step="0.1" data-default="100" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionPlatinumRewardChanceHint"></div>
+                                    </form>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="missionPlatinumRewardSendMail" />
+                                        <label class="form-check-label" for="missionPlatinumRewardSendMail" data-loc="cheats_missionPlatinumRewardSendMail"></label>
+                                        <div class="form-text" data-loc="cheats_missionPlatinumRewardSendMailHint"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

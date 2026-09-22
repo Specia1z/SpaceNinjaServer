@@ -287,6 +287,10 @@ dict = {
     cheats_newAccountStarterPack: `[UNTRANSLATED] Give New Accounts the Starter Pack`,
     cheats_missionPlatinumRewardMin: `[UNTRANSLATED] Mission Platinum Reward Minimum`,
     cheats_missionPlatinumRewardMax: `[UNTRANSLATED] Mission Platinum Reward Maximum`,
+    cheats_missionPlatinumRewardChance: `[UNTRANSLATED] Mission Platinum Reward Chance (%)`,
+    cheats_missionPlatinumRewardChanceHint: `[UNTRANSLATED] Chance that a completed mission awards platinum at all. 100 means every mission.`,
+    cheats_missionPlatinumRewardSendMail: `[UNTRANSLATED] Deliver Mission Platinum by Inbox Message`,
+    cheats_missionPlatinumRewardSendMailHint: `[UNTRANSLATED] When disabled (default), platinum is credited straight to the balance with no inbox message.`,
 
     worldState: `Estado del mundo`,
     worldState_liveSync: `[UNTRANSLATED] Synchronize Live World State from browse.wf`,

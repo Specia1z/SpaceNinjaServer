@@ -69,6 +69,10 @@ export interface IConfig {
     skipClanKeyCrafting?: boolean;
     missionPlatinumRewardMin?: number;
     missionPlatinumRewardMax?: number;
+    /** Chance, in percent, that a completed mission awards the platinum reward at all. Undefined or 100 means always. */
+    missionPlatinumRewardChance?: number;
+    /** When true, the platinum reward is delivered as an Ordis inbox message instead of being credited silently. */
+    missionPlatinumRewardSendMail?: boolean;
     autoCompleteQuestsAndUnlockMissions?: boolean;
     newAccountStarterPack?: boolean;
     noMasteryRankUpCooldown?: boolean;

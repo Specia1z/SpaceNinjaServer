@@ -287,6 +287,10 @@ dict = {
     cheats_newAccountStarterPack: `新账号赠送新人起步套装`,
     cheats_missionPlatinumRewardMin: `任务结算白金奖励下限`,
     cheats_missionPlatinumRewardMax: `任务结算白金奖励上限`,
+    cheats_missionPlatinumRewardChance: `任务结算白金获取概率（%）`,
+    cheats_missionPlatinumRewardChanceHint: `完成一局任务后发放白金的概率。100 表示每局必发。`,
+    cheats_missionPlatinumRewardSendMail: `通过收件箱邮件发放任务白金`,
+    cheats_missionPlatinumRewardSendMailHint: `关闭时（默认），白金直接计入余额，不发送任何收件箱邮件。`,
 
     worldState: `世界状态配置`,
     worldState_liveSync: `从 browse.wf 实时同步世界状态`,
