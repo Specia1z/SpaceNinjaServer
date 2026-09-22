@@ -1,5 +1,7 @@
 # SpaceNinjaServer
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 An independent second-development fork of [OpenWF SpaceNinjaServer](https://onlyg.it/OpenWF/SpaceNinjaServer), maintained by [Specia1z](https://github.com/Specia1z). It provides a self-hosted implementation of the web services used by Warframe clients and is intended for private servers, testing, preservation, and development.
 
 This fork keeps the upstream project and its attribution while maintaining its own development history and release direction. It is not affiliated with or endorsed by Digital Extremes.
@@ -88,3 +90,11 @@ Live source availability is not required for persisted local invasion progress t
 ## Attribution and License
 
 This project is derived from the OpenWF SpaceNinjaServer project. See [LICENSE](LICENSE) for the applicable AGPLv3 license and Commons Clause condition. Source and project history from upstream remain acknowledged here for transparency.
+
+## Disclaimer
+
+This project is unofficial and is not affiliated with, authorized, sponsored, or endorsed by Digital Extremes Ltd. or Warframe. Names, trademarks, artwork, and game content remain the property of their respective owners.
+
+The software is provided as-is, without warranties of availability, compatibility, security, data integrity, fitness for a particular purpose, or non-infringement. Users are solely responsible for obtaining any required authorization and for complying with applicable laws, software licenses, network-service terms, and the restrictions in [LICENSE](LICENSE). Do not use this project for unauthorized access, disruption of official services, circumvention of technical protections, infringement, or other unlawful activity.
+
+Operators assume the risks associated with accounts, databases, network exposure, certificates, client files, third-party data sources, and backups. Do not commit credentials, private keys, production databases, or other sensitive information. This notice does not constitute legal advice and does not exclude liability that cannot lawfully be excluded. Obtain qualified legal advice before offering a public service, providing access to third parties, or processing real user data.
