@@ -346,6 +346,26 @@ export interface ILiveWorldActivityState {
     expiresAt: Date;
 }
 
+export interface ILiveGoalState {
+    officialId: string;
+    activationMs: number;
+    snapshot: IGoal | IGoalV9;
+    count: number;
+    countAlt: number;
+    healthPct: number;
+    success: number;
+    hasCount: boolean;
+    hasCountAlt: boolean;
+    hasHealthPct: boolean;
+    hasSuccess: boolean;
+    target: number;
+    progressMode: "none" | "additive" | "depletion";
+    status: "active" | "completed";
+    lastSeenAt: Date;
+    completedAt?: Date;
+    expiresAt: Date;
+}
+
 interface IInvasionMissionInfo {
     seed: number;
     faction: string;

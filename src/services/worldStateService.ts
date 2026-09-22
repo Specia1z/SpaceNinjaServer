@@ -38,7 +38,7 @@ import type {
     IEndlessXpChoice,
     IGoalV9
 } from "../types/worldStateTypes.ts";
-import { toMongoDate2, toOid, toOid2, fromMongoDate } from "../helpers/inventoryHelpers.ts";
+import { toMongoDate2, toOid, toOid2, fromMongoDate, fromOid } from "../helpers/inventoryHelpers.ts";
 import { logger } from "../utils/logger.ts";
 import { DailyDeal, Fissure } from "../models/worldStateModel.ts";
 import { toStoreItem, fromStoreItem, getRegions } from "./itemDataService.ts";
@@ -60,7 +60,12 @@ import {
     tennobaumFlashSales,
     type IFlashSaleData
 } from "../constants/flashSales.ts";
-import { getLiveCalendarSeason, getLiveInvasionByOid, refreshLiveWorldState } from "./liveWorldStateService.ts";
+import {
+    getLiveCalendarSeason,
+    getLiveGoalByOid,
+    getLiveInvasionByOid,
+    refreshLiveWorldState
+} from "./liveWorldStateService.ts";
 
 const sortieBosses = [
     "SORTIE_BOSS_HYENA",
@@ -1881,6 +1886,9 @@ export const getInvasionByOid = (oid: string): IInvasion | undefined => {
     }
     return getLiveInvasionByOid(oid);
 };
+
+export const getGoalByOid = (buildLabel: string, oid: string): IGoal | IGoalV9 | undefined =>
+    getLiveGoalByOid(oid, buildLabel) ?? getWorldState(buildLabel).Goals.find(goal => fromOid(goal._id) == oid);
 
 export const getWorldStateTime = (): {
     timeSecs: number;

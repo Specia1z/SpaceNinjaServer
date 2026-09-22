@@ -10,7 +10,7 @@ This fork keeps the upstream project and its attribution while maintaining its o
 
 - Compatibility work for the 42.0.11 client family.
 - Live world-state synchronization from public Warframe world-state sources.
-- Local MongoDB-backed invasion state, including signed faction progress, restart recovery, and delayed cleanup of completed invasions.
+- Local MongoDB-backed global Goal and invasion progress, including restart recovery and delayed cleanup of completed activities.
 - Synchronized alerts, goals, fissures, sorties, Void Storms, Conquests, Baro, Darvo, Varzia, Teshin, syndicate missions, Nightwave, calendar seasons, and Duviri/Descents data.
 - Prime Vault manifest and purchase compatibility for supported legacy clients.
 - Optional account initialization, mission completion, starter-pack, mastery cooldown, and administrator controls.
@@ -41,7 +41,24 @@ npm run build
 npm start
 ```
 
-The server can also be run with Docker Compose. The included compose file starts SpaceNinjaServer together with MongoDB and stores configuration, logs, static data, and database files under `docker-data/`.
+The server can also be run with Docker Compose. The included compose file starts SpaceNinjaServer together with MongoDB and the upstream OpenWF IRC and Hub images. Configuration, logs, static data, and database files are stored under `docker-data/`.
+
+## Docker
+
+Images for this fork are published to `ghcr.io/specia1z/spaceninjaserver` for `linux/amd64` and `linux/arm64`. The `latest` tag tracks `main`, while every build also receives an immutable commit-SHA tag.
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+To build the checked-out source instead of using the published Web image:
+
+```bash
+docker compose up -d --build
+```
+
+Only the SpaceNinjaServer image is maintained in this repository. Compose intentionally retains `openwf/warframe-irc-server` and `openwf/warframe-hub-server` for chat and Hub networking, plus the official MongoDB image. The first launch creates `docker-data/conf/config.json` automatically.
 
 ## Configuration
 
@@ -79,13 +96,13 @@ npm exec prettier -- --check .
 git diff --check
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for WebUI translation and contribution guidelines.
+See [CHANGELOG.md](CHANGELOG.md) for fork changes and [CONTRIBUTING.md](CONTRIBUTING.md) for WebUI translation and contribution guidelines.
 
 ## Data Sources
 
 When live synchronization is enabled, the server supplements its local compatibility data with public world-state data. The server filters unsupported nodes, rewards, rotations, and client-specific fields before returning the result to a client.
 
-Live source availability is not required for persisted local invasion progress to survive a restart. Official invasion definitions are treated as snapshots; global progress and completion are maintained by this fork in MongoDB.
+Live source availability is not required for persisted local activity progress to survive a restart. Official Goal and invasion definitions are treated as snapshots; their global progress and completion are maintained by this fork in MongoDB. The `Events` array contains announcements rather than gameplay progress and therefore remains definition-only.
 
 ## Attribution and License
 

@@ -103,7 +103,7 @@ import {
 import type { IMessageCreationTemplate } from "./inboxService.ts";
 import { createMessage } from "./inboxService.ts";
 import { getMaxStanding, getMinStanding } from "../helpers/syndicateStandingHelper.ts";
-import { getCalendarSeason, getNightwaveSyndicateTag, getWorldState, getWorldStateTime } from "./worldStateService.ts";
+import { getCalendarSeason, getGoalByOid, getNightwaveSyndicateTag, getWorldStateTime } from "./worldStateService.ts";
 import type { ICalendarSeason } from "../types/worldStateTypes.ts";
 import type { INemesisProfile } from "../helpers/nemesisHelpers.ts";
 import { generateNemesisProfile, getFallbackHelmet } from "../helpers/nemesisHelpers.ts";
@@ -129,6 +129,7 @@ import { BL_LATEST } from "../constants/gameVersions.ts";
 import { Guild } from "../models/guildModel.ts";
 import { handleGuildGoalProgress } from "./guildService.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
+import { advanceLiveGoalProgress } from "./liveWorldStateService.ts";
 
 type OperatorAntiqueMeta = {
     focusAbility: string;
@@ -3755,9 +3756,7 @@ export const processGoalProgressUpdates = async (
     isStealPath: boolean = false
 ): Promise<void> => {
     for (const uploadProgress of goalProgressUpdates) {
-        const goal = getWorldState(buildLabel, false, false).Goals.find(
-            x => fromOid(x._id) == fromOid(uploadProgress._id)
-        );
+        const goal = getGoalByOid(buildLabel, fromOid(uploadProgress._id));
         if (goal) {
             const goalId = fromOid(goal._id);
 
@@ -3768,6 +3767,7 @@ export const processGoalProgressUpdates = async (
                     uploadProgress.Count += extraCount;
                 }
             }
+            await advanceLiveGoalProgress(goalId, uploadProgress.Count);
             if (goal.Personal) {
                 inventory.PersonalGoalProgress ??= [];
                 const goalProgress = inventory.PersonalGoalProgress.find(x => x.goalId.equals(goalId));

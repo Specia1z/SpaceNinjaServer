@@ -22,7 +22,7 @@ SpaceNinjaServer 是基于 [OpenWF SpaceNinjaServer](https://onlyg.it/OpenWF/Spa
 
 - 重点兼容 Warframe 42.0.11 客户端系列。
 - 从公开数据源同步实时世界状态，并针对目标客户端过滤不兼容内容。
-- 在 MongoDB 中独立维护全局入侵进度、完成状态、重启恢复和延迟清理。
+- 在 MongoDB 中独立维护 Goal 与入侵的全局进度、完成状态、重启恢复和延迟清理。
 - 同步警报、活动、裂缝、突击、虚空风暴、集团任务、午夜电波、日历、深渊、Baro、Darvo、Varzia 和 Teshin 等数据。
 - 提供账号初始化、任务解锁、新账号礼包、任务白金奖励、段位冷却和管理员配置选项。
 - 提供基于浏览器的 WebUI，用于账号管理和服务器配置。
@@ -114,25 +114,32 @@ Linux 上普通用户通常不能直接监听 `80` 和 `443` 端口。推荐在 
 
 ## Docker Compose 部署
 
-仓库中的 `docker-compose.yml` 默认引用上游镜像：
+当前 fork 的多架构 Web 镜像发布到 GitHub Container Registry：
 
-```yaml
-image: openwf/spaceninjaserver:latest
+- `ghcr.io/specia1z/spaceninjaserver:latest`：跟随 `main` 分支。
+- `ghcr.io/specia1z/spaceninjaserver:<commit-sha>`：对应不可变的具体提交。
+
+Compose 包含四个服务：
+
+- `spaceninjaserver`：使用本仓库发布的 GHCR 镜像。
+- `mongodb`：使用 MongoDB 官方镜像。
+- `warframe-irc-server`：保留 `openwf/warframe-irc-server` 上游镜像。
+- `warframe-hub-server`：保留 `openwf/warframe-hub-server` 上游镜像。
+
+拉取镜像并启动完整服务：
+
+```bash
+docker compose pull
+docker compose up -d
 ```
 
-要运行当前二次开发版本，必须删除或注释该 `image` 行，并启用本地构建：
-
-```yaml
-services:
-    spaceninjaserver:
-        build: .
-```
-
-然后执行：
+如果需要直接构建当前检出的源码，而不是使用已发布的 Web 镜像：
 
 ```bash
 docker compose up -d --build
 ```
+
+Web 服务占用 TCP `80` 和 `443`，IRC 服务占用 TCP `6665-6669` 与 `6695-6699`，Hub 服务占用 UDP `6952`。对公网开放前应根据实际需求配置防火墙，不需要的端口不要暴露。
 
 首次启动时，容器会自动创建 `docker-data/conf/config.json`，并将数据库地址设置为 Compose 中的 MongoDB 服务。持久化目录包括：
 
@@ -150,7 +157,7 @@ docker compose restart spaceninjaserver
 查看日志：
 
 ```bash
-docker compose logs -f spaceninjaserver
+docker compose logs -f
 ```
 
 停止服务但保留数据：
@@ -175,7 +182,9 @@ docker compose down
 
 同样不要用该片段覆盖完整配置，只修改现有 `worldState.liveSync` 字段。
 
-启用后，服务器会同步受支持的官方活动定义，同时进行客户端版本兼容过滤。入侵活动的官方 ID、节点、阵营、奖励和时间作为快照保存；全局 `Count` 与 `Completed` 由本地服务器独立维护。官方条目消失或数据源暂时不可用时，未过期的本地入侵仍可从 MongoDB 恢复。
+启用后，服务器会同步受支持的官方活动定义，同时进行客户端版本兼容过滤。Goal 与入侵活动的官方 ID、节点、阵营、奖励和时间作为快照保存；官方 `Count`、`CountAlt`、`HealthPct`、`Success` 和入侵 `Completed` 不会覆盖私服状态。全局进度由任务上报驱动并保存在 MongoDB，官方条目消失或数据源暂时不可用时，未过期的本地活动仍可恢复。
+
+世界状态中的 `Events` 数组实际用于新闻和公告，不包含游戏活动进度字段，因此继续只同步公告定义。Fomorian/Razorback 类型活动使用本地 100 贡献目标递减生命值，其余可计数 Goal 按本地贡献递增；玩家个人奖励进度仍独立保存在玩家 Inventory 中。
 
 ## 安全建议
 
@@ -204,4 +213,4 @@ npm exec prettier -- --check .
 git diff --check
 ```
 
-更多开发规范请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。许可证全文请参阅 [LICENSE](LICENSE)。
+版本变化请参阅 [CHANGELOG.md](CHANGELOG.md)，更多开发规范请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。许可证全文请参阅 [LICENSE](LICENSE)。
