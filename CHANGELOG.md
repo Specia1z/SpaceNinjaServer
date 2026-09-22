@@ -12,11 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Store overrides for per-item listing state, discount percentage, and sale prices, applied to the world state and validated server-side at purchase time so a modified client cannot buy delisted or repriced items.
 - Crafting policy configuration with a server-wide policy plus optional per-recipe overrides, covering stock/instant/custom build duration and an independent rush cost (stock, free, or a fixed Platinum price).
 - Redemption codes with a standalone administrator management page: codes are stored in MongoDB, grant any item the server already understands via `uniqueName`, and support expiry, total-use limits, per-account limits, batch generation, custom length, and an optional prefix.
-- A live, name-based item picker in the administrator WebUI. Item fields accept a localised name or a `/Lotus/...` path, and tables show the localised name with the unique name underneath.
+- Currencies can be granted alongside items anywhere the server already hands out rewards. Platinum, Credits, Endo, Dirac, Regal Aya, and free Platinum are addressed by field name rather than `uniqueName`, so they work in redemption codes, inbox attachments, and bundles. Negative counts subtract.
+- A live, name-based item picker in the administrator WebUI. Item fields accept a localised name or a `/Lotus/...` path, and tables show the localised name with the unique name underneath. Currencies are offered by their localised names too.
 - `missionPlatinumRewardChance` configuration option, a percentage rolled once per completed mission that decides whether the Platinum reward is granted at all.
 - `missionPlatinumRewardSendMail` configuration option to deliver mission Platinum through an Ordis inbox message.
 - A one-shot `deploy.sh` script that fetches the Compose file when the server was installed from the image alone, pre-creates the bind-mounted directories, and starts the stack.
-- End-to-end verification scripts for in-game redemption and mission Platinum rewards.
+- End-to-end verification scripts for in-game redemption, mission Platinum rewards, currency rewards, and the administrator item picker's search index.
 
 ### Changed
 

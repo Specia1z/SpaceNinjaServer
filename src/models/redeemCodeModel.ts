@@ -4,7 +4,8 @@ import type { Types } from "mongoose";
 
 // A redemption code grants a bundle of items. Rewards are expressed as ITypeCount so that any uniqueName the
 // server already understands (as resolved by addItem) can be handed out, including recipes, bundles, Mods,
-// resources, and gear.
+// resources, and gear. Currencies such as PremiumCredits have no unique name and are instead addressed by
+// their inventory field name.
 export interface IRedeemCode {
     // The code players type in. Stored uppercase so lookups are case-insensitive without an extra index.
     Code: string;

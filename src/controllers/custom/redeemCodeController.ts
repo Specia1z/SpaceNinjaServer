@@ -14,7 +14,7 @@ import {
     redeemCode
 } from "../../services/redeemCodeService.ts";
 import { MAX_REDEEM_CODE_LENGTH, MAX_REDEEM_CODE_USES, type IRedeemCode } from "../../models/redeemCodeModel.ts";
-import { addItems, getInventory } from "../../services/inventoryService.ts";
+import { addItems, getInventory, isCurrencyItemName } from "../../services/inventoryService.ts";
 import { broadcastInventoryUpdate } from "../../services/wsService.ts";
 import type { ITypeCount } from "../../types/commonTypes.ts";
 
@@ -38,7 +38,7 @@ const parseRewards = (value: unknown): ITypeCount[] => {
         const reward = raw as Partial<ITypeCount>;
         if (
             typeof reward.ItemType != "string" ||
-            !reward.ItemType.startsWith("/Lotus/") ||
+            !(reward.ItemType.startsWith("/Lotus/") || isCurrencyItemName(reward.ItemType)) ||
             reward.ItemType.length > 300
         ) {
             throw new Error(`Reward ${index + 1} has an invalid ItemType`);

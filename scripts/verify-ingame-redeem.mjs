@@ -103,6 +103,64 @@ const first = await redeemCode(testCode, String(account._id));
 assert(first.ok === true, "first redemption succeeds");
 assert(first.rewards.length === 2, `carries 2 reward entries (got ${first.rewards.length})`);
 
+STEP("a code can grant currencies alongside items");
+// Currencies are inventory numbers rather than items with a uniqueName, so they are addressed by field name.
+const currencyCode = `${TEST_PREFIX}CURRENCY`;
+await RedeemCode.create({
+    Code: currencyCode,
+    Label: "currency test",
+    Rewards: [
+        { ItemType: "PremiumCredits", ItemCount: 250 },
+        { ItemType: "RegularCredits", ItemCount: 5_000 },
+        { ItemType: "FusionPoints", ItemCount: 100 },
+        { ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 1 }
+    ],
+    MaxUses: 0,
+    Uses: 0,
+    UsedBy: [],
+    Enabled: true,
+    CreatedBy: `${TEST_PREFIX}-A`
+});
+await initializeRedeemCodes();
+const currencyRedeem = await redeemCode(currencyCode, String(account._id));
+assert(currencyRedeem.ok === true, "currency code redeems successfully");
+
+const currencyInv = await getInventory(String(account._id), undefined);
+const beforePlatinum = currencyInv.PremiumCredits;
+const beforeCredits = currencyInv.RegularCredits;
+const beforeEndo = currencyInv.FusionPoints;
+const currencyChanges = await addItems(currencyInv, currencyRedeem.rewards, {});
+await currencyInv.save();
+
+assert(currencyChanges.PremiumCredits === 250, `PremiumCredits delta is 250 (got ${currencyChanges.PremiumCredits})`);
+assert(
+    currencyChanges.RegularCredits === 5_000,
+    `RegularCredits delta is 5000 (got ${currencyChanges.RegularCredits})`
+);
+assert(currencyChanges.FusionPoints === 100, `FusionPoints delta is 100 (got ${currencyChanges.FusionPoints})`);
+assert(
+    currencyInv.PremiumCredits === beforePlatinum + 250,
+    `platinum balance went ${beforePlatinum} -> ${currencyInv.PremiumCredits}`
+);
+assert(
+    currencyInv.RegularCredits === beforeCredits + 5_000,
+    `credit balance went ${beforeCredits} -> ${currencyInv.RegularCredits}`
+);
+assert(currencyInv.FusionPoints === beforeEndo + 100, `endo balance went ${beforeEndo} -> ${currencyInv.FusionPoints}`);
+assert(
+    currencyChanges.MiscItems?.some(x => x.ItemType == "/Lotus/Types/Items/MiscItems/Ferrite") === true,
+    "items in the same code still land normally"
+);
+
+STEP("currencies can be removed with a negative count");
+const negativeChanges = await addItems(currencyInv, [{ ItemType: "PremiumCredits", ItemCount: -50 }], {});
+await currencyInv.save();
+assert(negativeChanges.PremiumCredits === -50, `negative delta reported (got ${negativeChanges.PremiumCredits})`);
+assert(
+    currencyInv.PremiumCredits === beforePlatinum + 200,
+    `platinum balance after removal is ${currencyInv.PremiumCredits}`
+);
+
 STEP("same account cannot redeem it twice");
 // with MaxUses=1 the code is exhausted after the first redemption, which the service reports first
 const second = await redeemCode(testCode, String(account._id));

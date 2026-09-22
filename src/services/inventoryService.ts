@@ -528,6 +528,23 @@ export const freeUpSlot = <ST extends TInventorySlot>(
 
 export const PRE_U40_MAX_KUBROW_EGGS = 100; // capped to avoid sending an overly large array
 
+// Currencies are plain numbers on the inventory rather than entries in the item data, so they have no uniqueName
+// of their own. Accepting their field names here lets every generic path that funnels through addItem (redeem
+// codes, inbox attachments, bundles) grant them alongside real items, instead of needing a bespoke branch in each.
+const CURRENCY_ITEM_NAMES = [
+    "RegularCredits",
+    "PremiumCredits",
+    "PremiumCreditsFree",
+    "FusionPoints",
+    "CrewShipFusionPoints",
+    "PrimeTokens"
+] as const;
+
+type TCurrencyItemName = (typeof CURRENCY_ITEM_NAMES)[number];
+
+export const isCurrencyItemName = (typeName: string): typeName is TCurrencyItemName =>
+    (CURRENCY_ITEM_NAMES as readonly string[]).includes(typeName);
+
 export const addItem = async (
     inventory: TInventoryDatabaseDocument,
     typeName: string,
@@ -538,6 +555,13 @@ export const addItem = async (
     exactQuantity: boolean = false,
     buildLabel: string = BL_LATEST
 ): Promise<IInventoryChanges> => {
+    // Currencies are handled before anything else because their names deliberately do not look like asset paths.
+    if (isCurrencyItemName(typeName)) {
+        inventory[typeName] += quantity;
+        logger.debug(`currency changes`, { [typeName]: quantity });
+        return { [typeName]: quantity };
+    }
+
     // Bundles are technically StoreItems but a) they don't have a normal counterpart, and b) they are used in non-StoreItem contexts, e.g. email attachments.
     if (typeName in ExportBundles) {
         return await handleBundleAcquisition(typeName, inventory, quantity, {}, buildLabel);
