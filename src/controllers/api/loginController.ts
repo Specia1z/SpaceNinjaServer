@@ -115,6 +115,14 @@ export const loginController: RequestHandler = async (request, response) => {
         }
     }
 
+    // A ban is only disclosed once the credentials check out, so an outsider cannot probe whether a
+    // given account is banned. Administrators are never bannable, so this cannot lock the operator out.
+    if (account.Banned) {
+        logger.debug(`refusing login for banned account ${account._id.toString()}`);
+        response.status(403).json({ error: "account banned" });
+        return;
+    }
+
     if (account.Nonce && account.ClientType != "webui" && !account.Dropped && !loginRequest.kick) {
         // U17 seems to handle "nonce still set" like a login failure.
         if (version_compare(buildLabel, gameToBuildVersion["18.0.2"]) >= 0) {

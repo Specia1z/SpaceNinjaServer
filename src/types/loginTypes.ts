@@ -33,6 +33,9 @@ export interface IAccountCreationData extends IAccountAndLoginResponseCommons {
 interface IDatabaseAccount extends IAccountCreationData {
     LastPlatform?: TPlatform;
     Dropped?: true;
+    // Set by an administrator from the anti-cheat panel. Unlike Dropped, which is a transient
+    // "your session ended" marker cleared on the next login, this refuses the login outright.
+    Banned?: boolean;
     LatestEventMessageDate: Date;
     LastLoginRewardDate: number;
     LoginDays: number;

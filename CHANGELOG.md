@@ -22,6 +22,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `antiCheat.enforce`, off by default. When enabled, a mismatched reward seed is replaced with the one the server issued for that session so the player still gets a normal roll, and a report with an impossible mission time is dropped whole — including any credits or items it tried to carry.
 - `antiCheat.minMissionTimeSec`, `antiCheat.maxMissionCompletesPerReport`, and `antiCheat.maxXpPerMissionSecond` to tune the thresholds. The defaults (20 seconds, 10, 100000) sit far above anything a legitimate report produces.
 - An end-to-end verification script for the settlement anti-cheat checks, driving the real controller against a real MongoDB.
+- An anti-cheat panel in the administrator WebUI, reachable from the sidebar. It lists the accounts that tripped a settlement check with a per-check count and the most recent timestamp, and loads an account's individual events, including the exact values the server judged, on demand. Recorded events are kept for 90 days.
+- Ban and unban straight from that panel. A ban refuses the login and drops any live session immediately; unbanning restores access without touching the account's inventory or progress. Administrators can never be banned, so the operator cannot lock themselves out. Events can be cleared per account or wholesale, separately from the ban state.
+- A `Banned` flag on the account. This is deliberately separate from `Dropped`, which only marks "your session ended" and is cleared on the next login.
 
 ### Changed
 
@@ -42,6 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Docker deployments installed from the image alone failed with `no configuration file provided`, because `docker pull` does not fetch the Compose file.
 - Rush cost scaling divided by zero on instant recipes, producing a `NaN` Platinum price.
 - The administrator item picker listed every translation string from `AdditionalDict` as if it were a grantable item, so searching `Platinum` offered `/Lotus/Language/Dojo/TradeTypePlatinum` — the Dojo trade-type label. Picking it could only ever fail. Language labels are now excluded from the search index.
+- `/webui/admin-data`, `/webui/redeem-codes`, and `/webui/admin` answered 404 on a hard reload or when opened from a bookmark. The sidebar links worked because the client-side router intercepts them, but the routes were never registered on the server.
 
 ### Security
 

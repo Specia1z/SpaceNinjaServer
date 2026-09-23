@@ -2,9 +2,10 @@ import { config } from "./configService.ts";
 import { logger } from "../utils/logger.ts";
 import { getSessionByID } from "./sessionService.ts";
 import { equipmentKeys } from "../types/inventoryTypes/inventoryTypes.ts";
+import { SuspicionEvent } from "../models/suspicionEventModel.ts";
 import type { TAccountDocument } from "./loginService.ts";
-import type { IMission } from "../types/inventoryTypes/inventoryTypes.ts";
 import type { IMissionInventoryUpdateRequest } from "../types/requestTypes.ts";
+import type { TSuspicionKind } from "../models/suspicionEventModel.ts";
 
 /*
  * 结算上行报文的反作弊校验。
@@ -14,26 +15,48 @@ import type { IMissionInventoryUpdateRequest } from "../types/requestTypes.ts";
  * 客户端在 deflate 之前原地改写 ezip 明文，就能伪造结算种子、任务时长、完成次数与经验增量。
  *
  * 所有阈值来自 config.antiCheat，默认只记日志（enforce=false）不改变任何行为。
+ * 每次判定都会落一条 SuspicionEvent，管理面板据此列表与封禁。
  */
-
-type TSuspicionKind = "rewardSeedMismatch" | "impossibleMissionTime" | "excessiveMissionCompletes" | "excessiveXpGain";
 
 const isEnabled = (): boolean => config.antiCheat?.enabled ?? true;
 
 /** enforce 关闭时所有检测只出日志，不影响结算结果。 */
 export const isAntiCheatEnforcing = (): boolean => isEnabled() && (config.antiCheat?.enforce ?? false);
 
-/** 所有可疑判定统一从这里出日志，便于运维 grep，也便于以后接审计或封禁。 */
+// 同一账号同一判定在短时间内重复触发时只落一条记录，避免恶意高频上报把集合写爆。
+// 正常结算间隔远大于此值，不会丢有效证据。
+const EVENT_THROTTLE_MS = 2000;
+const lastEventAt = new Map<string, number>();
+
+/** 所有可疑判定统一从这里出日志并落库，便于运维 grep 与面板取证。 */
 const flagSuspicious = (
     account: Pick<TAccountDocument, "_id" | "DisplayName">,
     kind: TSuspicionKind,
-    details: Record<string, unknown>
+    details: Record<string, unknown>,
+    missionReport: IMissionInventoryUpdateRequest
 ): void => {
     logger.warn(`[anti-cheat] ${kind}`, {
         account: account._id.toString(),
         displayName: account.DisplayName,
         ...details
     });
+
+    const key = `${account._id.toString()}:${kind}`;
+    const now = Date.now();
+    const previous = lastEventAt.get(key);
+    if (previous !== undefined && now - previous < EVENT_THROTTLE_MS) return;
+    if (lastEventAt.size > 4096) lastEventAt.clear();
+    lastEventAt.set(key, now);
+
+    // 落库失败绝不能影响结算：反作弊是旁路，不是主链路。
+    void SuspicionEvent.create({
+        AccountId: account._id,
+        DisplayName: account.DisplayName,
+        Kind: kind,
+        Details: details,
+        MissionTag: missionReport.Missions?.Tag,
+        SessionId: missionReport.sharedSessionId || undefined
+    }).catch((error: Error) => logger.warn(`[anti-cheat] failed to record suspicion event`, { error: error.message }));
 };
 
 /** 会话种子可能是 number（mongoose 读出）也可能是 bigint，统一成 bigint 再比。 */
@@ -75,12 +98,16 @@ export const verifyRewardSeed = async (
     const actual = toBigInt(reportedSeed);
     if (expected == null || actual == null || actual == expected) return true;
 
-    flagSuspicious(account, "rewardSeedMismatch", {
-        sessionId,
-        reported: actual.toString(),
-        expected: expected.toString(),
-        missionTag: missionReport.Missions?.Tag
-    });
+    flagSuspicious(
+        account,
+        "rewardSeedMismatch",
+        {
+            sessionId,
+            reported: actual.toString(),
+            expected: expected.toString()
+        },
+        missionReport
+    );
     if (isAntiCheatEnforcing()) {
         rewardInfo.rewardSeed = expected;
     }
@@ -108,19 +135,28 @@ export const verifyMissionTimes = (
     let ok = true;
     const minTimeSec = config.antiCheat?.minMissionTimeSec ?? 20;
     if (minTimeSec > 0 && missionReport.MissionTime < minTimeSec) {
-        flagSuspicious(account, "impossibleMissionTime", {
-            missionTime: missionReport.MissionTime,
-            minMissionTimeSec: minTimeSec,
-            missionTag: missionReport.Missions?.Tag
-        });
+        flagSuspicious(
+            account,
+            "impossibleMissionTime",
+            {
+                missionTime: missionReport.MissionTime,
+                minMissionTimeSec: minTimeSec
+            },
+            missionReport
+        );
         ok = false;
     }
     if (missionReport.AliveTime > missionReport.MissionTime) {
-        flagSuspicious(account, "impossibleMissionTime", {
-            aliveTime: missionReport.AliveTime,
-            missionTime: missionReport.MissionTime,
-            reason: "aliveTimeExceedsMissionTime"
-        });
+        flagSuspicious(
+            account,
+            "impossibleMissionTime",
+            {
+                aliveTime: missionReport.AliveTime,
+                missionTime: missionReport.MissionTime,
+                reason: "aliveTimeExceedsMissionTime"
+            },
+            missionReport
+        );
         ok = false;
     }
     return ok;
@@ -134,19 +170,26 @@ export const verifyMissionTimes = (
  */
 export const clampMissionCompletes = (
     account: Pick<TAccountDocument, "_id" | "DisplayName">,
-    mission: IMission
-): IMission => {
-    if (!isEnabled()) return mission;
+    missionReport: IMissionInventoryUpdateRequest
+): void => {
+    if (!isEnabled()) return;
+
+    const mission = missionReport.Missions;
+    if (mission == undefined) return;
 
     const maxCompletes = config.antiCheat?.maxMissionCompletesPerReport ?? 10;
-    if (maxCompletes <= 0 || mission.Completes <= maxCompletes) return mission;
+    if (maxCompletes <= 0 || mission.Completes <= maxCompletes) return;
 
-    flagSuspicious(account, "excessiveMissionCompletes", {
-        missionTag: mission.Tag,
-        requested: mission.Completes,
-        allowed: maxCompletes
-    });
-    return { ...mission, Completes: maxCompletes };
+    flagSuspicious(
+        account,
+        "excessiveMissionCompletes",
+        {
+            requested: mission.Completes,
+            allowed: maxCompletes
+        },
+        missionReport
+    );
+    mission.Completes = maxCompletes;
 };
 
 /**
@@ -177,10 +220,15 @@ export const verifyXpGain = (
     const seconds = Math.max(missionReport.MissionTime, 1);
     if (totalXp / seconds <= maxPerSecond) return;
 
-    flagSuspicious(account, "excessiveXpGain", {
-        totalXp,
-        missionTime: seconds,
-        xpPerSecond: Math.round(totalXp / seconds),
-        maxXpPerMissionSecond: maxPerSecond
-    });
+    flagSuspicious(
+        account,
+        "excessiveXpGain",
+        {
+            totalXp,
+            missionTime: seconds,
+            xpPerSecond: Math.round(totalXp / seconds),
+            maxXpPerMissionSecond: maxPerSecond
+        },
+        missionReport
+    );
 };

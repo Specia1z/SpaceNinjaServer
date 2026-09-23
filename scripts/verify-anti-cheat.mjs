@@ -40,6 +40,13 @@ const { Session } = await import("../build/src/models/sessionModel.js");
 const { missionInventoryUpdateController } =
     await import("../build/src/controllers/api/missionInventoryUpdateController.js");
 const { verifyRewardSeed } = await import("../build/src/services/antiCheatService.js");
+const { SuspicionEvent } = await import("../build/src/models/suspicionEventModel.js");
+const {
+    clearSuspicionEventsController,
+    getSuspicionEventsForAccountController,
+    listSuspicionEventsController,
+    setAccountBanController
+} = await import("../build/src/controllers/custom/suspicionEventController.js");
 
 // ---------------------------------------------------------------- capture anti-cheat warnings
 // The real code runs untouched; only the log sink is replaced. Without this the logger has no
@@ -120,6 +127,33 @@ const session = await Session.create({
 });
 console.log(`    account=${account._id} session=${session._id} seed=${session.rewardSeed}`);
 
+// The panel endpoints require an administrator. Keeping it a separate account also lets us prove
+// that an administrator cannot be banned by the very endpoint it guards.
+const adminAccount = await Account.create({
+    DisplayName: `${TEST_PREFIX}-ADMIN`,
+    email: "sns-ac-admin@example.com",
+    password: "x",
+    Nonce: NONCE,
+    BuildLabel: "2024.01.01.00.00"
+});
+config.administratorNames = [adminAccount.DisplayName];
+console.log(`    admin=${adminAccount._id}`);
+
+// ---------------------------------------------------------------- panel request plumbing
+const adminReq = (extra = {}) => ({
+    query: { accountId: adminAccount._id.toString(), nonce: String(NONCE), ...(extra.query ?? {}) },
+    body: extra.body
+});
+const callPanel = async (handler, extra = {}) => {
+    let payload;
+    await handler(adminReq(extra), {
+        json: value => {
+            payload = value;
+        }
+    });
+    return payload;
+};
+
 // ---------------------------------------------------------------- request plumbing
 const BASE_REPORT = {
     MissionFailed: false,
@@ -170,6 +204,16 @@ const callController = async reportText => {
 };
 
 const readInventory = () => Inventory.findOne({ accountOwnerId: account._id });
+
+/** Recording is fire-and-forget so it can never hold up a settlement; poll instead of assuming. */
+const waitForEvents = async (accountId, expected) => {
+    for (let attempt = 0; attempt != 40; ++attempt) {
+        const events = await SuspicionEvent.find({ AccountId: accountId });
+        if (events.length >= expected) return events;
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    return await SuspicionEvent.find({ AccountId: accountId });
+};
 
 const antiCheatConfig = {
     enabled: true,
@@ -317,10 +361,120 @@ drainWarnings();
     assert(flagged.length === 0, `no seed verdict without a session (got ${flagged.length})`);
 }
 
+STEP("a tripped check is recorded as a suspicion event");
+setConfig({});
+await SuspicionEvent.deleteMany({});
+// Recording is fire-and-forget so it can never hold up a settlement, and the recorder throttles the
+// same account+kind to one event per 2s. The earlier steps already tripped every kind, so let that
+// window lapse before asserting on fresh records.
+await new Promise(resolve => setTimeout(resolve, 2500));
+drainWarnings();
+{
+    await callController(
+        buildReportText({
+            seed: TAMPERED_SEED,
+            MissionTime: 9,
+            AliveTime: 9,
+            Missions: { Tag: "SolNode1", Completes: 9999, Tier: 0 }
+        })
+    );
+    drainWarnings();
+    const events = await waitForEvents(account._id, 3);
+    const kinds = events.map(event => event.Kind).sort();
+    assert(
+        kinds.join(",") == "excessiveMissionCompletes,impossibleMissionTime,rewardSeedMismatch",
+        `one event per tripped check (got ${kinds.join(", ") || "none"})`
+    );
+    const seedEvent = events.find(event => event.Kind == "rewardSeedMismatch");
+    assert(seedEvent.DisplayName == account.DisplayName, "the event carries the display name");
+    assert(seedEvent.Details.reported == TAMPERED_SEED, "the reported seed is kept as evidence");
+    assert(seedEvent.Details.expected == SESSION_SEED, "the expected seed is kept as evidence");
+    assert(seedEvent.MissionTag == "SolNode1", "the mission tag is kept");
+    assert(seedEvent.SessionId == session._id.toString(), "the session id is kept");
+}
+
+STEP("a rapid repeat of the same check does not flood the event log");
+{
+    const before = await SuspicionEvent.countDocuments({ AccountId: account._id, Kind: "rewardSeedMismatch" });
+    await callController(buildReportText({ seed: TAMPERED_SEED }));
+    drainWarnings();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const after = await SuspicionEvent.countDocuments({ AccountId: account._id, Kind: "rewardSeedMismatch" });
+    assert(after == before, `no extra event inside the throttle window (${before} -> ${after})`);
+}
+
+STEP("the panel aggregates events per account");
+{
+    const payload = await callPanel(listSuspicionEventsController);
+    assert(payload.Accounts.length == 1, `one account listed (got ${payload.Accounts.length})`);
+    const entry = payload.Accounts[0];
+    assert(
+        entry.DisplayName == account.DisplayName,
+        `display name resolved from the account (got ${entry.DisplayName})`
+    );
+    assert(entry.Total == 3, `three events counted (got ${entry.Total})`);
+    assert(entry.Counts.rewardSeedMismatch == 1, "per-kind counts are reported");
+    assert(entry.Banned == false, "the account is not banned yet");
+    assert(payload.TotalEvents == 3, `the summary total matches (got ${payload.TotalEvents})`);
+}
+
+STEP("the panel returns one account's recent events on demand");
+{
+    const payload = await callPanel(getSuspicionEventsForAccountController, {
+        query: { targetAccountId: account._id.toString() }
+    });
+    assert(payload.Events.length == 3, `three events returned (got ${payload.Events.length})`);
+    assert(payload.Events[0].Kind != undefined, "each event reports its kind");
+}
+
+STEP("banning takes effect immediately and can be reversed");
+{
+    const payload = await callPanel(setAccountBanController, {
+        body: { AccountId: account._id.toString(), Banned: true }
+    });
+    assert(payload.Banned === true, "the response reports the new state");
+
+    const banned = await Account.findById(account._id);
+    assert(banned.Banned === true, "the account document carries the ban");
+    assert(banned.Nonce === 0, "the live session was invalidated by clearing the nonce");
+
+    const listed = await callPanel(listSuspicionEventsController);
+    assert(listed.Accounts[0].Banned === true, "the panel reflects the ban");
+
+    const lifted = await callPanel(setAccountBanController, {
+        body: { AccountId: account._id.toString(), Banned: false }
+    });
+    assert(lifted.Banned === false, "the ban can be lifted");
+    assert((await Account.findById(account._id)).Banned === false, "the account document is updated");
+}
+
+STEP("an administrator cannot be banned through the panel");
+{
+    let refused = false;
+    try {
+        await callPanel(setAccountBanController, { body: { AccountId: adminAccount._id.toString(), Banned: true } });
+    } catch (error) {
+        refused = String(error.message).includes("Administrators cannot be banned");
+    }
+    assert(refused, "the request is refused with a clear reason");
+    assert((await Account.findById(adminAccount._id)).Banned !== true, "the administrator is untouched");
+}
+
+STEP("clearing removes the recorded events");
+{
+    const cleared = await callPanel(clearSuspicionEventsController, {
+        body: { AccountId: account._id.toString() }
+    });
+    assert(cleared.Deleted == 3, `three events deleted (got ${cleared.Deleted})`);
+    const listed = await callPanel(listSuspicionEventsController);
+    assert(listed.Accounts.length == 0, "the panel is empty again");
+}
+
 STEP("cleanup");
 await Account.deleteMany({ DisplayName: { $regex: `^${TEST_PREFIX}` } });
 await Inventory.deleteMany({ accountOwnerId: account._id });
 await Session.deleteMany({ creatorId: account._id });
+await SuspicionEvent.deleteMany({});
 console.log("    done");
 
 console.log("\n=== ALL CHECKS PASSED ===");

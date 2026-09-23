@@ -27,6 +27,7 @@ const databaseAccountSchema = new Schema<IDatabaseAccountJson>(
         LastLogin: { type: Date, default: 0 },
         LastPlatform: Number,
         Dropped: Boolean,
+        Banned: Boolean,
         LatestEventMessageDate: { type: Date, default: 0 },
         LastLoginRewardDate: { type: Number, default: 0 },
         LoginDays: { type: Number, default: 1 },

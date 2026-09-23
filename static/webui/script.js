@@ -4183,6 +4183,169 @@ single.getRoute("/webui/redeem-codes").on("beforeload", function () {
     });
 });
 
+// Anti-cheat route
+let adminSuspicionAccounts = [];
+
+function antiCheatKindLabel(kind) {
+    return loc("antiCheatKind_" + kind);
+}
+
+function formatAdminEvidence(details) {
+    return Object.entries(details ?? {})
+        .map(([key, value]) => `${key}=${String(value)}`)
+        .join(", ");
+}
+
+async function loadAdminSuspicionEvents() {
+    const data = await $.get("/custom/admin/suspicion-events?" + window.authz);
+    adminSuspicionAccounts = data.Accounts ?? [];
+    renderAdminSuspicionAccounts(data);
+}
+
+function renderAdminSuspicionAccounts(data) {
+    const tbody = document.getElementById("admin-anti-cheat-accounts");
+    tbody.innerHTML = "";
+
+    const summary = document.getElementById("admin-anti-cheat-summary");
+    if ((data.TotalAccounts ?? 0) > 0) {
+        summary.textContent = loc("admin_antiCheatSummary")
+            .replaceAll("|ACCOUNTS|", String(data.TotalAccounts))
+            .replaceAll("|EVENTS|", String(data.TotalEvents));
+        summary.classList.remove("d-none");
+    } else {
+        summary.classList.add("d-none");
+    }
+    document.getElementById("admin-anti-cheat-empty").classList.toggle("d-none", adminSuspicionAccounts.length > 0);
+
+    adminSuspicionAccounts.forEach(entry => {
+        const row = document.createElement("tr");
+        row.insertCell().textContent = entry.DisplayName;
+        row.insertCell().textContent = String(entry.Total);
+        row.insertCell().textContent = Object.entries(entry.Counts ?? {})
+            .map(([kind, count]) => `${antiCheatKindLabel(kind)} x${count}`)
+            .join(" / ");
+        row.insertCell().textContent = formatAdminDate(entry.LastSeenAt);
+
+        const stateCell = row.insertCell();
+        if (entry.Banned) {
+            const badge = document.createElement("span");
+            badge.className = "badge text-bg-danger";
+            badge.textContent = loc("admin_banned");
+            stateCell.appendChild(badge);
+        }
+
+        const actions = row.insertCell();
+        actions.className = "text-nowrap";
+
+        const detailButton = document.createElement("button");
+        detailButton.className = "btn btn-sm btn-outline-secondary me-2";
+        detailButton.textContent = loc("admin_antiCheatViewDetail");
+        detailButton.onclick = () =>
+            loadAdminSuspicionDetail(entry).catch(error => toast(error.responseText, "danger"));
+        actions.appendChild(detailButton);
+
+        const banButton = document.createElement("button");
+        banButton.className = `btn btn-sm me-2 ${entry.Banned ? "btn-outline-success" : "btn-outline-danger"}`;
+        banButton.textContent = entry.Banned ? loc("admin_unban") : loc("admin_ban");
+        banButton.onclick = () => setAdminAccountBan(entry, !entry.Banned);
+        actions.appendChild(banButton);
+
+        const clearButton = document.createElement("button");
+        clearButton.className = "btn btn-sm btn-outline-secondary";
+        clearButton.textContent = loc("admin_antiCheatClear");
+        clearButton.onclick = () => clearAdminSuspicionEvents(entry, false);
+        actions.appendChild(clearButton);
+
+        tbody.appendChild(row);
+    });
+}
+
+async function loadAdminSuspicionDetail(entry) {
+    const data = await $.get(
+        `/custom/admin/suspicion-events/detail?${window.authz}&targetAccountId=${encodeURIComponent(entry.AccountId)}`
+    );
+    const tbody = document.getElementById("admin-anti-cheat-events");
+    tbody.innerHTML = "";
+    const events = data.Events ?? [];
+    if (!events.length) {
+        const row = document.createElement("tr");
+        const cell = row.insertCell();
+        cell.colSpan = 4;
+        cell.className = "text-body-secondary";
+        cell.textContent = loc("admin_noEvents");
+        tbody.appendChild(row);
+        return;
+    }
+    events.forEach(event => {
+        const row = document.createElement("tr");
+        row.insertCell().textContent = formatAdminDate(event.CreatedAt);
+        row.insertCell().textContent = antiCheatKindLabel(event.Kind);
+        row.insertCell().textContent = event.MissionTag ?? "";
+        row.insertCell().textContent = formatAdminEvidence(event.Details);
+        tbody.appendChild(row);
+    });
+}
+
+async function setAdminAccountBan(entry, banned) {
+    const confirmText = loc(banned ? "admin_banConfirm" : "admin_unbanConfirm").replace("|TARGET|", entry.DisplayName);
+    if (!confirm(confirmText)) return;
+    try {
+        await $.post({
+            url: "/custom/admin/suspicion-events/ban?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify({ AccountId: entry.AccountId, Banned: banned })
+        });
+        toast(loc("admin_banDone").replace("|TARGET|", entry.DisplayName), "success");
+        await loadAdminSuspicionEvents();
+    } catch (error) {
+        toast(error.responseText || loc("settings_changeFailed"), "danger");
+    }
+}
+
+async function clearAdminSuspicionEvents(entry, all) {
+    const confirmText = all
+        ? loc("admin_clearAllEventsConfirm")
+        : loc("admin_clearEventsConfirm").replace("|TARGET|", entry.DisplayName);
+    if (!confirm(confirmText)) return;
+    try {
+        const deleted = await $.post({
+            url: "/custom/admin/suspicion-events/clear?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify(all ? { All: true } : { AccountId: entry.AccountId })
+        });
+        toast(loc("admin_eventsCleared").replace("|COUNT|", String(deleted.Deleted ?? 0)), "success");
+        if (all) {
+            document.getElementById("admin-anti-cheat-events").innerHTML = "";
+        }
+        await loadAdminSuspicionEvents();
+    } catch (error) {
+        toast(error.responseText || loc("settings_changeFailed"), "danger");
+    }
+}
+
+function clearAllAdminSuspicionEvents() {
+    return clearAdminSuspicionEvents(undefined, true);
+}
+
+single.getRoute("/webui/anti-cheat").on("beforeload", function () {
+    awaitAuthz().then(async () => {
+        const config = await getServerConfig();
+        if (!config) {
+            $(".admin-hide").removeClass("d-none");
+            $(".admin-show").addClass("d-none");
+            return;
+        }
+        $(".admin-hide").addClass("d-none");
+        $(".admin-show").removeClass("d-none");
+        try {
+            document.getElementById("admin-anti-cheat-events").innerHTML = "";
+            await loadAdminSuspicionEvents();
+        } catch (error) {
+            toast(error.responseText || loc("settings_changeFailed"), "danger");
+        }
+    });
+});
+
 single.getRoute("/webui/admin-data").on("beforeload", function () {
     awaitAuthz().then(async () => {
         const config = await getServerConfig();

@@ -47,6 +47,11 @@ webuiRouter.get("/webui/clan", virtualRouteController);
 webuiRouter.get("/webui/guildView", virtualRouteController);
 webuiRouter.get("/webui/users", virtualRouteController);
 webuiRouter.get("/webui/admin", virtualRouteController);
+// These pages are reachable by clicking the sidebar (single.js intercepts the link), but a hard
+// reload or a direct link used to 404 because the route was never registered server-side.
+webuiRouter.get("/webui/admin-data", virtualRouteController);
+webuiRouter.get("/webui/redeem-codes", virtualRouteController);
+webuiRouter.get("/webui/anti-cheat", virtualRouteController);
 
 // Serve static files
 webuiRouter.use("/webui", express.static(path.join(baseDir, "static/webui")));

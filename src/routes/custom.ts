@@ -74,6 +74,12 @@ import {
     redeemCodeController,
     saveRedeemCodeController
 } from "../controllers/custom/redeemCodeController.ts";
+import {
+    clearSuspicionEventsController,
+    getSuspicionEventsForAccountController,
+    listSuspicionEventsController,
+    setAccountBanController
+} from "../controllers/custom/suspicionEventController.ts";
 
 import { getConfigController, setConfigController } from "../controllers/custom/configController.ts";
 
@@ -113,6 +119,8 @@ customRouter.get("/admin/item-data/status", getAdminItemDataStatusController);
 customRouter.get("/admin/store-overrides", listStoreOverridesController);
 customRouter.get("/admin/crafting-config", getCraftingConfigController);
 customRouter.get("/admin/redeem-codes", listRedeemCodesController);
+customRouter.get("/admin/suspicion-events", listSuspicionEventsController);
+customRouter.get("/admin/suspicion-events/detail", getSuspicionEventsForAccountController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -143,6 +151,8 @@ customRouter.post("/admin/crafting-config/delete", deleteCraftingConfigControlle
 customRouter.post("/admin/redeem-codes", saveRedeemCodeController);
 customRouter.post("/admin/redeem-codes/generate", generateRedeemCodesController);
 customRouter.post("/admin/redeem-codes/delete", deleteRedeemCodeController);
+customRouter.post("/admin/suspicion-events/ban", setAccountBanController);
+customRouter.post("/admin/suspicion-events/clear", clearSuspicionEventsController);
 customRouter.post("/redeemCode", redeemCodeController);
 
 customRouter.post("/changePassword", changePasswordController);

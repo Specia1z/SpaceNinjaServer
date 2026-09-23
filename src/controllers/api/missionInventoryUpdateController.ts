@@ -87,9 +87,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
     const missionTimesOk = verifyMissionTimes(account, missionReport);
     const rewardSeedOk = await verifyRewardSeed(account, missionReport);
     verifyXpGain(account, missionReport);
-    if (missionReport.Missions) {
-        missionReport.Missions = clampMissionCompletes(account, missionReport.Missions);
-    }
+    clampMissionCompletes(account, missionReport);
 
     if (isAntiCheatEnforcing() && (!missionTimesOk || !rewardSeedOk)) {
         // 拒绝整份报文：连客户端自带的 RegularCredits / MiscItems 也一并丢弃，不做部分入库。
