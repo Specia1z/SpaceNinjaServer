@@ -5,6 +5,7 @@ import { equipmentKeys } from "../types/inventoryTypes/inventoryTypes.ts";
 import { SuspicionEvent } from "../models/suspicionEventModel.ts";
 import type { TAccountDocument } from "./loginService.ts";
 import type { IMissionInventoryUpdateRequest } from "../types/requestTypes.ts";
+import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import type { TSuspicionKind } from "../models/suspicionEventModel.ts";
 
 /*
@@ -66,20 +67,27 @@ const toBigInt = (value: number | bigint): bigint | null => {
 };
 
 /**
- * 校验客户端上报的 rewardSeed 是否与服务端在 hostSession / joinSession 时下发的种子一致。
+ * 校验客户端上报的 rewardSeed 是否是服务端发给它的种子之一。
  *
  * 该种子是结算奖励 RNG 的唯一输入（服务端用 SRng(seed ^ 0xffffffffffffffff) 洗任务奖励），
  * 而且客户端上报什么就用什么 —— 所以只要在 ezip 明文里把它改掉，就能定点开出任意奖励。
- * 检测依据很直接：会话创建时服务端已经把这个种子存进 Session 文档，上报值必须与之一致。
  *
- * enforce 开启时**不拒绝结算**，而是把上报值改回服务端种子：奖励回到正常 roll，
+ * 客户端**合法持有两个种子**，任选其一上报都是正常的：
+ *   1. 会话种子 —— hostSession / joinSession 下发，会话存续期间不变；
+ *   2. 库存种子 —— 每次 EndOfMatchUpload 都会被刷新，getNewRewardSeed 也会刷新，
+ *      并且随结算响应的 InventoryJson 回传给客户端。
+ * 两者会在**同一会话的第二局**开始合法地分叉（会话种子不变、库存种子已刷新），
+ * 所以只比对会话种子会稳定误报。必须两个都接受。
+ *
+ * enforce 开启时**不拒绝结算**，而是把上报值改回服务端发出的种子：奖励回到正常 roll，
  * 既不会连带吞掉正常掉落，也不存在误判导致玩家颗粒无收的风险。
  *
- * @returns 一致（或无法判定）时返回 true。
+ * @returns 命中任一合法种子（或无法判定）时返回 true。
  */
 export const verifyRewardSeed = async (
     account: Pick<TAccountDocument, "_id" | "DisplayName">,
-    missionReport: IMissionInventoryUpdateRequest
+    missionReport: IMissionInventoryUpdateRequest,
+    inventory: Pick<TInventoryDatabaseDocument, "RewardSeed">
 ): Promise<boolean> => {
     if (!isEnabled()) return true;
 
@@ -87,29 +95,38 @@ export const verifyRewardSeed = async (
     if (rewardInfo == undefined) return true;
     const reportedSeed = rewardInfo.rewardSeed;
     if (reportedSeed == undefined) return true;
+    const actual = toBigInt(reportedSeed);
+    if (actual == null) return true;
 
     // sharedSessionId 是裸 ObjectId 十六进制串（实机报文核实）。会话有 5 分钟 TTL，过期即查不到。
     const sessionId = missionReport.sharedSessionId;
-    if (!sessionId) return true;
-    const session = await getSessionByID(sessionId);
-    if (session == null) return true;
+    let sessionSeed: bigint | null = null;
+    if (sessionId) {
+        const session = await getSessionByID(sessionId);
+        if (session != null) {
+            sessionSeed = toBigInt(session.rewardSeed);
+        }
+    }
+    const inventorySeed = toBigInt(inventory.RewardSeed);
 
-    const expected = toBigInt(session.rewardSeed);
-    const actual = toBigInt(reportedSeed);
-    if (expected == null || actual == null || actual == expected) return true;
+    const expected = [sessionSeed, inventorySeed].filter((seed): seed is bigint => seed != null);
+    if (expected.length == 0 || expected.some(seed => seed == actual)) return true;
 
     flagSuspicious(
         account,
         "rewardSeedMismatch",
         {
-            sessionId,
             reported: actual.toString(),
-            expected: expected.toString()
+            sessionSeed: sessionSeed?.toString() ?? "unknown",
+            inventorySeed: inventorySeed?.toString() ?? "unknown",
+            sessionId
         },
         missionReport
     );
+    // expected is non-empty here: the early return above covers the "no seed to compare against" case.
+    const replacement = expected[0];
     if (isAntiCheatEnforcing()) {
-        rewardInfo.rewardSeed = expected;
+        rewardInfo.rewardSeed = replacement;
     }
     return false;
 };

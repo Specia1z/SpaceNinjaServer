@@ -254,7 +254,7 @@ drainWarnings();
     const flagged = drainAntiCheatWarnings();
     assert(flagged.length === 1, `exactly one warning (got ${flagged.length})`);
     assert(flagged[0].message === "[anti-cheat] rewardSeedMismatch", `kind is rewardSeedMismatch`);
-    assert(flagged[0].metadata.expected === SESSION_SEED, `metadata carries the expected seed`);
+    assert(flagged[0].metadata.sessionSeed === SESSION_SEED, `metadata carries the session seed`);
     assert(flagged[0].metadata.reported === TAMPERED_SEED, `metadata carries the reported seed`);
     assert(Array.isArray(payload.MissionRewards), "rewards are still granted when enforce is off");
     assert(rewardPathRan, "the settlement still went through the normal reward path");
@@ -267,7 +267,7 @@ drainWarnings();
     // The controller parses the body internally, so drive the check on an already-parsed report to
     // observe the correction. JSONParse (not JSON.parse) keeps the 64-bit seed exact, as the server does.
     const report = JSONParse(buildReportText({ seed: TAMPERED_SEED }));
-    const ok = await verifyRewardSeed(account, report);
+    const ok = await verifyRewardSeed(account, report, await readInventory());
     const flagged = drainAntiCheatWarnings();
     assert(ok === false, "the check reports a mismatch");
     assert(flagged.length === 1, `one warning (got ${flagged.length})`);
@@ -275,6 +275,28 @@ drainWarnings();
         BigInt(report.RewardInfo.rewardSeed) === BigInt(SESSION_SEED),
         `the report was corrected to the session seed (got ${report.RewardInfo.rewardSeed})`
     );
+}
+
+STEP("reporting the inventory seed is legitimate and must not be flagged");
+// Regression guard: a reused session keeps its original seed while the inventory's is refreshed after
+// every settlement, so from the second mission onwards a client that never touched anything reports a
+// seed that differs from the session's. Accepting only the session seed flagged real players.
+setConfig({});
+drainWarnings();
+{
+    const inventory = await readInventory();
+    const inventorySeed = inventory.RewardSeed.toString();
+    assert(
+        inventorySeed !== SESSION_SEED,
+        `the fixture's inventory seed differs from the session's (${inventorySeed})`
+    );
+
+    const payload = await callController(buildReportText({ seed: inventorySeed }));
+    const rewardPathRan = sawLog("classic mission completion");
+    const flagged = drainAntiCheatWarnings();
+    assert(flagged.length === 0, `no warning for the inventory seed (got ${flagged.length})`);
+    assert(Array.isArray(payload.MissionRewards), "the settlement is processed normally");
+    assert(rewardPathRan, "the settlement went through the normal reward path");
 }
 
 STEP("impossible mission time is detected (enforce off keeps the settlement intact)");
@@ -352,13 +374,16 @@ drainWarnings();
     assert(flagged[0].metadata.xpPerSecond === 3_333_333, `xp/s derived from mission time`);
 }
 
-STEP("a report without a session id is not judged on its seed");
+STEP("the inventory seed still gives a verdict when the session is gone");
 setConfig({});
 drainWarnings();
 {
+    // The session document expires 5 minutes after its last update, which a long mission easily
+    // outlives, so the check must not depend on it.
     await callController(buildReportText({ seed: TAMPERED_SEED, sharedSessionId: "" }));
     const flagged = drainAntiCheatWarnings();
-    assert(flagged.length === 0, `no seed verdict without a session (got ${flagged.length})`);
+    assert(flagged.length === 1, `a tampered seed is still caught without a session (got ${flagged.length})`);
+    assert(flagged[0].metadata.sessionSeed === "unknown", "the metadata marks the session seed as unknown");
 }
 
 STEP("a tripped check is recorded as a suspicion event");
@@ -388,7 +413,8 @@ drainWarnings();
     const seedEvent = events.find(event => event.Kind == "rewardSeedMismatch");
     assert(seedEvent.DisplayName == account.DisplayName, "the event carries the display name");
     assert(seedEvent.Details.reported == TAMPERED_SEED, "the reported seed is kept as evidence");
-    assert(seedEvent.Details.expected == SESSION_SEED, "the expected seed is kept as evidence");
+    assert(seedEvent.Details.sessionSeed == SESSION_SEED, "the session seed is kept as evidence");
+    assert(seedEvent.Details.inventorySeed != undefined, "the inventory seed is kept as evidence");
     assert(seedEvent.MissionTag == "SolNode1", "the mission tag is kept");
     assert(seedEvent.SessionId == session._id.toString(), "the session id is kept");
 }

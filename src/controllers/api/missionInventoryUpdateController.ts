@@ -85,7 +85,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
 
     // 反作弊：先判定再落库。默认只记日志，enforce 关闭时这里不改变任何行为。
     const missionTimesOk = verifyMissionTimes(account, missionReport);
-    const rewardSeedOk = await verifyRewardSeed(account, missionReport);
+    const rewardSeedOk = await verifyRewardSeed(account, missionReport, inventory);
     verifyXpGain(account, missionReport);
     clampMissionCompletes(account, missionReport);
 

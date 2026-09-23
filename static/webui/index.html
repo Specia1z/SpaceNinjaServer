@@ -2268,6 +2268,56 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card mt-3">
+                        <h5 class="card-header" data-loc="admin_antiCheatConfig"></h5>
+                        <div class="card-body">
+                            <p class="text-body-secondary" data-loc="admin_antiCheatConfigHint"></p>
+                            <div class="config-form">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="antiCheat.enabled" />
+                                    <label class="form-check-label" for="antiCheat.enabled" data-loc="admin_antiCheatEnabled"></label>
+                                    <div class="form-text" data-loc="admin_antiCheatEnabledHint"></div>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="antiCheat.enforce" />
+                                    <label class="form-check-label" for="antiCheat.enforce" data-loc="admin_antiCheatEnforce"></label>
+                                    <div class="form-text" data-loc="admin_antiCheatEnforceHint"></div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <form class="form-group" onsubmit="doSaveConfigInt('antiCheat.minMissionTimeSec'); return false;">
+                                            <label class="form-label" for="antiCheat.minMissionTimeSec" data-loc="admin_antiCheatMinMissionTime"></label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="antiCheat.minMissionTimeSec" type="number" min="0" step="1" data-default="20" />
+                                                <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                            </div>
+                                            <div class="form-text" data-loc="admin_antiCheatMinMissionTimeHint"></div>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <form class="form-group" onsubmit="doSaveConfigInt('antiCheat.maxMissionCompletesPerReport'); return false;">
+                                            <label class="form-label" for="antiCheat.maxMissionCompletesPerReport" data-loc="admin_antiCheatMaxCompletes"></label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="antiCheat.maxMissionCompletesPerReport" type="number" min="0" step="1" data-default="10" />
+                                                <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                            </div>
+                                            <div class="form-text" data-loc="admin_antiCheatMaxCompletesHint"></div>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <form class="form-group" onsubmit="doSaveConfigInt('antiCheat.maxXpPerMissionSecond'); return false;">
+                                            <label class="form-label" for="antiCheat.maxXpPerMissionSecond" data-loc="admin_antiCheatMaxXp"></label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="antiCheat.maxXpPerMissionSecond" type="number" min="0" step="1" data-default="100000" />
+                                                <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                            </div>
+                                            <div class="form-text" data-loc="admin_antiCheatMaxXpHint"></div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
