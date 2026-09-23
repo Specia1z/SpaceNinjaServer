@@ -97,6 +97,17 @@ chokidar.watch(configPath).on("change", () => {
 
 export const validateConfig = (): void => {
     let modified = false;
+    if (config.autoCompleteQuestsAndUnlockMissions !== undefined) {
+        const legacyValue = config.autoCompleteQuestsAndUnlockMissions;
+        if (config.autoCompleteQuestsForNewAccounts === undefined) {
+            config.autoCompleteQuestsForNewAccounts = legacyValue;
+        }
+        if (config.unlockAllMissionsForNewAccounts === undefined) {
+            config.unlockAllMissionsForNewAccounts = legacyValue;
+        }
+        delete config.autoCompleteQuestsAndUnlockMissions;
+        modified = true;
+    }
     if (config.mongodbUrl) {
         if (config.mongodbUrl.startsWith("file://")) {
             let dataDir = config.mongodbUrl.substring("file://".length);

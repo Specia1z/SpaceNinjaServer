@@ -664,6 +664,24 @@ STEP("every config control in the page markup resolves on the server");
     }
 }
 
+STEP("new-account quest and star-chart options are independent");
+{
+    const html = fs.readFileSync("static/webui/index.html", "utf8");
+    const expected = ["autoCompleteQuestsForNewAccounts", "unlockAllMissionsForNewAccounts"];
+    for (const id of expected) {
+        assert(html.includes(`id="${id}"`), `${id} has its own WebUI control`);
+    }
+    await callPanel(setConfigController, {
+        body: {
+            autoCompleteQuestsForNewAccounts: true,
+            unlockAllMissionsForNewAccounts: false
+        }
+    });
+    const values = await callPanel(getConfigController, { body: expected });
+    assert(values.autoCompleteQuestsForNewAccounts === true, "quest completion option resolves independently");
+    assert(values.unlockAllMissionsForNewAccounts === false, "star-chart unlock option resolves independently");
+}
+
 STEP("cleanup");
 await Account.deleteMany({ DisplayName: { $regex: `^${TEST_PREFIX}` } });
 await Inventory.deleteMany({ accountOwnerId: account._id });

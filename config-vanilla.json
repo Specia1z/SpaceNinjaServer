@@ -38,7 +38,8 @@
   "missionPlatinumRewardMax": 0,
   "missionPlatinumRewardChance": 100,
   "missionPlatinumRewardSendMail": false,
-  "autoCompleteQuestsAndUnlockMissions": false,
+  "autoCompleteQuestsForNewAccounts": false,
+  "unlockAllMissionsForNewAccounts": false,
   "newAccountStarterPack": false,
   "noMasteryRankUpCooldown": false,
   "antiCheat": {

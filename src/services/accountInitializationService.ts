@@ -24,15 +24,22 @@ export const giveNewAccountStarterPack = async (inventory: TInventoryDatabaseDoc
     await inventory.save();
 };
 
-export const initializeNewAccount = async (inventory: TInventoryDatabaseDocument): Promise<void> => {
-    for (const [questKey, quest] of Object.entries(ExportKeys)) {
-        if ("chainStages" in quest) {
-            await completeQuest(inventory, questKey, BL_LATEST);
+export const initializeNewAccount = async (
+    inventory: TInventoryDatabaseDocument,
+    options: { completeQuests?: boolean; unlockAllMissions?: boolean }
+): Promise<void> => {
+    if (options.completeQuests) {
+        for (const [questKey, quest] of Object.entries(ExportKeys)) {
+            if ("chainStages" in quest) {
+                await completeQuest(inventory, questKey, BL_LATEST);
+            }
         }
+        inventory.ActiveQuest = "";
     }
-    inventory.ActiveQuest = "";
 
-    await completeAllMissions(inventory);
+    if (options.unlockAllMissions) {
+        await completeAllMissions(inventory);
+    }
     await inventory.save();
 };
 

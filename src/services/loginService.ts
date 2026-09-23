@@ -64,8 +64,11 @@ export const createAccount = async (accountData: IAccountCreationData): Promise<
         const shipId = await createShip(account._id);
         await createPersonalRooms(account._id, shipId);
         const inventory = await createInventory(account._id, loadout, { loadOutPresetId: loadout._id, ship: shipId });
-        if (config.autoCompleteQuestsAndUnlockMissions) {
-            await initializeNewAccount(inventory);
+        if (config.autoCompleteQuestsForNewAccounts || config.unlockAllMissionsForNewAccounts) {
+            await initializeNewAccount(inventory, {
+                completeQuests: config.autoCompleteQuestsForNewAccounts,
+                unlockAllMissions: config.unlockAllMissionsForNewAccounts
+            });
         }
         if (config.newAccountStarterPack) {
             await giveNewAccountStarterPack(inventory);

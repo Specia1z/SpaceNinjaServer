@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Split new-account initialization into independent `autoCompleteQuestsForNewAccounts` and `unlockAllMissionsForNewAccounts` switches. Existing `autoCompleteQuestsAndUnlockMissions` values are migrated to both switches once.
 - Mission Platinum rewards are credited straight to the balance by default instead of always being delivered as an Ordis inbox message.
 - Store pricing resolves in three tiers: store override, then flash sale, then the base price. A discount percentage takes priority over an absolute override price and is applied to the unit price before multiplying by quantity.
 - Redemption codes are normalized to uppercase, so players can type them in any case.
