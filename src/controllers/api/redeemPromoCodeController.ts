@@ -33,9 +33,6 @@ export const redeemPromoCodeController: RequestHandler = async (req, res) => {
         return;
     }
 
-    // A custom code can grant any item in the game, so the response cannot use the FlavourItems-only shape
-    // that glyph codes rely on. It instead reports the acquisition as InventoryChanges, which the client
-    // handles generically for every inventory bin.
     const inventory = await getInventory(accountId, undefined);
     const inventoryChanges = await addItems(inventory, result.rewards, {});
     if (inventory.modifiedPaths().length != 0) {
@@ -43,14 +40,11 @@ export const redeemPromoCodeController: RequestHandler = async (req, res) => {
         broadcastInventoryUpdate(req);
     }
 
-    // FlavourItems are the one bin where the change shape and the inventory shape differ: the inventory
-    // stores { ItemType } objects, but this endpoint's client-side handler wants plain unique names, which
-    // is what the glyph path above has always sent. Sending objects leaves the client stuck on its
-    // "please wait" modal even though the items were granted server-side.
-    const response: Record<string, unknown> = { ...inventoryChanges };
-    if (inventoryChanges.FlavourItems) {
-        response.FlavourItems = inventoryChanges.FlavourItems.map(item => item.ItemType);
-    }
+    // FlavourItems is the only reward field established for this endpoint. The client performs a full inventory
+    // sync after a successful response, so arbitrary InventoryChanges bins do not belong in this response.
+    const response = {
+        FlavourItems: inventoryChanges.FlavourItems?.map(item => item.ItemType) ?? []
+    };
     logger.debug("redeemPromoCode response", response);
     res.json(response);
 };

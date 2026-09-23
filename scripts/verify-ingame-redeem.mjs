@@ -34,6 +34,7 @@ const { RedeemCode } = await import("../build/src/models/redeemCodeModel.js");
 const { initializeRedeemCodes, redeemCode } = await import("../build/src/services/redeemCodeService.js");
 const { addItems, getInventory } = await import("../build/src/services/inventoryService.js");
 const { redeemPromoCodeController } = await import("../build/src/controllers/api/redeemPromoCodeController.js");
+const { getInventoryResponse } = await import("../build/src/controllers/api/inventoryController.js");
 const glyphCodes = JSON.parse(fs.readFileSync("static/fixed_responses/glyphsCodes.json", "utf8"));
 
 const TEST_PREFIX = "SNS-TEST";
@@ -256,10 +257,9 @@ for (const c of glyphKeys) {
 }
 assert(unresolved === 0, `all entries across ${glyphKeys.length} glyph codes resolve`);
 
-STEP("the in-game endpoint sends FlavourItems as plain unique names");
-// This endpoint's client-side handler wants the same shape the glyph path has always sent. Sending the
-// inventory's { ItemType } objects leaves the client stuck on its "please wait" modal even though the
-// grant succeeded server-side.
+STEP("the in-game endpoint returns only its supported promo-code response shape");
+// The game performs a full inventory sync after this request, so arbitrary InventoryChanges do not belong in the
+// promo endpoint's established FlavourItems response.
 {
     const avatar = "/Lotus/Types/StoreItems/AvatarImages/FanChannel/AvatarImageChromaPrimePartner";
     const flavourCode = `${TEST_PREFIX}FLAVOUR1`;
@@ -307,6 +307,72 @@ STEP("the in-game endpoint sends FlavourItems as plain unique names");
     assert(
         stored.FlavourItems.some(x => x.ItemType == avatar),
         "the item still landed in the inventory"
+    );
+
+    const itemCode = `${TEST_PREFIX}ITEM1`;
+    const frameType = "/Lotus/Powersuits/Excalibur/Excalibur";
+    const weaponType = "/Lotus/Weapons/Tenno/Rifle/BratonPrime";
+    const modType = "/Lotus/Upgrades/Mods/Rifle/WeaponDamageAmountMod";
+    const decorationType = "/Lotus/Objects/Tenno/Props/TnoLisetTextProjector";
+    await RedeemCode.create({
+        Code: itemCode,
+        Label: "non-flavour response shape",
+        Rewards: [
+            { ItemType: "PremiumCredits", ItemCount: 25 },
+            { ItemType: frameType, ItemCount: 1 },
+            { ItemType: weaponType, ItemCount: 1 },
+            { ItemType: modType, ItemCount: 2 },
+            { ItemType: decorationType, ItemCount: 3 }
+        ],
+        MaxUses: 1,
+        Uses: 0,
+        UsedBy: [],
+        Enabled: true,
+        CreatedBy: `${TEST_PREFIX}-A`
+    });
+    await initializeRedeemCodes();
+
+    payload = undefined;
+    await redeemPromoCodeController(
+        {
+            query: { accountId: flavourAccount._id.toString(), nonce: String(NONCE) },
+            body: JSON.stringify({ codeId: itemCode })
+        },
+        {
+            json: value => {
+                payload = value;
+            },
+            status: () => ({ send: () => ({ end: () => undefined }) })
+        }
+    );
+
+    assert(
+        JSON.stringify(payload) === JSON.stringify({ FlavourItems: [] }),
+        `non-flavour bins are omitted from the response (got ${JSON.stringify(payload)})`
+    );
+    const inventoryAfterItem = await getInventory(String(flavourAccount._id), undefined);
+    const inventoryResponse = await getInventoryResponse(
+        { query: {}, headers: {} },
+        inventoryAfterItem,
+        true,
+        "2026.03.24.16.59/DBJr4x9o6FlMuWv18MChdw"
+    );
+    assert(
+        inventoryResponse.Suits.some(x => x.ItemType == frameType && typeof x.ItemId?.$oid == "string"),
+        "warframe has a valid ItemId in the following full inventory sync"
+    );
+    assert(inventoryResponse.PremiumCredits == 25, "platinum is present in the following full inventory sync");
+    assert(
+        inventoryResponse.LongGuns.some(x => x.ItemType == weaponType && typeof x.ItemId?.$oid == "string"),
+        "weapon has a valid ItemId in the following full inventory sync"
+    );
+    assert(
+        inventoryResponse.RawUpgrades.some(x => x.ItemType == modType && x.ItemCount == 2),
+        "mod is present in the following full inventory sync"
+    );
+    assert(
+        inventoryResponse.ShipDecorations.some(x => x.ItemType == decorationType && x.ItemCount == 3),
+        "decoration is present in the following full inventory sync"
     );
 }
 
