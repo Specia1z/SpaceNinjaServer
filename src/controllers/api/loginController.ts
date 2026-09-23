@@ -26,7 +26,6 @@ import { fromStoreItem } from "../../services/itemDataService.ts";
 import { getTokenForClient, getTunablesForClient } from "../../services/tunablesService.ts";
 import type { AddressInfo } from "node:net";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
-import { args } from "../../helpers/commandLineArguments.ts";
 import { buildLabelToVersionInt } from "../../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
 
@@ -61,11 +60,6 @@ export const loginController: RequestHandler = async (request, response) => {
     const account = await Account.findOne({ email: loginRequest.email });
 
     const buildLabel = getBuildLabelForUnauthenticatedRequest(request);
-
-    if (version_compare(buildLabel, "2026.05.13.13.07") > 0 && !args.dev) {
-        response.status(400).json({ error: "I'm making a list and checking it twice" });
-        return;
-    }
 
     if (!account && config.autoCreateAccount) {
         // Early versions (~U14) allow login with the password field being empty.
