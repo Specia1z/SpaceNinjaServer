@@ -3523,6 +3523,37 @@ function getServerConfig() {
     });
 }
 
+/**
+ * Show the admin-only sections and fill every config input on the page from a /custom/getConfig
+ * response. Inputs are matched by id, so a page only receives the ones it actually contains, and
+ * every page that renders config controls must call this or its fields stay blank.
+ *
+ * @returns whether the caller is an administrator.
+ */
+function applyServerConfig(json) {
+    if (!json) {
+        $(".admin-hide").removeClass("d-none");
+        $(".admin-show").addClass("d-none");
+        return false;
+    }
+    $(".admin-hide").addClass("d-none");
+    $(".admin-show").removeClass("d-none");
+    Object.entries(json).forEach(entry => {
+        const [key, value] = entry;
+        const elm = document.getElementById(key);
+        if (!elm) return;
+        if (elm.type == "checkbox") {
+            elm.checked = value;
+        } else if (elm.classList.contains("tags-input")) {
+            elm.value = (value ?? []).join(", ");
+            elm.oninput();
+        } else {
+            elm.value = value ?? elm.getAttribute("data-default");
+        }
+    });
+    return true;
+}
+
 single.getRoute("/webui/cheats").on("beforeload", function () {
     awaitAuthz().then(() => {
         getInventoryData().then(data => {
@@ -3535,27 +3566,7 @@ single.getRoute("/webui/cheats").on("beforeload", function () {
                 }
             }
         });
-        getServerConfig().then(json => {
-            if (json) {
-                $(".admin-hide").addClass("d-none");
-                $(".admin-show").removeClass("d-none");
-                Object.entries(json).forEach(entry => {
-                    const [key, value] = entry;
-                    const elm = document.getElementById(key);
-                    if (elm.type == "checkbox") {
-                        elm.checked = value;
-                    } else if (elm.classList.contains("tags-input")) {
-                        elm.value = (value ?? []).join(", ");
-                        elm.oninput();
-                    } else {
-                        elm.value = value ?? elm.getAttribute("data-default");
-                    }
-                });
-            } else {
-                $(".admin-hide").removeClass("d-none");
-                $(".admin-show").addClass("d-none");
-            }
-        });
+        getServerConfig().then(applyServerConfig);
     });
 });
 
@@ -4162,14 +4173,7 @@ async function deleteAdminRedeemCode(code) {
 
 single.getRoute("/webui/redeem-codes").on("beforeload", function () {
     awaitAuthz().then(async () => {
-        const config = await getServerConfig();
-        if (!config) {
-            $(".admin-hide").removeClass("d-none");
-            $(".admin-show").addClass("d-none");
-            return;
-        }
-        $(".admin-hide").addClass("d-none");
-        $(".admin-show").removeClass("d-none");
+        if (!applyServerConfig(await getServerConfig())) return;
         try {
             await loadAdminRedeemCodes();
             // Called after the list resolves so window.itemSearchIndex is populated.
@@ -4329,14 +4333,7 @@ function clearAllAdminSuspicionEvents() {
 
 single.getRoute("/webui/anti-cheat").on("beforeload", function () {
     awaitAuthz().then(async () => {
-        const config = await getServerConfig();
-        if (!config) {
-            $(".admin-hide").removeClass("d-none");
-            $(".admin-show").addClass("d-none");
-            return;
-        }
-        $(".admin-hide").addClass("d-none");
-        $(".admin-show").removeClass("d-none");
+        if (!applyServerConfig(await getServerConfig())) return;
         try {
             document.getElementById("admin-anti-cheat-events").innerHTML = "";
             await loadAdminSuspicionEvents();
@@ -4348,14 +4345,7 @@ single.getRoute("/webui/anti-cheat").on("beforeload", function () {
 
 single.getRoute("/webui/admin-data").on("beforeload", function () {
     awaitAuthz().then(async () => {
-        const config = await getServerConfig();
-        if (!config) {
-            $(".admin-hide").removeClass("d-none");
-            $(".admin-show").addClass("d-none");
-            return;
-        }
-        $(".admin-hide").addClass("d-none");
-        $(".admin-show").removeClass("d-none");
+        if (!applyServerConfig(await getServerConfig())) return;
         try {
             await Promise.all([loadAdminItemDataStatus(), loadAdminStoreOverrides(), loadAdminCraftingConfig()]);
             setupAdminItemPicker("admin-store-type", "admin-store-type-resolved");

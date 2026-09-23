@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - An end-to-end verification script for the settlement anti-cheat checks, driving the real controller against a real MongoDB.
 - An anti-cheat panel in the administrator WebUI, reachable from the sidebar. It lists the accounts that tripped a settlement check with a per-check count and the most recent timestamp, and loads an account's individual events, including the exact values the server judged, on demand. Recorded events are kept for 90 days.
 - Ban and unban straight from that panel. A ban refuses the login and drops any live session immediately; unbanning restores access without touching the account's inventory or progress. Administrators can never be banned, so the operator cannot lock themselves out. Events can be cleared per account or wholesale, separately from the ban state.
+- The same page exposes the detection thresholds and the enforce switch, so they can be tuned without hand-editing `config.json`. They are the five `antiCheat` values, read and written through the existing config controllers. Every page that renders config controls now shares one admin gate, which also fills the inputs — previously each page carried its own copy, and a page whose copy did not fill them showed blank fields.
 - A `Banned` flag on the account. This is deliberately separate from `Dropped`, which only marks "your session ended" and is cleared on the next login.
 
 ### Changed

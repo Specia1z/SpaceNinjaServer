@@ -6,6 +6,14 @@ import fs from "node:fs";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 
+// The config round-trip step calls the real /custom/setConfig, which persists config.json and trips
+// the config file watcher. Point the whole run at a throwaway copy so the real config is never
+// touched. Must be a path relative to the repo root: configService joins it onto repoDir.
+const VERIFY_CONFIG = "node_modules/.cache/sns-verify-config.json";
+fs.mkdirSync(path.dirname(VERIFY_CONFIG), { recursive: true });
+fs.copyFileSync("config.json", VERIFY_CONFIG);
+process.argv.push("--configPath", VERIFY_CONFIG);
+
 const STEP = (() => {
     let n = 0;
     return msg => console.log(`\n[${++n}] ${msg}`);
@@ -47,6 +55,12 @@ const {
     listSuspicionEventsController,
     setAccountBanController
 } = await import("../build/src/controllers/custom/suspicionEventController.js");
+// Load the app first: configController <-> configWatcherService <-> routes form a cycle that only
+// resolves in the same order the real server uses. Importing the controller directly hits a TDZ error.
+await import("../build/src/app.js");
+const { getConfigController, setConfigController } =
+    await import("../build/src/controllers/custom/configController.js");
+const { configPath } = await import("../build/src/services/configService.js");
 
 // ---------------------------------------------------------------- capture anti-cheat warnings
 // The real code runs untouched; only the log sink is replaced. Without this the logger has no
@@ -149,6 +163,9 @@ const callPanel = async (handler, extra = {}) => {
     await handler(adminReq(extra), {
         json: value => {
             payload = value;
+        },
+        end: () => {
+            payload = undefined;
         }
     });
     return payload;
@@ -494,6 +511,91 @@ STEP("clearing removes the recorded events");
     assert(cleared.Deleted == 3, `three events deleted (got ${cleared.Deleted})`);
     const listed = await callPanel(listSuspicionEventsController);
     assert(listed.Accounts.length == 0, "the panel is empty again");
+}
+
+STEP("the anti-cheat settings round-trip through the config controllers");
+{
+    // The panel's five controls are addressed by config path, exactly like the existing cheats page.
+    // configPath is the throwaway copy this script redirected the run to.
+    assert(
+        configPath.replaceAll("\\", "/").endsWith(VERIFY_CONFIG),
+        `the run is pointed at the throwaway config (got ${configPath})`
+    );
+    const ids = [
+        "antiCheat.enabled",
+        "antiCheat.enforce",
+        "antiCheat.minMissionTimeSec",
+        "antiCheat.maxMissionCompletesPerReport",
+        "antiCheat.maxXpPerMissionSecond"
+    ];
+    const before = await callPanel(getConfigController, { body: ids });
+    assert(before["antiCheat.enabled"] === true, `enabled reads back (got ${before["antiCheat.enabled"]})`);
+    assert(before["antiCheat.enforce"] === false, `enforce reads back (got ${before["antiCheat.enforce"]})`);
+    assert(
+        before["antiCheat.minMissionTimeSec"] === 20,
+        `minMissionTimeSec reads back (got ${before["antiCheat.minMissionTimeSec"]})`
+    );
+    assert(
+        before["antiCheat.maxMissionCompletesPerReport"] === 10,
+        `maxMissionCompletesPerReport reads back (got ${before["antiCheat.maxMissionCompletesPerReport"]})`
+    );
+    assert(
+        before["antiCheat.maxXpPerMissionSecond"] === 100000,
+        `maxXpPerMissionSecond reads back (got ${before["antiCheat.maxXpPerMissionSecond"]})`
+    );
+
+    await callPanel(setConfigController, {
+        body: { "antiCheat.minMissionTimeSec": 45, "antiCheat.enforce": true }
+    });
+    assert(config.antiCheat.minMissionTimeSec === 45, "the number reaches the live config");
+    assert(config.antiCheat.enforce === true, "the checkbox reaches the live config");
+
+    const after = await callPanel(getConfigController, { body: ids });
+    assert(
+        after["antiCheat.minMissionTimeSec"] === 45,
+        `the written number reads back (got ${after["antiCheat.minMissionTimeSec"]})`
+    );
+    assert(after["antiCheat.enforce"] === true, "the written checkbox reads back");
+    assert(
+        fs.readFileSync(configPath, "utf8").includes('"minMissionTimeSec": 45'),
+        "the value was persisted to the config file"
+    );
+
+    // Put the live config back so the remaining steps run against the documented defaults.
+    await callPanel(setConfigController, {
+        body: { "antiCheat.minMissionTimeSec": 20, "antiCheat.enforce": false }
+    });
+    setConfig({});
+}
+
+STEP("every config control in the page markup resolves on the server");
+{
+    // Read the ids straight out of the served markup so a typo between the form and the config path
+    // cannot slip through, and confirm each one sits inside a .config-form so uiConfigs picks it up.
+    const html = fs.readFileSync("static/webui/index.html", "utf8");
+    const pageStart = html.indexOf('data-route="/webui/anti-cheat"');
+    assert(pageStart !== -1, "the anti-cheat page exists in the markup");
+    const pageEnd = html.indexOf('data-route="/webui/', pageStart + 1);
+    const page = html.slice(pageStart, pageEnd === -1 ? html.length : pageEnd);
+
+    const ids = [...page.matchAll(/id="(antiCheat\.[A-Za-z]+)"/g)].map(match => match[1]);
+    assert(
+        ids.sort().join(",") ===
+            [
+                "antiCheat.enabled",
+                "antiCheat.enforce",
+                "antiCheat.maxMissionCompletesPerReport",
+                "antiCheat.maxXpPerMissionSecond",
+                "antiCheat.minMissionTimeSec"
+            ].join(","),
+        `the page exposes exactly the five documented controls (got ${ids.join(", ")})`
+    );
+    assert(page.includes('class="config-form"'), "the controls live inside a .config-form container");
+
+    const values = await callPanel(getConfigController, { body: ids });
+    for (const id of ids) {
+        assert(values[id] !== null, `${id} resolves to a real config value (got ${values[id]})`);
+    }
 }
 
 STEP("cleanup");
