@@ -5,6 +5,7 @@ import { getAccountIdForRequest } from "../../services/loginService.ts";
 import { addItem, addItems, getInventory } from "../../services/inventoryService.ts";
 import { redeemCode } from "../../services/redeemCodeService.ts";
 import { broadcastInventoryUpdate } from "../../services/wsService.ts";
+import { logger } from "../../utils/logger.ts";
 
 // Codes the game client may submit come from two disjoint sources:
 //   1. the hardcoded promotional/glyph codes shipped in static/fixed_responses
@@ -41,7 +42,17 @@ export const redeemPromoCodeController: RequestHandler = async (req, res) => {
         await inventory.save();
         broadcastInventoryUpdate(req);
     }
-    res.json(inventoryChanges);
+
+    // FlavourItems are the one bin where the change shape and the inventory shape differ: the inventory
+    // stores { ItemType } objects, but this endpoint's client-side handler wants plain unique names, which
+    // is what the glyph path above has always sent. Sending objects leaves the client stuck on its
+    // "please wait" modal even though the items were granted server-side.
+    const response: Record<string, unknown> = { ...inventoryChanges };
+    if (inventoryChanges.FlavourItems) {
+        response.FlavourItems = inventoryChanges.FlavourItems.map(item => item.ItemType);
+    }
+    logger.debug("redeemPromoCode response", response);
+    res.json(response);
 };
 
 const redeemGlyphCode = async (

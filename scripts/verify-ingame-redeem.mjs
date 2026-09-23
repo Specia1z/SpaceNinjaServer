@@ -33,6 +33,7 @@ const { Inventory } = await import("../build/src/models/inventoryModels/inventor
 const { RedeemCode } = await import("../build/src/models/redeemCodeModel.js");
 const { initializeRedeemCodes, redeemCode } = await import("../build/src/services/redeemCodeService.js");
 const { addItems, getInventory } = await import("../build/src/services/inventoryService.js");
+const { redeemPromoCodeController } = await import("../build/src/controllers/api/redeemPromoCodeController.js");
 const glyphCodes = JSON.parse(fs.readFileSync("static/fixed_responses/glyphsCodes.json", "utf8"));
 
 const TEST_PREFIX = "SNS-TEST";
@@ -254,6 +255,60 @@ for (const c of glyphKeys) {
     }
 }
 assert(unresolved === 0, `all entries across ${glyphKeys.length} glyph codes resolve`);
+
+STEP("the in-game endpoint sends FlavourItems as plain unique names");
+// This endpoint's client-side handler wants the same shape the glyph path has always sent. Sending the
+// inventory's { ItemType } objects leaves the client stuck on its "please wait" modal even though the
+// grant succeeded server-side.
+{
+    const avatar = "/Lotus/Types/StoreItems/AvatarImages/FanChannel/AvatarImageChromaPrimePartner";
+    const flavourCode = `${TEST_PREFIX}FLAVOUR1`;
+    await RedeemCode.create({
+        Code: flavourCode,
+        Label: "flavour shape",
+        Rewards: [{ ItemType: avatar, ItemCount: 1 }],
+        MaxUses: 1,
+        Uses: 0,
+        UsedBy: [],
+        Enabled: true,
+        CreatedBy: `${TEST_PREFIX}-A`
+    });
+    await initializeRedeemCodes();
+
+    const NONCE = 4242;
+    const flavourAccount = await Account.create({
+        DisplayName: `${TEST_PREFIX}-F`,
+        email: "sns-test-f@example.com",
+        password: "x",
+        Nonce: NONCE
+    });
+    await Inventory.create({ ...emptyInventory, accountOwnerId: flavourAccount._id });
+
+    let payload;
+    await redeemPromoCodeController(
+        {
+            query: { accountId: flavourAccount._id.toString(), nonce: String(NONCE) },
+            body: JSON.stringify({ codeId: flavourCode })
+        },
+        {
+            json: value => {
+                payload = value;
+            },
+            status: () => ({ send: () => ({ end: () => undefined }) })
+        }
+    );
+
+    assert(payload.FlavourItems?.length === 1, `one flavour item reported (got ${payload.FlavourItems?.length})`);
+    assert(
+        payload.FlavourItems[0] === avatar,
+        `reported as a plain unique name, not an object (got ${JSON.stringify(payload.FlavourItems[0])})`
+    );
+    const stored = await getInventory(String(flavourAccount._id), undefined);
+    assert(
+        stored.FlavourItems.some(x => x.ItemType == avatar),
+        "the item still landed in the inventory"
+    );
+}
 
 STEP("cleanup");
 await RedeemCode.deleteMany({ Code: { $regex: `^${TEST_PREFIX}` } });

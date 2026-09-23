@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Rush cost scaling divided by zero on instant recipes, producing a `NaN` Platinum price.
 - The administrator item picker listed every translation string from `AdditionalDict` as if it were a grantable item, so searching `Platinum` offered `/Lotus/Language/Dojo/TradeTypePlatinum` — the Dojo trade-type label. Picking it could only ever fail. Language labels are now excluded from the search index.
 - `/webui/admin-data`, `/webui/redeem-codes`, and `/webui/admin` answered 404 on a hard reload or when opened from a bookmark. The sidebar links worked because the client-side router intercepts them, but the routes were never registered on the server.
+- Redeeming a custom code that granted anything other than a currency left the game stuck on its "please wait" modal, even though the items were granted and saved server-side. The response reported `FlavourItems` in the inventory's `{ ItemType }` shape, but this endpoint's client-side handler wants plain unique names — the shape the glyph path has always sent. Currencies were unaffected because they are plain numbers.
 
 ### Security
 
