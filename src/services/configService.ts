@@ -76,6 +76,25 @@ export interface IConfig {
     autoCompleteQuestsAndUnlockMissions?: boolean;
     newAccountStarterPack?: boolean;
     noMasteryRankUpCooldown?: boolean;
+    /**
+     * 结算上行报文的作弊检测。只覆盖「会过网络」的手法：透视、无敌、无限弹药这类纯本地改动
+     * 不产生上行数据，服务端无从取证。
+     */
+    antiCheat?: {
+        /** 总开关。关闭后完全不跑检测。 */
+        enabled?: boolean;
+        /**
+         * 是否实际拦截。默认 false 只记日志，玩家照常拿到奖励；打开后命中会改写结算种子、
+         * 拒绝发放任务奖励。
+         */
+        enforce?: boolean;
+        /** 结算上报为成功的任务，时长低于该值即判定异常（秒）。0 表示不检查。 */
+        minMissionTimeSec?: number;
+        /** 单次结算允许计入的任务完成次数上限。0 表示不限制。 */
+        maxMissionCompletesPerReport?: number;
+        /** 单位任务时长允许的装备经验上限（经验/秒）。0 表示不检查。 */
+        maxXpPerMissionSecond?: number;
+    };
     webui?: IWebuiConfig;
     unfaithfulBugFixes?: {
         ignore1999LastRegionPlayed?: boolean;

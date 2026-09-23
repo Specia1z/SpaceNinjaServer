@@ -261,6 +261,40 @@ export const validateConfig = (): void => {
             modified = true;
         }
     }
+    if (!config.antiCheat) {
+        // 老配置里没有这一段：补上默认值，让这些开关在 config.json 里可见可调。
+        config.antiCheat = {
+            enabled: true,
+            enforce: false,
+            minMissionTimeSec: 20,
+            maxMissionCompletesPerReport: 10,
+            maxXpPerMissionSecond: 100000
+        };
+        modified = true;
+    } else {
+        if (
+            config.antiCheat.minMissionTimeSec !== undefined &&
+            (!Number.isInteger(config.antiCheat.minMissionTimeSec) || config.antiCheat.minMissionTimeSec < 0)
+        ) {
+            config.antiCheat.minMissionTimeSec = 20;
+            modified = true;
+        }
+        if (
+            config.antiCheat.maxMissionCompletesPerReport !== undefined &&
+            (!Number.isInteger(config.antiCheat.maxMissionCompletesPerReport) ||
+                config.antiCheat.maxMissionCompletesPerReport < 0)
+        ) {
+            config.antiCheat.maxMissionCompletesPerReport = 10;
+            modified = true;
+        }
+        if (
+            config.antiCheat.maxXpPerMissionSecond !== undefined &&
+            (!Number.isInteger(config.antiCheat.maxXpPerMissionSecond) || config.antiCheat.maxXpPerMissionSecond < 0)
+        ) {
+            config.antiCheat.maxXpPerMissionSecond = 100000;
+            modified = true;
+        }
+    }
     if (modified) {
         logger.info(`Updating config file to fix some issues with it.`);
         void saveConfig();

@@ -8,6 +8,7 @@
     "scripts/verify-platinum-reward.mjs",
     "scripts/verify-currency-rewards.mjs",
     "scripts/verify-search-index.mjs",
+    "scripts/verify-anti-cheat.mjs",
     "static/webui/**"
   ],
   "ignoreDependencies": ["warframe-riven-info"]

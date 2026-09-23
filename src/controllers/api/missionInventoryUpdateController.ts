@@ -12,6 +12,13 @@ import {
     dispatchPendingPremiumCredits,
     getInventory
 } from "../../services/inventoryService.ts";
+import {
+    clampMissionCompletes,
+    isAntiCheatEnforcing,
+    verifyMissionTimes,
+    verifyRewardSeed,
+    verifyXpGain
+} from "../../services/antiCheatService.ts";
 import { getInventoryResponse } from "./inventoryController.ts";
 import { logger } from "../../utils/logger.ts";
 import type {
@@ -41,8 +48,8 @@ import { filterInplace } from "../../helpers/general.ts";
 - [ ]  MissionFailed
 - [ ]  MissionStatus
 - [ ]  CurrentLoadOutIds
-- [ ]  AliveTime
-- [ ]  MissionTime
+- [x]  AliveTime (反作弊校验用，见 antiCheatService)
+- [x]  MissionTime (反作弊校验用，见 antiCheatService)
 - [x]  Missions
 - [ ]  CompletedAlerts
 - [ ]  LastRegionPlayed
@@ -75,6 +82,31 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
     const firstCompletion = missionReport.SortieId
         ? inventory.CompletedSorties.indexOf(missionReport.SortieId) == -1
         : false;
+
+    // 反作弊：先判定再落库。默认只记日志，enforce 关闭时这里不改变任何行为。
+    const missionTimesOk = verifyMissionTimes(account, missionReport);
+    const rewardSeedOk = await verifyRewardSeed(account, missionReport);
+    verifyXpGain(account, missionReport);
+    if (missionReport.Missions) {
+        missionReport.Missions = clampMissionCompletes(account, missionReport.Missions);
+    }
+
+    if (isAntiCheatEnforcing() && (!missionTimesOk || !rewardSeedOk)) {
+        // 拒绝整份报文：连客户端自带的 RegularCredits / MiscItems 也一并丢弃，不做部分入库。
+        logger.warn(`anti-cheat check failed, refusing to process mission report`);
+        if (missionReport.EndOfMatchUpload || missionReport.RJ) {
+            inventory.RewardSeed = generateRewardSeed();
+        }
+        await inventory.save();
+        const inventoryResponse = await getInventoryResponse(req, inventory, true, buildLabel);
+        res.json({
+            InventoryJson: JSON.stringify(inventoryResponse),
+            MissionRewards: []
+        });
+        sendWsBroadcastTo(account._id.toString(), { update_inventory: true });
+        return;
+    }
+
     const inventoryUpdates = await addMissionInventoryUpdates(account, buildLabel, inventory, missionReport);
 
     if (

@@ -41,6 +41,13 @@
   "autoCompleteQuestsAndUnlockMissions": false,
   "newAccountStarterPack": false,
   "noMasteryRankUpCooldown": false,
+  "antiCheat": {
+    "enabled": true,
+    "enforce": false,
+    "minMissionTimeSec": 20,
+    "maxMissionCompletesPerReport": 10,
+    "maxXpPerMissionSecond": 100000
+  },
   "webui": {
     "enabled": true,
     "adminOnly": true,
