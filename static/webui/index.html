@@ -2284,7 +2284,7 @@
                                     <div class="form-text" data-loc="admin_antiCheatEnforceHint"></div>
                                 </div>
                                 <div class="row g-3">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <form class="form-group" onsubmit="doSaveConfigInt('antiCheat.minMissionTimeSec'); return false;">
                                             <label class="form-label" for="antiCheat.minMissionTimeSec" data-loc="admin_antiCheatMinMissionTime"></label>
                                             <div class="input-group">
@@ -2294,7 +2294,7 @@
                                             <div class="form-text" data-loc="admin_antiCheatMinMissionTimeHint"></div>
                                         </form>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <form class="form-group" onsubmit="doSaveConfigInt('antiCheat.maxMissionCompletesPerReport'); return false;">
                                             <label class="form-label" for="antiCheat.maxMissionCompletesPerReport" data-loc="admin_antiCheatMaxCompletes"></label>
                                             <div class="input-group">
@@ -2304,7 +2304,7 @@
                                             <div class="form-text" data-loc="admin_antiCheatMaxCompletesHint"></div>
                                         </form>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <form class="form-group" onsubmit="doSaveConfigInt('antiCheat.maxXpPerMissionSecond'); return false;">
                                             <label class="form-label" for="antiCheat.maxXpPerMissionSecond" data-loc="admin_antiCheatMaxXp"></label>
                                             <div class="input-group">
@@ -2312,6 +2312,16 @@
                                                 <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
                                             </div>
                                             <div class="form-text" data-loc="admin_antiCheatMaxXpHint"></div>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <form class="form-group" onsubmit="doSaveConfigInt('antiCheat.maxClientItemCountPerReport'); return false;">
+                                            <label class="form-label" for="antiCheat.maxClientItemCountPerReport" data-loc="admin_antiCheatMaxClientItemCount"></label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="antiCheat.maxClientItemCountPerReport" type="number" min="0" step="1" data-default="10000" />
+                                                <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                            </div>
+                                            <div class="form-text" data-loc="admin_antiCheatMaxClientItemCountHint"></div>
                                         </form>
                                     </div>
                                 </div>

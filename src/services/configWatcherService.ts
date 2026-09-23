@@ -268,7 +268,8 @@ export const validateConfig = (): void => {
             enforce: false,
             minMissionTimeSec: 20,
             maxMissionCompletesPerReport: 10,
-            maxXpPerMissionSecond: 100000
+            maxXpPerMissionSecond: 100000,
+            maxClientItemCountPerReport: 10000
         };
         modified = true;
     } else {
@@ -292,6 +293,18 @@ export const validateConfig = (): void => {
             (!Number.isInteger(config.antiCheat.maxXpPerMissionSecond) || config.antiCheat.maxXpPerMissionSecond < 0)
         ) {
             config.antiCheat.maxXpPerMissionSecond = 100000;
+            modified = true;
+        }
+        if (
+            config.antiCheat.maxClientItemCountPerReport !== undefined &&
+            (!Number.isInteger(config.antiCheat.maxClientItemCountPerReport) ||
+                config.antiCheat.maxClientItemCountPerReport < 0)
+        ) {
+            config.antiCheat.maxClientItemCountPerReport = 10000;
+            modified = true;
+        }
+        if (config.antiCheat.maxClientItemCountPerReport === undefined) {
+            config.antiCheat.maxClientItemCountPerReport = 10000;
             modified = true;
         }
     }

@@ -94,6 +94,8 @@ export interface IConfig {
         maxMissionCompletesPerReport?: number;
         /** 单位任务时长允许的装备经验上限（经验/秒）。0 表示不检查。 */
         maxXpPerMissionSecond?: number;
+        /** 客户端单次结算对同一物品允许上报的最大数量。0 表示不检查。 */
+        maxClientItemCountPerReport?: number;
     };
     webui?: IWebuiConfig;
     unfaithfulBugFixes?: {

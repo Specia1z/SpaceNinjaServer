@@ -12,7 +12,9 @@ const suspicionKinds = [
     "rewardSeedMismatch",
     "impossibleMissionTime",
     "excessiveMissionCompletes",
-    "excessiveXpGain"
+    "excessiveXpGain",
+    "invalidInventoryUpdate",
+    "excessiveInventoryUpdate"
 ] as const;
 
 export type TSuspicionKind = (typeof suspicionKinds)[number];
@@ -29,6 +31,17 @@ export interface ISuspicionEvent {
     // 判定所依据的数值证据，原样存下，便于人工复核。
     Details: Record<string, unknown>;
 
+    // 服务端为每次结算请求生成的关联 ID，便于串联同一请求的多条判定日志。
+    RequestId?: string;
+
+    // 结算请求上下文，避免只看 Details 时丢失客户端版本和任务状态。
+    BuildLabel?: string;
+    MissionStatus?: string;
+    MissionTime?: number;
+    AliveTime?: number;
+    RemoteAddress?: string;
+    Enforced?: boolean;
+
     // 触发时的任务与对局，便于定位是哪一局。
     MissionTag?: string;
     SessionId?: string;
@@ -44,6 +57,13 @@ const suspicionEventSchema = new Schema<ISuspicionEvent>({
     DisplayName: { type: String, required: true },
     Kind: { type: String, required: true, enum: suspicionKinds },
     Details: { type: Schema.Types.Mixed, required: true },
+    RequestId: String,
+    BuildLabel: String,
+    MissionStatus: String,
+    MissionTime: Number,
+    AliveTime: Number,
+    RemoteAddress: String,
+    Enforced: Boolean,
     MissionTag: String,
     SessionId: String,
     CreatedAt: { type: Date, required: true, default: (): Date => new Date() }

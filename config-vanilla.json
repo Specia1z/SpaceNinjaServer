@@ -46,7 +46,8 @@
     "enforce": false,
     "minMissionTimeSec": 20,
     "maxMissionCompletesPerReport": 10,
-    "maxXpPerMissionSecond": 100000
+    "maxXpPerMissionSecond": 100000,
+    "maxClientItemCountPerReport": 10000
   },
   "webui": {
     "enabled": true,

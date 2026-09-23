@@ -98,7 +98,7 @@ const account = await Account.create({
 const suitId = new mongoose.Types.ObjectId();
 await Inventory.create({
     accountOwnerId: account._id,
-    Suits: [{ ItemId: suitId, ItemType: "/Lotus/Powersuits/Excalibur/Excalibur", XP: 0 }],
+    Suits: [{ _id: suitId, ItemType: "/Lotus/Powersuits/Excalibur/Excalibur", XP: 0 }],
     LongGuns: [],
     Pistols: [],
     Melee: [],
@@ -237,7 +237,8 @@ const antiCheatConfig = {
     enforce: false,
     minMissionTimeSec: 20,
     maxMissionCompletesPerReport: 10,
-    maxXpPerMissionSecond: 100000
+    maxXpPerMissionSecond: 100000,
+    maxClientItemCountPerReport: 10000
 };
 const setConfig = patch => {
     config.antiCheat = { ...antiCheatConfig, ...patch };
@@ -284,7 +285,10 @@ drainWarnings();
     // The controller parses the body internally, so drive the check on an already-parsed report to
     // observe the correction. JSONParse (not JSON.parse) keeps the 64-bit seed exact, as the server does.
     const report = JSONParse(buildReportText({ seed: TAMPERED_SEED }));
-    const ok = await verifyRewardSeed(account, report, await readInventory());
+    const ok = await verifyRewardSeed(account, report, await readInventory(), {
+        requestId: "SNS-direct-check",
+        buildLabel: account.BuildLabel
+    });
     const flagged = drainAntiCheatWarnings();
     assert(ok === false, "the check reports a mismatch");
     assert(flagged.length === 1, `one warning (got ${flagged.length})`);
@@ -336,9 +340,9 @@ await Inventory.updateOne({ accountOwnerId: account._id }, { $set: { RegularCred
 drainWarnings();
 {
     const payload = await callController(buildReportText({ MissionTime: 9, AliveTime: 9, RegularCredits: 5_000_000 }));
-    const rejected = sawLog("anti-cheat check failed, refusing to process mission report");
+    const rejected = sawLog("[anti-cheat] settlementRejected");
     const flagged = drainAntiCheatWarnings();
-    assert(flagged.length === 1, `one warning (got ${flagged.length})`);
+    assert(flagged.length === 2, `one detection warning plus one rejection summary (got ${flagged.length})`);
     assert(rejected, "the rejection path was taken");
     assert(payload.MissionRewards.length === 0, "no mission rewards handed out");
     const after = await readInventory();
@@ -391,6 +395,57 @@ drainWarnings();
     assert(flagged[0].metadata.xpPerSecond === 3_333_333, `xp/s derived from mission time`);
 }
 
+STEP("enforce on rejects excessive xp before it reaches inventory");
+setConfig({ enforce: true });
+await Inventory.updateOne(
+    { accountOwnerId: account._id },
+    {
+        $set: {
+            "Suits.0.XP": 0,
+            XPInfo: [{ ItemType: "/Lotus/Powersuits/Excalibur/Excalibur", XP: 0 }]
+        }
+    }
+);
+drainWarnings();
+{
+    const payload = await callController(
+        buildReportText({
+            MissionTime: 300,
+            AliveTime: 300,
+            Suits: [{ ItemId: { $oid: suitId.toString() }, XP: 999_999_999 }]
+        })
+    );
+    const flagged = drainAntiCheatWarnings();
+    assert(flagged.length === 2, `one detection warning plus one rejection summary (got ${flagged.length})`);
+    assert(payload.MissionRewards.length === 0, "no mission rewards handed out");
+    const after = await readInventory();
+    const suit = after.Suits.id(suitId);
+    assert(suit.XP === 0, `reported equipment XP was discarded (got ${suit.XP})`);
+    assert(after.XPInfo[0].XP === 0, `reported XPInfo was discarded (got ${after.XPInfo[0].XP})`);
+}
+
+STEP("enforce on rejects an oversized client item delta");
+setConfig({ enforce: true });
+await Inventory.updateOne(
+    { accountOwnerId: account._id },
+    { $set: { MiscItems: [], RegularCredits: 0 } }
+);
+drainWarnings();
+{
+    const payload = await callController(
+        buildReportText({
+            MiscItems: [{ ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 999_999 }]
+        })
+    );
+    const flagged = drainAntiCheatWarnings();
+    assert(flagged.length === 2, `one detection warning plus one rejection summary (got ${flagged.length})`);
+    assert(flagged[0].message === "[anti-cheat] excessiveInventoryUpdate", "kind is excessiveInventoryUpdate");
+    assert(payload.MissionRewards.length === 0, "no mission rewards handed out");
+    const after = await readInventory();
+    assert(after.MiscItems.length === 0, "the oversized client item delta was discarded");
+    assert(after.RegularCredits === 0, "client credits were discarded with the report");
+}
+
 STEP("the inventory seed still gives a verdict when the session is gone");
 setConfig({});
 drainWarnings();
@@ -434,6 +489,11 @@ drainWarnings();
     assert(seedEvent.Details.inventorySeed != undefined, "the inventory seed is kept as evidence");
     assert(seedEvent.MissionTag == "SolNode1", "the mission tag is kept");
     assert(seedEvent.SessionId == session._id.toString(), "the session id is kept");
+    assert(typeof seedEvent.RequestId == "string" && seedEvent.RequestId.length > 0, "the request id is kept");
+    assert(seedEvent.BuildLabel == account.BuildLabel, "the build label is kept");
+    assert(seedEvent.MissionStatus == "GS_SUCCESS", "the mission status is kept");
+    assert(seedEvent.MissionTime == 9, "the mission time is kept");
+    assert(seedEvent.AliveTime == 9, "the alive time is kept");
 }
 
 STEP("a rapid repeat of the same check does not flood the event log");
@@ -515,7 +575,7 @@ STEP("clearing removes the recorded events");
 
 STEP("the anti-cheat settings round-trip through the config controllers");
 {
-    // The panel's five controls are addressed by config path, exactly like the existing cheats page.
+    // The panel's six controls are addressed by config path, exactly like the existing cheats page.
     // configPath is the throwaway copy this script redirected the run to.
     assert(
         configPath.replaceAll("\\", "/").endsWith(VERIFY_CONFIG),
@@ -526,7 +586,8 @@ STEP("the anti-cheat settings round-trip through the config controllers");
         "antiCheat.enforce",
         "antiCheat.minMissionTimeSec",
         "antiCheat.maxMissionCompletesPerReport",
-        "antiCheat.maxXpPerMissionSecond"
+        "antiCheat.maxXpPerMissionSecond",
+        "antiCheat.maxClientItemCountPerReport"
     ];
     const before = await callPanel(getConfigController, { body: ids });
     assert(before["antiCheat.enabled"] === true, `enabled reads back (got ${before["antiCheat.enabled"]})`);
@@ -542,6 +603,10 @@ STEP("the anti-cheat settings round-trip through the config controllers");
     assert(
         before["antiCheat.maxXpPerMissionSecond"] === 100000,
         `maxXpPerMissionSecond reads back (got ${before["antiCheat.maxXpPerMissionSecond"]})`
+    );
+    assert(
+        before["antiCheat.maxClientItemCountPerReport"] === 10000,
+        `maxClientItemCountPerReport reads back (got ${before["antiCheat.maxClientItemCountPerReport"]})`
     );
 
     await callPanel(setConfigController, {
@@ -584,11 +649,12 @@ STEP("every config control in the page markup resolves on the server");
             [
                 "antiCheat.enabled",
                 "antiCheat.enforce",
+                "antiCheat.maxClientItemCountPerReport",
                 "antiCheat.maxMissionCompletesPerReport",
                 "antiCheat.maxXpPerMissionSecond",
                 "antiCheat.minMissionTimeSec"
             ].join(","),
-        `the page exposes exactly the five documented controls (got ${ids.join(", ")})`
+        `the page exposes exactly the six documented controls (got ${ids.join(", ")})`
     );
     assert(page.includes('class="config-form"'), "the controls live inside a .config-form container");
 

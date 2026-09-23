@@ -4196,8 +4196,22 @@ function antiCheatKindLabel(kind) {
 
 function formatAdminEvidence(details) {
     return Object.entries(details ?? {})
+        .filter(([, value]) => value !== undefined)
         .map(([key, value]) => `${key}=${String(value)}`)
         .join(", ");
+}
+
+function formatAdminEventEvidence(event) {
+    return formatAdminEvidence({
+        requestId: event.RequestId,
+        buildLabel: event.BuildLabel,
+        missionStatus: event.MissionStatus,
+        missionTime: event.MissionTime,
+        aliveTime: event.AliveTime,
+        enforced: event.Enforced,
+        sessionId: event.SessionId,
+        ...event.Details
+    });
 }
 
 async function loadAdminSuspicionEvents() {
@@ -4285,7 +4299,7 @@ async function loadAdminSuspicionDetail(entry) {
         row.insertCell().textContent = formatAdminDate(event.CreatedAt);
         row.insertCell().textContent = antiCheatKindLabel(event.Kind);
         row.insertCell().textContent = event.MissionTag ?? "";
-        row.insertCell().textContent = formatAdminEvidence(event.Details);
+        row.insertCell().textContent = formatAdminEventEvidence(event);
         tbody.appendChild(row);
     });
 }

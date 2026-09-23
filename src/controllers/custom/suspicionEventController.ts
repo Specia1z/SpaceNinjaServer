@@ -110,6 +110,13 @@ export const getSuspicionEventsForAccountController: RequestHandler = async (req
         Events: events.map(event => ({
             Kind: event.Kind,
             Details: event.Details,
+            RequestId: event.RequestId,
+            BuildLabel: event.BuildLabel,
+            MissionStatus: event.MissionStatus,
+            MissionTime: event.MissionTime,
+            AliveTime: event.AliveTime,
+            RemoteAddress: event.RemoteAddress,
+            Enforced: event.Enforced,
             MissionTag: event.MissionTag,
             SessionId: event.SessionId,
             CreatedAt: event.CreatedAt

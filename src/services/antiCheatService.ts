@@ -8,6 +8,12 @@ import type { IMissionInventoryUpdateRequest } from "../types/requestTypes.ts";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import type { TSuspicionKind } from "../models/suspicionEventModel.ts";
 
+export interface IAntiCheatContext {
+    requestId: string;
+    buildLabel: string;
+    remoteAddress?: string;
+}
+
 /*
  * 结算上行报文的反作弊校验。
  *
@@ -16,7 +22,7 @@ import type { TSuspicionKind } from "../models/suspicionEventModel.ts";
  * 客户端在 deflate 之前原地改写 ezip 明文，就能伪造结算种子、任务时长、完成次数与经验增量。
  *
  * 所有阈值来自 config.antiCheat，默认只记日志（enforce=false）不改变任何行为。
- * 每次判定都会落一条 SuspicionEvent，管理面板据此列表与封禁。
+ * 每次判定都会先写结构化日志；数据库事件按账号与判定类型做短窗口限流，管理面板据此列表与封禁。
  */
 
 const isEnabled = (): boolean => config.antiCheat?.enabled ?? true;
@@ -29,16 +35,35 @@ export const isAntiCheatEnforcing = (): boolean => isEnabled() && (config.antiCh
 const EVENT_THROTTLE_MS = 2000;
 const lastEventAt = new Map<string, number>();
 
+const countedInventoryFields = [
+    "MiscItems",
+    "Recipes",
+    "FusionBundles",
+    "Consumables",
+    "FusionBundels",
+    "CrewShipRawSalvage",
+    "CrewShipAmmo",
+    "BonusMiscItems",
+    "EmailItems",
+    "ShipDecorations",
+    "LevelKeys",
+    "RawUpgrades",
+    "FusionTreasures"
+] as const;
+
 /** 所有可疑判定统一从这里出日志并落库，便于运维 grep 与面板取证。 */
 const flagSuspicious = (
     account: Pick<TAccountDocument, "_id" | "DisplayName">,
     kind: TSuspicionKind,
     details: Record<string, unknown>,
-    missionReport: IMissionInventoryUpdateRequest
+    missionReport: IMissionInventoryUpdateRequest,
+    context: IAntiCheatContext
 ): void => {
     logger.warn(`[anti-cheat] ${kind}`, {
+        requestId: context.requestId,
         account: account._id.toString(),
         displayName: account.DisplayName,
+        buildLabel: context.buildLabel,
         ...details
     });
 
@@ -55,7 +80,14 @@ const flagSuspicious = (
         DisplayName: account.DisplayName,
         Kind: kind,
         Details: details,
-        MissionTag: missionReport.Missions?.Tag,
+        RequestId: context.requestId,
+        BuildLabel: context.buildLabel,
+        MissionStatus: missionReport.MissionStatus,
+        MissionTime: missionReport.MissionTime,
+        AliveTime: missionReport.AliveTime,
+        RemoteAddress: context.remoteAddress,
+        Enforced: isAntiCheatEnforcing(),
+        MissionTag: missionReport.Missions?.Tag ?? missionReport.RewardInfo?.node,
         SessionId: missionReport.sharedSessionId || undefined
     }).catch((error: Error) => logger.warn(`[anti-cheat] failed to record suspicion event`, { error: error.message }));
 };
@@ -87,7 +119,8 @@ const toBigInt = (value: number | bigint): bigint | null => {
 export const verifyRewardSeed = async (
     account: Pick<TAccountDocument, "_id" | "DisplayName">,
     missionReport: IMissionInventoryUpdateRequest,
-    inventory: Pick<TInventoryDatabaseDocument, "RewardSeed">
+    inventory: Pick<TInventoryDatabaseDocument, "RewardSeed">,
+    context: IAntiCheatContext
 ): Promise<boolean> => {
     if (!isEnabled()) return true;
 
@@ -121,7 +154,8 @@ export const verifyRewardSeed = async (
             inventorySeed: inventorySeed?.toString() ?? "unknown",
             sessionId
         },
-        missionReport
+        missionReport,
+        context
     );
     // expected is non-empty here: the early return above covers the "no seed to compare against" case.
     const replacement = expected[0];
@@ -139,7 +173,8 @@ export const verifyRewardSeed = async (
  */
 export const verifyMissionTimes = (
     account: Pick<TAccountDocument, "_id" | "DisplayName">,
-    missionReport: IMissionInventoryUpdateRequest
+    missionReport: IMissionInventoryUpdateRequest,
+    context: IAntiCheatContext
 ): boolean => {
     if (!isEnabled()) return true;
 
@@ -159,7 +194,8 @@ export const verifyMissionTimes = (
                 missionTime: missionReport.MissionTime,
                 minMissionTimeSec: minTimeSec
             },
-            missionReport
+            missionReport,
+            context
         );
         ok = false;
     }
@@ -172,11 +208,94 @@ export const verifyMissionTimes = (
                 missionTime: missionReport.MissionTime,
                 reason: "aliveTimeExceedsMissionTime"
             },
-            missionReport
+            missionReport,
+            context
         );
         ok = false;
     }
     return ok;
+};
+
+/**
+ * 校验客户端直接提交的库存增量。
+ *
+ * 这些字段在正常任务中可以出现，但它们不能接受负数、浮点数、空类型或明显超大的单次数量。
+ * 这不是掉落表重放的替代品；它先挡住最常见的“改一个 ItemCount 就刷满库存”的报文。
+ */
+export const verifyClientInventoryUpdates = (
+    account: Pick<TAccountDocument, "_id" | "DisplayName">,
+    missionReport: IMissionInventoryUpdateRequest,
+    context: IAntiCheatContext
+): boolean => {
+    if (!isEnabled()) return true;
+
+    const maxItemCount = config.antiCheat?.maxClientItemCountPerReport ?? 10000;
+    const fail = (
+        kind: "invalidInventoryUpdate" | "excessiveInventoryUpdate",
+        details: Record<string, unknown>
+    ): boolean => {
+        flagSuspicious(account, kind, details, missionReport, context);
+        return false;
+    };
+
+    for (const field of countedInventoryFields) {
+        const items = missionReport[field] as unknown;
+        if (!Array.isArray(items)) continue;
+        for (const [index, item] of items.entries()) {
+            if (
+                typeof item != "object" ||
+                item == null ||
+                typeof (item as { ItemType?: unknown }).ItemType != "string"
+            ) {
+                return fail("invalidInventoryUpdate", { field, index, reason: "missingItemType" });
+            }
+            const itemType = (item as { ItemType: string }).ItemType;
+            if (!itemType.startsWith("/Lotus/")) {
+                return fail("invalidInventoryUpdate", { field, index, itemType, reason: "invalidItemType" });
+            }
+            const itemCount = (item as { ItemCount?: unknown }).ItemCount;
+            if (itemCount !== undefined) {
+                if (typeof itemCount != "number" || !Number.isSafeInteger(itemCount) || itemCount <= 0) {
+                    return fail("invalidInventoryUpdate", {
+                        field,
+                        index,
+                        itemType,
+                        itemCount,
+                        reason: "invalidItemCount"
+                    });
+                }
+                if (maxItemCount > 0 && itemCount > maxItemCount) {
+                    return fail("excessiveInventoryUpdate", {
+                        field,
+                        index,
+                        itemType,
+                        requested: itemCount,
+                        allowed: maxItemCount
+                    });
+                }
+            }
+        }
+    }
+
+    if (missionReport.RegularCredits !== undefined) {
+        const credits = missionReport.RegularCredits;
+        if (!Number.isSafeInteger(credits) || credits < 0) {
+            return fail("invalidInventoryUpdate", {
+                field: "RegularCredits",
+                value: credits,
+                reason: "invalidCreditDelta"
+            });
+        }
+        if (maxItemCount > 0 && credits > maxItemCount * 1000) {
+            return fail("excessiveInventoryUpdate", {
+                field: "RegularCredits",
+                requested: credits,
+                allowed: maxItemCount * 1000
+            });
+        }
+    }
+
+    return true;
 };
 
 /**
@@ -187,7 +306,8 @@ export const verifyMissionTimes = (
  */
 export const clampMissionCompletes = (
     account: Pick<TAccountDocument, "_id" | "DisplayName">,
-    missionReport: IMissionInventoryUpdateRequest
+    missionReport: IMissionInventoryUpdateRequest,
+    context: IAntiCheatContext
 ): void => {
     if (!isEnabled()) return;
 
@@ -204,7 +324,8 @@ export const clampMissionCompletes = (
             requested: mission.Completes,
             allowed: maxCompletes
         },
-        missionReport
+        missionReport,
+        context
     );
     mission.Completes = maxCompletes;
 };
@@ -213,16 +334,17 @@ export const clampMissionCompletes = (
  * 校验装备经验增量速率。XP Multiplier 类脚本把本局累积放大数倍后随结算上报，
  * 单看上报值看不出来，但「单位任务时长内的经验量」会明显偏离正常区间。
  *
- * 只判定不修改：按比例削减经验需要逐件重算并同步 XPInfo，风险高于收益；抓到后由运维处置。
+ * 只判定不修改：按比例削减经验需要逐件重算并同步 XPInfo，风险高于收益；enforce 开启时由调用方拒绝整份结算。
  */
 export const verifyXpGain = (
     account: Pick<TAccountDocument, "_id" | "DisplayName">,
-    missionReport: IMissionInventoryUpdateRequest
-): void => {
-    if (!isEnabled()) return;
+    missionReport: IMissionInventoryUpdateRequest,
+    context: IAntiCheatContext
+): boolean => {
+    if (!isEnabled()) return true;
 
     const maxPerSecond = config.antiCheat?.maxXpPerMissionSecond ?? 100000;
-    if (maxPerSecond <= 0) return;
+    if (maxPerSecond <= 0) return true;
 
     let totalXp = 0;
     for (const key of equipmentKeys) {
@@ -232,10 +354,10 @@ export const verifyXpGain = (
             totalXp += item.XP ?? 0;
         }
     }
-    if (totalXp <= 0) return;
+    if (totalXp <= 0) return true;
 
     const seconds = Math.max(missionReport.MissionTime, 1);
-    if (totalXp / seconds <= maxPerSecond) return;
+    if (totalXp / seconds <= maxPerSecond) return true;
 
     flagSuspicious(
         account,
@@ -246,6 +368,8 @@ export const verifyXpGain = (
             xpPerSecond: Math.round(totalXp / seconds),
             maxXpPerMissionSecond: maxPerSecond
         },
-        missionReport
+        missionReport,
+        context
     );
+    return false;
 };

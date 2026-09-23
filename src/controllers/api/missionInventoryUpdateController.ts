@@ -15,6 +15,7 @@ import {
 import {
     clampMissionCompletes,
     isAntiCheatEnforcing,
+    verifyClientInventoryUpdates,
     verifyMissionTimes,
     verifyRewardSeed,
     verifyXpGain
@@ -31,6 +32,7 @@ import { generateRewardSeed } from "../../services/rngService.ts";
 import { version_compare } from "../../helpers/inventoryHelpers.ts";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { filterInplace } from "../../helpers/general.ts";
+import crypto from "node:crypto";
 
 /*
 **** INPUT ****
@@ -75,8 +77,21 @@ import { filterInplace } from "../../helpers/general.ts";
 export const missionInventoryUpdateController: RequestHandler = async (req, res): Promise<void> => {
     const account = await getAccountForRequest(req);
     const buildLabel = getBuildLabel(req, account);
+    const requestId = crypto.randomUUID();
+    const antiCheatContext = {
+        requestId,
+        buildLabel,
+        // Some controller-level test requests do not provide Express' socket object.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        remoteAddress: req.ip ?? req.socket?.remoteAddress
+    };
     const missionReport = getJSONfromString<IMissionInventoryUpdateRequest>((req.body as string).toString());
-    logger.debug("mission report:", missionReport);
+    logger.debug("mission report", {
+        requestId,
+        account: account._id.toString(),
+        buildLabel,
+        report: missionReport
+    });
 
     const inventory = await getInventory(account._id, undefined);
     const firstCompletion = missionReport.SortieId
@@ -84,14 +99,29 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         : false;
 
     // 反作弊：先判定再落库。默认只记日志，enforce 关闭时这里不改变任何行为。
-    const missionTimesOk = verifyMissionTimes(account, missionReport);
-    const rewardSeedOk = await verifyRewardSeed(account, missionReport, inventory);
-    verifyXpGain(account, missionReport);
-    clampMissionCompletes(account, missionReport);
+    const missionTimesOk = verifyMissionTimes(account, missionReport, antiCheatContext);
+    const rewardSeedOk = await verifyRewardSeed(account, missionReport, inventory, antiCheatContext);
+    const clientInventoryUpdatesOk = verifyClientInventoryUpdates(account, missionReport, antiCheatContext);
+    const xpGainOk = verifyXpGain(account, missionReport, antiCheatContext);
+    clampMissionCompletes(account, missionReport, antiCheatContext);
 
-    if (isAntiCheatEnforcing() && (!missionTimesOk || !rewardSeedOk)) {
+    if (isAntiCheatEnforcing() && (!missionTimesOk || !rewardSeedOk || !clientInventoryUpdatesOk || !xpGainOk)) {
+        const failedChecks = [
+            !missionTimesOk && "missionTimes",
+            !rewardSeedOk && "rewardSeed",
+            !clientInventoryUpdatesOk && "clientInventoryUpdates",
+            !xpGainOk && "xpGain"
+        ].filter((check): check is string => Boolean(check));
         // 拒绝整份报文：连客户端自带的 RegularCredits / MiscItems 也一并丢弃，不做部分入库。
-        logger.warn(`anti-cheat check failed, refusing to process mission report`);
+        logger.warn(`[anti-cheat] settlementRejected`, {
+            requestId,
+            account: account._id.toString(),
+            displayName: account.DisplayName,
+            buildLabel,
+            failedChecks,
+            missionTag: missionReport.Missions?.Tag ?? missionReport.RewardInfo?.node,
+            sessionId: missionReport.sharedSessionId || undefined
+        });
         if (missionReport.EndOfMatchUpload || missionReport.RJ) {
             inventory.RewardSeed = generateRewardSeed();
         }
