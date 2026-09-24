@@ -33,11 +33,6 @@ services:
         volumes:
             - ./docker-data/conf:/app/conf
         ports:
-            - 6695:6695
-            - 6696:6696
-            - 6697:6697
-            - 6698:6698
-            - 6699:6699
             - 6665:6665
             - 6666:6666
             - 6667:6667
@@ -45,6 +40,18 @@ services:
             - 6669:6669
         depends_on:
             - spaceninjaserver
+
+    warframe-irc-tls-proxy:
+        build:
+            context: ./docker/warframe-irc-tls-proxy
+        ports:
+            - 6695:6695
+            - 6696:6696
+            - 6697:6697
+            - 6698:6698
+            - 6699:6699
+        depends_on:
+            - warframe-irc-server
 
     warframe-hub-server:
         image: openwf/warframe-hub-server

@@ -67,7 +67,7 @@ To build the checked-out source instead of using the published Web image:
 docker compose up -d --build
 ```
 
-The IRC service is built from pinned upstream revisions with an RFC 5746/SCSV compatibility patch required by U44 clients. Compose retains `openwf/warframe-hub-server` for Hub networking and the official MongoDB image. The first launch creates `docker-data/conf/config.json` automatically.
+The IRC service is built from pinned upstream revisions. A HAProxy sidecar terminates TLS 1.2 and TLS 1.3 on ports `6695-6699`, allowing both U43 and TLS-1.3-only U44 clients to connect. Compose retains `openwf/warframe-hub-server` for Hub networking and the official MongoDB image. The first launch creates `docker-data/conf/config.json` automatically.
 
 ## Releases
 

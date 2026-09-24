@@ -1,6 +1,6 @@
 FROM alpine:3.22.1 AS build
 
-ARG SOUP_COMMIT=98ebf19c58d73ed205dfdcd64d0a607be48b59d2
+ARG SOUP_COMMIT=6be2387cb68b71a2b1e2f1e7473501cf17c2b0ca
 ARG IRC_COMMIT=79dc8c69f204e93c6cb151d7f9e2f8a8065855b2
 
 RUN apk add --no-cache ca-certificates clang git php

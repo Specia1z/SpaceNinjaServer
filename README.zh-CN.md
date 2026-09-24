@@ -119,11 +119,12 @@ Linux 上普通用户通常不能直接监听 `80` 和 `443` 端口。推荐在 
 - `ghcr.io/specia1z/spaceninjaserver:latest`：跟随 `main` 分支。
 - `ghcr.io/specia1z/spaceninjaserver:<commit-sha>`：对应不可变的具体提交。
 
-Compose 包含四个服务：
+Compose 包含五个服务：
 
 - `spaceninjaserver`：使用本仓库发布的 GHCR 镜像。
 - `mongodb`：使用 MongoDB 官方镜像。
-- `warframe-irc-server`：基于固定的上游版本在本地构建，并包含 U44 所需的 RFC 5746/SCSV 兼容补丁。
+- `warframe-irc-server`：基于固定的上游版本在本地构建。
+- `warframe-irc-tls-proxy`：在 `6695-6699` 端口终止 TLS 1.2/1.3，使 U43 和仅支持 TLS 1.3 的 U44 均可连接，再将流量转发到 IRC 服务。
 - `warframe-hub-server`：保留 `openwf/warframe-hub-server` 上游镜像。
 
 只拉了镜像的服务器上，`docker compose up` 会因为找不到编排文件而报 `no configuration file provided`：compose 文件在仓库里，不在镜像里。用部署脚本一步拉取编排文件并建好数据目录：

@@ -14,6 +14,7 @@ set -euo pipefail
 REPO_RAW="https://raw.githubusercontent.com/Specia1z/SpaceNinjaServer/main"
 COMPOSE_FILE="docker-compose.yml"
 IRC_BUILD_DIR="docker/warframe-irc-server"
+IRC_TLS_BUILD_DIR="docker/warframe-irc-tls-proxy"
 
 echo "==> Preparing SpaceNinjaServer in $(pwd)"
 
@@ -29,6 +30,13 @@ if [ ! -f "$IRC_BUILD_DIR/Dockerfile" ]; then
     mkdir -p "$IRC_BUILD_DIR"
     curl -fsSL "$REPO_RAW/$IRC_BUILD_DIR/Dockerfile" -o "$IRC_BUILD_DIR/Dockerfile"
     curl -fsSL "$REPO_RAW/$IRC_BUILD_DIR/secure-renegotiation-scsv.patch" -o "$IRC_BUILD_DIR/secure-renegotiation-scsv.patch"
+fi
+
+if [ ! -f "$IRC_TLS_BUILD_DIR/Dockerfile" ] || [ ! -f "$IRC_TLS_BUILD_DIR/haproxy.cfg" ]; then
+    echo "==> Downloading IRC TLS proxy build context"
+    mkdir -p "$IRC_TLS_BUILD_DIR"
+    curl -fsSL "$REPO_RAW/$IRC_TLS_BUILD_DIR/Dockerfile" -o "$IRC_TLS_BUILD_DIR/Dockerfile"
+    curl -fsSL "$REPO_RAW/$IRC_TLS_BUILD_DIR/haproxy.cfg" -o "$IRC_TLS_BUILD_DIR/haproxy.cfg"
 fi
 
 if docker compose version >/dev/null 2>&1; then
