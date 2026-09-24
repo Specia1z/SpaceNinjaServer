@@ -73,6 +73,11 @@ export interface IConfig {
     missionPlatinumRewardChance?: number;
     /** When true, the platinum reward is delivered as an Ordis inbox message instead of being credited silently. */
     missionPlatinumRewardSendMail?: boolean;
+    relicPlatinumReward?: {
+        common?: number;
+        uncommon?: number;
+        rare?: number;
+    };
     /** @deprecated Use the two independent new-account options below. */
     autoCompleteQuestsAndUnlockMissions?: boolean;
     autoCompleteQuestsForNewAccounts?: boolean;

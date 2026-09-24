@@ -207,6 +207,15 @@ export const validateConfig = (): void => {
         config.missionPlatinumRewardChance = 100;
         modified = true;
     }
+    if (config.relicPlatinumReward) {
+        for (const rarity of ["common", "uncommon", "rare"] as const) {
+            const amount = config.relicPlatinumReward[rarity];
+            if (amount !== undefined && (!Number.isInteger(amount) || amount < 0)) {
+                config.relicPlatinumReward[rarity] = 0;
+                modified = true;
+            }
+        }
+    }
     if (config.webui?.defaultLanguage) {
         if (
             ["en", "de", "es", "fr", "it", "ja", "ko", "pl", "pt", "ru", "tr", "uk", "zh", "tc", "th"].indexOf(

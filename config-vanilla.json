@@ -38,6 +38,11 @@
   "missionPlatinumRewardMax": 0,
   "missionPlatinumRewardChance": 100,
   "missionPlatinumRewardSendMail": false,
+  "relicPlatinumReward": {
+    "common": 0,
+    "uncommon": 0,
+    "rare": 0
+  },
   "autoCompleteQuestsForNewAccounts": false,
   "unlockAllMissionsForNewAccounts": false,
   "newAccountStarterPack": false,

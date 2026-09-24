@@ -30,7 +30,11 @@ export const getVoidProjectionRewardsController: RequestHandler = async (req, re
         if (!inventory.MissionRelicRewards || inventory.MissionRelicRewards.length >= currentWave) {
             inventory.MissionRelicRewards = [];
         }
-        inventory.MissionRelicRewards.push({ ItemType: reward.type, ItemCount: reward.itemCount });
+        inventory.MissionRelicRewards.push({
+            ItemType: reward.type,
+            ItemCount: reward.itemCount,
+            Rarity: reward.rarity
+        });
         if (data.VoidTearParticipantsPrevWave) {
             await ensureRelicRewardIsCorrect(inventory, data.VoidTearParticipantsPrevWave);
         }

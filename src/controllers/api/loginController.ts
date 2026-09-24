@@ -25,7 +25,6 @@ import { createMessage } from "../../services/inboxService.ts";
 import { fromStoreItem } from "../../services/itemDataService.ts";
 import { getTokenForClient, getTunablesForClient } from "../../services/tunablesService.ts";
 import type { AddressInfo } from "node:net";
-import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { buildLabelToVersionInt } from "../../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
 
@@ -117,14 +116,6 @@ export const loginController: RequestHandler = async (request, response) => {
         return;
     }
 
-    if (account.Nonce && account.ClientType != "webui" && !account.Dropped && !loginRequest.kick) {
-        // U17 seems to handle "nonce still set" like a login failure.
-        if (version_compare(buildLabel, gameToBuildVersion["18.0.2"]) >= 0) {
-            response.status(400).send({ error: "nonce still set" });
-            return;
-        }
-    }
-
     account.ClientType = loginRequest.ClientType;
     account.Nonce = createNonce();
     if (loginRequest.lang) {
@@ -155,7 +146,10 @@ export const loginController: RequestHandler = async (request, response) => {
                 msg: "/Lotus/Language/Menu/VoidProjectionItemsMessage",
                 sub: "/Lotus/Language/Menu/VoidProjectionItemsSubject",
                 icon: "/Lotus/Interface/Icons/Npcs/Ordis.png",
-                countedAtt: inventory.MissionRelicRewards.map(x => ({ ...x, ItemType: fromStoreItem(x.ItemType) })),
+                countedAtt: inventory.MissionRelicRewards.map(x => ({
+                    ItemType: fromStoreItem(x.ItemType),
+                    ItemCount: x.ItemCount
+                })),
                 attVisualOnly: true,
                 highPriority: true // TOVERIFY
             }
@@ -231,7 +225,7 @@ const createLoginResponse = (request: Request, account: IDatabaseAccountJson, bu
             //{ experiment: "quick_buy_visible", experimentGroup: "quick_buy_visible" } // Shows "quick buy" market section for MR 4+ players
         ];
     }
-    if (buildVersion >= gameToBuildVersionInt["30.0.0"]) {
+    if (buildVersion >= gameToBuildVersionInt["30.0.0"] && buildVersion < gameToBuildVersionInt["43.5.0"]) {
         resp.DTLS = config.dtls ?? 0; // bit 0 enables DTLS. if enabled, additional bits can be set, e.g. bit 2 to enable logging. on live, the value is 99.
     }
     if (buildVersion >= gameToBuildVersionInt["31.5.0"]) {

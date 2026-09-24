@@ -120,7 +120,7 @@ import type {
 } from "../../types/inventoryTypes/commonInventoryTypes.ts";
 import { toMongoDate, toOid } from "../../helpers/inventoryHelpers.ts";
 import { EquipmentSelectionSchema } from "./loadoutModel.ts";
-import type { ICountedStoreItem } from "warframe-public-export-plus";
+import type { ICountedStoreItem, TRarity } from "warframe-public-export-plus";
 import { colorSchema, shipCustomizationSchema } from "../commonModel.ts";
 import type {
     IArchonCrystalUpgrade,
@@ -138,6 +138,11 @@ import type {
 } from "../../types/equipmentTypes.ts";
 
 export const typeCountSchema = new Schema<ITypeCount>({ ItemType: String, ItemCount: Number }, { _id: false });
+
+const missionRelicRewardSchema = new Schema<ITypeCount & { Rarity?: TRarity }>(
+    { ItemType: String, ItemCount: Number, Rarity: String },
+    { _id: false }
+);
 
 typeCountSchema.set("toJSON", {
     transform(_doc, obj: Record<string, any>) {
@@ -1705,9 +1710,6 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         spoofMasteryRank: Number,
         dailyTributeRewardMultiplier: Number,
         relicRewardItemCountMultiplier: Number,
-        relicPlatinumBonusCommon: Number,
-        relicPlatinumBonusUncommon: Number,
-        relicPlatinumBonusRare: Number,
         teralystCapturePlatinumBonus: Number,
         gantulystCapturePlatinumBonus: Number,
         hydrolystCapturePlatinumBonus: Number,
@@ -1720,7 +1722,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         RewardSeed: BigInt,
 
         // Temporary data so we can show all relic rewards from an endless mission at EOM
-        MissionRelicRewards: { type: [typeCountSchema], default: undefined },
+        MissionRelicRewards: { type: [missionRelicRewardSchema], default: undefined },
 
         //Credit
         RegularCredits: { type: Number, default: 0 },

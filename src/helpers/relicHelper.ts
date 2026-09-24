@@ -9,12 +9,13 @@ import { addItem, addMiscItems, combineInventoryChanges } from "../services/inve
 import type { IInventoryChanges } from "../types/purchaseTypes.ts";
 import type { ITypeCount } from "../types/commonTypes.ts";
 import { fromStoreItem } from "../services/itemDataService.ts";
+import { config } from "../services/configService.ts";
 
 export const crackRelic = async (
     inventory: TInventoryDatabaseDocument,
     participant: IVoidTearParticipantInfo,
     inventoryChanges: IInventoryChanges = {}
-): Promise<IRngResult> => {
+): Promise<IRngResult & { rarity: TRarity }> => {
     const relic = ExportRelics[participant.VoidProjection];
     let weights = refinementToWeights[relic.quality];
     if (relic.quality == "VPQ_SILVER" && inventory.exceptionalRelicsAlwaysGiveBronzeReward) {
@@ -28,7 +29,7 @@ export const crackRelic = async (
     let reward = getRandomWeightedReward(
         ExportRewards[relic.rewardManifest][0] as { type: string; itemCount: number; rarity: TRarity }[], // rarity is nullable in PE+ typings, but always present for relics
         weights
-    )!;
+    )! as IRngResult & { rarity: TRarity };
     if (inventory.relicRewardItemCountMultiplier && inventory.relicRewardItemCountMultiplier != 1) {
         reward = {
             ...reward,
@@ -51,12 +52,7 @@ export const crackRelic = async (
     // Give reward
     combineInventoryChanges(inventoryChanges, await addItem(inventory, fromStoreItem(reward.type), reward.itemCount));
 
-    const platinumValue =
-        getRelicPlatinumBonusForRarity(inventory, reward.rarity) * (inventory.relicRewardItemCountMultiplier ?? 1);
-    if (platinumValue != 0) {
-        inventory.pendingPremiumCredits ??= 0;
-        inventory.pendingPremiumCredits += platinumValue;
-    }
+    adjustPendingRelicPlatinum(inventory, undefined, reward.rarity);
 
     // Client has picked its own reward (for lack of choice)
     participant.ChosenRewardOwner = participant.AccountId;
@@ -64,16 +60,29 @@ export const crackRelic = async (
     return reward;
 };
 
-const getRelicPlatinumBonusForRarity = (inventory: TInventoryDatabaseDocument, rarity: TRarity): number => {
+export const getRelicPlatinumRewardForRarity = (rarity: TRarity): number => {
     switch (rarity) {
         case "COMMON":
-            return inventory.relicPlatinumBonusCommon ?? 0;
+            return Math.max(0, Math.trunc(config.relicPlatinumReward?.common ?? 0));
         case "UNCOMMON":
-            return inventory.relicPlatinumBonusUncommon ?? 0;
+            return Math.max(0, Math.trunc(config.relicPlatinumReward?.uncommon ?? 0));
         case "RARE":
-            return inventory.relicPlatinumBonusRare ?? 0;
+            return Math.max(0, Math.trunc(config.relicPlatinumReward?.rare ?? 0));
         default:
             return 0;
+    }
+};
+
+export const adjustPendingRelicPlatinum = (
+    inventory: Pick<TInventoryDatabaseDocument, "pendingPremiumCredits">,
+    previousRarity: TRarity | undefined,
+    newRarity: TRarity
+): void => {
+    const difference =
+        getRelicPlatinumRewardForRarity(newRarity) -
+        (previousRarity ? getRelicPlatinumRewardForRarity(previousRarity) : 0);
+    if (difference != 0) {
+        inventory.pendingPremiumCredits = (inventory.pendingPremiumCredits ?? 0) + difference;
     }
 };
 
@@ -104,12 +113,13 @@ const refinementToWeights = {
     }
 };
 
-const getTypeCountForParticiantReward = (participant: IVoidTearParticipantInfo): ITypeCount => {
+const getRewardForParticipant = (participant: IVoidTearParticipantInfo): ITypeCount & { Rarity: TRarity } => {
     const relic = ExportRelics[participant.VoidProjection];
     const reward = ExportRewards[relic.rewardManifest][0].find(x => x.type == participant.Reward)!;
     return {
         ItemType: reward.type,
-        ItemCount: reward.itemCount
+        ItemCount: reward.itemCount,
+        Rarity: reward.rarity!
     };
 };
 
@@ -124,8 +134,10 @@ export const ensureRelicRewardIsCorrect = async (
             const chosenParticipantInfo = wi.Participants.find(
                 x => x.AccountId == userParticipantInfo.ChosenRewardOwner
             )!;
-            const chosenReward = getTypeCountForParticiantReward(chosenParticipantInfo);
+            const chosenReward = getRewardForParticipant(chosenParticipantInfo);
             chosenReward.ItemCount *= inventory.relicRewardItemCountMultiplier ?? 1;
+            const previousRarity = userReward.Rarity ?? getRewardForParticipant(userParticipantInfo).Rarity;
+            adjustPendingRelicPlatinum(inventory, previousRarity, chosenReward.Rarity);
             if (chosenReward.ItemType != userReward.ItemType || chosenReward.ItemCount != userReward.ItemCount) {
                 logger.debug(`fixing up wave ${wi.Wave} reward for ${inventory.accountOwnerId.toString()}`, {
                     toRemove: userReward,
@@ -134,6 +146,8 @@ export const ensureRelicRewardIsCorrect = async (
                 await addItem(inventory, fromStoreItem(userReward.ItemType), userReward.ItemCount * -1);
                 await addItem(inventory, fromStoreItem(chosenReward.ItemType), chosenReward.ItemCount);
                 inventory.MissionRelicRewards[wi.Wave - 1] = chosenReward;
+            } else {
+                userReward.Rarity = chosenReward.Rarity;
             }
         }
     }

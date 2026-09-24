@@ -17,7 +17,7 @@ import type {
 } from "./commonInventoryTypes.ts";
 import type { IFingerprintStat } from "../../helpers/rivenHelper.ts";
 import type { IOrbiterClient } from "../personalRoomsTypes.ts";
-import type { ICountedStoreItem } from "warframe-public-export-plus";
+import type { ICountedStoreItem, TRarity } from "warframe-public-export-plus";
 import type {
     IEquipmentClient,
     IEquipmentDatabase,
@@ -96,9 +96,6 @@ export const accountCheatNumbers = [
     "spoofMasteryRank",
     "dailyTributeRewardMultiplier",
     "relicRewardItemCountMultiplier",
-    "relicPlatinumBonusCommon",
-    "relicPlatinumBonusUncommon",
-    "relicPlatinumBonusRare",
     "teralystCapturePlatinumBonus",
     "gantulystCapturePlatinumBonus",
     "hydrolystCapturePlatinumBonus",
@@ -173,7 +170,7 @@ export interface IInventoryDatabase
         IAccountCheats {
     // SNS-specific fields for server-side tracking
     accountOwnerId: Types.ObjectId;
-    MissionRelicRewards?: ITypeCount[];
+    MissionRelicRewards?: (ITypeCount & { Rarity?: TRarity })[];
     HarvesterPoints?: number;
     DeathSquadPoints?: number;
     NemesisTaxedCredits?: number;
