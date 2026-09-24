@@ -1,11 +1,7 @@
 diff --git a/soup/Socket.cpp b/soup/Socket.cpp
-index c95fe3e1..7b7096f1 100644
 --- a/soup/Socket.cpp
 +++ b/soup/Socket.cpp
-@@ -1030,6 +1030,14 @@ namespace soup
- 					return;
- 				}
- 				handshaker->cipher_suite = static_cast<SocketTlsHandshakerServer*>(handshaker.get())->select_ciphersuite(s, hello);
+@@ -1032,0 +1033,8 @@
 +				for (const auto cipher_suite : hello.cipher_suites)
 +				{
 +					if (cipher_suite == TlsCipherSuite::TLS_EMPTY_RENEGOTIATION_INFO_SCSV)
@@ -14,19 +10,9 @@ index c95fe3e1..7b7096f1 100644
 +						break;
 +					}
 +				}
- 
- 				std::string server_name{};
- 				for (const auto& ext : hello.extensions.extensions)
 diff --git a/soup/TlsCipherSuite.hpp b/soup/TlsCipherSuite.hpp
-index 2068fb2d..0ba4e2de 100644
 --- a/soup/TlsCipherSuite.hpp
 +++ b/soup/TlsCipherSuite.hpp
-@@ -27,6 +27,8 @@ namespace soup
- 		TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 = 0xC02B,
- 		TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 = 0xC02C,
- 
+@@ -29,0 +30,2 @@
 +		TLS_EMPTY_RENEGOTIATION_INFO_SCSV = 0x00FF,
 +
- 		TLS_GREASE_0 = 0x0A0A,
- 		TLS_GREASE_1 = 0x1A1A,
- 		TLS_GREASE_2 = 0x2A2A,

@@ -9,7 +9,7 @@ WORKDIR /src
 RUN git clone https://github.com/calamity-inc/Soup.git Soup \
     && git -C Soup checkout "$SOUP_COMMIT"
 COPY secure-renegotiation-scsv.patch /tmp/secure-renegotiation-scsv.patch
-RUN git -C Soup apply /tmp/secure-renegotiation-scsv.patch
+RUN git -C Soup apply --unidiff-zero /tmp/secure-renegotiation-scsv.patch
 
 WORKDIR /src/Soup
 RUN rm soup/AnalogueKeyboard.cpp \
