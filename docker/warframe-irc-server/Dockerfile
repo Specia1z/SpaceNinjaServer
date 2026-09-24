@@ -42,9 +42,9 @@ RUN clang main.cpp \
 
 FROM alpine:3.22.1
 
-RUN apk add --no-cache libstdc++
+RUN apk add --no-cache coreutils libstdc++
 WORKDIR /app
 COPY --from=build /src/warframe-irc-server/warframe-irc-server ./warframe-irc-server
 COPY --from=build /src/warframe-irc-server/cert ./cert
 
-ENTRYPOINT ["./warframe-irc-server"]
+ENTRYPOINT ["stdbuf", "-oL", "-eL", "./warframe-irc-server"]
