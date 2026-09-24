@@ -6,7 +6,7 @@ RUN apk add --no-cache ca-certificates curl
 RUN mkdir -p /out \
     && curl -fsSL "https://raw.githubusercontent.com/Specia1z/warframe-irc-server/${IRC_COMMIT}/cert/cert.pem" -o /out/cert.pem \
     && curl -fsSL "https://raw.githubusercontent.com/Specia1z/warframe-irc-server/${IRC_COMMIT}/cert/key.pem" -o /out/key.pem \
-    && cat /out/cert.pem /out/key.pem > /out/irc.pem
+    && { cat /out/cert.pem; printf '\n'; cat /out/key.pem; } > /out/irc.pem
 
 FROM haproxy:3.2.23-alpine
 
