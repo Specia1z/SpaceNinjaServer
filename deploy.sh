@@ -13,12 +13,22 @@ set -euo pipefail
 
 REPO_RAW="https://raw.githubusercontent.com/Specia1z/SpaceNinjaServer/main"
 COMPOSE_FILE="docker-compose.yml"
+IRC_BUILD_DIR="docker/warframe-irc-server"
 
 echo "==> Preparing SpaceNinjaServer in $(pwd)"
 
 if ! command -v docker >/dev/null 2>&1; then
     echo "ERROR: docker is not installed or not on PATH." >&2
     exit 1
+fi
+
+# The IRC service is built locally so it can carry the RFC 5746/SCSV compatibility fix required by U44.
+# Fetch its small build context when this script is run without a repository checkout.
+if [ ! -f "$IRC_BUILD_DIR/Dockerfile" ]; then
+    echo "==> Downloading IRC build context"
+    mkdir -p "$IRC_BUILD_DIR"
+    curl -fsSL "$REPO_RAW/$IRC_BUILD_DIR/Dockerfile" -o "$IRC_BUILD_DIR/Dockerfile"
+    curl -fsSL "$REPO_RAW/$IRC_BUILD_DIR/secure-renegotiation-scsv.patch" -o "$IRC_BUILD_DIR/secure-renegotiation-scsv.patch"
 fi
 
 if docker compose version >/dev/null 2>&1; then
@@ -52,7 +62,7 @@ echo "==> Pulling images"
 $COMPOSE pull
 
 echo "==> Starting the stack"
-$COMPOSE up -d
+$COMPOSE up -d --build
 
 echo
 echo "Done. Useful commands:"

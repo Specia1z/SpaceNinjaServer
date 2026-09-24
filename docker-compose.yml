@@ -28,7 +28,8 @@ services:
         command: mongod --quiet --logpath /dev/null
 
     warframe-irc-server:
-        image: openwf/warframe-irc-server
+        build:
+            context: ./docker/warframe-irc-server
         volumes:
             - ./docker-data/conf:/app/conf
         ports:

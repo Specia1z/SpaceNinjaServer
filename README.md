@@ -41,7 +41,7 @@ npm run build
 npm start
 ```
 
-The server can also be run with Docker Compose. The included compose file starts SpaceNinjaServer together with MongoDB and the upstream OpenWF IRC and Hub images. Configuration, logs, static data, and database files are stored under `docker-data/`.
+The server can also be run with Docker Compose. The included compose file starts SpaceNinjaServer together with MongoDB, a locally patched OpenWF IRC build, and the upstream Hub image. Configuration, logs, static data, and database files are stored under `docker-data/`.
 
 ## Docker
 
@@ -58,7 +58,7 @@ When the repository is already checked out, the same script uses the local compo
 
 ```bash
 docker compose pull
-docker compose up -d
+docker compose up -d --build
 ```
 
 To build the checked-out source instead of using the published Web image:
@@ -67,7 +67,7 @@ To build the checked-out source instead of using the published Web image:
 docker compose up -d --build
 ```
 
-Only the SpaceNinjaServer image is maintained in this repository. Compose intentionally retains `openwf/warframe-irc-server` and `openwf/warframe-hub-server` for chat and Hub networking, plus the official MongoDB image. The first launch creates `docker-data/conf/config.json` automatically.
+The IRC service is built from pinned upstream revisions with an RFC 5746/SCSV compatibility patch required by U44 clients. Compose retains `openwf/warframe-hub-server` for Hub networking and the official MongoDB image. The first launch creates `docker-data/conf/config.json` automatically.
 
 ## Releases
 

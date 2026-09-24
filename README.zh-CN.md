@@ -123,7 +123,7 @@ Compose 包含四个服务：
 
 - `spaceninjaserver`：使用本仓库发布的 GHCR 镜像。
 - `mongodb`：使用 MongoDB 官方镜像。
-- `warframe-irc-server`：保留 `openwf/warframe-irc-server` 上游镜像。
+- `warframe-irc-server`：基于固定的上游版本在本地构建，并包含 U44 所需的 RFC 5746/SCSV 兼容补丁。
 - `warframe-hub-server`：保留 `openwf/warframe-hub-server` 上游镜像。
 
 只拉了镜像的服务器上，`docker compose up` 会因为找不到编排文件而报 `no configuration file provided`：compose 文件在仓库里，不在镜像里。用部署脚本一步拉取编排文件并建好数据目录：
@@ -137,7 +137,7 @@ curl -fsSL https://raw.githubusercontent.com/Specia1z/SpaceNinjaServer/main/depl
 
 ```bash
 docker compose pull
-docker compose up -d
+docker compose up -d --build
 ```
 
 如果需要直接构建当前检出的源码，而不是使用已发布的 Web 镜像：
