@@ -525,7 +525,7 @@ export const getInventoryResponse = async (
             }
         }
 
-        if (inventory.universalPolarityEverywhere && version_compare(buildLabel, gameToBuildVersion["24.4.0"]) >= 0) {
+        if (config.universalPolarityEverywhere && version_compare(buildLabel, gameToBuildVersion["24.4.0"]) >= 0) {
             // Apparently AP_ANY already existed in U24.4
             const Polarity: IPolarity[] = [];
             // 12 is needed for necramechs. 15 is needed for plexus/crewshipharness.
@@ -544,7 +544,7 @@ export const getInventoryResponse = async (
             }
         }
 
-        if (inventory.unlockDoubleCapacityPotatoesEverywhere) {
+        if (config.unlockDoubleCapacityPotatoesEverywhere) {
             for (const key of equipmentKeys) {
                 if (key in inventoryResponse) {
                     for (const equipment of inventoryResponse[key]) {
@@ -555,7 +555,7 @@ export const getInventoryResponse = async (
             }
         }
 
-        if (inventory.unlockExilusEverywhere) {
+        if (config.unlockExilusEverywhere) {
             for (const key of equipmentKeys) {
                 if (key in inventoryResponse) {
                     for (const equipment of inventoryResponse[key]) {
@@ -566,7 +566,7 @@ export const getInventoryResponse = async (
             }
         }
 
-        if (inventory.unlockArcanesEverywhere) {
+        if (config.unlockArcanesEverywhere) {
             for (const key of equipmentKeys) {
                 if (key in inventoryResponse) {
                     for (const equipment of inventoryResponse[key]) {
@@ -590,7 +590,7 @@ export const getInventoryResponse = async (
         }
 
         if (inventoryResponse.InfestedFoundry) {
-            applyCheatsToInfestedFoundry(inventory, inventoryResponse.InfestedFoundry);
+            applyCheatsToInfestedFoundry(inventoryResponse.InfestedFoundry);
         }
     }
 

@@ -20,6 +20,7 @@ import { eEquipmentFeatures } from "../../types/equipmentTypes.ts";
 import { Types } from "mongoose";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { ExportRecipes } from "warframe-public-export-plus";
+import { config } from "../../services/configService.ts";
 
 export const upgradesController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
@@ -197,7 +198,6 @@ export const upgradesController: RequestHandler = async (req, res) => {
             "infinitePlatinum",
             "PremiumCredits",
             "PremiumCreditsFree",
-            "infiniteHelminthMaterials",
             "InfestedFoundry",
             "Recipes"
         );
@@ -236,7 +236,7 @@ export const upgradesController: RequestHandler = async (req, res) => {
                     }
                     for (const ingredient of recipe.ingredients) {
                         totalPercentagePointsConsumed += ingredient.ItemCount / 10;
-                        if (!inventory.infiniteHelminthMaterials) {
+                        if (!config.infiniteHelminthMaterials) {
                             inventory.InfestedFoundry!.Resources!.find(x => x.ItemType == ingredient.ItemType)!.Count -=
                                 ingredient.ItemCount;
                         }
@@ -260,7 +260,7 @@ export const upgradesController: RequestHandler = async (req, res) => {
 
                 inventoryChanges.Recipes = recipeChanges;
                 inventoryChanges.InfestedFoundry = inventory.toJSON<IInventoryClient>().InfestedFoundry;
-                applyCheatsToInfestedFoundry(inventory, inventoryChanges.InfestedFoundry!);
+                applyCheatsToInfestedFoundry(inventoryChanges.InfestedFoundry!);
             } else
                 switch (operation.UpgradeRequirement) {
                     case "/Lotus/Types/Items/MiscItems/OrokinReactor":

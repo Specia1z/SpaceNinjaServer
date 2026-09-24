@@ -4761,14 +4761,6 @@ async function populateDetailedViewRoute() {
                     event.preventDefault();
                     equipmentFeatures(category, oid, bit);
                 };
-                if (
-                    (data.unlockDoubleCapacityPotatoesEverywhere && bit === 1) ||
-                    (data.unlockExilusEverywhere && bit === 2) ||
-                    (data.unlockArcanesEverywhere && (bit === 32 || bit === 64))
-                ) {
-                    input.disabled = true;
-                }
-
                 wrapper.appendChild(input);
                 wrapper.appendChild(label);
                 buttonsCard.appendChild(wrapper);

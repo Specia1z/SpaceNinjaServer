@@ -6,6 +6,7 @@ import {
     configPath,
     configRemovedOptionsKeys,
     getWebServerParams,
+    inventoryAffectingConfigKeys,
     loadConfig,
     type IConfig
 } from "./configService.ts";
@@ -32,6 +33,7 @@ chokidar.watch(configPath).on("change", () => {
         const prevLogFormat = config.logger.format ?? "%timestamp% [%level%] %message%";
         const prevWorldState = JSON.stringify(config.worldState);
         const prevTunables = JSON.stringify(config.tunables);
+        const prevInventoryConfig = JSON.stringify(inventoryAffectingConfigKeys.map(key => config[key]));
         const prevWebParams = JSON.stringify(getWebServerParams());
 
         logger.info("Detected a change to config file, reloading its contents.");
@@ -71,6 +73,11 @@ chokidar.watch(configPath).on("change", () => {
                     );
                 }
             });
+        }
+
+        if (JSON.stringify(inventoryAffectingConfigKeys.map(key => config[key])) != prevInventoryConfig) {
+            logger.debug(`inventory-affecting config changed, informing clients`);
+            sendWsBroadcastToGame(undefined, { sync_inventory: true });
         }
 
         if (JSON.stringify(getWebServerParams()) != prevWebParams) {

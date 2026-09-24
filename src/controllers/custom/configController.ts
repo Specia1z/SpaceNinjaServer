@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { configIdToIndexable } from "../../services/configService.ts";
+import { configIdToIndexable, inventoryAffectingConfigKeys } from "../../services/configService.ts";
 import { syncConfigWithDatabase } from "../../services/configWatcherService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
 import { saveConfig } from "../../services/configWriterService.ts";
@@ -23,14 +23,19 @@ export const setConfigController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     if (isAdministrator(account)) {
         let isWorldStateUpdate = false;
+        let isInventoryUpdate = false;
         for (const [id, value] of Object.entries(req.body as Record<string, boolean | string | number>)) {
             if (id.startsWith("worldState")) isWorldStateUpdate = true;
+            if ((inventoryAffectingConfigKeys as readonly string[]).includes(id)) {
+                isInventoryUpdate = true;
+            }
             const [obj, idx] = configIdToIndexable(id);
             obj[idx] = value;
         }
         await saveConfig();
         sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
         if (isWorldStateUpdate) sendWsBroadcast({ sync_world_state: true });
+        if (isInventoryUpdate) sendWsBroadcast({ sync_inventory: true });
         syncConfigWithDatabase();
         res.end();
     } else {

@@ -67,6 +67,11 @@ export interface IConfig {
     skipTutorial?: boolean;
     fullyStockedVendors?: boolean;
     skipClanKeyCrafting?: boolean;
+    infiniteHelminthMaterials?: boolean;
+    universalPolarityEverywhere?: boolean;
+    unlockDoubleCapacityPotatoesEverywhere?: boolean;
+    unlockExilusEverywhere?: boolean;
+    unlockArcanesEverywhere?: boolean;
     missionPlatinumRewardMin?: number;
     missionPlatinumRewardMax?: number;
     /** Chance, in percent, that a completed mission awards the platinum reward at all. Undefined or 100 means always. */
@@ -202,6 +207,14 @@ export interface IConfig {
     };
 }
 
+export const inventoryAffectingConfigKeys = [
+    "infiniteHelminthMaterials",
+    "universalPolarityEverywhere",
+    "unlockDoubleCapacityPotatoesEverywhere",
+    "unlockExilusEverywhere",
+    "unlockArcanesEverywhere"
+] as const;
+
 export const configRemovedOptionsKeys = [
     "unlockallShipFeatures",
     "testQuestKey",
@@ -225,7 +238,6 @@ export const configRemovedOptionsKeys = [
     "infinitePlatinum",
     "infiniteEndo",
     "infiniteRegalAya",
-    "infiniteHelminthMaterials",
     "claimingBlueprintRefundsIngredients",
     "dontSubtractPurchaseCreditCost",
     "dontSubtractPurchasePlatinumCost",
@@ -233,10 +245,6 @@ export const configRemovedOptionsKeys = [
     "dontSubtractPurchaseStandingCost",
     "dontSubtractVoidTraces",
     "dontSubtractConsumables",
-    "universalPolarityEverywhere",
-    "unlockDoubleCapacityPotatoesEverywhere",
-    "unlockExilusEverywhere",
-    "unlockArcanesEverywhere",
     "unlockAllProfitTakerStages",
     "unlockAllSimarisResearchEntries",
     "unlockAllScans",

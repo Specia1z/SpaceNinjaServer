@@ -1030,26 +1030,6 @@
                                     <label class="form-check-label" for="infiniteGifts" data-loc="cheats_infiniteGifts"></label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="infiniteHelminthMaterials" data-enabling-permission="toggleCheat.infiniteHelminthMaterials" />
-                                    <label class="form-check-label" for="infiniteHelminthMaterials" data-loc="cheats_infiniteHelminthMaterials"></label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="universalPolarityEverywhere" data-enabling-permission="toggleCheat.universalPolarityEverywhere" />
-                                    <label class="form-check-label" for="universalPolarityEverywhere" data-loc="cheats_universalPolarityEverywhere"></label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="unlockDoubleCapacityPotatoesEverywhere" data-enabling-permission="toggleCheat.unlockDoubleCapacityPotatoesEverywhere" />
-                                    <label class="form-check-label" for="unlockDoubleCapacityPotatoesEverywhere" data-loc="cheats_unlockDoubleCapacityPotatoesEverywhere"></label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="unlockExilusEverywhere" data-enabling-permission="toggleCheat.unlockExilusEverywhere" />
-                                    <label class="form-check-label" for="unlockExilusEverywhere" data-loc="cheats_unlockExilusEverywhere"></label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="unlockArcanesEverywhere" data-enabling-permission="toggleCheat.unlockArcanesEverywhere" />
-                                    <label class="form-check-label" for="unlockArcanesEverywhere" data-loc="cheats_unlockArcanesEverywhere"></label>
-                                </div>
-                                <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="alertsRepeatable" data-enabling-permission="toggleCheat.alertsRepeatable" />
                                     <label class="form-check-label" for="alertsRepeatable" data-loc="cheats_alertsRepeatable"></label>
                                 </div>
@@ -1275,6 +1255,26 @@
                                         <label class="form-check-label" for="fullyStockedVendors" data-loc="cheats_fullyStockedVendors"></label>
                                     </div>
                                     <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="infiniteHelminthMaterials" />
+                                        <label class="form-check-label" for="infiniteHelminthMaterials" data-loc="cheats_infiniteHelminthMaterials"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="universalPolarityEverywhere" />
+                                        <label class="form-check-label" for="universalPolarityEverywhere" data-loc="cheats_universalPolarityEverywhere"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="unlockDoubleCapacityPotatoesEverywhere" />
+                                        <label class="form-check-label" for="unlockDoubleCapacityPotatoesEverywhere" data-loc="cheats_unlockDoubleCapacityPotatoesEverywhere"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="unlockExilusEverywhere" />
+                                        <label class="form-check-label" for="unlockExilusEverywhere" data-loc="cheats_unlockExilusEverywhere"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="unlockArcanesEverywhere" />
+                                        <label class="form-check-label" for="unlockArcanesEverywhere" data-loc="cheats_unlockArcanesEverywhere"></label>
+                                    </div>
+                                    <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="noHubDiscrimination" />
                                         <label class="form-check-label" for="noHubDiscrimination" data-loc="cheats_noHubDiscrimination"></label>
                                     </div>
@@ -1294,6 +1294,28 @@
                                         <input class="form-check-input" type="checkbox" id="noMasteryRankUpCooldown" />
                                         <label class="form-check-label" for="noMasteryRankUpCooldown" data-loc="cheats_noMasteryRankUpCooldown"></label>
                                     </div>
+                                    <form class="form-group mt-3" onsubmit="doSaveConfigInt('relicPlatinumReward.common'); return false;">
+                                        <label class="form-label" for="relicPlatinumReward.common" data-loc="cheats_relicPlatinumRewardCommon"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="relicPlatinumReward.common" type="number" min="0" step="1" data-default="0" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('relicPlatinumReward.uncommon'); return false;">
+                                        <label class="form-label" for="relicPlatinumReward.uncommon" data-loc="cheats_relicPlatinumRewardUncommon"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="relicPlatinumReward.uncommon" type="number" min="0" step="1" data-default="0" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('relicPlatinumReward.rare'); return false;">
+                                        <label class="form-label" for="relicPlatinumReward.rare" data-loc="cheats_relicPlatinumRewardRare"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="relicPlatinumReward.rare" type="number" min="0" step="1" data-default="0" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_relicPlatinumRewardHint"></div>
+                                    </form>
                                     <form class="form-group mt-3" onsubmit="doSaveConfigInt('missionPlatinumRewardMin'); return false;">
                                         <label class="form-label" for="missionPlatinumRewardMin" data-loc="cheats_missionPlatinumRewardMin"></label>
                                         <div class="input-group">

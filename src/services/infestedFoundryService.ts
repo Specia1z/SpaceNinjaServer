@@ -1,12 +1,9 @@
 import { ExportRecipes } from "warframe-public-export-plus";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
-import type {
-    IAccountCheats,
-    IInfestedFoundryClient,
-    IInfestedFoundryDatabase
-} from "../types/inventoryTypes/inventoryTypes.ts";
+import type { IInfestedFoundryClient, IInfestedFoundryDatabase } from "../types/inventoryTypes/inventoryTypes.ts";
 import { addRecipes } from "./inventoryService.ts";
 import type { ITypeCount } from "../types/commonTypes.ts";
+import { config } from "./configService.ts";
 
 export const addInfestedFoundryXP = (infestedFoundry: IInfestedFoundryDatabase, delta: number): ITypeCount[] => {
     const recipeChanges: ITypeCount[] = [];
@@ -102,11 +99,8 @@ export const handleSubsumeCompletion = (
     return recipeChanges;
 };
 
-export const applyCheatsToInfestedFoundry = (
-    cheats: Pick<IAccountCheats, "infiniteHelminthMaterials">,
-    infestedFoundry: IInfestedFoundryClient
-): void => {
-    if (cheats.infiniteHelminthMaterials) {
+export const applyCheatsToInfestedFoundry = (infestedFoundry: IInfestedFoundryClient): void => {
+    if (config.infiniteHelminthMaterials) {
         infestedFoundry.Resources = [
             { ItemType: "/Lotus/Types/Items/InfestedFoundry/HelminthCalx", Count: 1000 },
             { ItemType: "/Lotus/Types/Items/InfestedFoundry/HelminthBiotics", Count: 1000 },

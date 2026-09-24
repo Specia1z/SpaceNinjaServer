@@ -10,20 +10,8 @@ import { ExportWeapons } from "warframe-public-export-plus";
 export const equipmentFeaturesController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
     const category = req.query.Category as TEquipmentKey;
-    const inventory = await getInventory(
-        accountId,
-        `${category} EvolutionProgress unlockDoubleCapacityPotatoesEverywhere unlockExilusEverywhere unlockArcanesEverywhere`
-    );
+    const inventory = await getInventory(accountId, `${category} EvolutionProgress`);
     const bit = Number(req.query.bit) as TEquipmentFeatures;
-    /*if (
-        (inventory.unlockDoubleCapacityPotatoesEverywhere && bit === EquipmentFeatures.DOUBLE_CAPACITY) ||
-        (inventory.unlockExilusEverywhere && bit === EquipmentFeatures.UTILITY_SLOT) ||
-        (inventory.unlockArcanesEverywhere &&
-            (bit === EquipmentFeatures.ARCANE_SLOT || bit === EquipmentFeatures.SECOND_ARCANE_SLOT))
-    ) {
-        res.status(400).end();
-        return;
-    }*/
     const item = inventory[category].id(req.query.ItemId as string);
     if (item) {
         item.Features ??= 0;
