@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type RequestHandler } from "express";
 
 import { tunablesController } from "../controllers/custom/tunablesController.ts";
 import { equipmentFeaturesController } from "../controllers/custom/equipmentFeaturesController.ts";
@@ -82,8 +82,49 @@ import {
 } from "../controllers/custom/suspicionEventController.ts";
 
 import { getConfigController, setConfigController } from "../controllers/custom/configController.ts";
+import { getAccountForRequest, hasPermission } from "../services/loginService.ts";
 
 const customRouter = express.Router();
+
+const requirePermission = (permission: string): RequestHandler => async (req, res, next) => {
+    const account = await getAccountForRequest(req);
+    if (!hasPermission(account, permission)) {
+        res.status(403).send("Permission denied");
+        return;
+    }
+    next();
+};
+
+customRouter.use(
+    [
+        "/equipmentFeatures",
+        "/pushArchonCrystalUpgrade",
+        "/popArchonCrystalUpgrade",
+        "/unlockAllIntrinsics",
+        "/addMissingMaxRankMods",
+        "/completeAllMissions",
+        "/addMissingHelminthBlueprints",
+        "/unlockAllJobChainBounties",
+        "/unlockAllSimarisResearchEntries",
+        "/unlockAllScans",
+        "/unlockAllShipFeatures",
+        "/unlockAllCapturaScenes",
+        "/removeCustomization",
+        "/removeIsNew",
+        "/removeItems",
+        "/abilityOverride",
+        "/addXp",
+        "/manageQuests",
+        "/setEvolutionProgress",
+        "/setBooster",
+        "/updateFingerprint",
+        "/unlockLevelCap",
+        "/changeModularParts",
+        "/setInvigoration",
+        "/setUmbraEchoes"
+    ],
+    requirePermission("addItems")
+);
 
 customRouter.get("/tunables.json", tunablesController);
 customRouter.get("/equipmentFeatures", equipmentFeaturesController);

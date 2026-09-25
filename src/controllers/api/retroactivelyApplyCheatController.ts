@@ -1,13 +1,19 @@
 import type { RequestHandler } from "express";
-import { getAccountIdForRequest } from "../../services/loginService.ts";
+import { getAccountForRequest, hasPermission } from "../../services/loginService.ts";
 import { getInventory } from "../../services/inventoryService.ts";
 import { lockCheats } from "../../services/cheatsService.ts";
 import type { IAccountCheats } from "../../types/inventoryTypes/inventoryTypes.ts";
 import { sendWsBroadcastToGame } from "../../services/wsService.ts";
 
 export const retroactivelyApplyCheatController: RequestHandler = async (req, res) => {
-    const accountId = await getAccountIdForRequest(req);
-    const meta = lockCheats[req.query.cheat as string as keyof IAccountCheats]!;
+    const account = await getAccountForRequest(req);
+    const cheat = req.query.cheat as string as keyof IAccountCheats;
+    if (!hasPermission(account, `toggleCheat.${cheat}`)) {
+        res.status(403).send("Permission denied");
+        return;
+    }
+    const accountId = account._id.toString();
+    const meta = lockCheats[cheat]!;
     const inventory = await getInventory(accountId, meta.projection);
     meta.cleanupInventory(inventory);
 

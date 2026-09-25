@@ -200,7 +200,7 @@ export const hasPermission = (account: Pick<TAccountDocument, "DisplayName">, pe
 
         const arr = perm.split(".");
         arr.pop();
-        while (arr.length > 1) {
+        while (arr.length > 0) {
             const [obj, idx] = configIdToIndexable(`webui.nonAdminPermissions.${arr.join(".")}.*`);
             if (typeof obj[idx] == "boolean") {
                 return obj[idx];

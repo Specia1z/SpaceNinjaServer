@@ -17,12 +17,15 @@ export const setAccountCheatController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
 
     const payload = req.body as ISetAccountCheatRequest;
-    if (accountCheatBooleans.indexOf(payload.key as TAccountCheatBooleanKey) != -1) {
-        if (!hasPermission(account, `toggleCheat.${payload.key}`)) {
-            throw new Error(`Permission denied`);
-        }
-    } else if (accountCheatNumbers.indexOf(payload.key as TAccountCheatNumberKey) == -1) {
+    if (
+        accountCheatBooleans.indexOf(payload.key as TAccountCheatBooleanKey) == -1 &&
+        accountCheatNumbers.indexOf(payload.key as TAccountCheatNumberKey) == -1
+    ) {
         throw new Error(`unexpected setAccountCheat key: ${payload.key}`);
+    }
+    if (!hasPermission(account, `toggleCheat.${payload.key}`)) {
+        res.status(403).send("Permission denied");
+        return;
     }
     if (payload.value == undefined) {
         logger.warn(`Aborting setting ${payload.key} as undefined!`);
