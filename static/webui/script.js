@@ -4372,7 +4372,7 @@ function splitMetadataPatchLines(value) {
         .filter(Boolean);
 }
 
-function compileMetadataPatchPreview() {
+function getMetadataPatchPreviewText() {
     const lines = [];
     metadataPatchDraft.forEach(patch => {
         if (patch.enabled === false || !patch.targets.length) return;
@@ -4381,9 +4381,85 @@ function compileMetadataPatchPreview() {
         lines.push(...patch.operations);
         lines.push("");
     });
-    const compiled = lines.join("\n").trimEnd();
+    return lines.join("\n").trimEnd();
+}
+
+function compileMetadataPatchPreview() {
+    const compiled = getMetadataPatchPreviewText();
     document.getElementById("metadata-patches-preview").textContent = compiled || loc("metadataPatches_emptyPreview");
     document.getElementById("metadata-patches-revision").textContent = "";
+}
+
+function parseMetadataPatchText(value) {
+    const patches = [];
+    let current;
+    let targetContinuation = false;
+    for (const rawLine of value.replaceAll("\r", "").split("\n")) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith("#")) continue;
+
+        const isTarget = line.startsWith("/") || line.startsWith(">");
+        const isTargetContinuation = line.startsWith("&");
+        if ((isTarget && targetContinuation) || (isTargetContinuation && current && !current.operations.length)) {
+            if (!current) throw new Error(loc("metadataPatches_importMissingTarget"));
+            const targetText = isTargetContinuation ? line.slice(1).trim() : line;
+            const targets = targetText.split("&").map(target => target.trim()).filter(Boolean);
+            if (!targets.length || targets.some(target => !target.startsWith("/"))) {
+                throw new Error(loc("metadataPatches_importInvalidTarget"));
+            }
+            current.targets.push(...targets);
+            targetContinuation = targetText.endsWith("&");
+        } else if (isTarget) {
+            const targetText = line.startsWith(">") ? line.slice(1).trim() : line;
+            const targets = targetText.split("&").map(target => target.trim()).filter(Boolean);
+            if (!targets.length || targets.some(target => !target.startsWith("/"))) {
+                throw new Error(loc("metadataPatches_importInvalidTarget"));
+            }
+            current = { name: "", enabled: true, targets, operations: [] };
+            patches.push(current);
+            targetContinuation = targetText.endsWith("&");
+        } else if (current) {
+            targetContinuation = false;
+            current.operations.push(line);
+        } else {
+            throw new Error(loc("metadataPatches_importMissingTarget"));
+        }
+    }
+    return patches;
+}
+
+function importMetadataPatchText() {
+    try {
+        metadataPatchDraft = parseMetadataPatchText(document.getElementById("metadata-patches-import").value);
+        renderMetadataPatches();
+    } catch (error) {
+        toast(error.message || loc("settings_changeFailed"), "danger");
+    }
+}
+
+async function copyMetadataPatchPreview() {
+    const compiled = getMetadataPatchPreviewText();
+    if (!compiled) {
+        toast(loc("metadataPatches_emptyPreview"), "warning");
+        return;
+    }
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(compiled);
+        } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = compiled;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            if (!document.execCommand("copy")) throw new Error("copy failed");
+            textarea.remove();
+        }
+        toast(loc("metadataPatches_copied"), "success");
+    } catch (error) {
+        toast(loc("metadataPatches_copyFailed"), "danger");
+    }
 }
 
 function updateMetadataPatch(index, field, value) {
