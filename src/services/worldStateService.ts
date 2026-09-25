@@ -35,7 +35,6 @@ import type {
     TCircuitGameMode,
     IFlashSale,
     IAlertMissionInfo,
-    IEndlessXpChoice,
     IGoalV9
 } from "../types/worldStateTypes.ts";
 import { toMongoDate2, toOid, toOid2, fromMongoDate, fromOid } from "../helpers/inventoryHelpers.ts";
@@ -43,6 +42,7 @@ import { logger } from "../utils/logger.ts";
 import { DailyDeal, Fissure } from "../models/worldStateModel.ts";
 import { toStoreItem, fromStoreItem, getRegions } from "./itemDataService.ts";
 import { factionToInt, getConquest, getMissionTypeForLegacyOverride } from "./conquestService.ts";
+import { getEndlessXpChoices } from "./circuitService.ts";
 import { getDescent } from "./descentService.ts";
 import { catBreadHash } from "../helpers/stringHelpers.ts";
 import { Guild } from "../models/guildModel.ts";
@@ -4789,45 +4789,6 @@ export const getLiteSortie = (week: number): ILiteSortie => {
             }
         ]
     };
-};
-
-const getEndlessXpChoices = (week: number, buildVersion: number): IEndlessXpChoice[] => {
-    const normalChoices = [
-        ["Nidus", "Octavia", "Harrow"],
-        ["Gara", "Khora", "Revenant"],
-        ["Garuda", "Baruuk", "Hildryn"],
-        ["Excalibur", "Trinity", "Ember"],
-        ["Loki", "Mag", "Rhino"],
-        ["Ash", "Frost", "Nyx"],
-        ["Saryn", "Vauban", "Nova"],
-        ["Nekros", "Valkyr", "Oberon"],
-        ["Hydroid", "Mirage", "Limbo"],
-        ["Mesa", "Chroma", "Atlas"],
-        ["Ivara", "Inaros", "Titania"]
-    ];
-    const hardChoices = [
-        ["Boar", "Gammacor", "Angstrum", "Gorgon", "Anku"],
-        ["Bo", "Latron", "Furis", "Furax", "Strun"],
-        ["Lex", "Magistar", "Boltor", "Bronco", "CeramicDagger"],
-        ["Torid", "DualToxocyst", "DualIchor", "Miter", "Atomos"],
-        ["AckAndBrunt", "Soma", "Vasto", "NamiSolo", "Burston"],
-        ["Zylok", "Sibear", "Dread", "Despair", "Hate"],
-        ["Dera", "Sybaris", "Cestra", "Sicarus", "Okina"],
-        ...(buildVersion >= gameToBuildVersionInt["43.0.0"]
-            ? [["Vectis", "Stug", "Ballistica", "Destreza", "Obex"]]
-            : []),
-        ["Braton", "Lato", "Skana", "Paris", "Kunai"]
-    ];
-    return [
-        {
-            Category: "EXC_NORMAL",
-            Choices: normalChoices[week % normalChoices.length]
-        },
-        {
-            Category: "EXC_HARD",
-            Choices: hardChoices[week % hardChoices.length]
-        }
-    ];
 };
 
 export const isArchwingMission = (node: IRegion): boolean => {

@@ -3,9 +3,12 @@ import { logger } from "../utils/logger.ts";
 import type { ILiveGoalState, ILiveWorldActivityState, IWorldState } from "../types/worldStateTypes.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../constants/gameToBuildVersionInt.ts";
+import fissureMissions from "../../static/fixed_responses/worldState/fissureMissions.json" with { type: "json" };
 import { sendWsBroadcastToGame } from "./wsService.ts";
 import { ExportRegions, ExportSyndicates } from "warframe-public-export-plus";
-import { isCompatibleDescent } from "./descentService.ts";
+import { getDescent, isCompatibleDescent } from "./descentService.ts";
+import { factionToInt, getConquest, getMissionTypeForLegacyOverride, isCompatibleConquest } from "./conquestService.ts";
+import { getEndlessXpChoices, isCompatibleEndlessXpSchedule } from "./circuitService.ts";
 import baro from "../constants/baro.ts";
 import darvoDeals from "../constants/darvoDeals.ts";
 import type { ICachedVendorManifest } from "../types/vendorTypes.ts";
@@ -21,6 +24,8 @@ const SUPPLEMENTAL_WORLD_STATE_URLS = [
     "https://cdn.jsdelivr.net/gh/calamity-inc/warframe-worldstate-history@senpai/worldState.json?source=browse.wf",
     "https://api.warframe.com/cdn/worldState.php"
 ];
+const BOUNTY_CYCLE_URL = "https://oracle.browse.wf/bounty-cycle";
+const INVASIONS_URL = "https://oracle.browse.wf/invasions";
 const REFRESH_INTERVAL_MS = 60_000;
 
 const liveWorldStateArrayKeys = [
@@ -41,9 +46,41 @@ type ILiveWorldState = Pick<IWorldState, TLiveWorldStateArrayKey> &
     Partial<
         Pick<
             IWorldState,
-            "PrimeVaultTraders" | "Invasions" | "SyndicateMissions" | "SeasonInfo" | "KnownCalendarSeasons" | "Descents"
+            | "PrimeVaultTraders"
+            | "Invasions"
+            | "SyndicateMissions"
+            | "SeasonInfo"
+            | "KnownCalendarSeasons"
+            | "Descents"
+            | "EndlessXpSchedule"
+            | "Tmp"
         >
     >;
+
+interface IBountyCycle {
+    expiry: number;
+    bounties: Record<string, { node: string; challenge: string; ally?: string }[]>;
+}
+
+interface ICompactInvasions {
+    activation: number;
+    expiry: number;
+    invasions: { id: string }[];
+}
+
+interface ISupplementalWorldState {
+    worldState: Pick<
+        IWorldState,
+        | "PrimeVaultTraders"
+        | "Invasions"
+        | "SyndicateMissions"
+        | "SeasonInfo"
+        | "KnownCalendarSeasons"
+        | "Descents"
+        | "EndlessXpSchedule"
+    >;
+    freshnessMs: number;
+}
 
 const knownInvasionNodes = new Set(Object.values(invasionNodes).flat());
 const knownInvasionRewards = new Set(
@@ -73,6 +110,22 @@ const compatibleSyndicateTags = new Set([
     "HexSyndicate"
 ]);
 const knownSyndicateMissionNodes = new Set(syndicateMissionNodes);
+const bountyTags = new Set([
+    "CetusSyndicate",
+    "SolarisSyndicate",
+    "EntratiSyndicate",
+    "ZarimanSyndicate",
+    "EntratiLabSyndicate",
+    "HexSyndicate"
+]);
+const getSyndicateExpiry = (mission: IWorldState["SyndicateMissions"][number]): number =>
+    "$date" in mission.Expiry
+        ? Number(mission.Expiry.$date.$numberLong)
+        : mission.Expiry.sec * 1000 + Math.trunc(mission.Expiry.usec / 1000);
+const getSyndicateActivation = (mission: IWorldState["SyndicateMissions"][number]): number =>
+    "$date" in mission.Activation
+        ? Number(mission.Activation.$date.$numberLong)
+        : mission.Activation.sec * 1000 + Math.trunc(mission.Activation.usec / 1000);
 const nightwaveTagMinBuildVersion: Record<string, number> = {
     RadioLegionIntermission16Syndicate: gameToBuildVersionInt["43.5.0"],
     RadioLegionIntermission15Syndicate: gameToBuildVersionInt["42.0.6"],
@@ -145,6 +198,8 @@ const update41GoalTags = new Set([
 
 let cachedWorldState: ILiveWorldState | undefined;
 let cachedWorldStateJson: string | undefined;
+let cachedBountyCycle: IBountyCycle | undefined;
+let activeInvasionIds: Set<string> | undefined;
 let refreshPromise: Promise<void> | undefined;
 let lastRefreshAttempt = 0;
 let lastError: string | undefined;
@@ -160,10 +215,10 @@ const parseLiveWorldState = (value: unknown): ILiveWorldState => {
             throw new Error(`response field ${key} is not an array`);
         }
     }
-    return Object.fromEntries(liveWorldStateArrayKeys.map(key => [key, candidate[key]])) as Pick<
-        IWorldState,
-        TLiveWorldStateArrayKey
-    >;
+    return {
+        ...Object.fromEntries(liveWorldStateArrayKeys.map(key => [key, candidate[key]])),
+        ...(typeof candidate.Tmp == "string" ? { Tmp: candidate.Tmp } : {})
+    } as ILiveWorldState;
 };
 
 const isUpdate41Goal = (goal: IWorldState["Goals"][number]): boolean =>
@@ -535,6 +590,30 @@ const getCompatibleSyndicateMission = (value: unknown): IWorldState["SyndicateMi
     return mission;
 };
 
+const mergeSyndicateMissions = (
+    local: IWorldState["SyndicateMissions"],
+    live: IWorldState["SyndicateMissions"],
+    bountyCycle?: IBountyCycle,
+    now = Date.now()
+): IWorldState["SyndicateMissions"] => {
+    // The compact bounty-cycle nodes are display data, not SyndicateMissions.Nodes.
+    const compatibleLive = live.filter(
+        mission =>
+            getSyndicateExpiry(mission) > now &&
+            (!bountyCycle || !bountyTags.has(mission.Tag) || getSyndicateExpiry(mission) == bountyCycle.expiry)
+    );
+    const merged = local.filter(
+        mission =>
+            !compatibleLive.some(
+                replacement =>
+                    mission.Tag == replacement.Tag &&
+                    getSyndicateActivation(mission) < getSyndicateExpiry(replacement) &&
+                    getSyndicateExpiry(mission) > getSyndicateActivation(replacement)
+            )
+    );
+    return [...merged, ...compatibleLive];
+};
+
 const updateLiveSyndicateMissions = (missions: IWorldState["SyndicateMissions"]): void => {
     const now = Date.now();
     for (const mission of missions) {
@@ -632,58 +711,125 @@ const getUpdate41PrimeVaultSchedule = (
         : [];
 };
 
-const fetchSupplementalWorldState = async (): Promise<
-    Pick<
-        IWorldState,
-        "PrimeVaultTraders" | "Invasions" | "SyndicateMissions" | "SeasonInfo" | "KnownCalendarSeasons" | "Descents"
-    >
+const parseSupplementalWorldState = (
+    worldState: Partial<IWorldState>,
+    freshnessMs: number
+): ISupplementalWorldState => {
+    if (
+        !Array.isArray(worldState.PrimeVaultTraders) ||
+        !Array.isArray(worldState.Invasions) ||
+        !Array.isArray(worldState.SyndicateMissions) ||
+        !Array.isArray(worldState.KnownCalendarSeasons) ||
+        !worldState.SeasonInfo
+    ) {
+        throw new Error("supplemental world state fields are missing");
+    }
+    const primeVaultTraders = worldState.PrimeVaultTraders.map(trader => {
+        const scheduleInfo = (
+            trader as Omit<typeof trader, "ScheduleInfo"> & {
+                ScheduleInfo?: typeof trader.ScheduleInfo;
+            }
+        ).ScheduleInfo;
+        return { ...trader, ScheduleInfo: scheduleInfo ?? [] };
+    });
+    const invasions = worldState.Invasions.map(getCompatibleInvasion).filter(
+        (invasion): invasion is IWorldState["Invasions"][number] => invasion !== undefined
+    );
+    const syndicateMissions = worldState.SyndicateMissions.map(getCompatibleSyndicateMission).filter(
+        (mission): mission is IWorldState["SyndicateMissions"][number] => mission !== undefined
+    );
+    const knownCalendarSeasons = worldState.KnownCalendarSeasons.map(season =>
+        getCompatibleCalendarSeason(season, gameToBuildVersionInt["42.0.0"])
+    ).filter((season): season is IWorldState["KnownCalendarSeasons"][number] => season !== undefined);
+    return {
+        freshnessMs,
+        worldState: {
+            PrimeVaultTraders: primeVaultTraders,
+            Invasions: invasions,
+            SyndicateMissions: syndicateMissions,
+            SeasonInfo: worldState.SeasonInfo,
+            KnownCalendarSeasons: knownCalendarSeasons,
+            Descents: worldState.Descents ?? [],
+            EndlessXpSchedule: worldState.EndlessXpSchedule ?? []
+        }
+    };
+};
+
+const newestSupplemental = (results: ISupplementalWorldState[]): ISupplementalWorldState => {
+    if (results.length == 0) {
+        throw new Error("no valid supplemental world state source");
+    }
+    return results.reduce((newest, result) => (result.freshnessMs > newest.freshnessMs ? result : newest));
+};
+
+const fetchSupplementalWorldState = async (signal: AbortSignal): Promise<ISupplementalWorldState> => {
+    const received: ISupplementalWorldState[] = [];
+    const requests = SUPPLEMENTAL_WORLD_STATE_URLS.map(async url => {
+        const response = await fetch(url, { signal });
+        if (!response.ok) {
+            throw new Error(`${url}: HTTP ${response.status}`);
+        }
+        const worldState = (await response.json()) as Partial<IWorldState>;
+        const bodyTime = typeof worldState.Time == "number" ? worldState.Time * 1000 : 0;
+        const headerTime = Date.parse(response.headers.get("last-modified") ?? "") || 0;
+        const result = parseSupplementalWorldState(worldState, bodyTime || headerTime);
+        received.push(result);
+        return result;
+    });
+    const first = await Promise.any(requests);
+    if (Date.now() - first.freshnessMs > 2 * 60_000) {
+        await Promise.allSettled(requests);
+    } else {
+        await Promise.race([Promise.allSettled(requests), new Promise<void>(resolve => setTimeout(resolve, 1500))]);
+    }
+    const newest = newestSupplemental(received);
+    if (Date.now() - newest.freshnessMs > 10 * 60_000) {
+        throw new Error("supplemental world state is stale");
+    }
+    return newest;
+};
+
+const fetchBrowseActivity = async (
+    signal: AbortSignal
+): Promise<{ bountyCycle?: IBountyCycle; invasionIds?: Set<string> }> => {
+    const activitySignal = AbortSignal.any([signal, AbortSignal.timeout(3000)]);
+    const [bountyResult, invasionsResult] = await Promise.all([
+        fetch(BOUNTY_CYCLE_URL, { signal: activitySignal })
+            .then(async response => (response.ok ? ((await response.json()) as IBountyCycle) : undefined))
+            .catch(() => undefined),
+        fetch(INVASIONS_URL, { signal: activitySignal })
+            .then(async response => (response.ok ? ((await response.json()) as ICompactInvasions) : undefined))
+            .catch(() => undefined)
+    ]);
+    return {
+        bountyCycle:
+            bountyResult && Number.isFinite(bountyResult.expiry) && bountyResult.expiry > Date.now()
+                ? bountyResult
+                : undefined,
+        invasionIds:
+            invasionsResult &&
+            invasionsResult.activation * 1000 <= Date.now() &&
+            invasionsResult.expiry * 1000 > Date.now() &&
+            Array.isArray(invasionsResult.invasions)
+                ? new Set(invasionsResult.invasions.map(invasion => invasion.id))
+                : undefined
+    };
+};
+
+const fetchSupplementalAndActivity = async (): Promise<
+    ISupplementalWorldState & {
+        bountyCycle?: IBountyCycle;
+        invasionIds?: Set<string>;
+    }
 > => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
-        return await Promise.any(
-            SUPPLEMENTAL_WORLD_STATE_URLS.map(async url => {
-                const response = await fetch(url, { signal: controller.signal });
-                if (!response.ok) {
-                    throw new Error(`${url}: HTTP ${response.status}`);
-                }
-                const worldState = (await response.json()) as Partial<IWorldState>;
-                if (
-                    !Array.isArray(worldState.PrimeVaultTraders) ||
-                    !Array.isArray(worldState.Invasions) ||
-                    !Array.isArray(worldState.SyndicateMissions) ||
-                    !Array.isArray(worldState.KnownCalendarSeasons) ||
-                    !worldState.SeasonInfo
-                ) {
-                    throw new Error(`${url}: supplemental world state fields are missing`);
-                }
-                const primeVaultTraders = worldState.PrimeVaultTraders.map(trader => {
-                    const scheduleInfo = (
-                        trader as Omit<typeof trader, "ScheduleInfo"> & {
-                            ScheduleInfo?: typeof trader.ScheduleInfo;
-                        }
-                    ).ScheduleInfo;
-                    return { ...trader, ScheduleInfo: scheduleInfo ?? [] };
-                });
-                const invasions = worldState.Invasions.map(getCompatibleInvasion).filter(
-                    (invasion): invasion is IWorldState["Invasions"][number] => invasion !== undefined
-                );
-                const syndicateMissions = worldState.SyndicateMissions.map(getCompatibleSyndicateMission).filter(
-                    (mission): mission is IWorldState["SyndicateMissions"][number] => mission !== undefined
-                );
-                const knownCalendarSeasons = worldState.KnownCalendarSeasons.map(season =>
-                    getCompatibleCalendarSeason(season, gameToBuildVersionInt["42.0.0"])
-                ).filter((season): season is IWorldState["KnownCalendarSeasons"][number] => season !== undefined);
-                return {
-                    PrimeVaultTraders: primeVaultTraders,
-                    Invasions: invasions,
-                    SyndicateMissions: syndicateMissions,
-                    SeasonInfo: worldState.SeasonInfo,
-                    KnownCalendarSeasons: knownCalendarSeasons,
-                    Descents: worldState.Descents ?? []
-                };
-            })
-        );
+        const [supplemental, activity] = await Promise.all([
+            fetchSupplementalWorldState(controller.signal),
+            fetchBrowseActivity(controller.signal)
+        ]);
+        return { ...supplemental, ...activity };
     } finally {
         clearTimeout(timeout);
         controller.abort();
@@ -700,16 +846,27 @@ const fetchLiveWorldState = async (): Promise<void> => {
         const liveWorldState = parseLiveWorldState(await response.json());
         await updateLiveGoals(liveWorldState.Goals);
         try {
-            const supplementalWorldState = await fetchSupplementalWorldState();
-            liveWorldState.PrimeVaultTraders = supplementalWorldState.PrimeVaultTraders;
-            liveWorldState.Invasions = supplementalWorldState.Invasions;
-            liveWorldState.SyndicateMissions = supplementalWorldState.SyndicateMissions;
-            liveWorldState.SeasonInfo = supplementalWorldState.SeasonInfo;
-            liveWorldState.KnownCalendarSeasons = supplementalWorldState.KnownCalendarSeasons;
-            liveWorldState.Descents = supplementalWorldState.Descents;
-            await updateLiveInvasions(supplementalWorldState.Invasions);
-            updateLiveSyndicateMissions(supplementalWorldState.SyndicateMissions);
-            updateLiveCalendarSeasons(supplementalWorldState.KnownCalendarSeasons);
+            const supplementalWorldState = await fetchSupplementalAndActivity();
+            const activityIds = supplementalWorldState.invasionIds;
+            const matchedInvasions = supplementalWorldState.worldState.Invasions.filter(invasion =>
+                activityIds ? activityIds.has(invasion._id.$oid ?? "") : !invasion.Completed
+            );
+            const activeInvasions =
+                activityIds?.size && matchedInvasions.length == 0
+                    ? supplementalWorldState.worldState.Invasions.filter(invasion => !invasion.Completed)
+                    : matchedInvasions;
+            liveWorldState.PrimeVaultTraders = supplementalWorldState.worldState.PrimeVaultTraders;
+            liveWorldState.Invasions = activeInvasions;
+            liveWorldState.SyndicateMissions = supplementalWorldState.worldState.SyndicateMissions;
+            liveWorldState.SeasonInfo = supplementalWorldState.worldState.SeasonInfo;
+            liveWorldState.KnownCalendarSeasons = supplementalWorldState.worldState.KnownCalendarSeasons;
+            liveWorldState.Descents = supplementalWorldState.worldState.Descents;
+            liveWorldState.EndlessXpSchedule = supplementalWorldState.worldState.EndlessXpSchedule;
+            await updateLiveInvasions(activeInvasions);
+            updateLiveSyndicateMissions(supplementalWorldState.worldState.SyndicateMissions);
+            updateLiveCalendarSeasons(supplementalWorldState.worldState.KnownCalendarSeasons);
+            cachedBountyCycle = supplementalWorldState.bountyCycle;
+            activeInvasionIds = new Set(activeInvasions.map(invasion => invasion._id.$oid ?? ""));
         } catch (e) {
             logger.debug(`Could not supplement browse.wf world state with Prime Vault traders: ${String(e)}`);
         }
@@ -739,6 +896,8 @@ export const refreshLiveWorldState = async (): Promise<void> => {
     if (!config.worldState?.liveSync) {
         cachedWorldState = undefined;
         cachedWorldStateJson = undefined;
+        cachedBountyCycle = undefined;
+        activeInvasionIds = undefined;
         liveInvasions.clear();
         liveGoals.clear();
         liveSyndicateMissions.clear();
@@ -775,7 +934,9 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
         return;
     }
 
-    const localInvasions = [...liveInvasions.values()].map(entry => structuredClone(entry.invasion));
+    const localInvasions = [...liveInvasions.values()]
+        .filter(entry => !activeInvasionIds || activeInvasionIds.has(entry.invasion._id.$oid ?? ""))
+        .map(entry => structuredClone(entry.invasion));
     const localGoals = [...liveGoals.values()].map(entry => structuredClone(entry.goal));
     if (!cachedWorldState) {
         if (localGoals.length > 0) {
@@ -790,24 +951,118 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
 
     const liveWorldState = structuredClone(cachedWorldState);
     const compatibleSeasonInfo = getCompatibleSeasonInfo(liveWorldState.SeasonInfo, buildVersion);
-    if (buildVersion >= gameToBuildVersionInt["43.5.0"]) {
+    if (buildVersion >= gameToBuildVersionInt["44.0.0"]) {
         Object.assign(worldState, liveWorldState);
         worldState.Goals = localGoals;
         worldState.Invasions = localInvasions;
         return;
     }
 
+    const compatibleConquests = liveWorldState.Conquests?.filter(isCompatibleConquest) ?? [];
+    const conquestByType = new Map(compatibleConquests.map(conquest => [conquest.Type, conquest]));
+    const liveLabConquest = conquestByType.get("CT_LAB");
+    const liveHexConquest = conquestByType.get("CT_HEX");
+    if (
+        liveLabConquest &&
+        liveHexConquest &&
+        liveLabConquest.Activation.$date.$numberLong == liveHexConquest.Activation.$date.$numberLong &&
+        liveLabConquest.Expiry.$date.$numberLong == liveHexConquest.Expiry.$date.$numberLong &&
+        Number(liveLabConquest.Expiry.$date.$numberLong) > Date.now()
+    ) {
+        try {
+            const tmp = JSON.parse(worldState.Tmp ?? "{}") as Record<string, unknown>;
+            tmp.lqo = {
+                mt: liveLabConquest.Missions.map(x => getMissionTypeForLegacyOverride(x.missionType, "CT_LAB")),
+                mv: liveLabConquest.Missions.map(x => x.difficulties[1].deviation),
+                c: liveLabConquest.Missions.map(x => x.difficulties[1].risks),
+                fv: liveLabConquest.Variables
+            };
+            tmp.hqo = {
+                mt: liveHexConquest.Missions.map(x => getMissionTypeForLegacyOverride(x.missionType, "CT_HEX")),
+                mv: liveHexConquest.Missions.map(x => x.difficulties[1].deviation),
+                mf: liveHexConquest.Missions.map(x => factionToInt(x.faction)),
+                c: liveHexConquest.Missions.map(x => x.difficulties[1].risks),
+                fv: liveHexConquest.Variables
+            };
+            worldState.Tmp = JSON.stringify(tmp);
+            worldState.Conquests = [liveLabConquest, liveHexConquest];
+        } catch {
+            // Keep the locally generated legacy overrides if the local Tmp is malformed.
+        }
+    }
+
+    if (liveWorldState.Tmp) {
+        try {
+            const liveTmp = JSON.parse(liveWorldState.Tmp) as Record<string, unknown>;
+            const localTmp = JSON.parse(worldState.Tmp ?? "{}") as Record<string, unknown>;
+            let changed = false;
+            const pgr = liveTmp.pgr;
+            if (
+                pgr &&
+                typeof pgr == "object" &&
+                !Array.isArray(pgr) &&
+                Object.values(pgr).every(value => typeof value == "string")
+            ) {
+                localTmp.pgr = pgr;
+                changed = true;
+            }
+            const fbst = liveTmp.fbst;
+            if (
+                fbst &&
+                typeof fbst == "object" &&
+                "a" in fbst &&
+                "e" in fbst &&
+                "n" in fbst &&
+                typeof fbst.a == "number" &&
+                typeof fbst.e == "number" &&
+                typeof fbst.n == "number"
+            ) {
+                localTmp.fbst = fbst;
+                changed = true;
+            }
+            if (typeof liveTmp.sfn == "number") {
+                localTmp.sfn = liveTmp.sfn;
+                changed = true;
+            }
+            if (changed) {
+                worldState.Tmp = JSON.stringify(localTmp);
+            }
+        } catch {
+            // An invalid upstream Tmp should not replace the locally generated client overrides.
+        }
+    }
+
+    const compatibleFissures = liveWorldState.ActiveMissions.filter(
+        fissure =>
+            isKnownNode(fissure.Node) &&
+            (
+                fissureMissions[fissure.Modifier as keyof typeof fissureMissions] as readonly string[] | undefined
+            )?.includes(fissure.Node)
+    );
+    const compatibleStorms = liveWorldState.VoidStorms.filter(storm => isKnownNode(storm.Node));
+
     Object.assign(worldState, {
         Events: liveWorldState.Events,
-        Goals: localGoals.filter(isUpdate41Goal),
+        Goals: buildVersion >= gameToBuildVersionInt["43.5.0"] ? localGoals : localGoals.filter(isUpdate41Goal),
         Alerts: liveWorldState.Alerts.filter(alert => isKnownNode(alert.MissionInfo.location)),
         Sorties: liveWorldState.Sorties.filter(sortie => sortie.Variants.every(variant => isKnownNode(variant.node))),
         LiteSorties: liveWorldState.LiteSorties.filter(sortie =>
             sortie.Missions.every(mission => isKnownNode(mission.node))
         ),
-        ActiveMissions: liveWorldState.ActiveMissions.filter(fissure => isKnownNode(fissure.Node)),
+        ActiveMissions:
+            compatibleFissures.length || !liveWorldState.ActiveMissions.length
+                ? compatibleFissures
+                : worldState.ActiveMissions,
         ...(liveWorldState.Invasions ? { Invasions: localInvasions } : {}),
-        ...(liveWorldState.SyndicateMissions ? { SyndicateMissions: liveWorldState.SyndicateMissions } : {}),
+        ...(liveWorldState.SyndicateMissions
+            ? {
+                  SyndicateMissions: mergeSyndicateMissions(
+                      worldState.SyndicateMissions,
+                      liveWorldState.SyndicateMissions,
+                      cachedBountyCycle?.expiry && cachedBountyCycle.expiry > Date.now() ? cachedBountyCycle : undefined
+                  )
+              }
+            : {}),
         ...(liveWorldState.KnownCalendarSeasons
             ? {
                   KnownCalendarSeasons: liveWorldState.KnownCalendarSeasons.map(season =>
@@ -816,12 +1071,30 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
               }
             : {}),
         ...((): Partial<Pick<IWorldState, "Descents">> => {
-            const compatibleDescents = liveWorldState.Descents?.filter(isCompatibleDescent) ?? [];
+            const compatibleDescents =
+                liveWorldState.Descents?.filter(descent => isCompatibleDescent(descent, buildVersion)) ?? [];
             return compatibleDescents.length > 0 ? { Descents: compatibleDescents } : {};
+        })(),
+        ...((): Partial<Pick<IWorldState, "EndlessXpSchedule">> => {
+            if (buildVersion < gameToBuildVersionInt["42.0.0"]) return {};
+            const schedule =
+                liveWorldState.EndlessXpSchedule?.filter(entry => isCompatibleEndlessXpSchedule(entry, buildVersion)) ??
+                [];
+            if (!schedule.length) return {};
+            const lastExpiry = Math.max(...schedule.map(entry => Number(entry.Expiry.$date.$numberLong)));
+            return {
+                EndlessXpSchedule: [
+                    ...schedule,
+                    ...(worldState.EndlessXpSchedule ?? []).filter(
+                        entry => Number(entry.Activation.$date.$numberLong) >= lastExpiry
+                    )
+                ]
+            };
         })(),
         ...(compatibleSeasonInfo ? { SeasonInfo: compatibleSeasonInfo } : {}),
         VoidTraders: getCompatibleVoidTraders(liveWorldState.VoidTraders, buildVersion),
-        VoidStorms: liveWorldState.VoidStorms.filter(storm => isKnownNode(storm.Node)),
+        VoidStorms:
+            compatibleStorms.length || !liveWorldState.VoidStorms.length ? compatibleStorms : worldState.VoidStorms,
         DailyDeals: getCompatibleDailyDeals(liveWorldState.DailyDeals, buildVersion),
         ...(liveWorldState.PrimeVaultTraders
             ? {
@@ -832,7 +1105,7 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
                   }))
               }
             : {}),
-        Conquests: liveWorldState.Conquests
+        Conquests: worldState.Conquests
     });
 };
 
@@ -911,4 +1184,53 @@ export const getLiveDailyDealForPurchase = (
         return undefined;
     }
     return getCompatibleDailyDeals(cachedWorldState.DailyDeals, buildVersion).find(deal => deal.StoreItem == storeItem);
+};
+
+export const selfTestLiveWorldState = (): boolean => {
+    const fakeSource = (freshnessMs: number): ISupplementalWorldState => ({
+        freshnessMs,
+        worldState: {} as ISupplementalWorldState["worldState"]
+    });
+    const date = (ms: number): { $date: { $numberLong: string } } => ({ $date: { $numberLong: String(ms) } });
+    const local = {
+        _id: { $oid: "000000000000000000000001" },
+        Activation: date(0),
+        Expiry: date(3000),
+        Tag: "CetusSyndicate",
+        Seed: 1,
+        Nodes: [],
+        Jobs: []
+    } satisfies IWorldState["SyndicateMissions"][number];
+    const official = { ...local, _id: { $oid: "000000000000000000000002" }, Expiry: date(2000), Seed: 2 };
+    const next = { ...local, Activation: date(4000), Expiry: date(6000) };
+    const merged = mergeSyndicateMissions(
+        [local, next],
+        [official],
+        { expiry: 2000, bounties: { CetusSyndicate: [] } },
+        1000
+    );
+    const oldBuild = gameToBuildVersionInt["42.0.0"];
+    const u43 = gameToBuildVersionInt["43.5.4"];
+    const circuit = { Activation: date(0), Expiry: date(3000), CategoryChoices: getEndlessXpChoices(650, u43) };
+    const testPassed =
+        newestSupplemental([fakeSource(1), fakeSource(2)]).freshnessMs == 2 &&
+        merged.length == 2 &&
+        merged[0].Seed == 1 &&
+        merged[1].Seed == 2 &&
+        mergeSyndicateMissions([local], [official], undefined, 1000)[0].Seed == 2 &&
+        isCompatibleConquest(getConquest("CT_LAB", 650, null)) &&
+        isCompatibleDescent(getDescent(650, u43), u43) &&
+        isCompatibleDescent(getDescent(650, oldBuild), oldBuild) &&
+        isCompatibleEndlessXpSchedule(circuit, u43) &&
+        !isCompatibleEndlessXpSchedule(
+            {
+                ...circuit,
+                CategoryChoices: [circuit.CategoryChoices[0], { Category: "EXC_HARD", Choices: ["U44Only"] }]
+            },
+            u43
+        );
+    if (!testPassed) {
+        logger.warn("live world state self test failed");
+    }
+    return testPassed;
 };

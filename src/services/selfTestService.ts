@@ -2,6 +2,7 @@ import { selfTestTransmutation } from "../controllers/api/artifactTransmutationC
 import { selfTestGuildTech } from "../controllers/api/guildTechController.ts";
 import { selfTestRandomProjection } from "./itemDataService.ts";
 import { selfTestServersideVendors } from "./serversideVendorsService.ts";
+import { selfTestLiveWorldState } from "./liveWorldStateService.ts";
 
 export const runSelfTests = (): boolean => {
     let allGood = true;
@@ -9,5 +10,6 @@ export const runSelfTests = (): boolean => {
     allGood &&= selfTestGuildTech();
     allGood &&= selfTestTransmutation();
     allGood &&= selfTestRandomProjection();
+    allGood &&= selfTestLiveWorldState();
     return allGood;
 };

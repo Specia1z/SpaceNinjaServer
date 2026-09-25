@@ -954,11 +954,18 @@ const post42DescentAuras = new Set([
     "/Lotus/Types/Scripts/Tau/CoH/Complications/RocketDropOnDeathAura"
 ]);
 
-export const isCompatibleDescent = (value: unknown): value is IDescent => {
+export const isCompatibleDescent = (
+    value: unknown,
+    buildVersion = gameToBuildVersionInt["42.0.0"]
+): value is IDescent => {
     if (!value || typeof value != "object") {
         return false;
     }
     const descent = value as IDescent;
+    if (!Array.isArray(descent.Challenges)) {
+        return false;
+    }
+    const restrictTo42 = buildVersion < gameToBuildVersionInt["43.5.0"];
     return (
         descent.Challenges.length == 21 &&
         descent.Challenges.every(
@@ -968,11 +975,13 @@ export const isCompatibleDescent = (value: unknown): value is IDescent => {
                 compatibleDescentTypes.has(floor.Type) &&
                 compatibleDescentChallenges.has(floor.Challenge) &&
                 compatibleDescentLevels.has(floor.Level) &&
-                !post42DescentChallenges.has(floor.Challenge) &&
+                (!restrictTo42 || !post42DescentChallenges.has(floor.Challenge)) &&
+                Array.isArray(floor.Specs) &&
                 floor.Specs.every(spec => compatibleDescentSpecs.has(spec)) &&
-                floor.Specs.every(spec => !post42DescentSpecs.has(spec)) &&
+                (!restrictTo42 || floor.Specs.every(spec => !post42DescentSpecs.has(spec))) &&
+                Array.isArray(floor.Auras) &&
                 floor.Auras.every(aura => compatibleDescentAuras.has(aura)) &&
-                floor.Auras.every(aura => !post42DescentAuras.has(aura))
+                (!restrictTo42 || floor.Auras.every(aura => !post42DescentAuras.has(aura)))
         )
     );
 };

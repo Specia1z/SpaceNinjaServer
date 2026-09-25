@@ -424,6 +424,63 @@ export const getConquest = (
     };
 };
 
+export const isCompatibleConquest = (value: IConquest): boolean => {
+    const conquestType: string = value.Type;
+    if (conquestType != "CT_LAB" && conquestType != "CT_HEX") {
+        return false;
+    }
+    const missions = value.Missions as Array<{
+        faction: TFaction;
+        missionType: TMissionType;
+        difficulties: Array<{ type: string; deviation: string; risks: string[] }>;
+    }>;
+    const variables = value.Variables as string[];
+    const validVariables = new Set([
+        "Framecurse",
+        "Knifestep",
+        "Exhaustion",
+        "Gearless",
+        "TimeDilation",
+        "Armorless",
+        "Starvation",
+        "ShieldDelay",
+        "Withering",
+        "ContactDamage",
+        "AbilityLockout",
+        "OperatorLockout",
+        "EnergyStarved",
+        "OverSensitive",
+        "AntiGuard",
+        "DecayingFlesh",
+        "VoidEnergyOverload",
+        "DullBlades",
+        "Undersupplied"
+    ]);
+    return (
+        Array.isArray(missions) &&
+        missions.length == 3 &&
+        Array.isArray(variables) &&
+        variables.length == 4 &&
+        variables.every(variable => validVariables.has(variable)) &&
+        missions.every(
+            mission =>
+                (missionAndFactionTypes[value.Type][mission.missionType]?.includes(mission.faction) ||
+                    (mission.missionType == "MT_ASSASSINATION" &&
+                        assassinationFactionOptions[value.Type].includes(mission.faction))) &&
+                Array.isArray(mission.difficulties) &&
+                mission.difficulties.length == 2 &&
+                mission.difficulties.every(
+                    (difficulty, index) =>
+                        difficulty.type == (index == 0 ? "CD_NORMAL" : "CD_HARD") &&
+                        deviations.some(x => x.tag == difficulty.deviation) &&
+                        Array.isArray(difficulty.risks) &&
+                        difficulty.risks.length == index + 1 &&
+                        difficulty.risks.every(risk => risks.some(x => x.tag == risk))
+                )
+        )
+    );
+};
+
 export const getMissionTypeForLegacyOverride = (missionType: TMissionType, conquestType: TConquestType): string => {
     if (missionType == "MT_ENDLESS_CAPTURE") {
         return "EndlessCapture";
