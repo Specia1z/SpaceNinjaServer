@@ -82,18 +82,24 @@ import {
 } from "../controllers/custom/suspicionEventController.ts";
 
 import { getConfigController, setConfigController } from "../controllers/custom/configController.ts";
+import {
+    getMetadataPatchesController,
+    saveMetadataPatchesController
+} from "../controllers/custom/metadataPatchesController.ts";
 import { getAccountForRequest, hasPermission } from "../services/loginService.ts";
 
 const customRouter = express.Router();
 
-const requirePermission = (permission: string): RequestHandler => async (req, res, next) => {
-    const account = await getAccountForRequest(req);
-    if (!hasPermission(account, permission)) {
-        res.status(403).send("Permission denied");
-        return;
-    }
-    next();
-};
+const requirePermission =
+    (permission: string): RequestHandler =>
+    async (req, res, next) => {
+        const account = await getAccountForRequest(req);
+        if (!hasPermission(account, permission)) {
+            res.status(403).send("Permission denied");
+            return;
+        }
+        next();
+    };
 
 customRouter.use(
     [
@@ -162,6 +168,7 @@ customRouter.get("/admin/crafting-config", getCraftingConfigController);
 customRouter.get("/admin/redeem-codes", listRedeemCodesController);
 customRouter.get("/admin/suspicion-events", listSuspicionEventsController);
 customRouter.get("/admin/suspicion-events/detail", getSuspicionEventsForAccountController);
+customRouter.get("/admin/metadata-patches", getMetadataPatchesController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -194,6 +201,7 @@ customRouter.post("/admin/redeem-codes/generate", generateRedeemCodesController)
 customRouter.post("/admin/redeem-codes/delete", deleteRedeemCodeController);
 customRouter.post("/admin/suspicion-events/ban", setAccountBanController);
 customRouter.post("/admin/suspicion-events/clear", clearSuspicionEventsController);
+customRouter.post("/admin/metadata-patches", saveMetadataPatchesController);
 customRouter.post("/redeemCode", redeemCodeController);
 
 customRouter.post("/changePassword", changePasswordController);

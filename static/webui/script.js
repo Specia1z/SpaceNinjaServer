@@ -186,7 +186,11 @@ openWebSocket();
 function refreshServerConfig() {
     window.is_admin = undefined;
     config_data = undefined;
-    if (single.getCurrentPath() == "/webui/cheats" || single.getCurrentPath() == "/webui/users") {
+    if (
+        single.getCurrentPath() == "/webui/cheats" ||
+        single.getCurrentPath() == "/webui/users" ||
+        single.getCurrentPath() == "/webui/metadata-patches"
+    ) {
         single.loadRoute(single.getCurrentPath());
     }
 }
@@ -4351,6 +4355,220 @@ single.getRoute("/webui/anti-cheat").on("beforeload", function () {
         try {
             document.getElementById("admin-anti-cheat-events").innerHTML = "";
             await loadAdminSuspicionEvents();
+        } catch (error) {
+            toast(error.responseText || loc("settings_changeFailed"), "danger");
+        }
+    });
+});
+
+// Metadata Patches route
+let metadataPatchDraft = [];
+
+function splitMetadataPatchLines(value) {
+    return value
+        .replaceAll("\r", "")
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+}
+
+function compileMetadataPatchPreview() {
+    const lines = [];
+    metadataPatchDraft.forEach(patch => {
+        if (patch.enabled === false || !patch.targets.length) return;
+        if (patch.name) lines.push(`# Server patch: ${patch.name.replaceAll(/[\r\n]/g, " ")}`);
+        lines.push(patch.targets.join(" & "));
+        lines.push(...patch.operations);
+        lines.push("");
+    });
+    const compiled = lines.join("\n").trimEnd();
+    document.getElementById("metadata-patches-preview").textContent = compiled || loc("metadataPatches_emptyPreview");
+    document.getElementById("metadata-patches-revision").textContent = "";
+}
+
+function updateMetadataPatch(index, field, value) {
+    metadataPatchDraft[index][field] = value;
+    compileMetadataPatchPreview();
+}
+
+function moveMetadataPatch(index, delta) {
+    const nextIndex = index + delta;
+    if (nextIndex < 0 || nextIndex >= metadataPatchDraft.length) return;
+    [metadataPatchDraft[index], metadataPatchDraft[nextIndex]] = [
+        metadataPatchDraft[nextIndex],
+        metadataPatchDraft[index]
+    ];
+    renderMetadataPatches();
+}
+
+function removeMetadataPatch(index) {
+    metadataPatchDraft.splice(index, 1);
+    renderMetadataPatches();
+}
+
+function createMetadataPatchEditor(patch, index) {
+    const section = document.createElement("section");
+    section.className = "metadata-patch-editor";
+
+    const header = document.createElement("div");
+    header.className = "d-flex flex-wrap align-items-center gap-2 mb-3";
+
+    const enabledWrap = document.createElement("div");
+    enabledWrap.className = "form-check form-switch me-auto";
+    const enabled = document.createElement("input");
+    enabled.className = "form-check-input";
+    enabled.type = "checkbox";
+    enabled.id = `metadata-patch-enabled-${index}`;
+    enabled.checked = patch.enabled !== false;
+    enabled.onchange = () => updateMetadataPatch(index, "enabled", enabled.checked);
+    const enabledLabel = document.createElement("label");
+    enabledLabel.className = "form-check-label";
+    enabledLabel.htmlFor = enabled.id;
+    enabledLabel.textContent = loc("metadataPatches_enabled");
+    enabledWrap.append(enabled, enabledLabel);
+    header.appendChild(enabledWrap);
+
+    const actions = [
+        [icons.angleUp, "metadataPatches_moveUp", () => moveMetadataPatch(index, -1), index == 0, false],
+        [
+            icons.angleDown,
+            "metadataPatches_moveDown",
+            () => moveMetadataPatch(index, 1),
+            index == metadataPatchDraft.length - 1,
+            false
+        ],
+        [icons.trash, "metadataPatches_delete", () => removeMetadataPatch(index), false, true]
+    ];
+    actions.forEach(([icon, titleTag, handler, disabled, destructive]) => {
+        const button = document.createElement("button");
+        button.className = `btn btn-sm ${destructive ? "btn-outline-danger" : "btn-outline-secondary"}`;
+        button.type = "button";
+        button.innerHTML = icon;
+        button.title = loc(titleTag);
+        button.setAttribute("aria-label", loc(titleTag));
+        button.disabled = disabled;
+        button.onclick = handler;
+        header.appendChild(button);
+    });
+    section.appendChild(header);
+
+    const nameLabel = document.createElement("label");
+    nameLabel.className = "form-label";
+    nameLabel.textContent = loc("metadataPatches_name");
+    const name = document.createElement("input");
+    name.className = "form-control mb-3";
+    name.type = "text";
+    name.id = `metadata-patch-name-${index}`;
+    name.maxLength = 200;
+    name.value = patch.name ?? "";
+    name.oninput = () => updateMetadataPatch(index, "name", name.value.trim());
+    nameLabel.htmlFor = name.id;
+    section.append(nameLabel, name);
+
+    const row = document.createElement("div");
+    row.className = "row g-3";
+    const fields = [
+        ["targets", "metadataPatches_targets", "metadataPatches_targetsHint", patch.targets.join("\n")],
+        ["operations", "metadataPatches_operations", "metadataPatches_operationsHint", patch.operations.join("\n")]
+    ];
+    fields.forEach(([field, labelTag, hintTag, value]) => {
+        const column = document.createElement("div");
+        column.className = "col-lg-6";
+        const label = document.createElement("label");
+        label.className = "form-label";
+        label.textContent = loc(labelTag);
+        const textarea = document.createElement("textarea");
+        textarea.className = "form-control";
+        textarea.id = `metadata-patch-${field}-${index}`;
+        textarea.value = value;
+        textarea.oninput = () => updateMetadataPatch(index, field, splitMetadataPatchLines(textarea.value));
+        label.htmlFor = textarea.id;
+        const hint = document.createElement("div");
+        hint.className = "form-text";
+        hint.textContent = loc(hintTag);
+        column.append(label, textarea, hint);
+        row.appendChild(column);
+    });
+    section.appendChild(row);
+    return section;
+}
+
+function renderMetadataPatches() {
+    const list = document.getElementById("metadata-patches-list");
+    list.innerHTML = "";
+    if (!metadataPatchDraft.length) {
+        const empty = document.createElement("p");
+        empty.className = "text-body-secondary mb-0";
+        empty.textContent = loc("metadataPatches_empty");
+        list.appendChild(empty);
+    } else {
+        metadataPatchDraft.forEach((patch, index) => list.appendChild(createMetadataPatchEditor(patch, index)));
+    }
+    compileMetadataPatchPreview();
+}
+
+function addMetadataPatch() {
+    metadataPatchDraft.push({ name: "", enabled: true, targets: [], operations: [] });
+    renderMetadataPatches();
+    document.querySelector("#metadata-patches-list .metadata-patch-editor:last-child")?.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+}
+
+async function loadMetadataPatches() {
+    const data = await $.get("/custom/admin/metadata-patches?" + window.authz);
+    metadataPatchDraft = (data.patches ?? []).map(patch => ({
+        name: patch.name ?? "",
+        enabled: patch.enabled !== false,
+        targets: [...(patch.targets ?? [])],
+        operations: [...(patch.operations ?? [])]
+    }));
+    renderMetadataPatches();
+    document.getElementById("metadata-patches-preview").textContent =
+        data.compiled || loc("metadataPatches_emptyPreview");
+    document.getElementById("metadata-patches-revision").textContent = data.revision
+        ? `${loc("metadataPatches_revision")}: ${data.revision}`
+        : "";
+}
+
+async function saveMetadataPatches() {
+    for (let index = 0; index < metadataPatchDraft.length; ++index) {
+        const patch = metadataPatchDraft[index];
+        if (!patch.targets.length || patch.targets.some(target => !target.startsWith("/"))) {
+            toast(loc("metadataPatches_invalidTarget").replace("|INDEX|", String(index + 1)), "danger");
+            return;
+        }
+    }
+
+    const button = document.getElementById("metadata-patches-save");
+    button.disabled = true;
+    try {
+        const data = await $.post({
+            url: "/custom/admin/metadata-patches?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify({ patches: metadataPatchDraft })
+        });
+        metadataPatchDraft = data.patches;
+        renderMetadataPatches();
+        document.getElementById("metadata-patches-preview").textContent =
+            data.compiled || loc("metadataPatches_emptyPreview");
+        document.getElementById("metadata-patches-revision").textContent = data.revision
+            ? `${loc("metadataPatches_revision")}: ${data.revision}`
+            : "";
+        toast(loc("metadataPatches_saved"), "success");
+    } catch (error) {
+        toast(error.responseText || loc("settings_changeFailed"), "danger");
+    } finally {
+        button.disabled = false;
+    }
+}
+
+single.getRoute("/webui/metadata-patches").on("beforeload", function () {
+    awaitAuthz().then(async () => {
+        if (!applyServerConfig(await getServerConfig())) return;
+        try {
+            await loadMetadataPatches();
         } catch (error) {
             toast(error.responseText || loc("settings_changeFailed"), "danger");
         }

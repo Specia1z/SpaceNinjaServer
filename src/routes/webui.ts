@@ -52,6 +52,7 @@ webuiRouter.get("/webui/admin", virtualRouteController);
 webuiRouter.get("/webui/admin-data", virtualRouteController);
 webuiRouter.get("/webui/redeem-codes", virtualRouteController);
 webuiRouter.get("/webui/anti-cheat", virtualRouteController);
+webuiRouter.get("/webui/metadata-patches", virtualRouteController);
 
 // Serve static files
 webuiRouter.use("/webui", express.static(path.join(baseDir, "static/webui")));
