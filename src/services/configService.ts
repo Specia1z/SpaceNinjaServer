@@ -62,6 +62,10 @@ export interface IConfig {
     ircExecutable?: string;
     ircAddress?: string;
     hubExecutable?: string;
+    udpRelayBindAddress?: string;
+    udpRelayPort?: number;
+    udpRelayTarget?: string;
+    udpRelayIdleTimeoutMs?: number;
     /** @deprecated */ hubAddress?: string;
     hubServers?: IHubServer[];
     noHubDiscrimination?: boolean;
@@ -380,6 +384,13 @@ export const getNrsAddresses = (): [string, number][] => {
         }
         return [nrsAddr, nrsPort];
     });
+};
+
+export const getUdpRelayAddress = (request: Request): string | undefined => {
+    if (!config.udpRelayPort) {
+        return undefined;
+    }
+    return `${getReflexiveAddress(request).myAddress}:${config.udpRelayPort}`;
 };
 
 export const shouldDoServerQol = (

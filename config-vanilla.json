@@ -18,6 +18,8 @@
   "ircExecutable": null,
   "ircAddress": "%THIS_MACHINE%",
   "hubExecutable": null,
+  "udpRelayPort": null,
+  "udpRelayTarget": null,
   "hubServers": [
     {
       "address": "%THIS_MACHINE%:6952",

@@ -83,6 +83,8 @@ Important settings include:
 
 - `database`: use the embedded MongoDB object or a MongoDB connection string such as `mongodb://127.0.0.1:27017/openWF`.
 - `myAddress`, `bindAddress`, `httpPort`, and `httpsPort`: control how clients reach the server. Container ports are controlled by `docker-compose.yml`.
+- `udpRelayPort` and `udpRelayTarget`: enable the protocol-opaque UDP relay used for Hub/dojo traffic. The relay listens on `udpRelayPort` and forwards unchanged datagrams to the Hub at `udpRelayTarget`; expose the relay UDP port in the firewall and Docker configuration.
+- `hubServers`: the Hub service itself must be running and reachable on its configured UDP address, usually port `6952`. The relay is only a transport layer and does not replace `warframe-hub-server`.
 - `administratorNames`: accounts allowed to use administrator features.
 - `worldState.liveSync`: enables live world-state synchronization. The active fork configuration enables this by default; the vanilla template leaves it disabled.
 - `worldState.eidolonOverride`: set to `day` or `night` to lock Plains of Eidolon or Cambion Drift time.

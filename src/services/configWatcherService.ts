@@ -12,6 +12,7 @@ import {
 } from "./configService.ts";
 import { saveConfig, shouldReloadConfig } from "./configWriterService.ts";
 import { startWebServer, stopWebServer } from "./webService.ts";
+import { getUdpRelayParams, startUdpRelay, stopUdpRelay } from "./udpRelayService.ts";
 import {
     bootNonAdminsFromWebui,
     forEachWsClient,
@@ -35,6 +36,7 @@ chokidar.watch(configPath).on("change", () => {
         const prevTunables = JSON.stringify(config.tunables);
         const prevInventoryConfig = JSON.stringify(inventoryAffectingConfigKeys.map(key => config[key]));
         const prevWebParams = JSON.stringify(getWebServerParams());
+        const prevUdpRelayParams = getUdpRelayParams();
 
         logger.info("Detected a change to config file, reloading its contents.");
         try {
@@ -92,6 +94,14 @@ chokidar.watch(configPath).on("change", () => {
                 });
             });
         } else {
+            if (getUdpRelayParams() != prevUdpRelayParams) {
+                logger.info("Restarting UDP relay to apply changes.");
+                void stopUdpRelay()
+                    .then(() => startUdpRelay())
+                    .catch((e: Error) => {
+                        logger.error(`Could not restart UDP relay: ${e.message}`);
+                    });
+            }
             sendWsBroadcastToWebui({ config_reloaded: true });
         }
 

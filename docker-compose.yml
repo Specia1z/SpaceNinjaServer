@@ -13,6 +13,7 @@ services:
             # The lefthand value determines the port you actually connect to. Within the container, SpaceNinjaServer will always use 80 and 443 (righthand values).
             - 80:80
             - 443:443
+            - "6953:6953/udp"
 
         # `docker compose up` uses the published GHCR image. Add `--build` to build this checkout locally.
 
