@@ -172,7 +172,8 @@
     "prohibitFreecam": false,
     "prohibitTeleport": false,
     "prohibitScripts": true,
-    "motd": null
+    "motd": null,
+    "metadataPatches": []
   },
   "dev": {
     "keepVendorsExpired": false

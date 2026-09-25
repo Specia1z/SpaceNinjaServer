@@ -21,6 +21,13 @@ export interface IWebuiConfig {
     nonAdminPermissions?: Record<string, boolean | Record<string, boolean>>;
 }
 
+export interface IMetadataPatchConfig {
+    name?: string;
+    enabled?: boolean;
+    targets: string[];
+    operations?: string[];
+}
+
 export type TLogLevel = "error" | "warn" | "info" | "http" | "debug" | "trace";
 
 type TQolConfigKey =
@@ -201,6 +208,7 @@ export interface IConfig {
         prohibitScripts?: boolean;
         motd?: string;
         udpProxyUpstream?: string;
+        metadataPatches?: IMetadataPatchConfig[];
     };
     dev?: {
         keepVendorsExpired?: boolean;
