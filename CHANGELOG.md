@@ -44,7 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- U44 login responses must omit the legacy `DTLS` property for builds `43.5.0` and newer; current U44 clients reject it as an unknown property. The version cutoff is retained while the newer NRS handshake is investigated.
+- U43.5 login responses include the legacy `DTLS` property required for NRS matchmaking. U44 clients still omit it because they reject it as an unknown property.
 - U44 IRC connections failed before authentication because the client only offers TLS 1.3 while the embedded IRC TLS server responds with TLS 1.2. Docker Compose now terminates IRC TLS 1.2/1.3 through HAProxy and bridges each secure port to its matching TLS 1.2 IRC port.
 - Containers failed to start with `exec: "/app/docker-entrypoint.sh": permission denied`, because the checkout records the script without its executable bit and `COPY` preserves source permissions. Both the git mode and the `Dockerfile` now set it.
 - Docker deployments installed from the image alone failed with `no configuration file provided`, because `docker pull` does not fetch the Compose file.
