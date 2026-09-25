@@ -172,6 +172,7 @@
     "prohibitFreecam": false,
     "prohibitTeleport": false,
     "prohibitScripts": true,
+    "prohibitLocalMetadataPatches": true,
     "motd": null,
     "metadataPatches": []
   },

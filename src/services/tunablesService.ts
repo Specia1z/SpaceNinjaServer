@@ -78,6 +78,9 @@ export const getTunablesForClient = (clientAddress: string, reflexiveAddress: st
     if (config.tunables?.prohibitScripts) {
         tunables.prohibit_scripts = true;
     }
+    if (config.tunables?.prohibitLocalMetadataPatches) {
+        tunables.prohibit_local_metadata_patches = true;
+    }
     if (config.tunables?.motd) {
         tunables.motd = config.tunables.motd;
     }

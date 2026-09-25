@@ -206,6 +206,7 @@ export interface IConfig {
         prohibitFreecam?: boolean;
         prohibitTeleport?: boolean;
         prohibitScripts?: boolean;
+        prohibitLocalMetadataPatches?: boolean;
         motd?: string;
         udpProxyUpstream?: string;
         metadataPatches?: IMetadataPatchConfig[];

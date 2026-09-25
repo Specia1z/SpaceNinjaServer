@@ -6,6 +6,7 @@ export interface ITunables {
     prohibit_freecam?: boolean;
     prohibit_teleport?: boolean;
     prohibit_scripts?: boolean;
+    prohibit_local_metadata_patches?: boolean;
     disable_websocket?: boolean;
     motd?: string;
     token?: string;
