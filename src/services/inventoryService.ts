@@ -54,7 +54,6 @@ import {
     ExportArcanes,
     ExportBoosters,
     ExportBundles,
-    ExportChallenges,
     ExportCreditBundles,
     ExportCustoms,
     ExportDrones,
@@ -91,7 +90,13 @@ import {
 } from "../helpers/inventoryHelpers.ts";
 import { addQuestKey, completeQuest } from "./questService.ts";
 import { handleBundleAcquisition } from "./purchaseService.ts";
-import { getSyncedSentinel, getSyncedUpgrade, getSyncedWeapon } from "./adminItemDataService.ts";
+import {
+    getChallenge,
+    getChallengeByName,
+    getSyncedSentinel,
+    getSyncedUpgrade,
+    getSyncedWeapon
+} from "./adminItemDataService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
 import {
     generateRewardSeed,
@@ -2825,11 +2830,6 @@ export const addLoreFragmentScans = (inventory: TInventoryDatabaseDocument, arr:
     });
 };
 
-const challengeNameToPath: Record<string, string> = {};
-for (const path of Object.keys(ExportChallenges)) {
-    challengeNameToPath[path.split("/").pop()!] = path;
-}
-
 export const addChallenges = async (
     buildVersion: number,
     inventory: TInventoryDatabaseDocument,
@@ -2858,8 +2858,17 @@ export const addChallenges = async (
                 if (dbChallenge.Completed.indexOf(completion) == -1) {
                     dbChallenge.Completed.push(completion);
                     if (completion == "challengeRewards") {
-                        const path = challengeNameToPath[Name];
-                        const meta = ExportChallenges[path];
+                        const challenge = getChallengeByName(Name);
+                        if (!challenge) {
+                            logger.warn(`ignoring unknown challenge completion`, {
+                                name: Name,
+                                completion
+                            });
+                            dbChallenge.Progress = 0;
+                            dbChallenge.Completed = [];
+                            continue;
+                        }
+                        const { path, meta } = challenge;
                         if (meta.message) {
                             logger.debug(`${Name} completed, sending inbox message`);
                             await createMessage(inventory.accountOwnerId, [convertInboxMessage(meta.message)]);
@@ -2894,7 +2903,13 @@ export const addChallenges = async (
                 continue;
             }
 
-            const meta = ExportChallenges[challenge.challenge];
+            const meta = getChallenge(challenge.challenge);
+            if (!meta) {
+                logger.warn("ignoring unknown season challenge completion", {
+                    uniqueName: challenge.challenge
+                });
+                continue;
+            }
             const nightwaveSyndicateTag = getNightwaveSyndicateTag(buildVersion);
             logger.debug("Completed season challenge", {
                 uniqueName: challenge.challenge,

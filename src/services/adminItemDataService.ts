@@ -3,13 +3,14 @@ import path from "node:path";
 import {
     ExportBoosterPacks as bundledBoosterPacks,
     ExportBundles as bundledBundles,
+    ExportChallenges as bundledChallenges,
     ExportCreditBundles as bundledCreditBundles,
     ExportSentinels as bundledSentinels,
     ExportUpgrades as bundledUpgrades,
     ExportWarframes as bundledWarframes,
     ExportWeapons as bundledWeapons
 } from "warframe-public-export-plus";
-import type { IBundle, IPowersuit, ISentinel, IUpgrade, IWeapon } from "warframe-public-export-plus";
+import type { IBundle, IChallenge, IPowersuit, ISentinel, IUpgrade, IWeapon } from "warframe-public-export-plus";
 import gameToBuildVersion from "../constants/gameToBuildVersion.ts";
 import { repoDir } from "../helpers/pathHelper.ts";
 
@@ -40,6 +41,7 @@ interface AdminItemData {
     upgrades: Record<string, IUpgrade>;
     sentinels: Record<string, ISentinel>;
     bundles: Record<string, IBundle>;
+    challenges: Record<string, IChallenge>;
     dictionary?: Record<string, string>;
 }
 
@@ -57,6 +59,7 @@ interface CoreSnapshot {
     upgrades: Record<string, IUpgrade>;
     sentinels: Record<string, ISentinel>;
     bundles: Record<string, IBundle>;
+    challenges: Record<string, IChallenge>;
     creditBundles: Record<string, unknown>;
     boosterPacks: Record<string, unknown>;
 }
@@ -67,6 +70,7 @@ const bundledData: CoreSnapshot = {
     upgrades: bundledUpgrades,
     sentinels: bundledSentinels,
     bundles: bundledBundles,
+    challenges: bundledChallenges,
     creditBundles: bundledCreditBundles,
     boosterPacks: bundledBoosterPacks
 };
@@ -96,18 +100,28 @@ const loadSnapshot = async (): Promise<void> => {
     if (loaded) return;
     loaded = true;
     try {
-        const [warframes, weapons, upgrades, sentinels, bundles, creditBundles, boosterPacks, savedMetadata] =
-            await Promise.all([
-                readJson<Record<string, IPowersuit>>(path.join(SNAPSHOT_DIR, "ExportWarframes.json")),
-                readJson<Record<string, IWeapon>>(path.join(SNAPSHOT_DIR, "ExportWeapons.json")),
-                readJson<Record<string, IUpgrade>>(path.join(SNAPSHOT_DIR, "ExportUpgrades.json")),
-                readJson<Record<string, ISentinel>>(path.join(SNAPSHOT_DIR, "ExportSentinels.json")),
-                readJson<Record<string, IBundle>>(path.join(SNAPSHOT_DIR, "ExportBundles.json")),
-                readJson<Record<string, unknown>>(path.join(SNAPSHOT_DIR, "ExportCreditBundles.json")),
-                readJson<Record<string, unknown>>(path.join(SNAPSHOT_DIR, "ExportBoosterPacks.json")),
-                readJson<SnapshotMetadata>(path.join(SNAPSHOT_DIR, METADATA_FILE))
-            ]);
-        snapshot = { warframes, weapons, upgrades, sentinels, bundles, creditBundles, boosterPacks };
+        const [
+            warframes,
+            weapons,
+            upgrades,
+            sentinels,
+            bundles,
+            challenges,
+            creditBundles,
+            boosterPacks,
+            savedMetadata
+        ] = await Promise.all([
+            readJson<Record<string, IPowersuit>>(path.join(SNAPSHOT_DIR, "ExportWarframes.json")),
+            readJson<Record<string, IWeapon>>(path.join(SNAPSHOT_DIR, "ExportWeapons.json")),
+            readJson<Record<string, IUpgrade>>(path.join(SNAPSHOT_DIR, "ExportUpgrades.json")),
+            readJson<Record<string, ISentinel>>(path.join(SNAPSHOT_DIR, "ExportSentinels.json")),
+            readJson<Record<string, IBundle>>(path.join(SNAPSHOT_DIR, "ExportBundles.json")),
+            readJson<Record<string, IChallenge>>(path.join(SNAPSHOT_DIR, "ExportChallenges.json")),
+            readJson<Record<string, unknown>>(path.join(SNAPSHOT_DIR, "ExportCreditBundles.json")),
+            readJson<Record<string, unknown>>(path.join(SNAPSHOT_DIR, "ExportBoosterPacks.json")),
+            readJson<SnapshotMetadata>(path.join(SNAPSHOT_DIR, METADATA_FILE))
+        ]);
+        snapshot = { warframes, weapons, upgrades, sentinels, bundles, challenges, creditBundles, boosterPacks };
         metadata = savedMetadata;
     } catch {
         snapshot = undefined;
@@ -148,6 +162,17 @@ export const getSyncedWeapon = (typeName: string): IWeapon | undefined => snapsh
 export const getSyncedUpgrade = (typeName: string): IUpgrade | undefined => snapshot?.upgrades[typeName];
 export const getSyncedSentinel = (typeName: string): ISentinel | undefined => snapshot?.sentinels[typeName];
 export const getSyncedBundle = (typeName: string): IBundle | undefined => snapshot?.bundles[typeName];
+export const getChallenge = (typeName: string): IChallenge | undefined =>
+    snapshot?.challenges[typeName] ?? bundledChallenges[typeName];
+export const getChallengeByName = (name: string): { path: string; meta: IChallenge } | undefined => {
+    const sources = [snapshot?.challenges, bundledChallenges];
+    for (const source of sources) {
+        if (!source) continue;
+        const entry = Object.entries(source).find(([path]) => path.split("/").pop() == name);
+        if (entry) return { path: entry[0], meta: entry[1] };
+    }
+    return undefined;
+};
 
 const buildVersionToTimestamp = (buildVersion: string): number => {
     const [year, month, day, hour, minute] = buildVersion.split(".").map(Number);
@@ -188,6 +213,7 @@ export const getAdminItemDataStatus = async (): Promise<{
             upgrades: Object.keys(activeData.upgrades).length,
             sentinels: Object.keys(activeData.sentinels).length,
             bundles: Object.keys(activeData.bundles).length,
+            challenges: Object.keys(activeData.challenges).length,
             creditBundles: Object.keys(activeData.creditBundles).length,
             boosterPacks: Object.keys(activeData.boosterPacks).length
         },
@@ -221,6 +247,7 @@ export const syncAdminItemData = async (): Promise<Awaited<ReturnType<typeof get
             ["upgrades", "ExportUpgrades.json", 1400],
             ["sentinels", "ExportSentinels.json", 30],
             ["bundles", "ExportBundles.json", 1000],
+            ["challenges", "ExportChallenges.json", 300],
             ["creditBundles", "ExportCreditBundles.json", 20],
             ["boosterPacks", "ExportBoosterPacks.json", 30]
         ] as const;
