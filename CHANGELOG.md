@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- U44 network analysis stopped before sending NRS UDP probes because the login response omitted the `DTLS` setting for builds `43.5.0` and newer. The setting is now returned for all clients that support DTLS, so U43/U44 can initialize their NRS sockets.
 - U44 IRC connections failed before authentication because the client only offers TLS 1.3 while the embedded IRC TLS server responds with TLS 1.2. Docker Compose now terminates IRC TLS 1.2/1.3 through HAProxy and bridges each secure port to its matching TLS 1.2 IRC port.
 - Containers failed to start with `exec: "/app/docker-entrypoint.sh": permission denied`, because the checkout records the script without its executable bit and `COPY` preserves source permissions. Both the git mode and the `Dockerfile` now set it.
 - Docker deployments installed from the image alone failed with `no configuration file provided`, because `docker pull` does not fetch the Compose file.

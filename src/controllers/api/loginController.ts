@@ -225,7 +225,7 @@ const createLoginResponse = (request: Request, account: IDatabaseAccountJson, bu
             //{ experiment: "quick_buy_visible", experimentGroup: "quick_buy_visible" } // Shows "quick buy" market section for MR 4+ players
         ];
     }
-    if (buildVersion >= gameToBuildVersionInt["30.0.0"] && buildVersion < gameToBuildVersionInt["43.5.0"]) {
+    if (buildVersion >= gameToBuildVersionInt["30.0.0"]) {
         resp.DTLS = config.dtls ?? 0; // bit 0 enables DTLS. if enabled, additional bits can be set, e.g. bit 2 to enable logging. on live, the value is 99.
     }
     if (buildVersion >= gameToBuildVersionInt["31.5.0"]) {
