@@ -67,6 +67,75 @@ const getStoreItemTypesCategory = (typesItem: string): string => {
     return typeElements[1];
 };
 
+const isInventoryItemOwned = (inventory: TInventoryDatabaseDocument, storeItemName: string): boolean => {
+    let typeName = storeItemName;
+    if (typeName.startsWith("/Lotus/StoreItems/")) {
+        typeName = fromStoreItem(typeName);
+    }
+
+    const inventoryRecord = inventory.toObject() as unknown as Record<string, unknown>;
+    return Object.values(inventoryRecord).some(value => {
+        if (!Array.isArray(value)) {
+            return false;
+        }
+        return value.some(
+            item =>
+                item !== null &&
+                typeof item == "object" &&
+                "ItemType" in item &&
+                (item as { ItemType?: unknown }).ItemType == typeName
+        );
+    });
+};
+
+const getInventoryAwarePrice = (
+    storeItemName: string,
+    quantity: number,
+    durability: number = 0,
+    usePremium: boolean,
+    buildLabel: string,
+    inventory: TInventoryDatabaseDocument
+): number => {
+    const fullPrice = getPrice(storeItemName, quantity, durability, usePremium, buildLabel);
+    if (!usePremium || !(storeItemName in ExportBundles)) {
+        return fullPrice;
+    }
+
+    const bundle = getBundle(storeItemName, buildLabel);
+    if (!bundle?.platinumCost) {
+        return fullPrice;
+    }
+
+    let totalComponentPrice = 0;
+    let unownedComponentPrice = 0;
+    for (const component of bundle.components) {
+        let componentPrice: number;
+        try {
+            componentPrice = getPrice(
+                component.typeName,
+                component.purchaseQuantity,
+                [3, 7, 30, 90].indexOf(component.durabilityDays ?? 3),
+                true,
+                buildLabel
+            );
+        } catch {
+            return fullPrice;
+        }
+
+        totalComponentPrice += componentPrice;
+        if (!isInventoryItemOwned(inventory, component.typeName)) {
+            unownedComponentPrice += componentPrice;
+        }
+    }
+
+    if (totalComponentPrice <= 0 || unownedComponentPrice == totalComponentPrice) {
+        return fullPrice;
+    }
+
+    // The client keeps the bundle discount proportional to the components that remain unowned.
+    return Math.floor((bundle.platinumCost * unownedComponentPrice) / totalComponentPrice) * quantity;
+};
+
 const tallyVendorPurchase = (
     inventory: TInventoryDatabaseDocument,
     inventoryChanges: IInventoryChanges,
@@ -150,12 +219,13 @@ export const handlePurchase = async (
         if (!isStoreItemListed(overrideTypeName)) {
             throw new Error("item is not currently listed in the market");
         }
-        const authoritativePrice = getPrice(
+        const authoritativePrice = getInventoryAwarePrice(
             purchaseRequest.PurchaseParams.StoreItem,
             purchaseRequest.PurchaseParams.Quantity,
             purchaseRequest.PurchaseParams.Durability,
             purchaseRequest.PurchaseParams.UsePremium,
-            purchaseRequest.buildLabel
+            purchaseRequest.buildLabel,
+            inventory
         );
         if (
             purchaseRequest.PurchaseParams.ExpectedPrice !== undefined &&
@@ -274,12 +344,13 @@ export const handlePurchase = async (
         case ePurchaseSource.Arsenal:
             if (!purchaseRequest.PurchaseParams.ExpectedPrice) {
                 logger.debug(`client didn't provide ExpectedPrice`);
-                purchaseRequest.PurchaseParams.ExpectedPrice = getPrice(
+                purchaseRequest.PurchaseParams.ExpectedPrice = getInventoryAwarePrice(
                     purchaseRequest.PurchaseParams.StoreItem,
                     purchaseRequest.PurchaseParams.Quantity,
                     purchaseRequest.PurchaseParams.Durability,
                     purchaseRequest.PurchaseParams.UsePremium,
-                    purchaseRequest.buildLabel
+                    purchaseRequest.buildLabel,
+                    inventory
                 );
             }
             break;
