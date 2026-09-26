@@ -27,12 +27,16 @@ export const startWebServer = (): Promise<void> => {
     return startUdpRelay().then(
         () =>
             new Promise<void>((resolve, reject) => {
+                const rejectAfterRelayCleanup = (err: IListenError): void => {
+                    void stopUdpRelay().finally(() => reject(err));
+                };
+
                 httpServer = http.createServer(app);
                 httpServer.on("error", (err: IListenError) => {
                     if (err.code == "EADDRINUSE") {
                         err.port = params.httpPort;
                     }
-                    reject(err);
+                    rejectAfterRelayCleanup(err);
                 });
                 httpServer.listen(params.httpPort, params.address, () => {
                     httpsServer = https.createServer(tlsOptions, app);
@@ -41,7 +45,7 @@ export const startWebServer = (): Promise<void> => {
                             err.port = params.httpsPort;
                         }
                         httpServer!.close();
-                        reject(err);
+                        rejectAfterRelayCleanup(err);
                     });
                     httpsServer.listen(params.httpsPort, params.address, () => {
                         startWsServer(httpServer!);

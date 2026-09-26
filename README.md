@@ -86,6 +86,20 @@ Important settings include:
 - `udpRelayPort` and `udpRelayTarget`: enable the protocol-opaque UDP relay used for Hub/dojo traffic. The relay listens on `udpRelayPort` and forwards unchanged datagrams to the Hub at `udpRelayTarget`; expose the relay UDP port in the firewall and Docker configuration.
 - `hubServers`: the Hub service itself must be running and reachable on its configured UDP address, usually port `6952`. The relay is only a transport layer and does not replace `warframe-hub-server`.
 - `administratorNames`: accounts allowed to use administrator features.
+- `accountDropMultipliers`: configure per-account mission resource and mod drop multipliers, keyed by the exact in-game display name. For example:
+
+  ```json
+  {
+    "accountDropMultipliers": {
+      "ExampleAccount": {
+        "resourceMultiplier": 5,
+        "modMultiplier": 10
+      }
+    }
+  }
+  ```
+
+  Unconfigured accounts keep the normal behavior. A multiplier of `0` disables that drop category; fractional results are truncated. This applies to server-rolled resource and mod drops from mission settlement, not fixed mission rewards, blueprints, or credits.
 - `worldState.liveSync`: enables live world-state synchronization. The active fork configuration enables this by default; the vanilla template leaves it disabled.
 - `worldState.eidolonOverride`: set to `day` or `night` to lock Plains of Eidolon or Cambion Drift time.
 - `worldState.vallisOverride`: set to `warm` or `cold` to lock Orb Vallis temperature.

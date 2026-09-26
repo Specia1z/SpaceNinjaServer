@@ -28,6 +28,13 @@ export interface IMetadataPatchConfig {
     operations?: string[];
 }
 
+export interface IAccountDropMultiplier {
+    /** Multiplier for resource drops reported in StrippedItems.DROP_MISC_ITEM. */
+    resourceMultiplier?: number;
+    /** Multiplier for mod drops reported in StrippedItems.DROP_MOD. */
+    modMultiplier?: number;
+}
+
 export type TLogLevel = "error" | "warn" | "info" | "http" | "debug" | "trace";
 
 type TQolConfigKey =
@@ -89,6 +96,8 @@ export interface IConfig {
     missionPlatinumRewardChance?: number;
     /** When true, the platinum reward is delivered as an Ordis inbox message instead of being credited silently. */
     missionPlatinumRewardSendMail?: boolean;
+    /** Per-account mission drop multipliers, keyed by the exact DisplayName. */
+    accountDropMultipliers?: Record<string, IAccountDropMultiplier>;
     relicPlatinumReward?: {
         common?: number;
         uncommon?: number;
@@ -391,6 +400,16 @@ export const getUdpRelayAddress = (request: Request): string | undefined => {
         return undefined;
     }
     return `${getReflexiveAddress(request).myAddress}:${config.udpRelayPort}`;
+};
+
+export const getAccountDropMultipliers = (
+    account: Pick<{ DisplayName: string }, "DisplayName">
+): Required<IAccountDropMultiplier> => {
+    const configured = config.accountDropMultipliers?.[account.DisplayName];
+    return {
+        resourceMultiplier: configured?.resourceMultiplier ?? 1,
+        modMultiplier: configured?.modMultiplier ?? 1
+    };
 };
 
 export const shouldDoServerQol = (

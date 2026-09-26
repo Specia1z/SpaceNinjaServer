@@ -111,7 +111,7 @@ import {
     advanceLiveInvasionProgress,
     getLiveSyndicateMissionByOid
 } from "./liveWorldStateService.ts";
-import { config, shouldDoServerQol } from "./configService.ts";
+import { config, getAccountDropMultipliers, shouldDoServerQol } from "./configService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
 import type { IGoal, ISyndicateJob, ISyndicateMissionInfo } from "../types/worldStateTypes.ts";
 import {
@@ -1242,6 +1242,9 @@ const droptableAliases: Record<string, string> = {
         "/Lotus/Types/DropTables/WF1999DropTables/LasrianTankHardModeDropTable"
 };
 
+const scaleAccountDropCount = (count: number, multiplier: number): number =>
+    Math.max(0, Math.trunc(count * multiplier));
+
 const isEligibleForCreditReward = async (
     rewardInfo: IRewardInfo,
     missions: IMission,
@@ -1817,6 +1820,13 @@ export const addMissionRewards = async (
 
     if (strippedItems) {
         if (endOfMatchUpload) {
+            const accountDropMultipliers = getAccountDropMultipliers(account);
+            if (accountDropMultipliers.resourceMultiplier != 1 || accountDropMultipliers.modMultiplier != 1) {
+                logger.debug(`applying account drop multipliers`, {
+                    account: account.DisplayName,
+                    ...accountDropMultipliers
+                });
+            }
             for (const si of strippedItems) {
                 if (si.DropTable in droptableAliases) {
                     logger.debug(`rewriting ${si.DropTable} to ${droptableAliases[si.DropTable]}`);
@@ -1872,7 +1882,11 @@ export const addMissionRewards = async (
                 if (si.DROP_MOD) {
                     const modDroptable = droptables.find(x => x.type == "mod");
                     if (modDroptable) {
-                        for (let i = 0; i != si.DROP_MOD.length; ++i) {
+                        const dropCount = scaleAccountDropCount(
+                            si.DROP_MOD.length,
+                            accountDropMultipliers.modMultiplier
+                        );
+                        for (let i = 0; i != dropCount; ++i) {
                             const reward = getRandomReward(modDroptable.items)!;
                             logger.debug(`stripped droptable (mods pool) rolled`, reward);
                             await addItem(inventory, reward.type);
@@ -1907,7 +1921,11 @@ export const addMissionRewards = async (
                 if (si.DROP_MISC_ITEM) {
                     const resourceDroptable = droptables.find(x => x.type == "resource");
                     if (resourceDroptable) {
-                        for (let i = 0; i != si.DROP_MISC_ITEM.length; ++i) {
+                        const dropCount = scaleAccountDropCount(
+                            si.DROP_MISC_ITEM.length,
+                            accountDropMultipliers.resourceMultiplier
+                        );
+                        for (let i = 0; i != dropCount; ++i) {
                             const reward = getRandomReward(resourceDroptable.items)!;
                             logger.debug(`stripped droptable (resources pool) rolled`, reward);
                             if (Object.keys(await addItem(inventory, reward.type)).length == 0) {

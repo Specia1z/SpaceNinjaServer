@@ -45,6 +45,7 @@
   "missionPlatinumRewardMax": 0,
   "missionPlatinumRewardChance": 100,
   "missionPlatinumRewardSendMail": false,
+  "accountDropMultipliers": {},
   "relicPlatinumReward": {
     "common": 0,
     "uncommon": 0,

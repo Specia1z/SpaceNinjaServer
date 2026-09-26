@@ -181,6 +181,34 @@ export const validateConfig = (): void => {
         config.dtls = 99;
         modified = true;
     }
+    if (config.accountDropMultipliers !== undefined) {
+        const rawAccountDropMultipliers: unknown = config.accountDropMultipliers;
+        if (
+            typeof rawAccountDropMultipliers != "object" ||
+            rawAccountDropMultipliers == null ||
+            Array.isArray(rawAccountDropMultipliers)
+        ) {
+            config.accountDropMultipliers = {};
+            modified = true;
+        } else {
+            const accountDropMultipliers = rawAccountDropMultipliers as Record<string, unknown>;
+            for (const [accountName, rawMultipliers] of Object.entries(accountDropMultipliers)) {
+                if (typeof rawMultipliers != "object" || rawMultipliers == null || Array.isArray(rawMultipliers)) {
+                    delete config.accountDropMultipliers[accountName];
+                    modified = true;
+                    continue;
+                }
+                const multipliers = rawMultipliers as Record<string, unknown>;
+                for (const key of ["resourceMultiplier", "modMultiplier"] as const) {
+                    const value = multipliers[key];
+                    if (value !== undefined && (typeof value != "number" || !Number.isFinite(value) || value < 0)) {
+                        multipliers[key] = 1;
+                        modified = true;
+                    }
+                }
+            }
+        }
+    }
     if (config.administratorNames) {
         if (!Array.isArray(config.administratorNames)) {
             config.administratorNames = [config.administratorNames];

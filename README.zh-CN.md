@@ -25,6 +25,7 @@ SpaceNinjaServer 是基于 [OpenWF SpaceNinjaServer](https://onlyg.it/OpenWF/Spa
 - 在 MongoDB 中独立维护 Goal 与入侵的全局进度、完成状态、重启恢复和延迟清理。
 - 同步警报、活动、裂缝、突击、虚空风暴、集团任务、午夜电波、日历、深渊、Baro、Darvo、Varzia 和 Teshin 等数据。
 - 提供账号初始化、任务解锁、新账号礼包、任务白金奖励、段位冷却和管理员配置选项。
+- 支持按账号名称配置任务资源和 Mod 掉落倍率。
 - 提供基于浏览器的 WebUI，用于账号管理和服务器配置。
 
 ## 环境要求
@@ -65,6 +66,24 @@ Copy-Item config-vanilla.json config.json
 - `webui.adminOnly`：是否仅允许管理员使用 WebUI。
 - `worldState.liveSync`：是否启用实时世界状态同步。模板默认关闭。
 - `database`：保留对象配置可使用本地持久化的嵌入式 MongoDB，也可替换为已有 MongoDB URI。
+
+按账号设置任务掉落倍率时，在 `config.json` 的 `accountDropMultipliers` 中使用游戏显示名作为键。倍率只影响任务结算时服务端重新抽取的资源掉落和 Mod 掉落；未配置的账号保持原行为，倍率为 `0` 可关闭对应类别：
+
+```json
+{
+  "accountDropMultipliers": {
+    "ExampleAccount": {
+      "resourceMultiplier": 5,
+      "modMultiplier": 10
+    },
+    "AnotherAccount": {
+      "resourceMultiplier": 2
+    }
+  }
+}
+```
+
+修改配置后重启服务，或等待配置热加载生效。倍率按基础掉落次数计算并取整数部分；该设置不改变固定任务奖励、蓝图或信用点奖励。
 
 外部 MongoDB 示例：
 
