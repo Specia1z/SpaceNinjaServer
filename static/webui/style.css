@@ -81,3 +81,179 @@ td.text-end > a > svg {
     overflow: auto;
     white-space: pre-wrap;
 }
+
+.account-rates-page {
+    max-width: 84rem;
+    margin-inline: auto;
+}
+
+.account-rates-header,
+.account-rates-editor-header,
+.account-rates-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.account-rates-header {
+    padding-block: 0.25rem 1.25rem;
+}
+
+.account-rates-layout {
+    border-top: 1px solid var(--bs-border-color);
+    display: grid;
+    grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
+    min-height: 32rem;
+}
+
+.account-rates-sidebar {
+    border-right: 1px solid var(--bs-border-color);
+    min-width: 0;
+    padding: 1.25rem 0.75rem 1.25rem 0;
+}
+
+.account-rates-editor {
+    min-width: 0;
+    padding: 1.5rem 0 2rem 1.75rem;
+}
+
+.account-rate-account-list {
+    max-height: min(65vh, 42rem);
+    overflow-y: auto;
+    padding-top: 0.75rem;
+}
+
+.account-rate-account-item {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-left: 3px solid transparent;
+    color: var(--bs-body-color);
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    width: 100%;
+}
+
+.account-rate-account-item:hover,
+.account-rate-account-item.active {
+    background: var(--bs-tertiary-bg);
+}
+
+.account-rate-account-item.active {
+    border-left-color: var(--bs-primary);
+    font-weight: 600;
+}
+
+.account-rate-account-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-rate-list-empty,
+.account-rates-empty {
+    padding: 1rem;
+}
+
+.account-rates-identity {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.account-rate-group {
+    padding-block: 1.5rem;
+}
+
+.account-rate-group + .account-rate-group {
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.account-rate-group-title {
+    color: var(--bs-emphasis-color);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.account-rate-field-grid {
+    display: grid;
+    gap: 1.25rem 1.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-rate-field {
+    min-width: 0;
+}
+
+.account-rates-actions {
+    border-top: 1px solid var(--bs-border-color);
+    justify-content: flex-start;
+    padding-top: 1.25rem;
+}
+
+.account-rates-delete {
+    margin-left: auto;
+}
+
+@media (max-width: 767px) {
+    .account-rates-layout,
+    .account-rate-field-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .account-rates-sidebar {
+        border-bottom: 1px solid var(--bs-border-color);
+        border-right: 0;
+        padding: 1rem 0;
+    }
+
+    .account-rate-account-list {
+        max-height: 13rem;
+    }
+
+    .account-rates-editor {
+        padding: 1.25rem 0;
+    }
+
+    .account-rates-delete {
+        margin-left: 0;
+    }
+}
+
+.admin-suspicion-page {
+    max-width: 84rem;
+    margin-inline: auto;
+}
+
+.admin-suspicion-header {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    padding-block: 0.25rem 1.25rem;
+}
+
+.admin-suspicion-section {
+    border-top: 1px solid var(--bs-border-color);
+    padding-block: 1.25rem;
+}
+
+.admin-suspicion-section .table th,
+.admin-suspicion-section .table td {
+    vertical-align: middle;
+}
+
+.admin-suspicion-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    min-width: 15rem;
+}

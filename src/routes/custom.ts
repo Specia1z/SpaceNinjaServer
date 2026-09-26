@@ -87,6 +87,11 @@ import {
     saveMetadataPatchesController
 } from "../controllers/custom/metadataPatchesController.ts";
 import { getAccountForRequest, hasPermission } from "../services/loginService.ts";
+import {
+    deleteAccountRatesController,
+    getAccountRatesController,
+    saveAccountRatesController
+} from "../controllers/custom/accountRatesController.ts";
 
 const customRouter = express.Router();
 
@@ -169,6 +174,7 @@ customRouter.get("/admin/redeem-codes", listRedeemCodesController);
 customRouter.get("/admin/suspicion-events", listSuspicionEventsController);
 customRouter.get("/admin/suspicion-events/detail", getSuspicionEventsForAccountController);
 customRouter.get("/admin/metadata-patches", getMetadataPatchesController);
+customRouter.get("/admin/account-rates", getAccountRatesController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -202,6 +208,8 @@ customRouter.post("/admin/redeem-codes/delete", deleteRedeemCodeController);
 customRouter.post("/admin/suspicion-events/ban", setAccountBanController);
 customRouter.post("/admin/suspicion-events/clear", clearSuspicionEventsController);
 customRouter.post("/admin/metadata-patches", saveMetadataPatchesController);
+customRouter.post("/admin/account-rates", saveAccountRatesController);
+customRouter.post("/admin/account-rates/delete", deleteAccountRatesController);
 customRouter.post("/redeemCode", redeemCodeController);
 
 customRouter.post("/changePassword", changePasswordController);

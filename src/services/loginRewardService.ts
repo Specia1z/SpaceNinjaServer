@@ -16,6 +16,7 @@ import { logger } from "../utils/logger.ts";
 import { version_compare } from "../helpers/inventoryHelpers.ts";
 import gameToBuildVersion from "../constants/gameToBuildVersion.ts";
 import { wikiDateToBuildVersion } from "../helpers/versionHelper.ts";
+import { getAccountRateProfile, getEffectiveAccountRate } from "./accountRateService.ts";
 
 export interface ILoginRewardsReponse {
     DailyTributeInfo: {
@@ -72,11 +73,18 @@ export const getRandomLoginRewards = async (
 ): Promise<ILoginReward[]> => {
     const accountSeed = parseInt(account._id.toString().substring(16), 16);
     const rng = new SRng(mixSeeds(accountSeed, account.LoginDays));
+    const dailyTributeMultiplier = getEffectiveAccountRate(getAccountRateProfile(account), "dailyTributeMultiplier");
     const pick_a_door = rng.randomFloat() < 0.25;
-    const rewards = [await getRandomLoginReward(rng, account.LoginDays, inventory, buildLabel)];
+    const rewards = [await getRandomLoginReward(rng, account.LoginDays, inventory, buildLabel, dailyTributeMultiplier)];
     if (pick_a_door) {
         do {
-            const reward = await getRandomLoginReward(rng, account.LoginDays, inventory, buildLabel);
+            const reward = await getRandomLoginReward(
+                rng,
+                account.LoginDays,
+                inventory,
+                buildLabel,
+                dailyTributeMultiplier
+            );
             if (!rewards.find(x => x.StoreItemType == reward.StoreItemType)) {
                 rewards.push(reward);
             }
@@ -89,7 +97,8 @@ const getRandomLoginReward = async (
     rng: SRng,
     day: number,
     inventory: TInventoryDatabaseDocument,
-    buildLabel: string
+    buildLabel: string,
+    dailyTributeMultiplier: number
 ): Promise<ILoginReward> => {
     const filteredPool = randomRewards.filter(r => {
         return !r.minBuildLabel || version_compare(buildLabel, r.minBuildLabel) >= 0;
@@ -143,7 +152,7 @@ const getRandomLoginReward = async (
         }
         if (eligibleRecipes.length == 0) {
             // This account has all applicable warframes and weapons already mastered (filthy cheater), need a different reward.
-            return await getRandomLoginReward(rng, day, inventory, buildLabel);
+            return await getRandomLoginReward(rng, day, inventory, buildLabel, dailyTributeMultiplier);
         }
         storeItemType = toStoreItem(rng.randomElement(eligibleRecipes)!);
     } else if (reward.StoreItemType == "/Lotus/StoreItems/Types/BoosterPacks/LoginRewardRandomProjection") {
@@ -166,7 +175,8 @@ const getRandomLoginReward = async (
             ? 1
             : Math.round(
                   scaleAmount(day, reward.Amount, reward.ScalingMultiplier) *
-                      (inventory.dailyTributeRewardMultiplier ?? 1)
+                      (inventory.dailyTributeRewardMultiplier ?? 1) *
+                      dailyTributeMultiplier
               ),
         ScalingMultiplier: reward.ScalingMultiplier,
         //Durability: "COMMON",
@@ -175,7 +185,8 @@ const getRandomLoginReward = async (
             ? Math.round(
                   reward.Duration *
                       scaleAmount(day, 1, reward.ScalingMultiplier) *
-                      (inventory.dailyTributeRewardMultiplier ?? 1)
+                      (inventory.dailyTributeRewardMultiplier ?? 1) *
+                      dailyTributeMultiplier
               )
             : 0,
         //CouponSku: 0,

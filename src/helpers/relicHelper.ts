@@ -14,7 +14,9 @@ import { config } from "../services/configService.ts";
 export const crackRelic = async (
     inventory: TInventoryDatabaseDocument,
     participant: IVoidTearParticipantInfo,
-    inventoryChanges: IInventoryChanges = {}
+    inventoryChanges: IInventoryChanges = {},
+    rewardMultiplier: number = 1,
+    platinumMultiplier: number = 1
 ): Promise<IRngResult & { rarity: TRarity }> => {
     const relic = ExportRelics[participant.VoidProjection];
     let weights = refinementToWeights[relic.quality];
@@ -33,8 +35,13 @@ export const crackRelic = async (
     if (inventory.relicRewardItemCountMultiplier && inventory.relicRewardItemCountMultiplier != 1) {
         reward = {
             ...reward,
-            itemCount: reward.itemCount * inventory.relicRewardItemCountMultiplier
+            itemCount: Math.max(
+                1,
+                Math.trunc(reward.itemCount * inventory.relicRewardItemCountMultiplier * rewardMultiplier)
+            )
         };
+    } else if (rewardMultiplier != 1) {
+        reward = { ...reward, itemCount: Math.max(1, Math.trunc(reward.itemCount * rewardMultiplier)) };
     }
     logger.debug(`relic rolled`, reward);
     participant.Reward = reward.type;
@@ -52,7 +59,7 @@ export const crackRelic = async (
     // Give reward
     combineInventoryChanges(inventoryChanges, await addItem(inventory, fromStoreItem(reward.type), reward.itemCount));
 
-    adjustPendingRelicPlatinum(inventory, undefined, reward.rarity);
+    adjustPendingRelicPlatinum(inventory, undefined, reward.rarity, platinumMultiplier);
 
     // Client has picked its own reward (for lack of choice)
     participant.ChosenRewardOwner = participant.AccountId;
@@ -76,11 +83,12 @@ export const getRelicPlatinumRewardForRarity = (rarity: TRarity): number => {
 export const adjustPendingRelicPlatinum = (
     inventory: Pick<TInventoryDatabaseDocument, "pendingPremiumCredits">,
     previousRarity: TRarity | undefined,
-    newRarity: TRarity
+    newRarity: TRarity,
+    multiplier: number = 1
 ): void => {
     const difference =
-        getRelicPlatinumRewardForRarity(newRarity) -
-        (previousRarity ? getRelicPlatinumRewardForRarity(previousRarity) : 0);
+        Math.trunc(getRelicPlatinumRewardForRarity(newRarity) * multiplier) -
+        (previousRarity ? Math.trunc(getRelicPlatinumRewardForRarity(previousRarity) * multiplier) : 0);
     if (difference != 0) {
         inventory.pendingPremiumCredits = (inventory.pendingPremiumCredits ?? 0) + difference;
     }
@@ -125,7 +133,9 @@ const getRewardForParticipant = (participant: IVoidTearParticipantInfo): ITypeCo
 
 export const ensureRelicRewardIsCorrect = async (
     inventory: TInventoryDatabaseDocument,
-    wi: IVoidTearWaveInfo
+    wi: IVoidTearWaveInfo,
+    rewardMultiplier: number = 1,
+    platinumMultiplier: number = 1
 ): Promise<void> => {
     if (inventory.MissionRelicRewards && inventory.MissionRelicRewards.length >= wi.Wave) {
         const userParticipantInfo = wi.Participants.find(x => inventory.accountOwnerId.equals(x.AccountId))!;
@@ -135,9 +145,12 @@ export const ensureRelicRewardIsCorrect = async (
                 x => x.AccountId == userParticipantInfo.ChosenRewardOwner
             )!;
             const chosenReward = getRewardForParticipant(chosenParticipantInfo);
-            chosenReward.ItemCount *= inventory.relicRewardItemCountMultiplier ?? 1;
+            chosenReward.ItemCount = Math.max(
+                1,
+                Math.trunc(chosenReward.ItemCount * (inventory.relicRewardItemCountMultiplier ?? 1) * rewardMultiplier)
+            );
             const previousRarity = userReward.Rarity ?? getRewardForParticipant(userParticipantInfo).Rarity;
-            adjustPendingRelicPlatinum(inventory, previousRarity, chosenReward.Rarity);
+            adjustPendingRelicPlatinum(inventory, previousRarity, chosenReward.Rarity, platinumMultiplier);
             if (chosenReward.ItemType != userReward.ItemType || chosenReward.ItemCount != userReward.ItemCount) {
                 logger.debug(`fixing up wave ${wi.Wave} reward for ${inventory.accountOwnerId.toString()}`, {
                     toRemove: userReward,

@@ -35,6 +35,20 @@ export interface IAccountDropMultiplier {
     modMultiplier?: number;
 }
 
+export interface IAccountRateProfile {
+    enabled?: boolean;
+    resourceDropMultiplier?: number;
+    modDropMultiplier?: number;
+    creditMultiplier?: number;
+    focusXpMultiplier?: number;
+    standingMultiplier?: number;
+    nightwaveStandingMultiplier?: number;
+    relicRewardMultiplier?: number;
+    relicPlatinumMultiplier?: number;
+    missionPlatinumMultiplier?: number;
+    dailyTributeMultiplier?: number;
+}
+
 export type TLogLevel = "error" | "warn" | "info" | "http" | "debug" | "trace";
 
 type TQolConfigKey =
@@ -98,6 +112,8 @@ export interface IConfig {
     missionPlatinumRewardSendMail?: boolean;
     /** Per-account mission drop multipliers, keyed by the exact DisplayName. */
     accountDropMultipliers?: Record<string, IAccountDropMultiplier>;
+    /** Per-account reward multipliers, keyed by the MongoDB account id. */
+    accountRateProfiles?: Record<string, IAccountRateProfile>;
     relicPlatinumReward?: {
         common?: number;
         uncommon?: number;
@@ -400,16 +416,6 @@ export const getUdpRelayAddress = (request: Request): string | undefined => {
         return undefined;
     }
     return `${getReflexiveAddress(request).myAddress}:${config.udpRelayPort}`;
-};
-
-export const getAccountDropMultipliers = (
-    account: Pick<{ DisplayName: string }, "DisplayName">
-): Required<IAccountDropMultiplier> => {
-    const configured = config.accountDropMultipliers?.[account.DisplayName];
-    return {
-        resourceMultiplier: configured?.resourceMultiplier ?? 1,
-        modMultiplier: configured?.modMultiplier ?? 1
-    };
 };
 
 export const shouldDoServerQol = (

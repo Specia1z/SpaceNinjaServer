@@ -23,6 +23,7 @@ import {
 } from "./wsService.ts";
 import varzia from "../constants/varzia.ts";
 import { getTunablesForClient } from "./tunablesService.ts";
+import { normalizeAccountRateProfile } from "./accountRateService.ts";
 import { Account } from "../models/loginModel.ts";
 import { Inbox } from "../models/inboxModel.ts";
 import { createMessage } from "./inboxService.ts";
@@ -207,6 +208,26 @@ export const validateConfig = (): void => {
                     }
                 }
             }
+        }
+    }
+    if (config.accountRateProfiles !== undefined) {
+        const rawAccountRateProfiles: unknown = config.accountRateProfiles;
+        if (
+            typeof rawAccountRateProfiles != "object" ||
+            rawAccountRateProfiles == null ||
+            Array.isArray(rawAccountRateProfiles)
+        ) {
+            config.accountRateProfiles = {};
+            modified = true;
+        } else {
+            const normalizedProfiles: Record<string, ReturnType<typeof normalizeAccountRateProfile>> = {};
+            for (const [accountId, rawProfile] of Object.entries(rawAccountRateProfiles)) {
+                normalizedProfiles[accountId] = normalizeAccountRateProfile(rawProfile);
+                if (JSON.stringify(normalizedProfiles[accountId]) != JSON.stringify(rawProfile)) {
+                    modified = true;
+                }
+            }
+            config.accountRateProfiles = normalizedProfiles;
         }
     }
     if (config.administratorNames) {

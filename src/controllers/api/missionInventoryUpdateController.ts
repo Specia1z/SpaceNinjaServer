@@ -33,6 +33,7 @@ import { version_compare } from "../../helpers/inventoryHelpers.ts";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { filterInplace } from "../../helpers/general.ts";
 import crypto from "node:crypto";
+import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
 
 /*
 **** INPUT ****
@@ -170,7 +171,13 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         NemesisTaxInfo,
         RecoveredItemInfo
     } = await addMissionRewards(account, buildLabel, inventory, missionReport, firstCompletion);
-    await handleConservation(inventory, buildLabel, missionReport, AffiliationMods); // Conservation reports have GS_SUCCESS
+    await handleConservation(
+        inventory,
+        buildLabel,
+        missionReport,
+        AffiliationMods,
+        getEffectiveAccountRate(getAccountRateProfile(account), "standingMultiplier")
+    ); // Conservation reports have GS_SUCCESS
 
     if (inventory.pendingPremiumCredits) {
         await dispatchPendingPremiumCredits(inventory);

@@ -1,13 +1,15 @@
 import { getJSONfromString } from "../../helpers/stringHelpers.ts";
 import { crackRelic, ensureRelicRewardIsCorrect } from "../../helpers/relicHelper.ts";
 import { getInventory } from "../../services/inventoryService.ts";
-import { getAccountIdForRequest } from "../../services/loginService.ts";
+import { getAccountForRequest } from "../../services/loginService.ts";
+import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
 import type { IVoidTearParticipantInfo, IVoidTearWaveInfo } from "../../types/requestTypes.ts";
 import type { RequestHandler } from "express";
 import { logger } from "../../utils/logger.ts";
 
 export const getVoidProjectionRewardsController: RequestHandler = async (req, res) => {
-    const accountId = await getAccountIdForRequest(req);
+    const account = await getAccountForRequest(req);
+    const accountId = account._id.toString();
     const data = getJSONfromString<IVoidProjectionRewardRequest | IVoidProjectionRewardsLegacyRequest>(
         String(req.body)
     );
@@ -26,7 +28,10 @@ export const getVoidProjectionRewardsController: RequestHandler = async (req, re
         !participantInfo.Reward
     ) {
         const inventory = await getInventory(accountId, undefined);
-        const reward = await crackRelic(inventory, participantInfo);
+        const rates = getAccountRateProfile(account);
+        const rewardMultiplier = getEffectiveAccountRate(rates, "relicRewardMultiplier");
+        const platinumMultiplier = getEffectiveAccountRate(rates, "relicPlatinumMultiplier");
+        const reward = await crackRelic(inventory, participantInfo, {}, rewardMultiplier, platinumMultiplier);
         if (!inventory.MissionRelicRewards || inventory.MissionRelicRewards.length >= currentWave) {
             inventory.MissionRelicRewards = [];
         }
@@ -36,7 +41,12 @@ export const getVoidProjectionRewardsController: RequestHandler = async (req, re
             Rarity: reward.rarity
         });
         if (data.VoidTearParticipantsPrevWave) {
-            await ensureRelicRewardIsCorrect(inventory, data.VoidTearParticipantsPrevWave);
+            await ensureRelicRewardIsCorrect(
+                inventory,
+                data.VoidTearParticipantsPrevWave,
+                rewardMultiplier,
+                platinumMultiplier
+            );
         }
         await inventory.save();
     }

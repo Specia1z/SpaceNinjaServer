@@ -86,6 +86,9 @@
                             <a class="nav-link" href="/webui/anti-cheat" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_antiCheat"></a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/webui/account-rates" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_accountRates"></a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/webui/metadata-patches" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_metadataPatches"></a>
                         </li>
                     </ul>
@@ -2229,58 +2232,60 @@
                 <div class="d-none admin-hide">
                     <p class="card-text" data-loc="cheats_administratorRequirement"></p>
                 </div>
-                <div class="d-none admin-show">
-                    <div class="card">
-                        <h5 class="card-header" data-loc="admin_antiCheat"></h5>
-                        <div class="card-body">
-                            <p class="text-body-secondary" data-loc="admin_antiCheatDescription"></p>
-                            <div class="d-flex flex-wrap gap-2 mb-3">
-                                <button class="btn btn-outline-secondary" type="button" onclick="loadAdminSuspicionEvents();" data-loc="admin_refreshStatus"></button>
-                                <button class="btn btn-outline-danger" type="button" onclick="clearAllAdminSuspicionEvents();" data-loc="admin_antiCheatClearAll"></button>
-                            </div>
-                            <div class="alert alert-info py-2 d-none" id="admin-anti-cheat-summary"></div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th data-loc="admin_account"></th>
-                                            <th data-loc="admin_antiCheatTotal"></th>
-                                            <th data-loc="admin_antiCheatKinds"></th>
-                                            <th data-loc="admin_antiCheatLastSeen"></th>
-                                            <th data-loc="admin_storeState"></th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="admin-anti-cheat-accounts"></tbody>
-                                </table>
-                            </div>
-                            <p class="text-body-secondary mb-0" id="admin-anti-cheat-empty" data-loc="admin_antiCheatEmpty"></p>
+                <div class="d-none admin-show admin-suspicion-page">
+                    <header class="admin-suspicion-header">
+                        <div>
+                            <h3 class="mb-1" data-loc="admin_antiCheat"></h3>
+                            <p class="text-body-secondary mb-0" data-loc="admin_antiCheatDescription"></p>
                         </div>
-                    </div>
-                    <div class="card mt-3">
-                        <h5 class="card-header" data-loc="admin_antiCheatDetail"></h5>
-                        <div class="card-body">
-                            <p class="text-body-secondary" data-loc="admin_antiCheatDetailHint"></p>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th data-loc="admin_antiCheatTime"></th>
-                                            <th data-loc="admin_antiCheatKind"></th>
-                                            <th data-loc="admin_antiCheatMission"></th>
-                                            <th data-loc="admin_antiCheatEvidence"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="admin-anti-cheat-events"></tbody>
-                                </table>
-                            </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" id="admin-anti-cheat-refresh" type="button" data-loc="admin_refreshStatus"></button>
+                            <button class="btn btn-outline-danger btn-sm" id="admin-anti-cheat-clear-all" type="button" data-loc="admin_antiCheatClearAll"></button>
                         </div>
-                    </div>
-                    <div class="card mt-3">
-                        <h5 class="card-header" data-loc="admin_antiCheatConfig"></h5>
-                        <div class="card-body">
-                            <p class="text-body-secondary" data-loc="admin_antiCheatConfigHint"></p>
-                            <div class="config-form">
+                    </header>
+                    <section class="admin-suspicion-section">
+                        <p class="text-body-secondary small d-none" id="admin-anti-cheat-summary"></p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th data-loc="admin_account"></th>
+                                        <th data-loc="admin_antiCheatTotal"></th>
+                                        <th data-loc="admin_antiCheatKinds"></th>
+                                        <th data-loc="admin_antiCheatLastSeen"></th>
+                                        <th data-loc="admin_storeState"></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-anti-cheat-accounts"></tbody>
+                            </table>
+                        </div>
+                        <p class="text-body-secondary mb-0" id="admin-anti-cheat-empty" data-loc="admin_antiCheatEmpty"></p>
+                    </section>
+                    <section class="admin-suspicion-section">
+                        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2">
+                            <h5 class="mb-0" data-loc="admin_antiCheatDetail"></h5>
+                            <span class="text-body-secondary small" id="admin-anti-cheat-detail-name"></span>
+                        </div>
+                        <p class="text-body-secondary small" data-loc="admin_antiCheatDetailHint"></p>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th data-loc="admin_antiCheatTime"></th>
+                                        <th data-loc="admin_antiCheatKind"></th>
+                                        <th data-loc="admin_antiCheatMission"></th>
+                                        <th data-loc="admin_antiCheatEvidence"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-anti-cheat-events"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <section class="admin-suspicion-section">
+                        <h5 data-loc="admin_antiCheatConfig"></h5>
+                        <p class="text-body-secondary small" data-loc="admin_antiCheatConfigHint"></p>
+                        <div class="config-form">
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" id="antiCheat.enabled" />
                                     <label class="form-check-label" for="antiCheat.enabled" data-loc="admin_antiCheatEnabled"></label>
@@ -2333,8 +2338,54 @@
                                         </form>
                                     </div>
                                 </div>
-                            </div>
                         </div>
+                    </section>
+                </div>
+            </div>
+            <div data-route="/webui/account-rates" data-title-tag="navbar_accountRates">
+                <div class="d-none admin-hide">
+                    <p class="card-text" data-loc="cheats_administratorRequirement"></p>
+                </div>
+                <div class="d-none admin-show account-rates-page">
+                    <header class="account-rates-header">
+                        <div>
+                            <h3 class="mb-1" data-loc="accountRates_title"></h3>
+                            <p class="text-body-secondary mb-0" data-loc="accountRates_description"></p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge text-bg-secondary align-self-center" id="account-rates-summary"></span>
+                            <button class="btn btn-outline-secondary btn-sm" id="account-rates-refresh" type="button" data-loc="accountRates_refresh"></button>
+                        </div>
+                    </header>
+                    <div class="alert alert-info d-none mt-3" id="account-rates-notice" role="status"></div>
+                    <div class="account-rates-layout">
+                        <aside class="account-rates-sidebar">
+                            <label class="visually-hidden" for="account-rates-search" data-loc="accountRates_search"></label>
+                            <input class="form-control" id="account-rates-search" type="search" data-loc-placeholder="accountRates_search" autocomplete="off" />
+                            <div class="account-rate-account-list" id="account-rates-accounts"></div>
+                        </aside>
+                        <main class="account-rates-editor" id="account-rates-editor">
+                            <div class="text-body-secondary account-rates-empty" id="account-rates-empty" data-loc="accountRates_noSelection"></div>
+                            <div class="d-none" id="account-rates-form-wrap">
+                                <div class="account-rates-editor-header">
+                                    <div class="account-rates-identity">
+                                        <h4 class="mb-1" id="account-rates-selected-name"></h4>
+                                        <code id="account-rates-selected-id"></code>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" id="account-rates-enabled" type="checkbox" />
+                                        <label class="form-check-label" for="account-rates-enabled" data-loc="accountRates_enabled"></label>
+                                    </div>
+                                </div>
+                                <p class="text-body-secondary small mb-0" data-loc="accountRates_enabledHint"></p>
+                                <div id="account-rates-fields"></div>
+                                <div class="account-rates-actions">
+                                    <button class="btn btn-primary" id="account-rates-save" type="button" data-loc="accountRates_save"></button>
+                                    <button class="btn btn-outline-secondary" id="account-rates-reset" type="button" data-loc="accountRates_reset"></button>
+                                    <button class="btn btn-outline-danger account-rates-delete" id="account-rates-delete" type="button" data-loc="accountRates_delete"></button>
+                                </div>
+                            </div>
+                        </main>
                     </div>
                 </div>
             </div>
@@ -2346,8 +2397,8 @@
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                         <h3 class="mb-0" data-loc="metadataPatches_title"></h3>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-outline-secondary" type="button" onclick="addMetadataPatch();" data-loc="metadataPatches_add"></button>
-                            <button class="btn btn-primary" id="metadata-patches-save" type="button" onclick="saveMetadataPatches();" data-loc="metadataPatches_save"></button>
+                            <button class="btn btn-outline-secondary" type="button" data-loc="metadataPatches_add"></button>
+                            <button class="btn btn-primary" id="metadata-patches-save" type="button" data-loc="metadataPatches_save"></button>
                         </div>
                     </div>
                     <p class="text-body-secondary" data-loc="metadataPatches_description"></p>
@@ -2356,7 +2407,7 @@
                         <label class="form-label" for="metadata-patches-import" data-loc="metadataPatches_importLabel"></label>
                         <textarea class="form-control" id="metadata-patches-import" rows="6" data-loc-placeholder="metadataPatches_importPlaceholder"></textarea>
                         <div class="form-text" data-loc="metadataPatches_importHint"></div>
-                        <button class="btn btn-outline-secondary mt-2" type="button" onclick="importMetadataPatchText();" data-loc="metadataPatches_import"></button>
+                        <button class="btn btn-outline-secondary mt-2" type="button" data-loc="metadataPatches_import"></button>
                     </div>
                     <div id="metadata-patches-list" class="d-grid gap-3"></div>
                     <div class="border-top mt-4 pt-3">
@@ -2364,7 +2415,7 @@
                             <h4 class="mb-0" data-loc="metadataPatches_preview"></h4>
                             <div class="d-flex align-items-center gap-2">
                                 <code id="metadata-patches-revision"></code>
-                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="copyMetadataPatchPreview();" data-loc="metadataPatches_copy"></button>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-loc="metadataPatches_copy"></button>
                             </div>
                         </div>
                         <pre class="metadata-patches-preview border bg-body-tertiary p-3 mb-0" id="metadata-patches-preview"></pre>
@@ -2443,7 +2494,18 @@
     <script src="/webui/libs/single.js"></script>
     <script src="/webui/riven-tool/RivenParser.js"></script>
     <script src="/webui/config.js"></script>
+    <script src="/webui/admin/metadata-text.js"></script>
     <script src="/webui/script.js"></script>
+    <script src="/webui/admin/metadata-api.js"></script>
+    <script src="/webui/admin/metadata-page.js"></script>
+    <script src="/webui/admin/admin-data-api.js"></script>
+    <script src="/webui/admin/admin-data-page.js"></script>
+    <script src="/webui/admin/redeem-codes-api.js"></script>
+    <script src="/webui/admin/redeem-codes-page.js"></script>
+    <script src="/webui/account-rates/api.js"></script>
+    <script src="/webui/account-rates/page.js"></script>
+    <script src="/webui/admin/suspicion-api.js"></script>
+    <script src="/webui/admin/suspicion-page.js"></script>
     <script src="/webui/script.importSamples.js" async defer></script>
     <script src="/webui/libs/bootstrap.bundle.min.js"></script>
     <script>

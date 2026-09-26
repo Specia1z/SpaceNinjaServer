@@ -6,20 +6,16 @@ import type { IInventoryChanges, IBinChanges, IAffiliationMods } from "../types/
 import type {
     IChallengeProgress,
     IMiscItem,
-    IMission,
     IRawUpgrade,
     ISeasonChallenge,
-    IWeaponSkinClient,
     TEquipmentKey,
     IFusionTreasure,
-    IDailyAffiliations,
     ILibraryDailyTaskInfo,
     IDroneClient,
     IUpgradeClient,
     TPartialStartingGear,
     ILoreFragmentScan,
     ICrewMemberClient,
-    ICalendarProgress,
     INemesisWeaponTargetFingerprint,
     INemesisPetTargetFingerprint,
     IDialogueDatabase,
@@ -40,7 +36,6 @@ import {
     getKey,
     getKeyChainItems,
     getPowerSuit,
-    getSyndicate,
     supplementalKeys,
     supplementalRecipes,
     supplementalUpgrades,
@@ -49,7 +44,7 @@ import {
     getDefaultUpgrades
 } from "./itemDataService.ts";
 import type { IFlavourItem, IItemConfig, IItemConfigDatabase } from "../types/inventoryTypes/commonInventoryTypes.ts";
-import type { IDefaultUpgrade, IRegion, ISentinel, TStandingLimitBin } from "warframe-public-export-plus";
+import type { IDefaultUpgrade, IRegion, ISentinel } from "warframe-public-export-plus";
 import {
     ExportArcanes,
     ExportBoosters,
@@ -108,9 +103,30 @@ import {
 } from "./rngService.ts";
 import type { IMessageCreationTemplate } from "./inboxService.ts";
 import { createMessage } from "./inboxService.ts";
-import { getMaxStanding, getMinStanding } from "../helpers/syndicateStandingHelper.ts";
 import { getCalendarSeason, getGoalByOid, getNightwaveSyndicateTag, getWorldStateTime } from "./worldStateService.ts";
-import type { ICalendarSeason } from "../types/worldStateTypes.ts";
+import { getCalendarProgress } from "./calendarProgressService.ts";
+import { addFusionPoints } from "./inventoryFinanceService.ts";
+import { addCrewShipWeaponSkin, addEquipment, addSkin } from "./inventoryEquipmentService.ts";
+import { addBooster } from "./inventoryProgressService.ts";
+export { addCalendarProgress, checkCalendarAutoAdvance, getCalendarProgress } from "./calendarProgressService.ts";
+export {
+    addCrewShipFusionPoints,
+    addFusionPoints,
+    addStanding,
+    allDailyAffiliationKeys,
+    CurrencyType,
+    eStandingSource,
+    updateCredits,
+    updateCurrency,
+    updatePlatinum
+} from "./inventoryFinanceService.ts";
+export {
+    addCrewShipSalvagedWeaponSkin,
+    addCrewShipWeaponSkin,
+    addEquipment,
+    addSkin
+} from "./inventoryEquipmentService.ts";
+export { addBooster, addMissionComplete, setBooster } from "./inventoryProgressService.ts";
 import type { INemesisProfile } from "../helpers/nemesisHelpers.ts";
 import { generateNemesisProfile, getFallbackHelmet } from "../helpers/nemesisHelpers.ts";
 import { type TAccountDocument } from "./loginService.ts";
@@ -1804,217 +1820,6 @@ export const updateSlots = <ST extends TInventorySlot>(
     }
 };
 
-export const CurrencyType = {
-    CREDITS: false,
-    PLATINUM: true,
-    PAID_PLATINUM: 2
-} as const;
-
-type TCurrencyType = (typeof CurrencyType)[keyof typeof CurrencyType];
-
-export const updateCurrency = (
-    inventory: TInventoryDatabaseDocument,
-    price: number,
-    currencyType: TCurrencyType,
-    inventoryChanges: IInventoryChanges = {}
-): IInventoryChanges => {
-    return currencyType == CurrencyType.CREDITS
-        ? updateCredits(inventory, price, inventoryChanges)
-        : updatePlatinum(inventory, price, currencyType == CurrencyType.PAID_PLATINUM, inventoryChanges);
-};
-
-export const updateCredits = (
-    inventory: Pick<TInventoryDatabaseDocument, "infiniteCredits" | "RegularCredits">,
-    price: number,
-    inventoryChanges: IInventoryChanges = {}
-): IInventoryChanges => {
-    if (price != 0 && !inventory.infiniteCredits) {
-        if (price > inventory.RegularCredits) {
-            throw new Error(`Cannot subtract ${price} credits, would be left with ${inventory.RegularCredits - price}`);
-        }
-        inventoryChanges.RegularCredits ??= 0;
-        inventoryChanges.RegularCredits -= price;
-        inventory.RegularCredits -= price;
-        logger.debug(`currency changes`, { RegularCredits: -price });
-    }
-    return inventoryChanges;
-};
-
-export const updatePlatinum = (
-    inventory: Pick<TInventoryDatabaseDocument, "infinitePlatinum" | "PremiumCreditsFree" | "PremiumCredits">,
-    price: number,
-    mustBePaidPlatinum?: boolean,
-    inventoryChanges: IInventoryChanges = {}
-): IInventoryChanges => {
-    if (price != 0 && !inventory.infinitePlatinum) {
-        if (price > 0) {
-            if (mustBePaidPlatinum) {
-                const paidPlatinumBalance = inventory.PremiumCredits - inventory.PremiumCreditsFree;
-                if (price > paidPlatinumBalance) {
-                    throw new Error(
-                        `Cannot subtract ${price} paid platinum, would be left with ${paidPlatinumBalance - price}`
-                    );
-                }
-            } else if (inventory.PremiumCreditsFree > 0) {
-                const premiumCreditsFreeDelta = Math.min(price, inventory.PremiumCreditsFree) * -1;
-                inventoryChanges.PremiumCreditsFree ??= 0;
-                inventoryChanges.PremiumCreditsFree += premiumCreditsFreeDelta;
-                inventory.PremiumCreditsFree += premiumCreditsFreeDelta;
-                logger.debug(`spending ${-premiumCreditsFreeDelta} starter plat`);
-            }
-            if (price > inventory.PremiumCredits) {
-                throw new Error(
-                    `Cannot subtract ${price} platinum, would be left with ${inventory.PremiumCredits - price}`
-                );
-            }
-        }
-        inventoryChanges.PremiumCredits ??= 0;
-        inventoryChanges.PremiumCredits -= price;
-        inventory.PremiumCredits -= price;
-        logger.debug(`currency changes`, { PremiumCredits: -price });
-    }
-    return inventoryChanges;
-};
-
-export const addFusionPoints = (
-    inventory: Pick<TInventoryDatabaseDocument, "infiniteEndo" | "FusionPoints">,
-    add: number
-): number => {
-    if (inventory.infiniteEndo) {
-        add = 0;
-    } else {
-        if (inventory.FusionPoints + add > 2147483647) {
-            logger.warn(`capping FusionPoints balance at 2147483647`);
-            add = 2147483647 - inventory.FusionPoints;
-        }
-        inventory.FusionPoints += add;
-    }
-    return add;
-};
-
-export const addCrewShipFusionPoints = (
-    inventory: Pick<TInventoryDatabaseDocument, "infiniteDirac" | "CrewShipFusionPoints">,
-    add: number
-): number => {
-    if (inventory.infiniteDirac) {
-        add = 0;
-    } else {
-        if (inventory.CrewShipFusionPoints + add > 2147483647) {
-            logger.warn(`capping CrewShipFusionPoints balance at 2147483647`);
-            add = 2147483647 - inventory.CrewShipFusionPoints;
-        }
-        inventory.CrewShipFusionPoints += add;
-    }
-    return add;
-};
-
-const standingLimitBinToInventoryKey: Record<
-    Exclude<TStandingLimitBin, "STANDING_LIMIT_BIN_NONE">,
-    keyof IDailyAffiliations
-> = {
-    STANDING_LIMIT_BIN_NORMAL: "DailyAffiliation",
-    STANDING_LIMIT_BIN_PVP: "DailyAffiliationPvp",
-    STANDING_LIMIT_BIN_LIBRARY: "DailyAffiliationLibrary",
-    STANDING_LIMIT_BIN_CETUS: "DailyAffiliationCetus",
-    STANDING_LIMIT_BIN_QUILLS: "DailyAffiliationQuills",
-    STANDING_LIMIT_BIN_SOLARIS: "DailyAffiliationSolaris",
-    STANDING_LIMIT_BIN_VENTKIDS: "DailyAffiliationVentkids",
-    STANDING_LIMIT_BIN_VOX: "DailyAffiliationVox",
-    STANDING_LIMIT_BIN_ENTRATI: "DailyAffiliationEntrati",
-    STANDING_LIMIT_BIN_NECRALOID: "DailyAffiliationNecraloid",
-    STANDING_LIMIT_BIN_ZARIMAN: "DailyAffiliationZariman",
-    STANDING_LIMIT_BIN_KAHL: "DailyAffiliationKahl",
-    STANDING_LIMIT_BIN_CAVIA: "DailyAffiliationCavia",
-    STANDING_LIMIT_BIN_HEX: "DailyAffiliationHex"
-};
-
-export const allDailyAffiliationKeys: (keyof IDailyAffiliations)[] = Object.values(standingLimitBinToInventoryKey);
-
-const getStandingLimit = (inventory: TInventoryDatabaseDocument, bin: TStandingLimitBin): number => {
-    if (bin == "STANDING_LIMIT_BIN_NONE" || inventory.noDailyStandingLimits) {
-        return Number.MAX_SAFE_INTEGER;
-    }
-    return inventory[standingLimitBinToInventoryKey[bin]];
-};
-
-const updateStandingLimit = (
-    inventory: TInventoryDatabaseDocument,
-    bin: TStandingLimitBin,
-    subtrahend: number
-): void => {
-    if (bin != "STANDING_LIMIT_BIN_NONE" && !inventory.noDailyStandingLimits) {
-        inventory[standingLimitBinToInventoryKey[bin]] -= subtrahend;
-    }
-};
-
-export const eStandingSource = {
-    Medallion: 0b101, // Effect on daily cap depends on syndicate. Propagates to aligned syndicates.
-    Alignment: 0b010, // Applies & updates daily cap. Does not propagate to aligned syndicates (to avoid infinite recursion).
-    Misc: 0b011 // Applies & updates daily cap. Propagates to aligned syndicates.
-};
-type TStandingSource = (typeof eStandingSource)[keyof typeof eStandingSource];
-
-export const addStanding = async (
-    inventory: TInventoryDatabaseDocument,
-    buildLabel: string,
-    syndicateTag: string,
-    gainedStanding: number,
-    affiliationMods: IAffiliationMods[] = [],
-    source: TStandingSource = eStandingSource.Misc
-): Promise<void> => {
-    let syndicate = inventory.Affiliations.find(x => x.Tag == syndicateTag);
-    const syndicateMeta = (await getSyndicate(syndicateTag, buildLabel))!;
-
-    if (!syndicate) {
-        syndicate =
-            inventory.Affiliations[inventory.Affiliations.push({ Tag: syndicateTag, Standing: 0, Title: 0 }) - 1];
-    }
-
-    const max = getMaxStanding(syndicateMeta, syndicate.Title ?? 0);
-    if (syndicate.Standing + gainedStanding > max) gainedStanding = max - syndicate.Standing;
-
-    if (syndicate.Standing + gainedStanding < -71000) {
-        gainedStanding = -71000 - syndicate.Standing;
-    }
-
-    if ((source == eStandingSource.Medallion && syndicateMeta.medallionsCappedByDailyLimit) || source & 0b010) {
-        if (gainedStanding > getStandingLimit(inventory, syndicateMeta.dailyLimitBin)) {
-            gainedStanding = getStandingLimit(inventory, syndicateMeta.dailyLimitBin);
-        }
-        updateStandingLimit(inventory, syndicateMeta.dailyLimitBin, gainedStanding);
-    }
-
-    syndicate.Standing += gainedStanding;
-    const affiliationMod: IAffiliationMods = {
-        Tag: syndicateTag,
-        Standing: gainedStanding
-    };
-    affiliationMods.push(affiliationMod);
-
-    if (syndicateMeta.alignments) {
-        if (source & 0b001) {
-            for (const [tag, factor] of Object.entries(syndicateMeta.alignments)) {
-                await addStanding(
-                    inventory,
-                    buildLabel,
-                    tag,
-                    gainedStanding * factor,
-                    affiliationMods,
-                    eStandingSource.Alignment
-                );
-            }
-        } else {
-            while (syndicate.Standing < getMinStanding(syndicateMeta, syndicate.Title ?? 0)) {
-                syndicate.Title ??= 0;
-                syndicate.Title -= 1;
-                affiliationMod.Title ??= 0;
-                affiliationMod.Title -= 1;
-                logger.debug(`${syndicateTag} is decreasing to title ${syndicate.Title} after applying alignment`);
-            }
-        }
-    }
-};
-
 // TODO: AffiliationMods support (Nightwave).
 export const updateGeneric = async (
     accountId: string | Types.ObjectId,
@@ -2120,35 +1925,6 @@ export const updateGeneric = async (
     };
 };
 
-export const addEquipment = <K extends TEquipmentKey>(
-    inventory: Pick<TInventoryDatabaseDocument, K>,
-    category: K,
-    type: string,
-    defaultOverwrites?: Partial<IEquipmentDatabase>,
-    inventoryChanges: IInventoryChanges = {}
-): IInventoryChanges => {
-    const equipment: Omit<IEquipmentDatabase, "_id"> = Object.assign(
-        {
-            ItemType: type,
-            Configs: [],
-            XP: 0,
-            IsNew: category != "CrewShipWeapons" && category != "CrewShipSalvagedWeapons"
-        },
-        defaultOverwrites
-    );
-    if (equipment.IsNew) {
-        equipment.IsNew = !inventory[category].find(x => x.ItemType == type);
-    }
-    if (!equipment.IsNew) {
-        equipment.IsNew = undefined;
-    }
-    const index = inventory[category].push(equipment) - 1;
-
-    inventoryChanges[category] ??= [];
-    inventoryChanges[category].push(inventory[category][index].toJSON<IEquipmentClient>());
-    return inventoryChanges;
-};
-
 // Path roots of every FlavourItem family. Used to recognise a FlavourItem whose own entry is missing from the
 // pinned public-export data, so it can still be stored in FlavourItems instead of being rejected.
 // Note that a family's base class path is not the same as its instance path: AvatarImageItem for instance lives
@@ -2183,68 +1959,6 @@ const addCustomization = (
         inventoryChanges.FlavourItems ??= [];
         inventoryChanges.FlavourItems.push(inventory.FlavourItems[flavourItemIndex].toJSON<IFlavourItem>());
     }
-    return inventoryChanges;
-};
-
-export const addSkin = (
-    inventory: Pick<TInventoryDatabaseDocument, "WeaponSkins" | "BountyScore">,
-    typeName: string,
-    inventoryChanges: IInventoryChanges = {}
-): IInventoryChanges => {
-    if (typeName == "/Lotus/Upgrades/Skins/Clan/BountyHunterBadgeItem") {
-        logger.debug(`stratos emblem, increasing bounty score`);
-        inventory.BountyScore ??= 0;
-        inventory.BountyScore += 1;
-    }
-
-    // https://onlyg.it/OpenWF/SpaceNinjaServer/issues/3941
-    if (typeName.endsWith("LeftArmor")) {
-        addSkin(
-            inventory,
-            typeName.substring(0, typeName.length - "LeftArmor".length) + "RightArmor",
-            inventoryChanges
-        );
-    }
-
-    if (inventory.WeaponSkins.some(x => x.ItemType == typeName)) {
-        logger.debug(`refusing to add WeaponSkin ${typeName} because account already owns it`);
-    } else {
-        const index =
-            inventory.WeaponSkins.push({
-                ItemType: typeName,
-                IsNew: typeName.startsWith("/Lotus/Upgrades/Skins/RailJack/") ? undefined : true // railjack skins are incompatible with this flag
-            }) - 1;
-        inventoryChanges.WeaponSkins ??= [];
-        inventoryChanges.WeaponSkins.push(inventory.WeaponSkins[index].toJSON<IWeaponSkinClient>());
-    }
-    return inventoryChanges;
-};
-
-export const addCrewShipWeaponSkin = (
-    inventory: Pick<TInventoryDatabaseDocument, "CrewShipWeaponSkins">,
-    typeName: string,
-    upgradeFingerprint: string | undefined,
-    inventoryChanges: IInventoryChanges = {}
-): IInventoryChanges => {
-    const index =
-        inventory.CrewShipWeaponSkins.push({ ItemType: typeName, UpgradeFingerprint: upgradeFingerprint }) - 1;
-    inventoryChanges.CrewShipWeaponSkins ??= [];
-    inventoryChanges.CrewShipWeaponSkins.push(inventory.CrewShipWeaponSkins[index].toJSON<IUpgradeClient>());
-    return inventoryChanges;
-};
-
-export const addCrewShipSalvagedWeaponSkin = (
-    inventory: TInventoryDatabaseDocument,
-    typeName: string,
-    upgradeFingerprint: string | undefined,
-    inventoryChanges: IInventoryChanges = {}
-): IInventoryChanges => {
-    const index =
-        inventory.CrewShipSalvagedWeaponSkins.push({ ItemType: typeName, UpgradeFingerprint: upgradeFingerprint }) - 1;
-    inventoryChanges.CrewShipSalvagedWeaponSkins ??= [];
-    inventoryChanges.CrewShipSalvagedWeaponSkins.push(
-        inventory.CrewShipSalvagedWeaponSkins[index].toJSON<IUpgradeClient>()
-    );
     return inventoryChanges;
 };
 
@@ -2835,7 +2549,8 @@ export const addChallenges = async (
     inventory: TInventoryDatabaseDocument,
     ChallengeProgress: IChallengeProgress[],
     SeasonChallengeCompletions?: ISeasonChallenge[],
-    inventoryChanges: IInventoryChanges = {}
+    inventoryChanges: IInventoryChanges = {},
+    nightwaveStandingMultiplier: number = 1
 ): Promise<IAffiliationMods[]> => {
     for (const { Name, Progress, Completed } of ChallengeProgress) {
         let dbChallenge = inventory.ChallengeProgress.find(x => x.Name == Name);
@@ -2928,7 +2643,9 @@ export const addChallenges = async (
                         ];
                 }
 
-                const standingToAdd = meta.standing! * (inventory.nightwaveStandingMultiplier ?? 1);
+                const standingToAdd = Math.trunc(
+                    meta.standing! * (inventory.nightwaveStandingMultiplier ?? 1) * nightwaveStandingMultiplier
+                );
                 affiliation.Standing += standingToAdd;
                 if (affiliationMods.length == 0) {
                     affiliationMods.push({ Tag: nightwaveSyndicateTag });
@@ -2939,16 +2656,6 @@ export const addChallenges = async (
         }
     }
     return affiliationMods;
-};
-
-export const addCalendarProgress = (inventory: TInventoryDatabaseDocument, value: { challenge: string }[]): void => {
-    const { week } = getWorldStateTime();
-    const currentSeason = getCalendarSeason(week);
-    const calendarProgress = getCalendarProgress(inventory, currentSeason);
-    calendarProgress.SeasonProgress.LastCompletedChallengeDayIdx = currentSeason.Days.findIndex(
-        day => day.events.length != 0 && day.events[0].challenge == value[value.length - 1].challenge
-    );
-    checkCalendarAutoAdvance(inventory, currentSeason);
 };
 
 export const resetKahlWeeklyMission = (
@@ -2996,52 +2703,6 @@ export const addKahlProgress = (
         }
         logger.debug(`adding ${stockEarned} stock for kahl challenges`);
         addMiscItem(inventory, "/Lotus/Types/Items/MiscItems/KahlCreds", stockEarned, inventoryChanges);
-    }
-};
-
-export const addMissionComplete = (
-    inventory: Pick<TInventoryDatabaseDocument, "Missions">,
-    { Tag, Completes, Tier }: IMission
-): void => {
-    const { Missions } = inventory;
-    const itemIndex = Missions.findIndex(item => item.Tag === Tag);
-
-    if (itemIndex !== -1) {
-        Missions[itemIndex].Completes += Completes;
-        if (Completes && Tier) {
-            Missions[itemIndex].Tier = Tier;
-        }
-    } else if (Tag !== "") {
-        //Prevent "Chains of Harrow" pushing "Tag":"" into inventory.Missions displaying incorrect steel path progress
-        Missions.push({ Tag, Completes });
-    }
-};
-
-export const addBooster = (ItemType: string, timeSecs: number, inventory: TInventoryDatabaseDocument): void => {
-    const currentTime = Math.floor(Date.now() / 1000);
-
-    const { Boosters } = inventory;
-
-    const itemIndex = Boosters.findIndex(booster => booster.ItemType === ItemType);
-
-    if (itemIndex !== -1) {
-        const existingBooster = Boosters[itemIndex];
-        existingBooster.ExpiryDate = Math.max(existingBooster.ExpiryDate, currentTime) + timeSecs;
-    } else {
-        Boosters.push({ ItemType, ExpiryDate: currentTime + timeSecs });
-    }
-};
-
-export const setBooster = (ItemType: string, expiryTimeSecs: number, inventory: TInventoryDatabaseDocument): void => {
-    const { Boosters } = inventory;
-
-    const itemIndex = Boosters.findIndex(booster => booster.ItemType === ItemType);
-
-    if (itemIndex !== -1) {
-        const existingBooster = Boosters[itemIndex];
-        existingBooster.ExpiryDate = Math.max(existingBooster.ExpiryDate, expiryTimeSecs);
-    } else {
-        Boosters.push({ ItemType, ExpiryDate: expiryTimeSecs });
     }
 };
 
@@ -3367,83 +3028,6 @@ export const getDialogue = (
             ];
     }
     return dialogue;
-};
-
-export const getCalendarProgress = (
-    inventory: Pick<TInventoryDatabaseDocument, "CalendarProgress">,
-    currentSeason: ICalendarSeason
-): ICalendarProgress => {
-    if (!inventory.CalendarProgress) {
-        inventory.CalendarProgress = {
-            Version: 19,
-            Iteration: currentSeason.YearIteration,
-            YearProgress: {
-                Upgrades: []
-            },
-            SeasonProgress: {
-                SeasonType: currentSeason.Season,
-                LastCompletedDayIdx: -1,
-                LastCompletedChallengeDayIdx: -1,
-                ActivatedChallenges: []
-            }
-        };
-    }
-
-    const yearRolledOver = inventory.CalendarProgress.Iteration != currentSeason.YearIteration;
-    if (yearRolledOver) {
-        inventory.CalendarProgress.Iteration = currentSeason.YearIteration;
-        inventory.CalendarProgress.YearProgress.Upgrades = [];
-    }
-    if (yearRolledOver || inventory.CalendarProgress.SeasonProgress.SeasonType != currentSeason.Season) {
-        inventory.CalendarProgress.SeasonProgress.SeasonType = currentSeason.Season;
-        inventory.CalendarProgress.SeasonProgress.LastCompletedDayIdx = -1;
-        inventory.CalendarProgress.SeasonProgress.LastCompletedChallengeDayIdx = -1;
-        inventory.CalendarProgress.SeasonProgress.ActivatedChallenges = [];
-    }
-
-    return inventory.CalendarProgress;
-};
-
-export const checkCalendarAutoAdvance = (
-    inventory: TInventoryDatabaseDocument,
-    currentSeason: ICalendarSeason
-): void => {
-    const calendarProgress = inventory.CalendarProgress!;
-    for (
-        let dayIndex = calendarProgress.SeasonProgress.LastCompletedDayIdx + 1;
-        dayIndex != currentSeason.Days.length;
-        ++dayIndex
-    ) {
-        const day = currentSeason.Days[dayIndex];
-        if (day.events.length == 0) {
-            // birthday
-            if (day.day == 1) {
-                // kaya
-                if ((inventory.Affiliations.find(x => x.Tag == "HexSyndicate")?.Title || 0) >= 4) {
-                    break;
-                }
-                logger.debug(`cannot talk to kaya, skipping birthday`);
-                calendarProgress.SeasonProgress.LastCompletedDayIdx++;
-            } else if (day.day == 74 || day.day == 355) {
-                // minerva, velimir
-                if ((inventory.Affiliations.find(x => x.Tag == "HexSyndicate")?.Title || 0) >= 5) {
-                    break;
-                }
-                logger.debug(`cannot talk to minerva/velimir, skipping birthday`);
-                calendarProgress.SeasonProgress.LastCompletedDayIdx++;
-            } else {
-                break;
-            }
-        } else if (day.events[0].type == "CET_CHALLENGE") {
-            if (calendarProgress.SeasonProgress.LastCompletedChallengeDayIdx < dayIndex) {
-                break;
-            }
-            logger.trace(`already completed the challenge, skipping ahead`);
-            calendarProgress.SeasonProgress.LastCompletedDayIdx++;
-        } else {
-            break;
-        }
-    }
 };
 
 export const giveNemesisWeaponRecipe = (

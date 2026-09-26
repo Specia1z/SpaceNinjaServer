@@ -1,13 +1,5 @@
-import type {
-    IMissionReward as IMissionRewardExternal,
-    IRegion,
-    IReward,
-    TMissionDeck,
-    TMissionType,
-    TRarity
-} from "warframe-public-export-plus";
+import type { IReward, TMissionDeck } from "warframe-public-export-plus";
 import {
-    ExportAnimals,
     ExportEnemies,
     ExportFusionBundles,
     ExportRelics,
@@ -16,7 +8,6 @@ import {
 } from "warframe-public-export-plus";
 import type { IMissionInventoryUpdateRequest, IRewardInfo } from "../types/requestTypes.ts";
 import { logger } from "../utils/logger.ts";
-import type { IRngResult } from "./rngService.ts";
 import { SRng, generateRewardSeed, getRandomElement, getRandomInt, getRandomReward } from "./rngService.ts";
 import type {
     IDailyAffiliations,
@@ -111,7 +102,23 @@ import {
     advanceLiveInvasionProgress,
     getLiveSyndicateMissionByOid
 } from "./liveWorldStateService.ts";
-import { config, getAccountDropMultipliers, shouldDoServerQol } from "./configService.ts";
+import { config, shouldDoServerQol } from "./configService.ts";
+import { getAccountRateProfile, getEffectiveAccountRate } from "./accountRateService.ts";
+import { addMissionPlatinumReward } from "./missionPlatinumRewardService.ts";
+import { addMissionCredits } from "./missionCreditService.ts";
+import {
+    addFixedLevelRewards,
+    droptableAliases,
+    getLevelCreditRewards,
+    getRandomRewardByChance,
+    getRotations,
+    hexConquestRewards,
+    isEligibleForCreditReward,
+    labConquestRewards,
+    scaleAccountDropCount
+} from "./missionRewardService.ts";
+export { addFixedLevelRewards } from "./missionRewardService.ts";
+export { handleConservation } from "./conservationRewardService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
 import type { IGoal, ISyndicateJob, ISyndicateMissionInfo } from "../types/worldStateTypes.ts";
 import {
@@ -133,147 +140,6 @@ import { libraryTargetToAvatar } from "../constants/synthesis.ts";
 import { buildVersionToInt, wikiDateToBuildVersionInt } from "../helpers/versionHelper.ts";
 import baro from "../constants/baro.ts";
 
-const getRotations = async (rewardInfo: IRewardInfo, buildLabel: string, tierOverride?: number): Promise<number[]> => {
-    // For Spy missions, e.g. 3 vaults cracked = A, B, C
-    if (rewardInfo.VaultsCracked) {
-        const rotations: number[] = [];
-        for (let i = 0; i != rewardInfo.VaultsCracked; ++i) {
-            rotations.push(Math.min(i, 2));
-        }
-        return rotations;
-    }
-
-    // For isleweaver, simply roll A & B. (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/3182)
-    if (rewardInfo.T == 17 || rewardInfo.T == 19) {
-        return [0, 1];
-    }
-
-    const region = await getRegion(rewardInfo.node, buildLabel);
-    const missionType: TMissionType | undefined = region?.missionType;
-
-    // Disruption uses 'rewardTierOverrides' to tell us (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2599)
-    // Note that this may stick in lab conquest so we need to filter by mission type (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2768)
-    if (missionType == "MT_ARTIFACT") {
-        return rewardInfo.rewardTierOverrides ?? [];
-    }
-
-    if (missionType == "MT_RESCUE" && rewardInfo.rewardTier !== undefined) {
-        return [rewardInfo.rewardTier];
-    }
-
-    // For Oldpeace 12MinWar missions
-    // e.g. "CustomEOMTags":["12MinWarNumObjectives0"] & "CustomEOMTags":["12MinWarObjectiveComplete1","12MinWarObjectiveComplete2","12MinWarObjectiveComplete3","12MinWarNumObjectives9"]
-    if (rewardInfo.CustomEOMTags) {
-        const CustomEOMTags = rewardInfo.CustomEOMTags;
-        if (CustomEOMTags[CustomEOMTags.length - 1].substring(0, 21) == "12MinWarNumObjectives") {
-            // after the task is completed, you will receive 1 C round reward
-            const rotations = [2];
-            for (let a = 1; a < CustomEOMTags.length; ++a) {
-                // For each 3 commands completed, CustomEOMTags + 1, you will receive 1 A round reward
-                // e.g. rotations == [2] & [2, 0, 0, 0]
-                rotations.push(0);
-            }
-            for (let b = 0; b < Number(CustomEOMTags[CustomEOMTags.length - 1].substring(21)); ++b) {
-                // for each 1 command completed, 12MinWarNumObjectives + 1, you will receive 1 B round reward
-                // e.g. rotations == [2] & [2, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-                rotations.push(1);
-            }
-            return rotations;
-        }
-    }
-
-    if (
-        rewardInfo.node == "SolNode105" &&
-        shouldDoServerQol("tylRegorDropsTwoEquinoxParts", buildLabel, gameToBuildVersion["42.0.0"])
-    ) {
-        // U42 QoL change:
-        // Defeating Tyl Regor now rewards two Equinox Component Blueprints — one guaranteed for the Night and Day Aspect each.
-        return [0, 1];
-    }
-
-    // 'rewardQualifications' may stick from previous missions for non-endless missions done after them
-    // - via railjack (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2586, https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2612)
-    // - via lab conquest (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2768)
-    switch (region?.missionName) {
-        case "/Lotus/Language/Missions/MissionName_Railjack":
-        case "/Lotus/Language/Missions/MissionName_RailjackVolatile":
-        case "/Lotus/Language/Missions/MissionName_RailjackExterminate":
-        case "/Lotus/Language/Missions/MissionName_RailjackAssassinate":
-        case "/Lotus/Language/Missions/MissionName_Assassination":
-        case "/Lotus/Language/Missions/MissionName_Exterminate":
-            return [0];
-    }
-
-    const rotationCount = rewardInfo.rewardQualifications?.length || 0;
-
-    // Empty or absent rewardQualifications should not give rewards when:
-    // - Completing only 1 zone of (E)SO (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/1823)
-    // - Aborting a railjack mission (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/1741)
-    if (rotationCount == 0 && missionType != "MT_ENDLESS_EXTERMINATION" && missionType != "MT_RAILJACK") {
-        return [0];
-    }
-
-    const rotationPattern =
-        tierOverride === undefined
-            ? [0, 0, 1, 2] // A, A, B, C
-            : [tierOverride];
-    const rotatedValues = [];
-
-    for (let i = 0; i < rotationCount; i++) {
-        rotatedValues.push(rotationPattern[i % rotationPattern.length]);
-    }
-
-    return rotatedValues;
-};
-
-const getRandomRewardByChance = (pool: readonly IReward[], rng?: SRng): IRngResult | undefined => {
-    if (rng) {
-        const res = rng.randomReward(pool as readonly IRngResult[]);
-        rng.randomFloat(); // something related to rewards multiplier
-        return res;
-    }
-    return getRandomReward(pool as readonly IRngResult[]);
-};
-
-// Rolls the configured platinum reward chance. An unset or 100 chance means "always award", so existing
-// configurations keep behaving exactly as before.
-const rollMissionPlatinumRewardChance = (): boolean => {
-    const chance = config.missionPlatinumRewardChance ?? 100;
-    if (chance >= 100) return true;
-    if (chance <= 0) return false;
-    return Math.random() * 100 < chance;
-};
-
-// Returns the platinum credited directly to the balance, which the caller has to report as an inventory change.
-// Platinum routed to the inbox is delivered by dispatchPendingPremiumCredits instead and needs no delta here.
-const addMissionPlatinumReward = (inventory: TInventoryDatabaseDocument): number => {
-    const min = Math.max(0, Math.trunc(config.missionPlatinumRewardMin ?? 0));
-    const max = Math.max(min, Math.trunc(config.missionPlatinumRewardMax ?? min));
-    if (max == 0) return 0;
-
-    if (!rollMissionPlatinumRewardChance()) {
-        logger.debug(
-            `mission completion platinum reward skipped by chance (${config.missionPlatinumRewardChance ?? 100}%)`
-        );
-        return 0;
-    }
-
-    const amount = getRandomInt(min, max);
-    if (amount <= 0) return 0;
-
-    // Defaults to crediting the platinum silently. The inbox path stays available behind an opt-in flag because
-    // the mail is a re-purposed "found items" message that most server operators do not want for every mission.
-    if (!config.missionPlatinumRewardSendMail) {
-        inventory.PremiumCredits += amount;
-        logger.debug(`mission completion platinum reward: ${amount} (credited directly)`);
-        return amount;
-    }
-
-    inventory.pendingPremiumCredits = (inventory.pendingPremiumCredits ?? 0) + amount;
-    logger.debug(`mission completion platinum reward: ${amount} (queued for inbox)`);
-    return 0;
-};
-
 //type TMissionInventoryUpdateKeys = keyof IMissionInventoryUpdateRequest;
 //const ignoredInventoryUpdateKeys = ["FpsAvg", "FpsMax", "FpsMin", "FpsSamples"] satisfies TMissionInventoryUpdateKeys[]; // for keys with no meaning for this server
 //type TignoredInventoryUpdateKeys = (typeof ignoredInventoryUpdateKeys)[number];
@@ -291,6 +157,7 @@ export const addMissionInventoryUpdates = async (
     inventoryUpdates: IMissionInventoryUpdateRequest
 ): Promise<MissionInventoryUpdatesReturnType> => {
     const buildVersion = buildVersionToInt(buildLabel);
+    const accountRates = getAccountRateProfile(account);
     const ret: MissionInventoryUpdatesReturnType = {
         InventoryChanges: {}
     };
@@ -523,7 +390,8 @@ export const addMissionInventoryUpdates = async (
                     inventory,
                     value,
                     inventoryUpdates.SeasonChallengeCompletions,
-                    ret.InventoryChanges
+                    ret.InventoryChanges,
+                    getEffectiveAccountRate(accountRates, "nightwaveStandingMultiplier")
                 );
                 break;
             case "FusionTreasures":
@@ -578,7 +446,11 @@ export const addMissionInventoryUpdates = async (
                 break;
             }
             case "FocusXpIncreases": {
-                addFocusXpIncreases(inventory, value);
+                const focusXpMultiplier = getEffectiveAccountRate(accountRates, "focusXpMultiplier");
+                addFocusXpIncreases(
+                    inventory,
+                    value.map(focusXp => Math.trunc(focusXp * focusXpMultiplier))
+                );
                 break;
             }
             case "PlayerSkillGains": {
@@ -1104,172 +976,6 @@ interface AddMissionRewardsReturnType {
     RecoveredItemInfo?: IRecoveredItemInfo;
 }
 
-interface IConquestReward {
-    at: number;
-    pool: IRngResult[];
-}
-
-const labConquestRewards: IConquestReward[] = [
-    {
-        at: 5,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/EntratiLabConquestRewards/EntratiLabConquestSilverRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 10,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/EntratiLabConquestRewards/EntratiLabConquestSilverRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 15,
-        pool: [
-            {
-                type: "/Lotus/StoreItems/Types/Gameplay/EntratiLab/Resources/EntratiLanthornBundle",
-                itemCount: 3,
-                probability: 1
-            }
-        ]
-    },
-    {
-        at: 20,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/EntratiLabConquestRewards/EntratiLabConquestGoldRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 28,
-        pool: [
-            {
-                type: "/Lotus/StoreItems/Types/Items/MiscItems/DistillPoints",
-                itemCount: 20,
-                probability: 1
-            }
-        ]
-    },
-    {
-        at: 31,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/EntratiLabConquestRewards/EntratiLabConquestGoldRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 34,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/EntratiLabConquestRewards/EntratiLabConquestArcaneRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 37,
-        pool: [
-            {
-                type: "/Lotus/StoreItems/Types/Items/MiscItems/DistillPoints",
-                itemCount: 50,
-                probability: 1
-            }
-        ]
-    }
-];
-
-const hexConquestRewards: IConquestReward[] = [
-    {
-        at: 5,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/1999ConquestRewards/1999ConquestSilverRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 10,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/1999ConquestRewards/1999ConquestSilverRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 15,
-        pool: [
-            {
-                type: "/Lotus/StoreItems/Types/BoosterPacks/1999StickersPackEchoesArchimedea",
-                itemCount: 1,
-                probability: 1
-            }
-        ]
-    },
-    {
-        at: 20,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/1999ConquestRewards/1999ConquestGoldRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 28,
-        pool: [
-            {
-                type: "/Lotus/StoreItems/Types/Items/MiscItems/1999ConquestBucks",
-                itemCount: 6,
-                probability: 1
-            }
-        ]
-    },
-    {
-        at: 31,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/1999ConquestRewards/1999ConquestGoldRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 34,
-        pool: ExportRewards[
-            "/Lotus/Types/Game/MissionDecks/1999ConquestRewards/1999ConquestArcaneRewards"
-        ][0] as IRngResult[]
-    },
-    {
-        at: 37,
-        pool: [
-            {
-                type: "/Lotus/StoreItems/Types/Items/MiscItems/1999ConquestBucks",
-                itemCount: 9,
-                probability: 1
-            }
-        ]
-    }
-];
-
-const droptableAliases: Record<string, string> = {
-    "/Lotus/Types/DropTables/ManInTheWall/MITWGruzzlingArcanesDropTable":
-        "/Lotus/Types/DropTables/EntratiLabDropTables/DoppelgangerDropTable",
-    "/Lotus/Types/DropTables/WF1999DropTables/LasrianTankSteelPathDropTable":
-        "/Lotus/Types/DropTables/WF1999DropTables/LasrianTankHardModeDropTable"
-};
-
-const scaleAccountDropCount = (count: number, multiplier: number): number =>
-    Math.max(0, Math.trunc(count * multiplier));
-
-const isEligibleForCreditReward = async (
-    rewardInfo: IRewardInfo,
-    missions: IMission,
-    node: IRegion,
-    buildLabel: string
-): Promise<boolean> => {
-    // (E)SO should not give credits for only completing zone 1, in which case it has no rewardQualifications (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/1823)
-    if ((await getRotations(rewardInfo, buildLabel)).length == 0) {
-        return missions.Tag == "SolNode720"; // Netracells don't use rewardQualifications but probably should give credits anyway
-    }
-    // The rest here might not be needed anymore, but just to be sure we don't give undue credits...
-    return (
-        node.missionType != "MT_JUNCTION" &&
-        node.missionType != "MT_LANDSCAPE" &&
-        missions.Tag != "EventNode761" && // the index
-        missions.Tag != "EventNode762" && // the index
-        missions.Tag != "EventNode763" && // the index
-        missions.Tag != "SolNode761" && // the index
-        missions.Tag != "SolNode762" && // the index
-        missions.Tag != "SolNode763" && // the index
-        missions.Tag != "CrewBattleNode56" && // free flight pre 2019.12.13.15.04
-        missions.Tag != "CrewBattleNode556" // free flight
-    );
-};
-
 //TODO: return type of partial missioninventoryupdate response
 export const addMissionRewards = async (
     account: TAccountDocument,
@@ -1297,6 +1003,7 @@ export const addMissionRewards = async (
     firstCompletion: boolean
 ): Promise<AddMissionRewardsReturnType> => {
     AffiliationMods ??= [];
+    const accountRates = getAccountRateProfile(account);
 
     if (!rewardInfo) {
         //TODO: if there is a case where you can have credits collected during a mission but no rewardInfo, add credits needs to be handled earlier
@@ -1314,7 +1021,10 @@ export const addMissionRewards = async (
     let platinumReward = 0;
 
     if (missionStatus === undefined || missionStatus == "GS_SUCCESS") {
-        platinumReward = addMissionPlatinumReward(inventory);
+        platinumReward = addMissionPlatinumReward(
+            inventory,
+            getEffectiveAccountRate(accountRates, "missionPlatinumMultiplier")
+        );
     }
 
     //TODO: check double reward merging
@@ -1649,7 +1359,10 @@ export const addMissionRewards = async (
                     const excess = Math.floor(rewardInfo.JobStage / (currentJob.xpAmounts.length - 1));
                     medallionAmount = Math.floor(currentJob.xpAmounts[index] * (1 + 0.15000001 * excess));
                 }
-                if (!isNaN(medallionAmount)) {
+                medallionAmount = Math.trunc(
+                    medallionAmount * getEffectiveAccountRate(accountRates, "standingMultiplier")
+                );
+                if (medallionAmount > 0) {
                     MissionRewards.push({
                         StoreItem: "/Lotus/StoreItems/Types/Items/Deimos/EntratiFragmentUncommonB",
                         ItemCount: medallionAmount
@@ -1676,7 +1389,10 @@ export const addMissionRewards = async (
                     inventory,
                     buildLabel,
                     syndicateTag,
-                    Math.floor(xpAmount / (rewardInfo.Q ? 0.8 : 1)),
+                    Math.trunc(
+                        Math.floor(xpAmount / (rewardInfo.Q ? 0.8 : 1)) *
+                            getEffectiveAccountRate(accountRates, "standingMultiplier")
+                    ),
                     AffiliationMods
                 );
             }
@@ -1709,17 +1425,26 @@ export const addMissionRewards = async (
         if (syndicateTag === "ZarimanSyndicate") {
             let medallionAmount = tier + 1;
             if (isSteelPath) medallionAmount = Math.round(medallionAmount * 1.5);
-            MissionRewards.push({
-                StoreItem: "/Lotus/StoreItems/Types/Gameplay/Zariman/Resources/ZarimanDogTagBounty",
-                ItemCount: medallionAmount
-            });
+            medallionAmount = Math.trunc(medallionAmount * getEffectiveAccountRate(accountRates, "standingMultiplier"));
+            if (medallionAmount > 0) {
+                MissionRewards.push({
+                    StoreItem: "/Lotus/StoreItems/Types/Gameplay/Zariman/Resources/ZarimanDogTagBounty",
+                    ItemCount: medallionAmount
+                });
+            }
             SyndicateXPItemReward = medallionAmount;
             logger.debug(`Giving ${medallionAmount} medallions for the ${tier} tier bounty`);
         } else {
             let standingAmount = (tier + 1) * 1000;
             if (tier > 5) standingAmount = 7500; // InfestedLichBounty
             if (isSteelPath) standingAmount *= 1.5;
-            await addStanding(inventory, buildLabel, syndicateTag, standingAmount, AffiliationMods);
+            await addStanding(
+                inventory,
+                buildLabel,
+                syndicateTag,
+                Math.trunc(standingAmount * getEffectiveAccountRate(accountRates, "standingMultiplier")),
+                AffiliationMods
+            );
         }
         if (syndicateTag == "HexSyndicate" && tier < 6) {
             const buddy = chemistryBuddies[chemistryBuddy];
@@ -1759,11 +1484,16 @@ export const addMissionRewards = async (
 
     inventory.RegularCredits += missionCompletionCredits;
 
-    const credits = await addCredits(account, inventory, {
-        missionCompletionCredits,
-        missionDropCredits: creditDrops ?? 0,
-        rngRewardCredits: inventoryChanges.RegularCredits ?? 0
-    });
+    const credits = await addMissionCredits(
+        account,
+        inventory,
+        {
+            missionCompletionCredits,
+            missionDropCredits: creditDrops ?? 0,
+            rngRewardCredits: inventoryChanges.RegularCredits ?? 0
+        },
+        getEffectiveAccountRate(accountRates, "creditMultiplier")
+    );
 
     const NemesisTaxInfo: INemesisTaxInfo | undefined = nodeControlledByNemesis
         ? getNemesisTaxInfo(inventory.Nemesis!)
@@ -1799,12 +1529,23 @@ export const addMissionRewards = async (
     if (voidTearWave && voidTearWave.Participants[0].QualifiesForReward) {
         if (!voidTearWave.Participants[0].HaveRewardResponse && !voidTearWave.Participants[0].Reward) {
             // non-endless fissure in solo mode; giving reward now
-            const reward = await crackRelic(inventory, voidTearWave.Participants[0], inventoryChanges);
+            const reward = await crackRelic(
+                inventory,
+                voidTearWave.Participants[0],
+                inventoryChanges,
+                getEffectiveAccountRate(accountRates, "relicRewardMultiplier"),
+                getEffectiveAccountRate(accountRates, "relicPlatinumMultiplier")
+            );
             MissionRewards.push({ StoreItem: reward.type, ItemCount: reward.itemCount });
         } else if (inventory.MissionRelicRewards) {
             // endless fissure or non-endless fissure in multiplayer
 
-            await ensureRelicRewardIsCorrect(inventory, voidTearWave);
+            await ensureRelicRewardIsCorrect(
+                inventory,
+                voidTearWave,
+                getEffectiveAccountRate(accountRates, "relicRewardMultiplier"),
+                getEffectiveAccountRate(accountRates, "relicPlatinumMultiplier")
+            );
             await inventory.save(); // needed to avoid conflict on MissionRelicRewards
 
             // already gave reward(s) but should still show in EOM screen
@@ -1820,11 +1561,13 @@ export const addMissionRewards = async (
 
     if (strippedItems) {
         if (endOfMatchUpload) {
-            const accountDropMultipliers = getAccountDropMultipliers(account);
-            if (accountDropMultipliers.resourceMultiplier != 1 || accountDropMultipliers.modMultiplier != 1) {
+            const resourceDropMultiplier = getEffectiveAccountRate(accountRates, "resourceDropMultiplier");
+            const modDropMultiplier = getEffectiveAccountRate(accountRates, "modDropMultiplier");
+            if (resourceDropMultiplier != 1 || modDropMultiplier != 1) {
                 logger.debug(`applying account drop multipliers`, {
                     account: account.DisplayName,
-                    ...accountDropMultipliers
+                    resourceDropMultiplier,
+                    modDropMultiplier
                 });
             }
             for (const si of strippedItems) {
@@ -1882,10 +1625,7 @@ export const addMissionRewards = async (
                 if (si.DROP_MOD) {
                     const modDroptable = droptables.find(x => x.type == "mod");
                     if (modDroptable) {
-                        const dropCount = scaleAccountDropCount(
-                            si.DROP_MOD.length,
-                            accountDropMultipliers.modMultiplier
-                        );
+                        const dropCount = scaleAccountDropCount(si.DROP_MOD.length, modDropMultiplier);
                         for (let i = 0; i != dropCount; ++i) {
                             const reward = getRandomReward(modDroptable.items)!;
                             logger.debug(`stripped droptable (mods pool) rolled`, reward);
@@ -1921,10 +1661,7 @@ export const addMissionRewards = async (
                 if (si.DROP_MISC_ITEM) {
                     const resourceDroptable = droptables.find(x => x.type == "resource");
                     if (resourceDroptable) {
-                        const dropCount = scaleAccountDropCount(
-                            si.DROP_MISC_ITEM.length,
-                            accountDropMultipliers.resourceMultiplier
-                        );
+                        const dropCount = scaleAccountDropCount(si.DROP_MISC_ITEM.length, resourceDropMultiplier);
                         for (let i = 0; i != dropCount; ++i) {
                             const reward = getRandomReward(resourceDroptable.items)!;
                             logger.debug(`stripped droptable (resources pool) rolled`, reward);
@@ -1985,140 +1722,6 @@ export const addMissionRewards = async (
         RecoveredItemInfo
     };
 };
-
-const addCredits = async (
-    account: TAccountDocument,
-    inventory: TInventoryDatabaseDocument,
-    {
-        missionDropCredits,
-        missionCompletionCredits,
-        rngRewardCredits
-    }: { missionDropCredits: number; missionCompletionCredits: number; rngRewardCredits: number }
-): Promise<IMissionCredits> => {
-    const finalCredits: IMissionCredits = {
-        MissionCredits: [missionDropCredits, missionDropCredits],
-        CreditsBonus: [missionCompletionCredits, missionCompletionCredits],
-        TotalCredits: [0, 0]
-    };
-
-    const today = Math.trunc(Date.now() / 86400000) * 86400;
-    if (account.DailyFirstWinDate != today) {
-        account.DailyFirstWinDate = today;
-        await account.save();
-
-        logger.debug(`daily first win, doubling missionCompletionCredits (${missionCompletionCredits})`);
-
-        finalCredits.DailyMissionBonus = true;
-        inventory.RegularCredits += missionCompletionCredits;
-        finalCredits.CreditsBonus[1] *= 2;
-    }
-
-    const totalCredits = finalCredits.MissionCredits[1] + finalCredits.CreditsBonus[1] + rngRewardCredits;
-    finalCredits.TotalCredits = [totalCredits, totalCredits];
-
-    if (config.worldState?.creditBoostMultiplier) {
-        inventory.RegularCredits += finalCredits.TotalCredits[1] * (config.worldState.creditBoostMultiplier - 1);
-        finalCredits.TotalCredits[1] *= config.worldState.creditBoostMultiplier;
-    }
-    const now = Math.trunc(Date.now() / 1000); // TOVERIFY: Should we maybe subtract mission time as to apply credit boosters that expired during mission?
-    if ((inventory.Boosters.find(x => x.ItemType == "/Lotus/Types/Boosters/CreditBooster")?.ExpiryDate ?? 0) > now) {
-        inventory.RegularCredits += finalCredits.TotalCredits[1];
-        finalCredits.TotalCredits[1] += finalCredits.TotalCredits[1];
-    }
-    if ((inventory.Boosters.find(x => x.ItemType == "/Lotus/Types/Boosters/CreditBlessing")?.ExpiryDate ?? 0) > now) {
-        inventory.RegularCredits += finalCredits.TotalCredits[1] * 0.25;
-        finalCredits.TotalCredits[1] += finalCredits.TotalCredits[1] * 0.25;
-    }
-
-    return finalCredits;
-};
-
-export const addFixedLevelRewards = async (
-    rewards: IMissionRewardExternal,
-    MissionRewards: IMissionReward[],
-    buildLabel: string,
-    rewardInfo?: IRewardInfo
-): Promise<number> => {
-    let missionBonusCredits = 0;
-    if (rewards.credits) {
-        missionBonusCredits += rewards.credits;
-    }
-    if (rewards.items) {
-        for (const item of rewards.items) {
-            MissionRewards.push({
-                StoreItem: item,
-                ItemCount: 1
-            });
-        }
-    }
-    if (rewards.countedItems) {
-        for (const item of rewards.countedItems) {
-            MissionRewards.push({
-                StoreItem: toStoreItem(item.ItemType),
-                ItemCount: item.ItemCount
-            });
-        }
-    }
-    if (rewards.countedStoreItems) {
-        for (const item of rewards.countedStoreItems) {
-            MissionRewards.push(item);
-        }
-    }
-    if (rewards.droptable) {
-        const droptable = getMissionDeck(rewards.droptable, buildLabel);
-        if (droptable) {
-            const rotations: number[] =
-                rewardInfo && rewards.droptable != "/Lotus/Types/Game/MissionDecks/ProjectNightwatchBonusRewards"
-                    ? await getRotations(rewardInfo, buildLabel)
-                    : [0];
-            if (rewards.droptable.startsWith("/Lotus/Types/Game/MissionDecks/VoidKeyMissionRewards/")) {
-                logger.debug(`rolling ${rewards.droptable} for ${rotations.length} void tower rewards`);
-                const RARITY_TO_PROBABILITY: Record<TRarity, number> = {
-                    COMMON: 0.2533,
-                    UNCOMMON: 0.11,
-                    RARE: 0.02,
-                    LEGENDARY: 0
-                };
-                const pool = droptable[0].map(x => ({
-                    type: x.type,
-                    itemCount: x.itemCount,
-                    probability: RARITY_TO_PROBABILITY[x.rarity!]
-                }));
-                const rng = new SRng(BigInt(rewardInfo?.rewardSeed ?? generateRewardSeed()) ^ 0xffffffffffffffffn);
-                for (let i = 0; i != rotations.length; ++i) {
-                    const reward = getRandomRewardByChance(pool, rng);
-                    if (reward) {
-                        MissionRewards.push({
-                            StoreItem: reward.type,
-                            ItemCount: reward.itemCount
-                        });
-                    }
-                }
-            } else {
-                logger.debug(`rolling ${rewards.droptable} for level key rewards`, { rotations });
-                for (const tier of rotations) {
-                    const reward = getRandomRewardByChance(droptable[tier]);
-                    if (reward) {
-                        MissionRewards.push({
-                            StoreItem: reward.type,
-                            ItemCount: reward.itemCount
-                        });
-                    }
-                }
-            }
-        } else {
-            logger.error(`unknown droptable ${rewards.droptable}`);
-        }
-    }
-    return missionBonusCredits;
-};
-
-function getLevelCreditRewards(node: Partial<IRegion>): number | undefined {
-    if (node.minEnemyLevel) return 1000 + (node.minEnemyLevel - 1) * 100;
-    return undefined;
-
-    //TODO: get dark sektor fixed credit rewards and railjack bonus
-}
 
 async function getRandomMissionDrops(
     buildLabel: string,
@@ -2853,56 +2456,6 @@ async function getRandomMissionDrops(
 
     return drops;
 }
-
-export const handleConservation = async (
-    inventory: TInventoryDatabaseDocument,
-    buildLabel: string,
-    missionReport: IMissionInventoryUpdateRequest,
-    AffiliationMods: IAffiliationMods[]
-): Promise<void> => {
-    if (missionReport.CapturedAnimals) {
-        for (const capturedAnimal of missionReport.CapturedAnimals) {
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            const meta = ExportAnimals[capturedAnimal.AnimalType]?.conservation;
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            if (meta) {
-                if (capturedAnimal.NumTags) {
-                    addMiscItems(inventory, [
-                        {
-                            ItemType: meta.itemReward,
-                            ItemCount: capturedAnimal.NumTags * capturedAnimal.Count
-                        }
-                    ]);
-                }
-                if (capturedAnimal.NumExtraRewards) {
-                    if (meta.woundedAnimalReward) {
-                        addMiscItems(inventory, [
-                            {
-                                ItemType: meta.woundedAnimalReward,
-                                ItemCount: capturedAnimal.NumExtraRewards * capturedAnimal.Count
-                            }
-                        ]);
-                    } else {
-                        logger.warn(
-                            `client attempted to claim unknown extra rewards for conservation of ${capturedAnimal.AnimalType}`
-                        );
-                    }
-                }
-                if (meta.standingReward) {
-                    await addStanding(
-                        inventory,
-                        buildLabel,
-                        missionReport.Missions!.Tag == "SolNode129" ? "SolarisSyndicate" : "CetusSyndicate",
-                        [2, 1.5, 1][capturedAnimal.CaptureRating] * meta.standingReward * capturedAnimal.Count,
-                        AffiliationMods
-                    );
-                }
-            } else {
-                logger.warn(`ignoring conservation of unknown AnimalType: ${capturedAnimal.AnimalType}`);
-            }
-        }
-    }
-};
 
 const getSyndicateJob = (
     rewardInfo: IRewardInfo,
