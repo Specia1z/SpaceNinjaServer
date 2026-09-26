@@ -148,6 +148,8 @@ Compose 包含五个服务：
 - `warframe-irc-tls-proxy`：在 `6695-6699` 端口终止 TLS 1.2/1.3，使 U43 和仅支持 TLS 1.3 的 U44 均可连接，再将流量转发到 IRC 服务。
 - `warframe-hub-server`：保留 `openwf/warframe-hub-server` 上游镜像。
 
+管理员可在 **WebUI → 用户管理 → 全服 IRC 公告** 向所有当前连接 IRC 的玩家提交红字公告。功能直接使用**未修改源码**的 IRC 服务 `/redtext` 接口；原接口不返回广播回执，因此“已提交”不代表能确认每位玩家已收到。Compose 启动 IRC 容器时会将 `mgmt_loopback_only` 设置为 false，供 Web 容器访问内部管理端口 `6688`，该端口不向宿主机发布。非 Docker 部署默认连接 `http://127.0.0.1:6688`，可在 Web 服务配置中通过 `ircManagementUrl` 修改。不要把 `6688` 端口暴露到公网。
+
 只拉了镜像的服务器上，`docker compose up` 会因为找不到编排文件而报 `no configuration file provided`：compose 文件在仓库里，不在镜像里。用部署脚本一步拉取编排文件并建好数据目录：
 
 ```bash

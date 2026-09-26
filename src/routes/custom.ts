@@ -87,6 +87,7 @@ import {
     saveMetadataPatchesController
 } from "../controllers/custom/metadataPatchesController.ts";
 import { getAccountForRequest, hasPermission } from "../services/loginService.ts";
+import { ircAnnouncementController } from "../controllers/custom/ircAnnouncementController.ts";
 import {
     deleteAccountRatesController,
     getAccountRatesController,
@@ -210,6 +211,7 @@ customRouter.post("/admin/suspicion-events/clear", clearSuspicionEventsControlle
 customRouter.post("/admin/metadata-patches", saveMetadataPatchesController);
 customRouter.post("/admin/account-rates", saveAccountRatesController);
 customRouter.post("/admin/account-rates/delete", deleteAccountRatesController);
+customRouter.post("/admin/irc-announcement", ircAnnouncementController);
 customRouter.post("/redeemCode", redeemCodeController);
 
 customRouter.post("/changePassword", changePasswordController);

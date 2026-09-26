@@ -82,6 +82,8 @@ export interface IConfig {
     httpsKeyFile?: string;
     ircExecutable?: string;
     ircAddress?: string;
+    /** Internal IRC management URL (not the public chat address). */
+    ircManagementUrl?: string;
     hubExecutable?: string;
     udpRelayBindAddress?: string;
     udpRelayPort?: number;

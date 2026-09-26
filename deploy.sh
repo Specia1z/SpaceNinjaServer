@@ -23,13 +23,22 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
-# The IRC service is built locally so it can carry the RFC 5746/SCSV compatibility fix required by U44.
+# The IRC service is built locally with the TLS compatibility patch and a private management configuration.
 # Fetch its small build context when this script is run without a repository checkout.
 if [ ! -f "$IRC_BUILD_DIR/Dockerfile" ]; then
     echo "==> Downloading IRC build context"
     mkdir -p "$IRC_BUILD_DIR"
     curl -fsSL "$REPO_RAW/$IRC_BUILD_DIR/Dockerfile" -o "$IRC_BUILD_DIR/Dockerfile"
     curl -fsSL "$REPO_RAW/$IRC_BUILD_DIR/secure-renegotiation-scsv.patch" -o "$IRC_BUILD_DIR/secure-renegotiation-scsv.patch"
+fi
+if [ ! -f "$IRC_BUILD_DIR/irc-entrypoint.sh" ]; then
+    # Refresh an older standalone Dockerfile when adding the new container startup configuration.
+    if [ -f "$(dirname "$0")/$IRC_BUILD_DIR/irc-entrypoint.sh" ]; then
+        cp "$(dirname "$0")/$IRC_BUILD_DIR/irc-entrypoint.sh" "$IRC_BUILD_DIR/irc-entrypoint.sh"
+    else
+        curl -fsSL "$REPO_RAW/$IRC_BUILD_DIR/Dockerfile" -o "$IRC_BUILD_DIR/Dockerfile"
+        curl -fsSL "$REPO_RAW/$IRC_BUILD_DIR/irc-entrypoint.sh" -o "$IRC_BUILD_DIR/irc-entrypoint.sh"
+    fi
 fi
 
 if [ ! -f "$IRC_TLS_BUILD_DIR/Dockerfile" ] || [ ! -f "$IRC_TLS_BUILD_DIR/haproxy.cfg" ]; then

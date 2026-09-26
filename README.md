@@ -69,6 +69,8 @@ docker compose up -d --build
 
 The IRC service is built from pinned upstream revisions. A HAProxy sidecar terminates TLS 1.2 and TLS 1.3 on ports `6695-6699`, allowing both U43 and TLS-1.3-only U44 clients to connect. Compose retains `openwf/warframe-hub-server` for Hub networking and the official MongoDB image. The first launch creates `docker-data/conf/config.json` automatically.
 
+Administrators can submit red IRC announcements for all currently connected players from **WebUI → Users → Global IRC Announcement**. This uses the unmodified IRC server's `/redtext` endpoint: because that endpoint does not acknowledge broadcasts, a successful submission cannot confirm delivery to each player. Compose configures `mgmt_loopback_only` to false on IRC startup so the Web container can reach the private management port `6688`; the port is not published to the host. On non-Docker installs the default URL is `http://127.0.0.1:6688`; set `ircManagementUrl` in the Web server config if needed. Do not expose port `6688` publicly.
+
 ## Releases
 
 GitHub Releases provide self-contained archives for Windows x64, Linux x64/ARM64, and macOS x64/ARM64. Each archive includes the compiled server, production dependencies, and the matching Node.js runtime. Extract the archive and run `start.cmd` on Windows or `./start.sh` on Linux and macOS. The launcher creates `config.json` from the vanilla template on first use.

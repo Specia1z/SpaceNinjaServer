@@ -1950,6 +1950,18 @@
                             <button class="btn btn-primary" id="admin-broadcast-submit" onclick="doAdminBroadcastInbox();" data-loc="admin_sendInboxMessage"></button>
                         </div>
                     </div>
+                    <div class="card mt-3">
+                        <h5 class="card-header" data-loc="admin_ircTitle"></h5>
+                        <div class="card-body">
+                            <form onsubmit="doAdminIrcAnnouncement(event);">
+                                <label class="form-label" for="admin-irc-message" data-loc="admin_ircMessage"></label>
+                                <input class="form-control" id="admin-irc-message" type="text" maxlength="400" autocomplete="off" required />
+                                <div class="form-text mb-3" data-loc="admin_ircDescription"></div>
+                                <div class="alert d-none" id="admin-irc-notice" role="status" aria-live="polite"></div>
+                                <button class="btn btn-danger" id="admin-irc-submit" type="submit" data-loc="admin_ircSend"></button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div data-route="/webui/admin-data" data-title-tag="navbar_adminData">

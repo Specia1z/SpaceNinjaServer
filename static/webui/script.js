@@ -4659,6 +4659,44 @@ single.getRoute("/webui/users").on("beforeload", function () {
     });
 });
 
+async function doAdminIrcAnnouncement(event) {
+    event.preventDefault();
+    const input = document.getElementById("admin-irc-message");
+    const notice = document.getElementById("admin-irc-notice");
+    const submit = document.getElementById("admin-irc-submit");
+    const message = input.value.trim();
+    const showNotice = (text, type) => {
+        notice.textContent = text;
+        notice.className = `alert alert-${type}`;
+    };
+
+    if (!message || /[\x00-\x1f\x7f]/.test(message) || new TextEncoder().encode(message).length > 400) {
+        showNotice(loc("admin_ircInvalid"), "danger");
+        input.focus();
+        return;
+    }
+    if (!window.confirm(loc("admin_ircConfirm"))) return;
+
+    submit.disabled = true;
+    notice.classList.add("d-none");
+    try {
+        await revalidateAuthz();
+        await awaitAuthz();
+        const response = await fetch("/custom/admin/irc-announcement?" + window.authz, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
+        });
+        if (!response.ok) throw new Error(response.status === 502 ? loc("admin_ircUnavailable") : loc("admin_ircFailed"));
+        input.value = "";
+        showNotice(loc("admin_ircSent"), "success");
+    } catch (error) {
+        showNotice(error.message || loc("admin_ircFailed"), "danger");
+    } finally {
+        submit.disabled = false;
+    }
+}
+
 async function doAdminBroadcastInbox() {
     await revalidateAuthz();
     const sender = document.getElementById("admin-message-sender").value.trim();
