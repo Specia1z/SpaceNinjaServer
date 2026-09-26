@@ -15,12 +15,6 @@ export const sendIrcAnnouncement = async (message: string): Promise<void> => {
     const url = new URL(baseUrl);
     if (url.protocol != "http:" && url.protocol != "https:") throw new Error("Invalid IRC management URL");
 
-    // The unpatched server answers GET /, but deliberately sends no HTTP reply for /redtext.
-    const probe = await fetch(new URL("/", url), { signal: AbortSignal.timeout(5000) });
-    if (!probe.ok || !(await probe.text()).includes("Send redtext")) {
-        throw new Error("IRC management service is unavailable or restricted to loopback");
-    }
-
     url.pathname = "/redtext";
     url.search = `?${encodeURIComponent(message)}`;
     await new Promise<void>((resolve, reject) => {
@@ -29,9 +23,11 @@ export const sendIrcAnnouncement = async (message: string): Promise<void> => {
         const finish = (error?: Error): void => {
             if (settled) return;
             settled = true;
+            clearTimeout(watchdog);
             if (error) reject(error);
             else resolve();
         };
+        // Upstream broadcasts /redtext but never replies. A flushed request is a submission, not delivery proof.
         const request = (url.protocol == "https:" ? httpsGet : httpGet)(url, response => {
             let body = "";
             response.setEncoding("utf8");
@@ -46,6 +42,10 @@ export const sendIrcAnnouncement = async (message: string): Promise<void> => {
                 }
             });
         });
+        const watchdog = setTimeout(() => {
+            finish(new Error("Could not connect to the IRC management service"));
+            request.destroy();
+        }, 5000);
         request.on("finish", () => {
             flushed = true;
         });

@@ -17,12 +17,9 @@ void test("IRC relay submits URL-encoded redtext without a server reply", async 
     const paths: string[] = [];
     let allow = true;
     const server = createServer((req, res) => {
-        if (req.url == "/") {
-            res.end(allow ? "<p>Send redtext</p>" : "This service is available via loopback only.");
-        } else {
-            paths.push(req.url ?? "");
-            // The original IRC server broadcasts here and deliberately does not respond.
-        }
+        paths.push(req.url ?? "");
+        if (!allow) res.end("This service is available via loopback only.");
+        // The original IRC server broadcasts here and deliberately does not respond when allowed.
     });
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
     t.after(() => server.close());
@@ -35,6 +32,6 @@ void test("IRC relay submits URL-encoded redtext without a server reply", async 
     await sendIrcAnnouncement("Trading & events?");
     assert.deepEqual(paths, ["/redtext?Trading%20%26%20events%3F"]);
     allow = false;
-    await assert.rejects(sendIrcAnnouncement("Blocked"), /unavailable/);
-    assert.equal(paths.length, 1);
+    await assert.rejects(sendIrcAnnouncement("Blocked"), /rejected/);
+    assert.deepEqual(paths, ["/redtext?Trading%20%26%20events%3F", "/redtext?Blocked"]);
 });
