@@ -10,8 +10,10 @@ The server must keep its existing game-client routes and response shapes during 
 - Calendar progress and conservation rewards now have dedicated services while the old service exports remain available to callers.
 - Mission reward rotation, fixed rewards, Conquest reward tables, drop aliases, and account drop scaling now live in `missionRewardService.ts`; the old mission service re-exports `addFixedLevelRewards` for existing callers.
 - Inventory currency, Endo/Dirac, daily standing limits, and syndicate standing now live in `inventoryFinanceService.ts`; equipment acquisition and weapon/crew-ship skin insertion now live in `inventoryEquipmentService.ts`; mission completion and Booster updates now live in `inventoryProgressService.ts`. The old inventory service keeps the public exports for compatibility.
+- Challenge state synchronization, Nightwave standing rewards, Kahl challenge stock, and Kahl weekly mission resets now live in `inventoryChallengeService.ts`; `inventoryService.ts` retains compatibility exports and injects item acquisition and change-merging callbacks without coupling the new module to the whole inventory service. Focus XP and Lore fragment progress scanning live in `inventoryProgressService.ts`.
 - The metadata patch API, editor state, DOM rendering, route loading, validation, saving, importing, and preview copying now live in `static/webui/admin/metadata-api.js` and `metadata-page.js`.
 - The `admin-data` and `redeem-codes` WebUI routes now have dedicated API/page modules. Their old route handlers and page implementations were removed from `script.js`; legacy inline handlers are kept through explicit window compatibility functions.
+- The clan page now has a dedicated guild API module for membership, alliance, vault, research, and currency requests; a page module manages guild cache, subscription, membership actions, and bulk research selection. The existing clan rendering and most form handlers remain in `script.js` pending route-local migration.
 
 ## Remaining work
 

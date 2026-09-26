@@ -199,6 +199,7 @@ function refreshServerConfig() {
 function invalidateCachedData() {
     inventory_data = undefined;
     guild_data = undefined;
+    window.guildPage?.reset();
     window.is_admin = undefined;
     config_data = undefined;
 }
@@ -2222,44 +2223,10 @@ dictPromise.then(() => {
 
 function updateGuild() {
     guild_data = null;
+    window.guildPage?.reset();
     if (single.getCurrentPath() == "/webui/clan") {
         single.loadRoute(single.getCurrentPath());
     }
-}
-
-function changeGuildRank(guildId, targetId, rankChange) {
-    revalidateAuthz().then(() => {
-        const req = $.get(
-            `/api/changeGuildRank.php?${window.authz}&guildId=${guildId}&targetId=${targetId}&rankChange=${rankChange}`
-        );
-        req.done(() => {
-            updateGuild();
-        });
-    });
-}
-
-function kickFromGuild(accountId) {
-    revalidateAuthz().then(() => {
-        const req = $.post({
-            url: "/api/removeFromGuild.php?" + window.authz + "&guildId=" + window.guildId,
-            contentType: "application/octet-stream",
-            data: JSON.stringify({
-                userId: accountId
-            })
-        });
-        req.done(() => {
-            updateGuild();
-        });
-    });
-}
-
-function kickFromAlliance(guildId) {
-    revalidateAuthz().then(() => {
-        const req = $.get("/api/removeFromAlliance.php?" + window.authz + "&guildId=" + guildId);
-        req.done(() => {
-            updateGuild();
-        });
-    });
 }
 
 function getKey(input) {
@@ -2563,19 +2530,7 @@ function addVaultItem(vaultType) {
         : 1;
     if (ItemCount != 0 && !Number.isNaN(ItemCount)) {
         revalidateAuthz().then(() => {
-            const req = $.post({
-                url: "/custom/addVaultTypeCount?" + window.authz + "&guildId=" + window.guildId,
-                contentType: "application/json",
-                data: JSON.stringify({
-                    vaultType,
-                    items: [
-                        {
-                            ItemType,
-                            ItemCount
-                        }
-                    ]
-                })
-            });
+            const req = window.guildApi.addVaultItem(window.guildId, vaultType, [{ ItemType, ItemCount }]);
             req.done(() => {
                 document.getElementById(`acquire-type-${vaultType}`).value = "";
                 updateGuild();
@@ -2586,19 +2541,7 @@ function addVaultItem(vaultType) {
 
 function removeVaultItem(vaultType, ItemType, ItemCount) {
     revalidateAuthz().then(() => {
-        const req = $.post({
-            url: "/custom/addVaultTypeCount?" + window.authz + "&guildId=" + window.guildId,
-            contentType: "application/json",
-            data: JSON.stringify({
-                vaultType,
-                items: [
-                    {
-                        ItemType,
-                        ItemCount
-                    }
-                ]
-            })
-        });
+        const req = window.guildApi.addVaultItem(window.guildId, vaultType, [{ ItemType, ItemCount }]);
         req.done(() => {
             updateGuild();
         });
@@ -2612,15 +2555,7 @@ function addGuildTechProject() {
         return;
     }
     revalidateAuthz().then(() => {
-        const req = $.post({
-            url: "/custom/addTechProject?" + window.authz + "&guildId=" + window.guildId,
-            contentType: "application/json",
-            data: JSON.stringify([
-                {
-                    ItemType: uniqueName
-                }
-            ])
-        });
+        const req = window.guildApi.techProject("add", window.guildId, [{ ItemType: uniqueName }]);
         req.done(() => {
             document.getElementById("acquire-type-TechProjects").value = "";
             updateGuild();
@@ -2630,15 +2565,7 @@ function addGuildTechProject() {
 
 function removeGuildTechProject(uniqueName) {
     revalidateAuthz().then(() => {
-        const req = $.post({
-            url: "/custom/removeTechProject?" + window.authz + "&guildId=" + window.guildId,
-            contentType: "application/json",
-            data: JSON.stringify([
-                {
-                    ItemType: uniqueName
-                }
-            ])
-        });
+        const req = window.guildApi.techProject("remove", window.guildId, [{ ItemType: uniqueName }]);
         req.done(() => {
             updateGuild();
         });
@@ -2647,15 +2574,7 @@ function removeGuildTechProject(uniqueName) {
 
 function completeGuildTechProject(uniqueName) {
     revalidateAuthz().then(() => {
-        const req = $.post({
-            url: "/custom/completeTechProject?" + window.authz + "&guildId=" + window.guildId,
-            contentType: "application/json",
-            data: JSON.stringify([
-                {
-                    ItemType: uniqueName
-                }
-            ])
-        });
+        const req = window.guildApi.techProject("complete", window.guildId, [{ ItemType: uniqueName }]);
         req.done(() => {
             updateGuild();
         });
@@ -2664,15 +2583,7 @@ function completeGuildTechProject(uniqueName) {
 
 function fundGuildTechProject(uniqueName) {
     revalidateAuthz().then(() => {
-        const req = $.post({
-            url: "/custom/fundTechProject?" + window.authz + "&guildId=" + window.guildId,
-            contentType: "application/json",
-            data: JSON.stringify([
-                {
-                    ItemType: uniqueName
-                }
-            ])
-        });
+        const req = window.guildApi.techProject("fund", window.guildId, [{ ItemType: uniqueName }]);
         req.done(() => {
             updateGuild();
         });
@@ -2682,14 +2593,7 @@ function fundGuildTechProject(uniqueName) {
 function dispatchAddVaultItemsBatch(requests, vaultType) {
     return new Promise(resolve => {
         revalidateAuthz().then(() => {
-            const req = $.post({
-                url: "/custom/addVaultTypeCount?" + window.authz + "&guildId=" + window.guildId,
-                contentType: "application/json",
-                data: JSON.stringify({
-                    vaultType,
-                    items: requests
-                })
-            });
+            const req = window.guildApi.addVaultItem(window.guildId, vaultType, requests);
             req.done(() => {
                 updateGuild();
                 resolve();
@@ -2724,11 +2628,7 @@ function addMissingVaultItems(vaultType) {
 function dispatchAddTechProjectsBatch(requests) {
     return new Promise(resolve => {
         revalidateAuthz().then(() => {
-            const req = $.post({
-                url: "/custom/addTechProject?" + window.authz + "&guildId=" + window.guildId,
-                contentType: "application/json",
-                data: JSON.stringify(requests)
-            });
+            const req = window.guildApi.techProject("add", window.guildId, requests);
             req.done(() => {
                 updateGuild();
                 resolve();
@@ -2784,11 +2684,7 @@ function bulkRemoveVaultItems(vaultType) {
 function dispatchRemoveTechProjectsBatch(requests) {
     return new Promise(resolve => {
         revalidateAuthz().then(() => {
-            const req = $.post({
-                url: "/custom/removeTechProject?" + window.authz + "&guildId=" + window.guildId,
-                contentType: "application/json",
-                data: JSON.stringify(requests)
-            });
+            const req = window.guildApi.techProject("remove", window.guildId, requests);
             req.done(() => {
                 updateGuild();
                 resolve();
@@ -2821,35 +2717,11 @@ function bulkRemoveTechProjects() {
 function dispatchFundTechProjectsBatch(requests) {
     return new Promise(resolve => {
         revalidateAuthz().then(() => {
-            const req = $.post({
-                url: "/custom/fundTechProject?" + window.authz + "&guildId=" + window.guildId,
-                contentType: "application/json",
-                data: JSON.stringify(requests)
-            });
+            const req = window.guildApi.techProject("fund", window.guildId, requests);
             req.done(() => {
                 updateGuild();
                 resolve();
             });
-        });
-    });
-}
-
-function fundAllTechProjects() {
-    revalidateAuthz().then(() => {
-        getGuildData().done(data => {
-            const requests = [];
-            data.TechProjects ??= [];
-            data.TechProjects.forEach(techProject => {
-                if (techProject.State != 1) {
-                    requests.push({
-                        ItemType: techProject.ItemType
-                    });
-                }
-            });
-
-            if (Object.keys(requests).length > 0) {
-                return dispatchFundTechProjectsBatch(requests);
-            }
         });
     });
 }
@@ -2857,35 +2729,11 @@ function fundAllTechProjects() {
 function dispatchCompleteTechProjectsBatch(requests) {
     return new Promise(resolve => {
         revalidateAuthz().then(() => {
-            const req = $.post({
-                url: "/custom/completeTechProject?" + window.authz + "&guildId=" + window.guildId,
-                contentType: "application/json",
-                data: JSON.stringify(requests)
-            });
+            const req = window.guildApi.techProject("complete", window.guildId, requests);
             req.done(() => {
                 updateGuild();
                 resolve();
             });
-        });
-    });
-}
-
-function completeAllTechProjects() {
-    revalidateAuthz().then(() => {
-        getGuildData().done(data => {
-            const requests = [];
-            data.TechProjects ??= [];
-            data.TechProjects.forEach(techProject => {
-                if (techProject.State == 1 && new Date(techProject.CompletionDate) > new Date()) {
-                    requests.push({
-                        ItemType: techProject.ItemType
-                    });
-                }
-            });
-
-            if (Object.keys(requests).length > 0) {
-                return dispatchCompleteTechProjectsBatch(requests);
-            }
         });
     });
 }
@@ -4236,26 +4084,7 @@ async function populateDetailedViewRoute() {
     }
 }
 
-let guild_data;
-// Assumes that caller revalidates authz
-function getGuildData() {
-    return new Promise(resolve => {
-        if (guild_data) {
-            resolve(guild_data);
-        } else {
-            $.get("/custom/getGuild?" + window.authz).done(guildData => {
-                guild_data = guildData;
-                window.guildId = guildData?._id ?? null;
-                if (window.subscribedToGuildId != guildId) {
-                    window.subscribedToGuildId = guildId;
-                    ws.send(JSON.stringify({ guildId }));
-                }
-                resolve(guild_data);
-            });
-        }
-    });
-}
-
+var guild_data;
 function guildView_clear() {
     document.getElementById("guildView-title").textContent = "";
     document.getElementById("guildView-tier").textContent = "";
@@ -4564,7 +4393,7 @@ single.getRoute("#guild-route").on("beforeload", function () {
                 });
 
                 if (guildData.AllianceId) {
-                    const allianceReq = $.get("/custom/getAlliance?guildId=" + guildId);
+                    const allianceReq = window.guildApi.getAlliance(guildId);
                     allianceReq.done(allianceData => {
                         document.getElementById("guildView-alliance").textContent =
                             itemMap["/Lotus/Language/Clan/Clan_AllianceBtnTitle"].name + ": " + allianceData.Name;
@@ -4708,27 +4537,21 @@ function doChangeSupportedSyndicate() {
 
 function doAddCurrency(currency) {
     revalidateAuthz().then(() => {
-        $.post({
-            url: "/custom/addCurrency?" + window.authz + "&guildId=" + window.guildId,
-            contentType: "application/json",
-            data: JSON.stringify({
-                currency,
-                delta: document.getElementById(currency + "-delta").valueAsNumber
-            })
-        }).then(function (newValue) {
-            if (currency.startsWith("Vault")) {
-                document.getElementById(currency + "-owned").textContent = loc("guildView_currency_owned").replaceAll(
-                    "|COUNT|",
-                    (newValue ?? 0).toLocaleString()
-                );
-            } else {
-                inventory_data[currency] = newValue;
-                document.getElementById(currency + "-owned").textContent = loc("currency_owned").replaceAll(
-                    "|COUNT|",
-                    (newValue ?? 0).toLocaleString()
-                );
-            }
-        });
+        window.guildApi
+            .addCurrency(window.guildId, currency, document.getElementById(currency + "-delta").valueAsNumber)
+            .then(function (newValue) {
+                if (currency.startsWith("Vault")) {
+                    document.getElementById(currency + "-owned").textContent = loc(
+                        "guildView_currency_owned"
+                    ).replaceAll("|COUNT|", (newValue ?? 0).toLocaleString());
+                } else {
+                    inventory_data[currency] = newValue;
+                    document.getElementById(currency + "-owned").textContent = loc("currency_owned").replaceAll(
+                        "|COUNT|",
+                        (newValue ?? 0).toLocaleString()
+                    );
+                }
+            });
     });
 }
 

@@ -14,7 +14,6 @@ import type {
     IDroneClient,
     IUpgradeClient,
     TPartialStartingGear,
-    ILoreFragmentScan,
     ICrewMemberClient,
     INemesisWeaponTargetFingerprint,
     INemesisPetTargetFingerprint,
@@ -85,13 +84,7 @@ import {
 } from "../helpers/inventoryHelpers.ts";
 import { addQuestKey, completeQuest } from "./questService.ts";
 import { handleBundleAcquisition } from "./purchaseService.ts";
-import {
-    getChallenge,
-    getChallengeByName,
-    getSyncedSentinel,
-    getSyncedUpgrade,
-    getSyncedWeapon
-} from "./adminItemDataService.ts";
+import { getSyncedSentinel, getSyncedUpgrade, getSyncedWeapon } from "./adminItemDataService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
 import {
     generateRewardSeed,
@@ -103,11 +96,12 @@ import {
 } from "./rngService.ts";
 import type { IMessageCreationTemplate } from "./inboxService.ts";
 import { createMessage } from "./inboxService.ts";
-import { getCalendarSeason, getGoalByOid, getNightwaveSyndicateTag, getWorldStateTime } from "./worldStateService.ts";
-import { getCalendarProgress } from "./calendarProgressService.ts";
+import { getGoalByOid } from "./worldStateService.ts";
 import { addFusionPoints } from "./inventoryFinanceService.ts";
 import { addCrewShipWeaponSkin, addEquipment, addSkin } from "./inventoryEquipmentService.ts";
-import { addBooster } from "./inventoryProgressService.ts";
+import { addBooster, addLoreFragmentScans } from "./inventoryProgressService.ts";
+import { applyChallenges, applyKahlProgress } from "./inventoryChallengeService.ts";
+export { resetKahlWeeklyMission } from "./inventoryChallengeService.ts";
 export { addCalendarProgress, checkCalendarAutoAdvance, getCalendarProgress } from "./calendarProgressService.ts";
 export {
     addCrewShipFusionPoints,
@@ -126,12 +120,17 @@ export {
     addEquipment,
     addSkin
 } from "./inventoryEquipmentService.ts";
-export { addBooster, addMissionComplete, setBooster } from "./inventoryProgressService.ts";
+export {
+    addBooster,
+    addFocusXpIncreases,
+    addLoreFragmentScans,
+    addMissionComplete,
+    setBooster
+} from "./inventoryProgressService.ts";
 import type { INemesisProfile } from "../helpers/nemesisHelpers.ts";
 import { generateNemesisProfile, getFallbackHelmet } from "../helpers/nemesisHelpers.ts";
 import { type TAccountDocument } from "./loginService.ts";
 import { KAHL_EPOCH, unixTimesInMs } from "../constants/timeConstants.ts";
-import { addString } from "../helpers/stringHelpers.ts";
 import type {
     IEquipmentClient,
     IEquipmentDatabase,
@@ -2492,219 +2491,30 @@ export const addFusionTreasures = (
     }
 };
 
-export const addFocusXpIncreases = (inventory: TInventoryDatabaseDocument, focusXpPlus: number[]): void => {
-    const FocusType = {
-        AP_UNIVERSAL: 0,
-        AP_ATTACK: 1,
-        AP_DEFENSE: 2,
-        AP_TACTIC: 3,
-        AP_POWER: 4,
-        AP_PRECEPT: 5,
-        AP_FUSION: 6,
-        AP_WARD: 7,
-        AP_UMBRA: 8,
-        AP_ANY: 9
-    };
-
-    inventory.FocusXP ??= {};
-    if (focusXpPlus[FocusType.AP_ATTACK]) {
-        inventory.FocusXP.AP_ATTACK ??= 0;
-        inventory.FocusXP.AP_ATTACK += focusXpPlus[FocusType.AP_ATTACK];
-    }
-    if (focusXpPlus[FocusType.AP_DEFENSE]) {
-        inventory.FocusXP.AP_DEFENSE ??= 0;
-        inventory.FocusXP.AP_DEFENSE += focusXpPlus[FocusType.AP_DEFENSE];
-    }
-    if (focusXpPlus[FocusType.AP_TACTIC]) {
-        inventory.FocusXP.AP_TACTIC ??= 0;
-        inventory.FocusXP.AP_TACTIC += focusXpPlus[FocusType.AP_TACTIC];
-    }
-    if (focusXpPlus[FocusType.AP_POWER]) {
-        inventory.FocusXP.AP_POWER ??= 0;
-        inventory.FocusXP.AP_POWER += focusXpPlus[FocusType.AP_POWER];
-    }
-    if (focusXpPlus[FocusType.AP_WARD]) {
-        inventory.FocusXP.AP_WARD ??= 0;
-        inventory.FocusXP.AP_WARD += focusXpPlus[FocusType.AP_WARD];
-    }
-
-    if (!inventory.noDailyFocusLimit) {
-        inventory.DailyFocus -= focusXpPlus.reduce((a, b) => a + b, 0);
-    }
-};
-
-export const addLoreFragmentScans = (inventory: TInventoryDatabaseDocument, arr: ILoreFragmentScan[]): void => {
-    arr.forEach(clientFragment => {
-        const fragment = inventory.LoreFragmentScans.find(x => x.ItemType == clientFragment.ItemType);
-        if (fragment) {
-            fragment.Progress += clientFragment.Progress;
-        } else {
-            inventory.LoreFragmentScans.push(clientFragment);
-        }
-    });
-};
-
 export const addChallenges = async (
     buildVersion: number,
     inventory: TInventoryDatabaseDocument,
-    ChallengeProgress: IChallengeProgress[],
-    SeasonChallengeCompletions?: ISeasonChallenge[],
+    challengeProgress: IChallengeProgress[],
+    seasonChallengeCompletions?: ISeasonChallenge[],
     inventoryChanges: IInventoryChanges = {},
     nightwaveStandingMultiplier: number = 1
-): Promise<IAffiliationMods[]> => {
-    for (const { Name, Progress, Completed } of ChallengeProgress) {
-        let dbChallenge = inventory.ChallengeProgress.find(x => x.Name == Name);
-        if (dbChallenge) {
-            dbChallenge.Progress = Progress;
-        } else {
-            dbChallenge = { Name, Progress };
-            inventory.ChallengeProgress.push(dbChallenge);
-        }
-
-        if (Name.startsWith("Calendar")) {
-            const { week } = getWorldStateTime();
-            const currentSeason = getCalendarSeason(week);
-            addString(getCalendarProgress(inventory, currentSeason).SeasonProgress.ActivatedChallenges, Name);
-        }
-
-        if ((Completed?.length ?? 0) > (dbChallenge.Completed?.length ?? 0)) {
-            dbChallenge.Completed ??= [];
-            for (const completion of Completed!) {
-                if (dbChallenge.Completed.indexOf(completion) == -1) {
-                    dbChallenge.Completed.push(completion);
-                    if (completion == "challengeRewards") {
-                        const challenge = getChallengeByName(Name);
-                        if (!challenge) {
-                            logger.warn(`ignoring unknown challenge completion`, {
-                                name: Name,
-                                completion
-                            });
-                            dbChallenge.Progress = 0;
-                            dbChallenge.Completed = [];
-                            continue;
-                        }
-                        const { path, meta } = challenge;
-                        if (meta.message) {
-                            logger.debug(`${Name} completed, sending inbox message`);
-                            await createMessage(inventory.accountOwnerId, [convertInboxMessage(meta.message)]);
-                            continue;
-                        }
-                        if (meta.countedRewards) {
-                            logger.debug(`${Name} completed, giving rewards:`, meta.countedRewards);
-                            for (const cr of meta.countedRewards) {
-                                combineInventoryChanges(
-                                    inventoryChanges,
-                                    await addItem(inventory, fromStoreItem(cr.StoreItem), cr.ItemCount)
-                                );
-                            }
-                            continue;
-                        }
-                        logger.warn(`ignoring unknown challenge completion`, { name: Name, path, completion, meta });
-                        dbChallenge.Progress = 0;
-                        dbChallenge.Completed = [];
-                    }
-                }
-            }
-        } else {
-            dbChallenge.Completed = Completed;
-        }
-    }
-
-    const affiliationMods: IAffiliationMods[] = [];
-    if (SeasonChallengeCompletions) {
-        for (const challenge of SeasonChallengeCompletions) {
-            // Ignore challenges that weren't completed just now
-            if (!ChallengeProgress.find(x => challenge.challenge.indexOf(x.Name) != -1)) {
-                continue;
-            }
-
-            const meta = getChallenge(challenge.challenge);
-            if (!meta) {
-                logger.warn("ignoring unknown season challenge completion", {
-                    uniqueName: challenge.challenge
-                });
-                continue;
-            }
-            const nightwaveSyndicateTag = getNightwaveSyndicateTag(buildVersion);
-            logger.debug("Completed season challenge", {
-                uniqueName: challenge.challenge,
-                syndicateTag: nightwaveSyndicateTag,
-                ...meta
-            });
-            if (nightwaveSyndicateTag) {
-                let affiliation = inventory.Affiliations.find(x => x.Tag == nightwaveSyndicateTag);
-                if (!affiliation) {
-                    affiliation =
-                        inventory.Affiliations[
-                            inventory.Affiliations.push({
-                                Tag: nightwaveSyndicateTag,
-                                Standing: 0
-                            }) - 1
-                        ];
-                }
-
-                const standingToAdd = Math.trunc(
-                    meta.standing! * (inventory.nightwaveStandingMultiplier ?? 1) * nightwaveStandingMultiplier
-                );
-                affiliation.Standing += standingToAdd;
-                if (affiliationMods.length == 0) {
-                    affiliationMods.push({ Tag: nightwaveSyndicateTag });
-                }
-                affiliationMods[0].Standing ??= 0;
-                affiliationMods[0].Standing += standingToAdd;
-            }
-        }
-    }
-    return affiliationMods;
-};
-
-export const resetKahlWeeklyMission = (
-    inventory: Pick<TInventoryDatabaseDocument, "Affiliations">,
-    value: string
-): void => {
-    const currentWeek = Math.trunc((Date.now() - KAHL_EPOCH) / unixTimesInMs.week);
-    const kahl = inventory.Affiliations.find(x => x.Tag == "KahlSyndicate");
-    if (kahl && kahl.WeeklyMissions) {
-        const index = kahl.WeeklyMissions.findIndex(i => i.WeekCount == Number(value.slice("KahlSyndicate_".length)));
-        if (index !== -1) {
-            logger.debug(`kahl weekly mission completed, handling weekly reset`);
-            kahl.WeeklyMissions[index].CompletedMission = true;
-            if (kahl.WeeklyMissions.findIndex(i => i.WeekCount == currentWeek + 1) == -1) {
-                kahl.WeeklyMissions.splice(0, kahl.WeeklyMissions.length, kahl.WeeklyMissions[index]);
-                kahl.WeeklyMissions.push({
-                    MissionIndex: kahl.WeeklyMissions[kahl.WeeklyMissions.length - 1].MissionIndex + 1,
-                    CompletedMission: false,
-                    JobManifest: "/Lotus/Syndicates/Kahl/KahlJobManifestVersionThree",
-                    Challenges: [],
-                    WeekCount: currentWeek + 1
-                });
-            }
-        }
-    }
-};
+): Promise<IAffiliationMods[]> =>
+    applyChallenges(
+        buildVersion,
+        inventory,
+        challengeProgress,
+        seasonChallengeCompletions,
+        inventoryChanges,
+        nightwaveStandingMultiplier,
+        addItem,
+        combineInventoryChanges
+    );
 
 export const addKahlProgress = (
     inventory: Pick<TInventoryDatabaseDocument, "Affiliations" | "MiscItems">,
     value: IWeeklyMissionChallengeInfo[],
     inventoryChanges: IInventoryChanges
-): void => {
-    for (const info of value) {
-        let stockEarned = 0;
-        const kahl = inventory.Affiliations.find(x => x.Tag == info.Syndicate)!;
-        const mission = kahl.WeeklyMissions!.find(i => i.WeekCount == info.WeekCount)!;
-        if (info.ResetChallenges) {
-            mission.ChallengesReset = true;
-        }
-        for (const challenge of info.CompletedChallenges) {
-            if (mission.Challenges.indexOf(challenge) == -1) {
-                stockEarned += challenge == "/Lotus/Types/Challenges/KahlMissions/NoDeathKahlChallenge" ? 30 : 15;
-                mission.Challenges.push(challenge);
-            }
-        }
-        logger.debug(`adding ${stockEarned} stock for kahl challenges`);
-        addMiscItem(inventory, "/Lotus/Types/Items/MiscItems/KahlCreds", stockEarned, inventoryChanges);
-    }
-};
+): void => applyKahlProgress(inventory, value, inventoryChanges, addMiscItem);
 
 export const updateSyndicate = (
     inventory: Pick<TInventoryDatabaseDocument, "Affiliations">,

@@ -1,5 +1,33 @@
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
-import type { IMission } from "../types/inventoryTypes/inventoryTypes.ts";
+import type { ILoreFragmentScan, IMission } from "../types/inventoryTypes/inventoryTypes.ts";
+
+export const addFocusXpIncreases = (inventory: TInventoryDatabaseDocument, focusXpPlus: number[]): void => {
+    const focusTypes = {
+        AP_ATTACK: 1,
+        AP_DEFENSE: 2,
+        AP_TACTIC: 3,
+        AP_POWER: 4,
+        AP_WARD: 7
+    } as const;
+    inventory.FocusXP ??= {};
+    for (const [name, index] of Object.entries(focusTypes)) {
+        const amount = focusXpPlus[index];
+        if (amount) {
+            const key = name as keyof typeof inventory.FocusXP;
+            inventory.FocusXP[key] ??= 0;
+            inventory.FocusXP[key]! += amount;
+        }
+    }
+    if (!inventory.noDailyFocusLimit) inventory.DailyFocus -= focusXpPlus.reduce((sum, value) => sum + value, 0);
+};
+
+export const addLoreFragmentScans = (inventory: TInventoryDatabaseDocument, scans: ILoreFragmentScan[]): void => {
+    scans.forEach(scan => {
+        const fragment = inventory.LoreFragmentScans.find(item => item.ItemType == scan.ItemType);
+        if (fragment) fragment.Progress += scan.Progress;
+        else inventory.LoreFragmentScans.push(scan);
+    });
+};
 
 export const addMissionComplete = (
     inventory: Pick<TInventoryDatabaseDocument, "Missions">,
