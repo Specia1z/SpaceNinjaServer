@@ -21,10 +21,7 @@ window.guildApi = {
     getAlliance: guildId => $.get("/custom/getAlliance?guildId=" + guildId),
     addVaultItem: (guildId, vaultType, items) => guildPost("addVaultTypeCount", guildId, { vaultType, items }),
     techProject: (operation, guildId, items) => guildPost(`${operation}TechProject`, guildId, items),
-    addCurrency: (guildId, currency, delta) =>
-        $.post({
-            url: "/custom/addCurrency?" + window.authz + "&guildId=" + guildId,
-            contentType: "application/json",
-            data: JSON.stringify({ currency, delta })
-        })
+    setCheat: (guildId, key, value) => guildPost("setGuildCheat", guildId, { key, value }),
+    applyCheat: (guildId, cheat) =>
+        $.get(`/custom/retroactivelyApplyGuildCheat?${window.authz}&guildId=${guildId}&cheat=${cheat}`)
 };
