@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { IMissionReward as IMissionRewardExternal } from "warframe-public-export-plus";
 import type { IMissionReward } from "../types/missionTypes.ts";
-import { addFixedLevelRewards, getRotations, scaleAccountDropCount } from "./missionRewardService.ts";
+import {
+    addFixedLevelRewards,
+    getRotations,
+    scaleAccountDropCount,
+    scaleAccountResourceItems
+} from "./missionRewardService.ts";
 
 void test("fixed mission rewards preserve counted items and credit bonuses", async () => {
     const rewards: IMissionReward[] = [];
@@ -29,4 +34,26 @@ void test("spy rotations and account drop counts retain their limits", async () 
     );
     assert.equal(scaleAccountDropCount(3, 1.5), 4);
     assert.equal(scaleAccountDropCount(3, -1), 0);
+});
+
+void test("scaleAccountResourceItems scales resources but preserves recipes and other misc items", () => {
+    assert.deepEqual(
+        scaleAccountResourceItems(
+            [
+                { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: 24 },
+                { ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 98 },
+                { ItemType: "/Lotus/Types/Recipes/ExampleBlueprint", ItemCount: 2 },
+                { ItemType: "/Lotus/Types/Items/MiscItems/SomeToken", ItemCount: 1 },
+                { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: -1 }
+            ],
+            10
+        ),
+        [
+            { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: 240 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 980 },
+            { ItemType: "/Lotus/Types/Recipes/ExampleBlueprint", ItemCount: 2 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/SomeToken", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: -1 }
+        ]
+    );
 });

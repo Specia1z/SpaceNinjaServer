@@ -115,7 +115,8 @@ import {
     hexConquestRewards,
     isEligibleForCreditReward,
     labConquestRewards,
-    scaleAccountDropCount
+    scaleAccountDropCount,
+    scaleAccountResourceItems
 } from "./missionRewardService.ts";
 export { addFixedLevelRewards } from "./missionRewardService.ts";
 export { handleConservation } from "./conservationRewardService.ts";
@@ -364,7 +365,23 @@ export const addMissionInventoryUpdates = async (
                     }
                 }
                 if (miscItems.length > 0) {
-                    addMiscItemsComplex(inventory, miscItems);
+                    const resourceDropMultiplier = inventoryUpdates.EndOfMatchUpload
+                        ? getEffectiveAccountRate(accountRates, "resourceDropMultiplier")
+                        : 1;
+                    const scaledMiscItems = scaleAccountResourceItems(miscItems, resourceDropMultiplier);
+                    if (resourceDropMultiplier != 1) {
+                        const scaledItems = scaledMiscItems.filter(
+                            (item, index) => item.ItemCount != miscItems[index].ItemCount
+                        );
+                        if (scaledItems.length) {
+                            logger.debug(`applying account resource multiplier to reported drops`, {
+                                account: account.DisplayName,
+                                resourceDropMultiplier,
+                                drops: scaledItems
+                            });
+                        }
+                    }
+                    addMiscItemsComplex(inventory, scaledMiscItems);
                 }
                 if (recipes.length > 0) {
                     addRecipes(inventory, recipes);

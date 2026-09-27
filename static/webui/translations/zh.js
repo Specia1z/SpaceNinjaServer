@@ -127,7 +127,7 @@ dict = {
     accountRates_groupProgress: `进度与声望`,
     accountRates_groupSpecial: `特殊奖励`,
     accountRates_resourceDropMultiplier: `资源掉落`,
-    accountRates_resourceDropMultiplierHint: `任务结算时服务端重新抽取的资源掉落。`,
+    accountRates_resourceDropMultiplierHint: `最终任务结算中上报或由服务端重新抽取的资源掉落。`,
     accountRates_modDropMultiplier: `Mod 掉落`,
     accountRates_modDropMultiplierHint: `敌人和容器掉落的 Mod。`,
     accountRates_creditMultiplier: `任务现金`,

@@ -126,7 +126,7 @@ dict = {
     accountRates_groupProgress: `Progress and standing`,
     accountRates_groupSpecial: `Special rewards`,
     accountRates_resourceDropMultiplier: `Resource drops`,
-    accountRates_resourceDropMultiplierHint: `Server-rolled resource drops from mission settlement.`,
+    accountRates_resourceDropMultiplierHint: `Resource drops reported or re-rolled during final mission settlement.`,
     accountRates_modDropMultiplier: `Mod drops`,
     accountRates_modDropMultiplierHint: `Server-rolled enemy and container Mod drops.`,
     accountRates_creditMultiplier: `Mission credits`,

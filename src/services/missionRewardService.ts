@@ -5,10 +5,11 @@ import type {
     TMissionType,
     TRarity
 } from "warframe-public-export-plus";
-import { ExportRewards } from "warframe-public-export-plus";
+import { ExportResources, ExportRewards } from "warframe-public-export-plus";
 import type { IMissionReward } from "../types/missionTypes.ts";
 import type { IMission } from "../types/inventoryTypes/inventoryTypes.ts";
 import type { IRewardInfo } from "../types/requestTypes.ts";
+import type { ITypeCount } from "../types/commonTypes.ts";
 import type { IRngResult } from "./rngService.ts";
 import { SRng, generateRewardSeed, getRandomReward } from "./rngService.ts";
 import { getRegion, getMissionDeck } from "./itemDataService.ts";
@@ -189,6 +190,14 @@ export const getRandomRewardByChance = (pool: readonly IReward[], rng?: SRng): I
 
 export const scaleAccountDropCount = (count: number, multiplier: number): number =>
     Math.max(0, Math.trunc(count * multiplier));
+
+/** Scale final mission resource entries while leaving recipes and other misc items unchanged. */
+export const scaleAccountResourceItems = (items: readonly ITypeCount[], multiplier: number): ITypeCount[] =>
+    items.map(item =>
+        item.ItemCount > 0 && item.ItemType in ExportResources
+            ? { ...item, ItemCount: scaleAccountDropCount(item.ItemCount, multiplier) }
+            : item
+    );
 
 export const isEligibleForCreditReward = async (
     rewardInfo: IRewardInfo,
