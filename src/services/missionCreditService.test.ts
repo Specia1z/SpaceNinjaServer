@@ -32,3 +32,31 @@ void test("account rate scales the daily first win and global credit reward", as
         config.worldState = previousWorldState;
     }
 });
+
+void test("account rate compounds with an active inventory Credit Booster", async () => {
+    const today = Math.trunc(Date.now() / 86400000) * 86400;
+    const account = {
+        DailyFirstWinDate: today,
+        save: (): Promise<void> => Promise.resolve()
+    } as unknown as TAccountDocument;
+    const inventory = {
+        // Base mission sources have already been booked before addMissionCredits adds multiplier differences.
+        RegularCredits: 135,
+        Boosters: [
+            {
+                ItemType: "/Lotus/Types/Boosters/CreditBooster",
+                ExpiryDate: Math.trunc(Date.now() / 1000) + 60
+            }
+        ]
+    } as unknown as TInventoryDatabaseDocument;
+
+    const result = await addMissionCredits(
+        account,
+        inventory,
+        { missionDropCredits: 10, missionCompletionCredits: 20, rngRewardCredits: 5 },
+        3
+    );
+
+    assert.deepEqual(result.TotalCredits, [35, 210]);
+    assert.equal(inventory.RegularCredits, 310);
+});
