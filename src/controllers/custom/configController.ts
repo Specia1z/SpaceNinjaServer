@@ -1,5 +1,9 @@
 import type { RequestHandler } from "express";
-import { configIdToIndexable, inventoryAffectingConfigKeys } from "../../services/configService.ts";
+import {
+    configIdToIndexable,
+    inventoryAffectingConfigKeys,
+    validateRegistrationRateLimitConfig
+} from "../../services/configService.ts";
 import { syncConfigWithDatabase } from "../../services/configWatcherService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
 import { saveConfig } from "../../services/configWriterService.ts";
@@ -22,9 +26,17 @@ export const getConfigController: RequestHandler = async (req, res) => {
 export const setConfigController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     if (isAdministrator(account)) {
+        const edits = req.body as Record<string, boolean | string | number>;
+        for (const [id, value] of Object.entries(edits)) {
+            const error = validateRegistrationRateLimitConfig(id, value);
+            if (error) {
+                res.status(400).send(error);
+                return;
+            }
+        }
         let isWorldStateUpdate = false;
         let isInventoryUpdate = false;
-        for (const [id, value] of Object.entries(req.body as Record<string, boolean | string | number>)) {
+        for (const [id, value] of Object.entries(edits)) {
             if (id.startsWith("worldState")) isWorldStateUpdate = true;
             if ((inventoryAffectingConfigKeys as readonly string[]).includes(id)) {
                 isInventoryUpdate = true;

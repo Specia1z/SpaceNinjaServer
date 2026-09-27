@@ -1296,6 +1296,36 @@
                                         <input class="form-check-input" type="checkbox" id="newAccountStarterPack" />
                                         <label class="form-check-label" for="newAccountStarterPack" data-loc="cheats_newAccountStarterPack"></label>
                                     </div>
+                                    <h6 class="mt-4" data-loc="cheats_registrationRateLimit"></h6>
+                                    <div class="form-text mb-2" data-loc="cheats_registrationRateLimitHint"></div>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('registrationRateLimit.windowMinutes'); return false;">
+                                        <label class="form-label" for="registrationRateLimit.windowMinutes" data-loc="cheats_registrationWindowMinutes"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="registrationRateLimit.windowMinutes" type="number" min="1" max="525600" step="1" data-default="1440" required />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('registrationRateLimit.perAddress'); return false;">
+                                        <label class="form-label" for="registrationRateLimit.perAddress" data-loc="cheats_registrationPerAddress"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="registrationRateLimit.perAddress" type="number" min="1" max="1000000" step="1" data-default="3" required />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('registrationRateLimit.global'); return false;">
+                                        <label class="form-label" for="registrationRateLimit.global" data-loc="cheats_registrationGlobal"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="registrationRateLimit.global" type="number" min="1" max="1000000" step="1" data-default="100" required />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('registrationRateLimit.globalAttempts'); return false;">
+                                        <label class="form-label" for="registrationRateLimit.globalAttempts" data-loc="cheats_registrationGlobalAttempts"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="registrationRateLimit.globalAttempts" type="number" min="1" max="10000000" step="1" data-default="1000" required />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
                                     <div class="form-check mt-2">
                                         <input class="form-check-input" type="checkbox" id="noMasteryRankUpCooldown" />
                                         <label class="form-check-label" for="noMasteryRankUpCooldown" data-loc="cheats_noMasteryRankUpCooldown"></label>

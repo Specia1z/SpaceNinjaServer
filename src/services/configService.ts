@@ -394,6 +394,22 @@ export const configIdToIndexable = (id: string): [Record<string, boolean | strin
     return [obj, arr[0]];
 };
 
+const registrationRateLimitBounds: Record<string, { min: number; max: number }> = {
+    "registrationRateLimit.windowMinutes": { min: 1, max: 525_600 },
+    "registrationRateLimit.perAddress": { min: 1, max: 1_000_000 },
+    "registrationRateLimit.global": { min: 1, max: 1_000_000 },
+    "registrationRateLimit.globalAttempts": { min: 1, max: 10_000_000 }
+};
+
+export const validateRegistrationRateLimitConfig = (id: string, value: unknown): string | undefined => {
+    if (!(id in registrationRateLimitBounds)) return undefined;
+    const bounds = registrationRateLimitBounds[id];
+    if (typeof value != "number" || !Number.isSafeInteger(value) || value < bounds.min || value > bounds.max) {
+        return `${id} must be an integer from ${bounds.min} to ${bounds.max}`;
+    }
+    return undefined;
+};
+
 export interface IWebServerParams {
     address: string;
     httpPort: number;

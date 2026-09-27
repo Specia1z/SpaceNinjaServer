@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { config } from "./configService.ts";
+import { validateRegistrationRateLimitConfig } from "./configService.ts";
 import { getRegistrationAddress, reserveRegistration } from "./registrationRateLimitService.ts";
 
 void test("registration quotas share address and global budgets across entry points", t => {
@@ -54,4 +55,13 @@ void test("global attempt cap also covers failed account creation", t => {
     assert.equal(denied.allowed, false);
     assert.equal(denied.retryAfterSeconds, 60);
     assert.equal(reserveRegistration("198.51.100.13", now + 60_002).allowed, true);
+});
+
+void test("registration settings accept bounded integers only", () => {
+    assert.equal(validateRegistrationRateLimitConfig("registrationRateLimit.perAddress", 3), undefined);
+    assert.match(validateRegistrationRateLimitConfig("registrationRateLimit.global", 0) ?? "", /must be an integer/);
+    assert.match(
+        validateRegistrationRateLimitConfig("registrationRateLimit.windowMinutes", 1.5) ?? "",
+        /must be an integer/
+    );
 });
