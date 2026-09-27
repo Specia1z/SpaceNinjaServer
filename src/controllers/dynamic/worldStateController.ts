@@ -14,6 +14,7 @@ import { applyStoreOverrides } from "../../services/storeOverrideService.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
 import { applyAccountPickupBoost, applyAccountWorldStateBoost } from "../../services/accountPickupBoostService.ts";
 import { logger } from "../../utils/logger.ts";
+import { fromMongoDate } from "../../helpers/inventoryHelpers.ts";
 
 export const worldStateController: RequestHandler = async (req, res) => {
     let buildLabel: string;
@@ -71,7 +72,17 @@ export const worldStateController: RequestHandler = async (req, res) => {
                 accountId: req.params.accountId,
                 resourceDropMultiplier: accountPickupMultiplier,
                 creditMultiplier: accountCreditMultiplier,
-                affinityMultiplier: accountAffinityMultiplier
+                affinityMultiplier: accountAffinityMultiplier,
+                profileExpiresAt: accountRateExpiry ?? null,
+                upgrades: worldState.GlobalUpgrades.filter(upgrade =>
+                    ["GAMEPLAY_PICKUP_AMOUNT", "GAMEPLAY_MONEY_REWARD_AMOUNT", "GAMEPLAY_KILL_XP_AMOUNT"].includes(
+                        upgrade.UpgradeType
+                    )
+                ).map(upgrade => ({
+                    type: upgrade.UpgradeType,
+                    value: upgrade.Value,
+                    expiresAt: fromMongoDate(upgrade.ExpiryDate).toISOString()
+                }))
             });
         }
     }

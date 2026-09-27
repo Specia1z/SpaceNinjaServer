@@ -51,14 +51,30 @@ export const addMissionCredits = async (
         finalCredits.TotalCredits[1] += extraCredits;
     }
     const now = Math.trunc(Date.now() / 1000);
-    if ((inventory.Boosters.find(x => x.ItemType == "/Lotus/Types/Boosters/CreditBooster")?.ExpiryDate ?? 0) > now) {
+    const hasCreditBooster =
+        (inventory.Boosters.find(x => x.ItemType == "/Lotus/Types/Boosters/CreditBooster")?.ExpiryDate ?? 0) > now;
+    const hasCreditBlessing =
+        (inventory.Boosters.find(x => x.ItemType == "/Lotus/Types/Boosters/CreditBlessing")?.ExpiryDate ?? 0) > now;
+    if (hasCreditBooster) {
         inventory.RegularCredits += finalCredits.TotalCredits[1];
         finalCredits.TotalCredits[1] += finalCredits.TotalCredits[1];
     }
-    if ((inventory.Boosters.find(x => x.ItemType == "/Lotus/Types/Boosters/CreditBlessing")?.ExpiryDate ?? 0) > now) {
+    if (hasCreditBlessing) {
         inventory.RegularCredits += finalCredits.TotalCredits[1] * 0.25;
         finalCredits.TotalCredits[1] += finalCredits.TotalCredits[1] * 0.25;
     }
+    logger.debug("mission credit settlement", {
+        account: account.DisplayName,
+        missionDropCredits,
+        missionCompletionCredits,
+        rngRewardCredits,
+        creditMultiplier,
+        clientBoostedDropCredits,
+        globalCreditMultiplier: config.worldState?.creditBoostMultiplier || 1,
+        hasCreditBooster,
+        hasCreditBlessing,
+        finalCredits: finalCredits.TotalCredits[1]
+    });
 
     return finalCredits;
 };
