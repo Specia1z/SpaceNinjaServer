@@ -123,7 +123,7 @@ dict = {
     accountRates_enabled: `Profile enabled`,
     accountRates_enabledHint: `Disabled profiles use the normal 1x behavior for every category.`,
     accountRates_expiresAt: `Expires at (optional)`,
-    accountRates_expiresAtHint: `Enter your local date and time, or leave blank for no expiry. Expired profiles revert to 1x automatically.`,
+    accountRates_expiresAtHint: `Enter your local date and time, or leave blank for no expiry. Server-settled rates revert to 1x immediately; modern-client resource pickup amounts update after world-state refresh or re-login.`,
     accountRates_invalidExpiry: `Enter a valid expiration date and time.`,
     accountRates_groupMission: `Mission pickups and settlement`,
     accountRates_groupProgress: `Progress and standing`,

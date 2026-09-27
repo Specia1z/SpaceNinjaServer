@@ -124,7 +124,7 @@ dict = {
     accountRates_enabled: `启用档案`,
     accountRates_enabledHint: `关闭后该账号所有分类恢复为正常的 1 倍行为。`,
     accountRates_expiresAt: `到期时间（可选）`,
-    accountRates_expiresAtHint: `按当前设备的本地时间填写；留空表示永不过期。到期后档案倍率自动恢复为 1 倍。`,
+    accountRates_expiresAtHint: `按当前设备的本地时间填写；留空表示永不过期。服务端结算倍率到期后立即恢复为 1 倍；现代客户端的资源拾取量会在世界状态刷新或重新登录后更新。`,
     accountRates_invalidExpiry: `请输入有效的到期时间。`,
     accountRates_groupMission: `任务拾取与结算`,
     accountRates_groupProgress: `进度与声望`,
