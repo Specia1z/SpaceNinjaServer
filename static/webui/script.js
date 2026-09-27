@@ -132,6 +132,8 @@ function openWebSocket() {
                         alert(loc("code_loginFail"));
                     } else if (msg.auth_fail == "bad register") {
                         alert(loc("code_regFail"));
+                    } else if (msg.auth_fail == "rate limited") {
+                        alert(loc("code_regRateLimited"));
                     } else if (msg.auth_fail == "admin only") {
                         alert(loc("code_adminOnlyLogin"));
                     } else if (msg.auth_fail == "registered but admin only") {

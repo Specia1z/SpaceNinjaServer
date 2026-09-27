@@ -24,6 +24,7 @@ import { getInventory } from "../../services/inventoryService.ts";
 import { createMessage } from "../../services/inboxService.ts";
 import { fromStoreItem } from "../../services/itemDataService.ts";
 import { getTokenForClient, getTunablesForClient } from "../../services/tunablesService.ts";
+import { getRegistrationAddress, reserveRegistration } from "../../services/registrationRateLimitService.ts";
 import type { AddressInfo } from "node:net";
 import { buildLabelToVersionInt } from "../../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
@@ -70,18 +71,32 @@ export const loginController: RequestHandler = async (request, response) => {
             return;
         }
 
-        const name = await getUsernameFromEmail(loginRequest.email);
-        const newAccount = await createAccount({
-            email: loginRequest.email,
-            password: loginRequest.password,
-            DisplayName: name,
-            Language: loginRequest.lang,
-            ClientType: loginRequest.ClientType,
-            GoogleTokenId: loginRequest.GoogleTokenId,
-            Nonce: createNonce(),
-            BuildLabel: buildLabel,
-            LastLogin: new Date()
-        });
+        const reservation = reserveRegistration(
+            getRegistrationAddress(request.socket.remoteAddress, request.headers["x-forwarded-for"])
+        );
+        if (!reservation.allowed) {
+            response.set("Retry-After", String(reservation.retryAfterSeconds));
+            response.status(429).json({ error: "registration rate limit exceeded" });
+            return;
+        }
+        let newAccount: IDatabaseAccountJson;
+        try {
+            const name = await getUsernameFromEmail(loginRequest.email);
+            newAccount = await createAccount({
+                email: loginRequest.email,
+                password: loginRequest.password,
+                DisplayName: name,
+                Language: loginRequest.lang,
+                ClientType: loginRequest.ClientType,
+                GoogleTokenId: loginRequest.GoogleTokenId,
+                Nonce: createNonce(),
+                BuildLabel: buildLabel,
+                LastLogin: new Date()
+            });
+        } catch (error) {
+            reservation.cancel();
+            throw error;
+        }
         logger.debug("created new account");
         if (isAndroid) {
             response.status(400).json({ error: `noAndroidAccount;countryCode=US` });

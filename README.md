@@ -88,6 +88,7 @@ Important settings include:
 - `udpRelayPort` and `udpRelayTarget`: enable the protocol-opaque UDP relay used for Hub/dojo traffic. The relay listens on `udpRelayPort` and forwards unchanged datagrams to the Hub at `udpRelayTarget`; expose the relay UDP port in the firewall and Docker configuration.
 - `hubServers`: the Hub service itself must be running and reachable on its configured UDP address, usually port `6952`. The relay is only a transport layer and does not replace `warframe-hub-server`.
 - `administratorNames`: accounts allowed to use administrator features.
+- `registrationRateLimit`: game auto-registration and WebUI signups share a rolling 24-hour quota (default: three attempts per client address, 100 account creations server-wide, and 1000 attempts including failed writes). Configure `windowMinutes`, `perAddress`, `global`, and `globalAttempts` in `config.json` (Docker: `docker-data/conf/config.json`). Existing-account logins are unaffected. Client-supplied `X-Forwarded-For` is ignored unless the connecting reverse proxy's exact IP is listed in `trustedProxies`; without that setting, users behind one proxy share a quota. Counters are process-local and reset on restart; multiple replicas need a shared store, and distributed abuse requires invitations or identity verification.
 - `accountDropMultipliers`: configure per-account mission resource and mod drop multipliers, keyed by the exact in-game display name. For example:
 
   ```json

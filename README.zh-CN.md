@@ -64,6 +64,7 @@ Copy-Item config-vanilla.json config.json
 - `httpPort`、`httpsPort`：默认 `80` 和 `443`。端口冲突时可改为其他端口。
 - `administratorNames`：允许使用管理员功能的游戏账号名称。
 - `webui.adminOnly`：是否仅允许管理员使用 WebUI。
+- `registrationRateLimit`：游戏自动建号与 WebUI 注册共用限额，默认滚动 24 小时内同一来源地址最多尝试 3 次、全服最多创建 100 个账号，且包括失败写入在内的注册尝试最多 1000 次；可在 `config.json`（Docker 为 `docker-data/conf/config.json`）中调整 `windowMinutes`、`perAddress`、`global`、`globalAttempts`。已有账号登录不受影响。默认只信任实际连接的 IP，不信任客户端自填的 `X-Forwarded-For`；若服务位于反向代理后，需将**代理的确切 IP** 填入 `trustedProxies`，否则同一代理后的玩家会共用限额。计数保存在进程内，重启会重置，多实例不共享；抵御分布式批量注册还需要邀请码或验证机制。
 - `worldState.liveSync`：是否启用实时世界状态同步。模板默认关闭。
 - `database`：保留对象配置可使用本地持久化的嵌入式 MongoDB，也可替换为已有 MongoDB URI。
 

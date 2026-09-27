@@ -10,6 +10,7 @@ dict = {
 
     code_loginFail: `Logowanie nie powiodło się. Sprawdź adres email i hasło.`,
     code_regFail: `Rejestracja nie powiodła się. Konto już istnieje?`,
+    code_regRateLimited: `[UNTRANSLATED] Too many registrations. Please try again later.`,
     code_adminOnlyLogin: `Nie możesz się zalogować ponieważ WebUI jest w trybie admin-only na tej instancji.`,
     code_adminOnlyRegister: `Twoje konto zostało pomyślnie utworzone, ale WebUI jest w trybie admin-only na tej instancji.`,
     code_genFail: `Nazwa nie może być dłuższa niż 24 znaki.`,

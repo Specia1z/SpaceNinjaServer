@@ -9,6 +9,7 @@ dict = {
 
     code_loginFail: `Login failed. Double-check the email and password.`,
     code_regFail: `Registration failed. Account already exists?`,
+    code_regRateLimited: `Too many registrations. Please try again later.`,
     code_adminOnlyLogin: `You are not allowed to login because the WebUI is admin-only on this instance.`,
     code_adminOnlyRegister: `Your account has successfully been created, but the WebUI is admin-only on this instance.`,
     code_genFail: `Name cannot be longer than 24 characters.`,

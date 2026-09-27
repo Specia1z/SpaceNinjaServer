@@ -10,6 +10,7 @@ dict = {
 
     code_loginFail: `Anmeldung fehlgeschlagen. Bitte überprüfe deine Angaben.`,
     code_regFail: `Registrierung fehlgeschlagen. Account existiert bereits?`,
+    code_regRateLimited: `[UNTRANSLATED] Too many registrations. Please try again later.`,
     code_adminOnlyLogin: `Du kannst dich nicht anmelden, da die WebUI auf dieser Instanz nur für Administratoren verfügbar ist.`,
     code_adminOnlyRegister: `Dein Account wurde erfolgreich erstellt, aber die WebUI ist auf dieser Instanz nur für Administratoren verfügbar.`,
     code_genFail: `Der Name darf nicht länger als 24 Zeichen sein.`,

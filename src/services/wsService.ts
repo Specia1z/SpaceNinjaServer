@@ -19,6 +19,7 @@ import type { Request } from "express";
 import type { ITunables } from "../types/bootstrapperTypes.ts";
 import type { AddressInfo } from "node:net";
 import { config } from "./configService.ts";
+import { getRegistrationAddress, reserveRegistration } from "./registrationRateLimitService.ts";
 
 let wsServer: WebSocketServer | undefined;
 let wssServer: WebSocketServer | undefined;
@@ -108,7 +109,7 @@ export interface IWsMsgToClientWebui extends IWsMsgToClientCommon {
         Nonce: number;
     };
     permissions?: string[];
-    auth_fail?: "bad login" | "bad register" | "admin only" | "registered but admin only";
+    auth_fail?: "bad login" | "bad register" | "admin only" | "registered but admin only" | "rate limited";
     nonce_updated?: boolean;
     update_inventory?: boolean;
     update_guild?: boolean;
@@ -161,16 +162,28 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                         account = null;
                     }
                 } else if (data.auth.isRegister && data.auth.email.indexOf("@") != -1) {
-                    const name = await getUsernameFromEmail(data.auth.email);
-                    account = await createAccount({
-                        email: data.auth.email,
-                        password: data.auth.password,
-                        ClientType: "webui",
-                        BuildLabel: undefined,
-                        LastLogin: new Date(),
-                        DisplayName: name,
-                        Nonce: createNonce()
-                    });
+                    const reservation = reserveRegistration(
+                        getRegistrationAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"])
+                    );
+                    if (!reservation.allowed) {
+                        ws.send(JSON.stringify({ auth_fail: "rate limited" } satisfies IWsMsgToClient));
+                        return;
+                    }
+                    try {
+                        const name = await getUsernameFromEmail(data.auth.email);
+                        account = await createAccount({
+                            email: data.auth.email,
+                            password: data.auth.password,
+                            ClientType: "webui",
+                            BuildLabel: undefined,
+                            LastLogin: new Date(),
+                            DisplayName: name,
+                            Nonce: createNonce()
+                        });
+                    } catch (error) {
+                        reservation.cancel();
+                        throw error;
+                    }
                     accessedAccount = account;
                 }
                 if (account && accessedAccount) {
@@ -185,9 +198,7 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                                     Nonce: account.Nonce
                                 },
                                 have_game_ws: haveGameWs(accessedAccount.id),
-                                permissions: data.auth.allPermissions.filter(perm =>
-                                    hasPermission(accessedAccount, perm)
-                                )
+                                permissions: data.auth.allPermissions.filter(perm => hasPermission(account, perm))
                             } satisfies IWsMsgToClient)
                         );
                     } else {

@@ -10,6 +10,7 @@ dict = {
 
     code_loginFail: `登录失败.请检查邮箱和密码.`,
     code_regFail: `注册失败.账号是否已存在?`,
+    code_regRateLimited: `注册过于频繁，请稍后再试。`,
     code_adminOnlyLogin: `您无法登录, 因为此实例上的 WebUI 仅限于管理员使用.`,
     code_adminOnlyRegister: `您的账户已成功创建, 但此实例上的 WebUI 仅限于管理员使用.`,
     code_genFail: `名称不能长于24个字符.`,

@@ -10,6 +10,7 @@ dict = {
 
     code_loginFail: `Не удалось войти. Проверьте адрес электронной почты и пароль.`,
     code_regFail: `Не удалось зарегистрироваться. Учетная запись уже существует?`,
+    code_regRateLimited: `[UNTRANSLATED] Too many registrations. Please try again later.`,
     code_adminOnlyLogin: `Вам запрещено входить в систему, потому что WebUI доступен только администраторам на этом экземпляре.`,
     code_adminOnlyRegister: `Ваш аккаунт успешно создан, но WebUI на этом экземпляре доступен только администраторам.`,
     code_genFail: `Имя не может быть длиннее 24 символов.`,

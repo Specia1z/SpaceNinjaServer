@@ -10,6 +10,7 @@ dict = {
 
     code_loginFail: `Connexion échouée. Vérifiez le mot de passe.`,
     code_regFail: `Enregistrement impossible. Compte existant?`,
+    code_regRateLimited: `[UNTRANSLATED] Too many registrations. Please try again later.`,
     code_adminOnlyLogin: `Impossible de se connecter car l'interface Web est réglée sur admin uniquement pour cette instance.`,
     code_adminOnlyRegister: `Le compte a été créé, mais l'interface Web est réglée sur admin uniquement pour cette instance.`,
     code_genFail: `Le nom ne peut pas dépasser 24 caractères.`,

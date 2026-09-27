@@ -97,6 +97,18 @@ export interface IConfig {
     dtls?: number;
     administratorNames?: string[];
     autoCreateAccount?: boolean;
+    registrationRateLimit?: {
+        /** Rolling time window for new accounts, in minutes (default: 1440). */
+        windowMinutes?: number;
+        /** Registration attempts per client address (default: 3). */
+        perAddress?: number;
+        /** Successful or pending registrations across the server (default: 100). */
+        global?: number;
+        /** All registration attempts across the server, including failed writes (default: 1000). */
+        globalAttempts?: number;
+        /** Exact reverse-proxy IP addresses allowed to supply X-Forwarded-For. */
+        trustedProxies?: string[];
+    };
     fallbackBuildLabel?: string;
     skipTutorial?: boolean;
     fullyStockedVendors?: boolean;

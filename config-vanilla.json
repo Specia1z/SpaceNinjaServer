@@ -32,6 +32,12 @@
   "dtls": null,
   "administratorNames": [],
   "autoCreateAccount": true,
+  "registrationRateLimit": {
+    "windowMinutes": 1440,
+    "perAddress": 3,
+    "global": 100,
+    "globalAttempts": 1000
+  },
   "skipTutorial": false,
   "fallbackBuildLabel": "2013.01.04.10.41/",
   "fullyStockedVendors": false,

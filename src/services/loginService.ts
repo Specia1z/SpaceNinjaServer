@@ -101,6 +101,10 @@ const createPersonalRooms = async (accountId: Types.ObjectId, shipId: Types.Obje
 export type TAccountDocument = Document<unknown, {}, IDatabaseAccountJson> &
     IDatabaseAccountJson & { _id: Types.ObjectId; __v: number };
 
+// The request must continue to operate on the possessed account, but administrator checks must retain the
+// already-validated possesser authority. A WeakSet avoids adding an enumerable/persisted field to the Mongoose doc.
+const administratorAuthorizedAccounts = new WeakSet<object>();
+
 export const getAccountForQuery = async (
     query: Record<string, string>,
     acceptToken?: string
@@ -139,6 +143,7 @@ export const getAccountForQuery = async (
         if (!possesser || !isAdministrator(possesser)) {
             throw new Error(`Invalid accountId-nonce pair`);
         }
+        administratorAuthorizedAccounts.add(account);
     } else {
         if (account.Nonce != nonce) {
             throw new Error("Invalid accountId-nonce pair");
@@ -186,7 +191,10 @@ export const getBuildVersion = (req: Request, account: Pick<TAccountDocument, "B
 };
 
 export const isAdministrator = (account: Pick<TAccountDocument, "DisplayName">): boolean => {
-    return (config.administratorNames?.indexOf(account.DisplayName) ?? -1) != -1;
+    return (
+        administratorAuthorizedAccounts.has(account) ||
+        (config.administratorNames?.indexOf(account.DisplayName) ?? -1) != -1
+    );
 };
 
 export const hasPermission = (account: Pick<TAccountDocument, "DisplayName">, perm: string): boolean => {
