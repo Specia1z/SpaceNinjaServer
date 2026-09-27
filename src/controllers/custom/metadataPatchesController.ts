@@ -140,9 +140,9 @@ export const getMetadataPatchesController: RequestHandler = async (req, res) => 
         res.status(403).send("Permission denied");
         return;
     }
-    const accountId = typeof req.query.accountId == "string" ? req.query.accountId : undefined;
+    const selectedAccountId = typeof req.query.selectedAccountId == "string" ? req.query.selectedAccountId : undefined;
     res.json({
-        ...getResponse(accountId),
+        ...getResponse(selectedAccountId),
         accounts: (await Account.find({}, "DisplayName").sort({ DisplayName: 1 })).map(account => ({
             id: account._id.toString(),
             displayName: account.DisplayName,
@@ -180,9 +180,9 @@ export const saveMetadataPatchesController: RequestHandler = async (req, res) =>
             }
         });
         sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
-        const accountId = typeof req.query.accountId == "string" ? req.query.accountId : undefined;
+        const selectedAccountId = typeof req.query.selectedAccountId == "string" ? req.query.selectedAccountId : undefined;
         res.json({
-            ...getResponse(accountId),
+            ...getResponse(selectedAccountId),
             accounts: (await Account.find({}, "DisplayName").sort({ DisplayName: 1 })).map(account => ({
                 id: account._id.toString(),
                 displayName: account.DisplayName,
