@@ -14,7 +14,8 @@ export const addMissionCredits = async (
     account: TAccountDocument,
     inventory: TInventoryDatabaseDocument,
     { missionDropCredits, missionCompletionCredits, rngRewardCredits }: IMissionCreditSources,
-    creditMultiplier: number
+    creditMultiplier: number,
+    clientBoostedDropCredits = false
 ): Promise<IMissionCredits> => {
     const finalCredits: IMissionCredits = {
         MissionCredits: [missionDropCredits, missionDropCredits],
@@ -40,9 +41,14 @@ export const addMissionCredits = async (
         finalCredits.TotalCredits[1] *= config.worldState.creditBoostMultiplier;
     }
     if (creditMultiplier != 1) {
-        const multipliedCredits = Math.trunc(finalCredits.TotalCredits[1] * creditMultiplier);
-        inventory.RegularCredits += multipliedCredits - finalCredits.TotalCredits[1];
-        finalCredits.TotalCredits[1] = multipliedCredits;
+        // Modern clients already applied the account world-state boost to cash they picked up.
+        // Completion and RNG rewards are generated on the server and still need the account rate.
+        const eligibleCredits = clientBoostedDropCredits
+            ? (finalCredits.CreditsBonus[1] + rngRewardCredits) * (config.worldState?.creditBoostMultiplier || 1)
+            : finalCredits.TotalCredits[1];
+        const extraCredits = Math.trunc(eligibleCredits * creditMultiplier) - eligibleCredits;
+        inventory.RegularCredits += extraCredits;
+        finalCredits.TotalCredits[1] += extraCredits;
     }
     const now = Math.trunc(Date.now() / 1000);
     if ((inventory.Boosters.find(x => x.ItemType == "/Lotus/Types/Boosters/CreditBooster")?.ExpiryDate ?? 0) > now) {

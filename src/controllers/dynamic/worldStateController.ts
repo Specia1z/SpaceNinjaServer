@@ -12,7 +12,7 @@ import { getInventory2 } from "../../services/inventoryService.ts";
 import { applyLiveWorldState, refreshLiveWorldState } from "../../services/liveWorldStateService.ts";
 import { applyStoreOverrides } from "../../services/storeOverrideService.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
-import { applyAccountPickupBoost } from "../../services/accountPickupBoostService.ts";
+import { applyAccountPickupBoost, applyAccountWorldStateBoost } from "../../services/accountPickupBoostService.ts";
 import { logger } from "../../utils/logger.ts";
 
 export const worldStateController: RequestHandler = async (req, res) => {
@@ -20,6 +20,9 @@ export const worldStateController: RequestHandler = async (req, res) => {
     let language: string | undefined;
     let elionWorkaroundNeeded = false;
     let accountPickupMultiplier = 1;
+    let accountCreditMultiplier = 1;
+    let accountAffinityMultiplier = 1;
+    let accountRateExpiry: string | undefined;
     if (req.params.accountId || req.query.accountId) {
         const account = req.params.accountId
             ? await getAccountForQuery(
@@ -27,7 +30,11 @@ export const worldStateController: RequestHandler = async (req, res) => {
                   "WORLDSTATE"
               )
             : await getAccountForRequest(req);
-        accountPickupMultiplier = getEffectiveAccountRate(getAccountRateProfile(account), "resourceDropMultiplier");
+        const profile = getAccountRateProfile(account);
+        accountPickupMultiplier = getEffectiveAccountRate(profile, "resourceDropMultiplier");
+        accountCreditMultiplier = getEffectiveAccountRate(profile, "creditMultiplier");
+        accountAffinityMultiplier = getEffectiveAccountRate(profile, "affinityMultiplier");
+        accountRateExpiry = profile.expiresAt;
         buildLabel = getBuildLabel(req, account);
         language = account.Language;
         if (buildLabel == "2013.07.04.20.17/") {
@@ -56,11 +63,15 @@ export const worldStateController: RequestHandler = async (req, res) => {
     applyLiveWorldState(worldState);
     applyStoreOverrides(worldState, buildLabel);
     if (req.params.accountId) {
-        applyAccountPickupBoost(worldState, buildLabel, accountPickupMultiplier);
-        if (accountPickupMultiplier != 1) {
-            logger.debug("sending account pickup boost", {
+        applyAccountPickupBoost(worldState, buildLabel, accountPickupMultiplier, accountRateExpiry);
+        applyAccountWorldStateBoost(worldState, buildLabel, "credit", accountCreditMultiplier, accountRateExpiry);
+        applyAccountWorldStateBoost(worldState, buildLabel, "affinity", accountAffinityMultiplier, accountRateExpiry);
+        if (accountPickupMultiplier != 1 || accountCreditMultiplier != 1 || accountAffinityMultiplier != 1) {
+            logger.debug("sending account world state boosts", {
                 accountId: req.params.accountId,
-                resourceDropMultiplier: accountPickupMultiplier
+                resourceDropMultiplier: accountPickupMultiplier,
+                creditMultiplier: accountCreditMultiplier,
+                affinityMultiplier: accountAffinityMultiplier
             });
         }
     }

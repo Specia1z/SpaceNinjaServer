@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { IWorldState } from "../types/worldStateTypes.ts";
-import { toOid2 } from "../helpers/inventoryHelpers.ts";
+import { toMongoDate2, toOid2 } from "../helpers/inventoryHelpers.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
-import { applyAccountPickupBoost } from "./accountPickupBoostService.ts";
+import { applyAccountPickupBoost, applyAccountWorldStateBoost } from "./accountPickupBoostService.ts";
 import { getAccountWorldStateToken } from "./loginService.ts";
 
 const buildLabel = "2026.08.19.11.06";
@@ -26,6 +26,43 @@ void test("account pickup bonus combines with an existing global boost", () => {
     applyAccountPickupBoost(initial, buildLabel, 5);
     assert.equal(initial.GlobalUpgrades.length, 1);
     assert.equal(initial.GlobalUpgrades[0].Value, 10);
+});
+
+void test("account-specific cash and affinity events do not leak to another account", () => {
+    const accountState = { GlobalUpgrades: [] } as Pick<IWorldState, "GlobalUpgrades">;
+    const otherState = { GlobalUpgrades: [] } as Pick<IWorldState, "GlobalUpgrades">;
+    const expiresAt = "2030-01-01T00:00:00.000Z";
+    applyAccountWorldStateBoost(accountState, buildLabel, "credit", 3, expiresAt);
+    applyAccountWorldStateBoost(accountState, buildLabel, "affinity", 4, expiresAt);
+    applyAccountWorldStateBoost(otherState, buildLabel, "credit", 1);
+    assert.deepEqual(
+        accountState.GlobalUpgrades.map(upgrade => [upgrade.UpgradeType, upgrade.Value]),
+        [
+            ["GAMEPLAY_MONEY_REWARD_AMOUNT", 3],
+            ["GAMEPLAY_KILL_XP_AMOUNT", 4]
+        ]
+    );
+    assert.deepEqual(
+        accountState.GlobalUpgrades.map(upgrade => upgrade.ExpiryDate),
+        [0, 1].map(() => toMongoDate2(Date.parse(expiresAt), buildVersionToInt(buildLabel)))
+    );
+    assert.equal(otherState.GlobalUpgrades.length, 0);
+});
+
+void test("account cash and affinity rates compound with global events instead of duplicating them", () => {
+    const buildVersion = buildVersionToInt(buildLabel);
+    const state = { GlobalUpgrades: [] } as Pick<IWorldState, "GlobalUpgrades">;
+    applyAccountWorldStateBoost(state, buildLabel, "credit", 2);
+    applyAccountWorldStateBoost(state, buildLabel, "affinity", 2);
+    state.GlobalUpgrades[0]._id = toOid2("5b23106f283a555109666672", buildVersion);
+    state.GlobalUpgrades[1]._id = toOid2("5b23106f283a555109666673", buildVersion);
+    applyAccountWorldStateBoost(state, buildLabel, "credit", 3);
+    applyAccountWorldStateBoost(state, buildLabel, "affinity", 4);
+    assert.deepEqual(
+        state.GlobalUpgrades.map(upgrade => upgrade.Value),
+        [6, 8]
+    );
+    assert.equal(state.GlobalUpgrades.length, 2);
 });
 
 void test("account world state tokens are bound to account and login nonce", () => {

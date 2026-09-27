@@ -60,3 +60,32 @@ void test("account rate compounds with an active inventory Credit Booster", asyn
     assert.deepEqual(result.TotalCredits, [35, 210]);
     assert.equal(inventory.RegularCredits, 310);
 });
+
+void test("modern client cash pickups are not account-boosted again at settlement", async () => {
+    const today = Math.trunc(Date.now() / 86400000) * 86400;
+    const account = {
+        DailyFirstWinDate: today,
+        save: (): Promise<void> => Promise.resolve()
+    } as unknown as TAccountDocument;
+    const inventory = {
+        // The client has already turned a 10-credit pickup into 30; server rewards remain unboosted.
+        RegularCredits: 155,
+        Boosters: [
+            {
+                ItemType: "/Lotus/Types/Boosters/CreditBooster",
+                ExpiryDate: Math.trunc(Date.now() / 1000) + 60
+            }
+        ]
+    } as unknown as TInventoryDatabaseDocument;
+
+    const result = await addMissionCredits(
+        account,
+        inventory,
+        { missionDropCredits: 30, missionCompletionCredits: 20, rngRewardCredits: 5 },
+        3,
+        true
+    );
+
+    assert.deepEqual(result.TotalCredits, [55, 210]);
+    assert.equal(inventory.RegularCredits, 310);
+});

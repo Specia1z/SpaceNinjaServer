@@ -31,6 +31,7 @@ void test("legacy drop rates remain active until replaced by an ID-bound profile
     assert.equal(getAccountRateProfile(account).resourceDropMultiplier, 2);
     assert.equal(getAccountRateProfile(account).modDropMultiplier, 4);
     assert.equal(getAccountRateProfile(account).creditMultiplier, 1);
+    assert.equal(getAccountRateProfile(account).affinityMultiplier, 1);
 });
 
 void test("disabled profiles leave rates at 1x without losing saved values", () => {
@@ -44,10 +45,12 @@ void test("expiring profiles apply only before their absolute expiration time", 
     const future = parseAccountRateProfile({
         enabled: true,
         expiresAt: "2099-01-01T00:00:00+08:00",
-        creditMultiplier: 10
+        creditMultiplier: 10,
+        affinityMultiplier: 2
     });
     assert.equal(future.expiresAt, "2098-12-31T16:00:00.000Z");
     assert.equal(getEffectiveAccountRate({ ...getAccountRateProfile(account), ...future }, "creditMultiplier"), 10);
+    assert.equal(getEffectiveAccountRate({ ...getAccountRateProfile(account), ...future }, "affinityMultiplier"), 2);
 
     const expired = parseAccountRateProfile({ enabled: true, expiresAt: "2000-01-01T00:00:00Z", creditMultiplier: 10 });
     assert.equal(getEffectiveAccountRate({ ...getAccountRateProfile(account), ...expired }, "creditMultiplier"), 1);

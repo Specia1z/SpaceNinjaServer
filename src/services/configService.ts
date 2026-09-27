@@ -42,6 +42,8 @@ export interface IAccountRateProfile {
     resourceDropMultiplier?: number;
     modDropMultiplier?: number;
     creditMultiplier?: number;
+    /** Client-side Warframe/weapon affinity (distinct from Focus XP). */
+    affinityMultiplier?: number;
     focusXpMultiplier?: number;
     standingMultiplier?: number;
     nightwaveStandingMultiplier?: number;

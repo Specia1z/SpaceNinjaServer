@@ -1528,7 +1528,8 @@ export const addMissionRewards = async (
             missionDropCredits: creditDrops ?? 0,
             rngRewardCredits: inventoryChanges.RegularCredits ?? 0
         },
-        getEffectiveAccountRate(accountRates, "creditMultiplier")
+        getEffectiveAccountRate(accountRates, "creditMultiplier"),
+        version_compare(buildLabel, gameToBuildVersion["39.1.0"]) >= 0
     );
 
     const NemesisTaxInfo: INemesisTaxInfo | undefined = nodeControlledByNemesis

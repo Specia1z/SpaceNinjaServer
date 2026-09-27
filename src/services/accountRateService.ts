@@ -48,6 +48,15 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         step: 0.1
     },
     {
+        key: "affinityMultiplier",
+        group: "mission",
+        labelKey: "accountRates_affinityMultiplier",
+        descriptionKey: "accountRates_affinityMultiplierHint",
+        min: 0,
+        max: 1000,
+        step: 0.1
+    },
+    {
         key: "focusXpMultiplier",
         group: "mission",
         labelKey: "accountRates_focusXpMultiplier",
@@ -168,6 +177,7 @@ export const getDefaultAccountRateProfile = (): TResolvedAccountRateProfile => (
     resourceDropMultiplier: 1,
     modDropMultiplier: 1,
     creditMultiplier: 1,
+    affinityMultiplier: 1,
     focusXpMultiplier: 1,
     standingMultiplier: 1,
     nightwaveStandingMultiplier: 1,
