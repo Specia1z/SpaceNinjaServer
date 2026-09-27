@@ -12,8 +12,7 @@ import type { IRewardInfo } from "../types/requestTypes.ts";
 import type { ITypeCount } from "../types/commonTypes.ts";
 import type { IRngResult } from "./rngService.ts";
 import { SRng, generateRewardSeed, getRandomReward } from "./rngService.ts";
-import { getRegion, getMissionDeck } from "./itemDataService.ts";
-import { toStoreItem } from "./itemDataService.ts";
+import { fromStoreItem, getRegion, getMissionDeck, toStoreItem } from "./itemDataService.ts";
 import { logger } from "../utils/logger.ts";
 import { shouldDoServerQol } from "./configService.ts";
 import gameToBuildVersion from "../constants/gameToBuildVersion.ts";
@@ -198,6 +197,24 @@ export const scaleAccountResourceItems = (items: readonly ITypeCount[], multipli
             ? { ...item, ItemCount: scaleAccountDropCount(item.ItemCount, multiplier) }
             : item
     );
+
+export const scaleAccountMissionRewards = (
+    rewards: readonly IMissionReward[],
+    resourceMultiplier: number,
+    modMultiplier: number
+): IMissionReward[] =>
+    rewards.map(reward => {
+        // StrippedItems have already been expanded from their drop table before they enter MissionRewards.
+        if (reward.FromEnemyCache || reward.IsStrippedItem || reward.ItemCount <= 0) return reward;
+
+        const itemType = reward.StoreItem.startsWith("/Lotus/StoreItems/")
+            ? fromStoreItem(reward.StoreItem)
+            : reward.StoreItem;
+        const multiplier =
+            itemType in ExportResources ? resourceMultiplier : itemType.includes("/Upgrades/Mods/") ? modMultiplier : 1;
+        if (multiplier == 1) return reward;
+        return { ...reward, ItemCount: scaleAccountDropCount(reward.ItemCount, multiplier) };
+    });
 
 export const isEligibleForCreditReward = async (
     rewardInfo: IRewardInfo,

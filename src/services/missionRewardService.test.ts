@@ -6,6 +6,7 @@ import {
     addFixedLevelRewards,
     getRotations,
     scaleAccountDropCount,
+    scaleAccountMissionRewards,
     scaleAccountResourceItems
 } from "./missionRewardService.ts";
 
@@ -54,6 +55,35 @@ void test("scaleAccountResourceItems scales resources but preserves recipes and 
             { ItemType: "/Lotus/Types/Recipes/ExampleBlueprint", ItemCount: 2 },
             { ItemType: "/Lotus/Types/Items/MiscItems/SomeToken", ItemCount: 1 },
             { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: -1 }
+        ]
+    );
+});
+
+void test("scaleAccountMissionRewards scales all mission resource and mod rewards once", () => {
+    assert.deepEqual(
+        scaleAccountMissionRewards(
+            [
+                { StoreItem: "/Lotus/StoreItems/Upgrades/Mods/Pistol/WeaponAmmoMaxMod", ItemCount: 1 },
+                { StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Rubedo", ItemCount: 24 },
+                { StoreItem: "/Lotus/StoreItems/Types/Game/Projections/Example", ItemCount: 1 },
+                {
+                    StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Ferrite",
+                    ItemCount: 1,
+                    FromEnemyCache: true
+                }
+            ],
+            10,
+            10
+        ),
+        [
+            { StoreItem: "/Lotus/StoreItems/Upgrades/Mods/Pistol/WeaponAmmoMaxMod", ItemCount: 10 },
+            { StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Rubedo", ItemCount: 240 },
+            { StoreItem: "/Lotus/StoreItems/Types/Game/Projections/Example", ItemCount: 1 },
+            {
+                StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Ferrite",
+                ItemCount: 1,
+                FromEnemyCache: true
+            }
         ]
     );
 });

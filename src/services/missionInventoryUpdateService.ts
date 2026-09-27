@@ -116,6 +116,7 @@ import {
     isEligibleForCreditReward,
     labConquestRewards,
     scaleAccountDropCount,
+    scaleAccountMissionRewards,
     scaleAccountResourceItems
 } from "./missionRewardService.ts";
 export { addFixedLevelRewards } from "./missionRewardService.ts";
@@ -1483,6 +1484,22 @@ export const addMissionRewards = async (
                 ItemCount: 1
             });
         }
+    }
+
+    const resourceDropMultiplier = getEffectiveAccountRate(accountRates, "resourceDropMultiplier");
+    const modDropMultiplier = getEffectiveAccountRate(accountRates, "modDropMultiplier");
+    const scaledMissionRewards = scaleAccountMissionRewards(MissionRewards, resourceDropMultiplier, modDropMultiplier);
+    const scaledRewardEntries = scaledMissionRewards.filter(
+        (reward, index) => reward.ItemCount != MissionRewards[index].ItemCount
+    );
+    if (scaledRewardEntries.length) {
+        logger.debug(`applying account multipliers to mission rewards`, {
+            account: account.DisplayName,
+            resourceDropMultiplier,
+            modDropMultiplier,
+            rewards: scaledRewardEntries
+        });
+        MissionRewards.splice(0, MissionRewards.length, ...scaledMissionRewards);
     }
 
     for (const reward of MissionRewards) {
