@@ -18,8 +18,10 @@ else
             echo 'Could not stage IRC management config; starting IRC with its existing settings.' >&2
         fi
     else
-        # The IRC server already handles malformed JSON by restoring defaults.
-        echo 'Invalid IRC management config; letting the IRC server restore its defaults.' >&2
+        # The IRC server would discard invalid JSON, restoring its loopback-only management default.
+        if ! printf '{"mgmt_loopback_only":false}\n' > conf/irc_config.json; then
+            echo 'Invalid IRC config could not be repaired; management will remain loopback-only.' >&2
+        fi
     fi
 fi
 

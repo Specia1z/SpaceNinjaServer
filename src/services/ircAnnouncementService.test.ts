@@ -16,8 +16,13 @@ void test("IRC announcements reject empty, multiline, control, and oversized mes
 void test("IRC relay submits URL-encoded redtext without a server reply", async t => {
     const paths: string[] = [];
     let allow = true;
+    let rejectStatus = false;
     const server = createServer((req, res) => {
         paths.push(req.url ?? "");
+        if (rejectStatus) {
+            res.writeHead(403).end("Forbidden");
+            return;
+        }
         if (!allow) res.end("This service is available via loopback only.");
         // The original IRC server broadcasts here and deliberately does not respond when allowed.
     });
@@ -32,6 +37,8 @@ void test("IRC relay submits URL-encoded redtext without a server reply", async 
     await sendIrcAnnouncement("Trading & events?");
     assert.deepEqual(paths, ["/redtext?Trading%20%26%20events%3F"]);
     allow = false;
-    await assert.rejects(sendIrcAnnouncement("Blocked"), /rejected/);
-    assert.deepEqual(paths, ["/redtext?Trading%20%26%20events%3F", "/redtext?Blocked"]);
+    await assert.rejects(sendIrcAnnouncement("Blocked"), /restricted to loopback/);
+    rejectStatus = true;
+    await assert.rejects(sendIrcAnnouncement("Forbidden"), /HTTP 403/);
+    assert.deepEqual(paths, ["/redtext?Trading%20%26%20events%3F", "/redtext?Blocked", "/redtext?Forbidden"]);
 });

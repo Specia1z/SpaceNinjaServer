@@ -35,8 +35,10 @@ export const sendIrcAnnouncement = async (message: string): Promise<void> => {
                 body += chunk;
             });
             response.on("end", () => {
-                if (!response.statusCode || response.statusCode >= 400 || !body.includes("OK")) {
-                    finish(new Error("IRC management service rejected announcement"));
+                if (body.includes("This service is available via loopback only.")) {
+                    finish(new Error("IRC management service is restricted to loopback; set mgmt_loopback_only to false"));
+                } else if (!response.statusCode || response.statusCode >= 400 || !body.includes("OK")) {
+                    finish(new Error(`IRC management service rejected announcement (HTTP ${response.statusCode ?? 0})`));
                 } else {
                     finish();
                 }
