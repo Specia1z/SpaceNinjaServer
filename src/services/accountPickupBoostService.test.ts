@@ -20,12 +20,14 @@ void test("account pickup rate only changes the account-scoped world state", () 
 });
 
 void test("account pickup bonus combines with an existing global boost", () => {
+    const expiresAt = "2026-10-15T00:00:00.000Z";
     const initial = { GlobalUpgrades: [] } as Pick<IWorldState, "GlobalUpgrades">;
     applyAccountPickupBoost(initial, buildLabel, 2);
     initial.GlobalUpgrades[0]._id = toOid2("5b23106f283a555109666674", buildVersionToInt(buildLabel));
-    applyAccountPickupBoost(initial, buildLabel, 5);
+    applyAccountPickupBoost(initial, buildLabel, 5, expiresAt);
     assert.equal(initial.GlobalUpgrades.length, 1);
     assert.equal(initial.GlobalUpgrades[0].Value, 10);
+    assert.deepEqual(initial.GlobalUpgrades[0].ExpiryDate, toMongoDate2(Date.parse(expiresAt), buildLabel));
 });
 
 void test("account-specific cash and affinity events do not leak to another account", () => {
@@ -51,18 +53,35 @@ void test("account-specific cash and affinity events do not leak to another acco
 
 void test("account cash and affinity rates compound with global events instead of duplicating them", () => {
     const buildVersion = buildVersionToInt(buildLabel);
+    const expiresAt = "2026-10-15T00:00:00.000Z";
     const state = { GlobalUpgrades: [] } as Pick<IWorldState, "GlobalUpgrades">;
     applyAccountWorldStateBoost(state, buildLabel, "credit", 2);
     applyAccountWorldStateBoost(state, buildLabel, "affinity", 2);
     state.GlobalUpgrades[0]._id = toOid2("5b23106f283a555109666672", buildVersion);
     state.GlobalUpgrades[1]._id = toOid2("5b23106f283a555109666673", buildVersion);
-    applyAccountWorldStateBoost(state, buildLabel, "credit", 3);
-    applyAccountWorldStateBoost(state, buildLabel, "affinity", 4);
+    applyAccountWorldStateBoost(state, buildLabel, "credit", 3, expiresAt);
+    applyAccountWorldStateBoost(state, buildLabel, "affinity", 4, expiresAt);
     assert.deepEqual(
         state.GlobalUpgrades.map(upgrade => upgrade.Value),
         [6, 8]
     );
     assert.equal(state.GlobalUpgrades.length, 2);
+    assert.deepEqual(
+        state.GlobalUpgrades.map(upgrade => upgrade.ExpiryDate),
+        [0, 1].map(() => toMongoDate2(Date.parse(expiresAt), buildVersion))
+    );
+});
+
+void test("account expiry never extends an earlier global event or truncates an explicit account-only date", () => {
+    const earlierGlobalExpiry = "2026-10-01T00:00:00.000Z";
+    const accountExpiry = "2040-01-01T00:00:00.000Z";
+    const state = { GlobalUpgrades: [] } as Pick<IWorldState, "GlobalUpgrades">;
+    applyAccountWorldStateBoost(state, buildLabel, "credit", 2, accountExpiry);
+    assert.deepEqual(state.GlobalUpgrades[0].ExpiryDate, toMongoDate2(Date.parse(accountExpiry), buildLabel));
+    state.GlobalUpgrades[0]._id = toOid2("5b23106f283a555109666672", buildLabel);
+    state.GlobalUpgrades[0].ExpiryDate = toMongoDate2(Date.parse(earlierGlobalExpiry), buildLabel);
+    applyAccountWorldStateBoost(state, buildLabel, "credit", 3, accountExpiry);
+    assert.deepEqual(state.GlobalUpgrades[0].ExpiryDate, toMongoDate2(Date.parse(earlierGlobalExpiry), buildLabel));
 });
 
 void test("account world state tokens are bound to account and login nonce", () => {

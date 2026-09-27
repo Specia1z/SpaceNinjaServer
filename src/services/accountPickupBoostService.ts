@@ -1,5 +1,5 @@
 import type { IWorldState } from "../types/worldStateTypes.ts";
-import { toMongoDate2, toOid2, fromOid } from "../helpers/inventoryHelpers.ts";
+import { toMongoDate2, toOid2, fromOid, fromMongoDate } from "../helpers/inventoryHelpers.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 
 type TAccountUpgrade = "resource" | "credit" | "affinity";
@@ -36,6 +36,13 @@ export const applyAccountWorldStateBoost = (
     const globalUpgrade = worldState.GlobalUpgrades.find(upgrade => fromOid(upgrade._id) == definition.globalId);
     if (globalUpgrade) {
         globalUpgrade.Value *= multiplier;
+        if (expiresAt) {
+            // The combined value must not outlive the account rate, or it displays the global event's distant expiry.
+            globalUpgrade.ExpiryDate = toMongoDate2(
+                Math.min(fromMongoDate(globalUpgrade.ExpiryDate).getTime(), Date.parse(expiresAt)),
+                buildLabel
+            );
+        }
         return;
     }
 
@@ -43,7 +50,7 @@ export const applyAccountWorldStateBoost = (
     worldState.GlobalUpgrades.push({
         _id: toOid2(definition.accountId, buildVersion),
         Activation: toMongoDate2(1740164400000, buildVersion),
-        ExpiryDate: toMongoDate2(Math.min(expiresAt ? Date.parse(expiresAt) : Infinity, 2000000000000), buildVersion),
+        ExpiryDate: toMongoDate2(expiresAt ? Date.parse(expiresAt) : 2000000000000, buildVersion),
         UpgradeType: definition.upgradeType,
         OperationType: "MULTIPLY",
         Value: multiplier,
