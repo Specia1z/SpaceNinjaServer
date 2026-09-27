@@ -253,6 +253,8 @@ export interface IConfig {
         motd?: string;
         udpProxyUpstream?: string;
         metadataPatches?: IMetadataPatchConfig[];
+        /** Metadata patches appended after the global patches for a matching account ID. */
+        accountMetadataPatches?: Record<string, IMetadataPatchConfig[]>;
     };
     dev?: {
         keepVendorsExpired?: boolean;

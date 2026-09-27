@@ -184,7 +184,8 @@
     "prohibitScripts": true,
     "prohibitLocalMetadataPatches": true,
     "motd": null,
-    "metadataPatches": []
+    "metadataPatches": [],
+    "accountMetadataPatches": {}
   },
   "dev": {
     "keepVendorsExpired": false

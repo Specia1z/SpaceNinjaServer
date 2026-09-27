@@ -1,9 +1,16 @@
 window.metadataPatchApi = {
-    list: () => $.get("/custom/admin/metadata-patches?" + window.authz),
-    save: patches =>
-        $.post({
-            url: "/custom/admin/metadata-patches?" + window.authz,
+    list: accountId => {
+        const query = new URLSearchParams(window.authz);
+        if (accountId) query.set("accountId", accountId);
+        return $.get("/custom/admin/metadata-patches?" + query.toString());
+    },
+    save: (patches, accountMetadataPatches, accountId) => {
+        const query = new URLSearchParams(window.authz);
+        if (accountId) query.set("accountId", accountId);
+        return $.post({
+            url: "/custom/admin/metadata-patches?" + query.toString(),
             contentType: "application/json",
-            data: JSON.stringify({ patches })
-        })
+            data: JSON.stringify({ patches, accountMetadataPatches })
+        });
+    }
 };

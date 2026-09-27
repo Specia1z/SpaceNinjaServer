@@ -3,20 +3,58 @@ import type { RequestHandler } from "express";
 import { config, type IMetadataPatchConfig } from "../../services/configService.ts";
 import { saveConfig } from "../../services/configWriterService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
-import { compileMetadataPatches, getTunablesForClient } from "../../services/tunablesService.ts";
+import {
+    compileMetadataPatches,
+    getMetadataPatchesForAccount,
+    getTunablesForClient,
+    type IMetadataPatchSource
+} from "../../services/tunablesService.ts";
 import { forEachWsClient, sendWsBroadcastEx } from "../../services/wsService.ts";
+import { Account } from "../../models/loginModel.ts";
 
 const MAX_PATCHES = 500;
 const MAX_NAME_LENGTH = 200;
 const MAX_TARGET_LENGTH = 1000;
 const MAX_OPERATION_LENGTH = 10000;
+const MAX_ACCOUNT_PATCH_ENTRIES = 5000;
 
-const getResponse = (): { patches: IMetadataPatchConfig[]; compiled: string; revision: string } => {
+const sourceLabel = (entry: IMetadataPatchSource): string =>
+    entry.source == "global" ? "Global" : `Account ${entry.sourceId ?? ""}`;
+
+interface IMetadataPatchesResponse {
+    patches: IMetadataPatchConfig[];
+    accountMetadataPatches: Record<string, IMetadataPatchConfig[]>;
+    selectedAccountId: string;
+    compiled: string;
+    sources: {
+        order: number;
+        source: IMetadataPatchSource["source"];
+        sourceLabel: string;
+        name: string;
+        enabled: boolean;
+        targets: string[];
+    }[];
+    revision: string;
+}
+
+const getResponse = (accountId?: string): IMetadataPatchesResponse => {
     const patches = config.tunables?.metadataPatches ?? [];
-    const compiled = compileMetadataPatches(patches);
+    const accountMetadataPatches = config.tunables?.accountMetadataPatches ?? {};
+    const entries = getMetadataPatchesForAccount(accountId);
+    const compiled = compileMetadataPatches(entries.map(entry => entry.patch));
     return {
         patches,
+        accountMetadataPatches,
+        selectedAccountId: accountId ?? "",
         compiled,
+        sources: entries.map(entry => ({
+            order: entry.order + 1,
+            source: entry.source,
+            sourceLabel: sourceLabel(entry),
+            name: entry.patch.name ?? "",
+            enabled: entry.patch.enabled !== false,
+            targets: entry.patch.targets
+        })),
         revision: compiled ? crypto.createHash("sha256").update(compiled).digest("hex") : ""
     };
 };
@@ -77,13 +115,40 @@ export const parseMetadataPatches = (value: unknown): IMetadataPatchConfig[] => 
     });
 };
 
+export const parseAccountMetadataPatches = (value: unknown): Record<string, IMetadataPatchConfig[]> => {
+    if (value === undefined) return {};
+    if (!value || typeof value != "object" || Array.isArray(value)) {
+        throw new Error("accountMetadataPatches must be an object");
+    }
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length > MAX_ACCOUNT_PATCH_ENTRIES) {
+        throw new Error(`accountMetadataPatches must contain at most ${MAX_ACCOUNT_PATCH_ENTRIES} accounts`);
+    }
+    return Object.fromEntries(
+        entries.map(([accountId, patches]) => {
+            if (!accountId.trim() || accountId.length > 100) {
+                throw new Error("Each accountMetadataPatches key must be a non-empty account ID");
+            }
+            return [accountId, parseMetadataPatches(patches)];
+        })
+    );
+};
+
 export const getMetadataPatchesController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     if (!isAdministrator(account)) {
         res.status(403).send("Permission denied");
         return;
     }
-    res.json(getResponse());
+    const accountId = typeof req.query.accountId == "string" ? req.query.accountId : undefined;
+    res.json({
+        ...getResponse(accountId),
+        accounts: (await Account.find({}, "DisplayName").sort({ DisplayName: 1 })).map(account => ({
+            id: account._id.toString(),
+            displayName: account.DisplayName,
+            hasCustomPatches: Boolean(config.tunables?.accountMetadataPatches?.[account._id.toString()])
+        }))
+    });
 };
 
 export const saveMetadataPatchesController: RequestHandler = async (req, res) => {
@@ -96,21 +161,34 @@ export const saveMetadataPatchesController: RequestHandler = async (req, res) =>
     try {
         const body = req.body as Record<string, unknown>;
         const patches = parseMetadataPatches(body.patches);
+        const accountMetadataPatches =
+            body.accountMetadataPatches === undefined
+                ? (config.tunables?.accountMetadataPatches ?? {})
+                : parseAccountMetadataPatches(body.accountMetadataPatches);
         config.tunables ??= {};
         config.tunables.metadataPatches = patches;
+        config.tunables.accountMetadataPatches = accountMetadataPatches;
         await saveConfig();
 
         forEachWsClient(client => {
             if (client.isGame) {
                 client.send(
                     JSON.stringify({
-                        tunables: getTunablesForClient(client.address, client.reflexiveAddress)
+                        tunables: getTunablesForClient(client.address, client.reflexiveAddress, client.accountId)
                     })
                 );
             }
         });
         sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
-        res.json(getResponse());
+        const accountId = typeof req.query.accountId == "string" ? req.query.accountId : undefined;
+        res.json({
+            ...getResponse(accountId),
+            accounts: (await Account.find({}, "DisplayName").sort({ DisplayName: 1 })).map(account => ({
+                id: account._id.toString(),
+                displayName: account.DisplayName,
+                hasCustomPatches: Boolean(config.tunables?.accountMetadataPatches?.[account._id.toString()])
+            }))
+        });
     } catch (error) {
         res.status(400).send((error as Error).message);
     }

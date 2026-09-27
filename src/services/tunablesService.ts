@@ -49,7 +49,35 @@ export const compileMetadataPatches = (patches: IMetadataPatchConfig[] = []): st
     return lines.join("\n").trimEnd();
 };
 
-export const getTunablesForClient = (clientAddress: string, reflexiveAddress: string): ITunables => {
+export interface IMetadataPatchSource {
+    patch: IMetadataPatchConfig;
+    source: "global" | "account";
+    sourceId?: string;
+    order: number;
+}
+
+export const getMetadataPatchesForAccount = (accountId?: string): IMetadataPatchSource[] => {
+    const globalPatches = config.tunables?.metadataPatches ?? [];
+    const accountPatches = accountId ? (config.tunables?.accountMetadataPatches?.[accountId] ?? []) : [];
+    return [
+        ...globalPatches.map((patch, order) => ({ patch, source: "global" as const, order })),
+        ...accountPatches.map((patch, index) => ({
+            patch,
+            source: "account" as const,
+            sourceId: accountId,
+            order: globalPatches.length + index
+        }))
+    ];
+};
+
+export const compileMetadataPatchesForAccount = (accountId?: string): string =>
+    compileMetadataPatches(getMetadataPatchesForAccount(accountId).map(entry => entry.patch));
+
+export const getTunablesForClient = (
+    clientAddress: string,
+    reflexiveAddress: string,
+    accountId?: string
+): ITunables => {
     const tunables: ITunables = {
         // To successfully update the NRS address for pre-U15.14 clients, this needs to be set before login.
         nrs: ((config.nrsAddresses ?? [])[0] || "%THIS_MACHINE%").replaceAll("%THIS_MACHINE%", reflexiveAddress),
@@ -87,7 +115,7 @@ export const getTunablesForClient = (clientAddress: string, reflexiveAddress: st
     if (config.tunables?.udpProxyUpstream) {
         tunables.udp_proxy_upstream = config.tunables.udpProxyUpstream.replaceAll("%THIS_MACHINE%", reflexiveAddress);
     }
-    const metadataPatches = compileMetadataPatches(config.tunables?.metadataPatches);
+    const metadataPatches = compileMetadataPatchesForAccount(accountId);
     if (metadataPatches) {
         tunables.metadata_patches = metadataPatches;
         tunables.metadata_patches_revision = crypto.createHash("sha256").update(metadataPatches).digest("hex");

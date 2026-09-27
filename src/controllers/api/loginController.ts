@@ -280,7 +280,10 @@ const createLoginResponse = (request: Request, account: IDatabaseAccountJson, bu
         version_compare(decodeURIComponent(clientMod).substring(21), "0.12.0") >= 0
     ) {
         raw +=
-            "\t" + JSON.stringify(getTunablesForClient((request.socket.address() as AddressInfo).address, myAddress));
+            "\t" +
+            JSON.stringify(
+                getTunablesForClient((request.socket.address() as AddressInfo).address, myAddress, account.id)
+            );
     }
     return raw;
 };

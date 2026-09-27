@@ -6,5 +6,12 @@ import { getReflexiveAddress } from "../../services/configService.ts";
 // This endpoint is specific to the OpenWF Bootstrapper: https://openwf.io/bootstrapper-manual
 
 export const tunablesController: RequestHandler = (req, res) => {
-    res.json(getTunablesForClient((req.socket.address() as AddressInfo).address, getReflexiveAddress(req).myAddress));
+    const accountId = typeof req.query.accountId == "string" ? req.query.accountId : undefined;
+    res.json(
+        getTunablesForClient(
+            (req.socket.address() as AddressInfo).address,
+            getReflexiveAddress(req).myAddress,
+            accountId
+        )
+    );
 };

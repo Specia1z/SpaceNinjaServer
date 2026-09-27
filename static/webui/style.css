@@ -82,6 +82,110 @@ td.text-end > a > svg {
     white-space: pre-wrap;
 }
 
+.metadata-patches-account-layout {
+    border-top: 1px solid var(--bs-border-color);
+    display: grid;
+    grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
+    min-height: 24rem;
+}
+
+.metadata-patches-account-sidebar {
+    border-right: 1px solid var(--bs-border-color);
+    min-width: 0;
+    padding: 1rem 0.75rem 1rem 0;
+}
+
+.metadata-patches-account-list {
+    max-height: min(55vh, 34rem);
+    overflow-y: auto;
+    padding-top: 0.75rem;
+}
+
+.metadata-patches-account-item {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-left: 3px solid transparent;
+    color: var(--bs-body-color);
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    width: 100%;
+}
+
+.metadata-patches-account-item:hover,
+.metadata-patches-account-item.active {
+    background: var(--bs-tertiary-bg);
+}
+
+.metadata-patches-account-item.active {
+    border-left-color: var(--bs-primary);
+    font-weight: 600;
+}
+
+.metadata-patches-account-item-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.metadata-patches-account-editor {
+    min-width: 0;
+    padding: 1rem 0 1.5rem 1.25rem;
+}
+
+.metadata-patches-sources {
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+}
+
+.metadata-patches-source-row {
+    align-items: center;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: auto minmax(7rem, 10rem) minmax(0, 1fr) auto;
+    padding: 0.5rem 0.75rem;
+}
+
+.metadata-patches-source-row + .metadata-patches-source-row {
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.metadata-patches-source-label,
+.metadata-patches-source-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 767.98px) {
+    .metadata-patches-account-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .metadata-patches-account-sidebar {
+        border-bottom: 1px solid var(--bs-border-color);
+        border-right: 0;
+        padding-right: 0;
+    }
+
+    .metadata-patches-account-editor {
+        padding-left: 0;
+    }
+
+    .metadata-patches-source-row {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .metadata-patches-source-name {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
 .account-rates-page {
     max-width: 84rem;
     margin-inline: auto;
