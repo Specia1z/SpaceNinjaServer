@@ -37,6 +37,8 @@ export interface IAccountDropMultiplier {
 
 export interface IAccountRateProfile {
     enabled?: boolean;
+    /** Optional ISO 8601 date-time with a timezone; expired profiles apply no bonus. */
+    expiresAt?: string;
     resourceDropMultiplier?: number;
     modDropMultiplier?: number;
     creditMultiplier?: number;

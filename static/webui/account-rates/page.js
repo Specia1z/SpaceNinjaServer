@@ -122,6 +122,14 @@ window.accountRatesPage = (() => {
         const enabled = find("#account-rates-enabled");
         enabled.checked = state.draft.enabled !== false;
         enabled.disabled = state.busy;
+        const expiry = find("#account-rates-expires-at");
+        if (state.draft.expiresAt) {
+            const date = new Date(state.draft.expiresAt);
+            expiry.value = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        } else {
+            expiry.value = "";
+        }
+        expiry.disabled = state.busy;
         for (const id of ["account-rates-save", "account-rates-reset", "account-rates-delete"]) {
             find(`#${id}`).disabled = state.busy;
         }
@@ -194,6 +202,13 @@ window.accountRatesPage = (() => {
 
     function save() {
         if (!state.draft || state.busy) return;
+        if (state.draft.expiresAt && !Number.isFinite(Date.parse(state.draft.expiresAt))) {
+            const input = find("#account-rates-expires-at");
+            input.classList.add("is-invalid");
+            input.focus();
+            notice(loc("accountRates_invalidExpiry"));
+            return;
+        }
         for (const definition of state.definitions) {
             const value = state.draft[definition.key];
             if (!Number.isFinite(value) || value < definition.min || value > definition.max) {
@@ -250,6 +265,13 @@ window.accountRatesPage = (() => {
     find("#account-rates-enabled").addEventListener("change", event => {
         state.draft.enabled = event.target.checked;
         state.dirty = true;
+        clearNotice();
+    });
+    find("#account-rates-expires-at").addEventListener("input", event => {
+        const value = event.target.value;
+        state.draft.expiresAt = value ? new Date(value).toISOString() : undefined;
+        state.dirty = true;
+        event.target.classList.remove("is-invalid");
         clearNotice();
     });
     find("#account-rates-save").addEventListener("click", save);

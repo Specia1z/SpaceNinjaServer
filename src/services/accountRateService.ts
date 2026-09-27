@@ -1,6 +1,13 @@
 import { config, type IAccountRateProfile } from "./configService.ts";
 
-export type TAccountRateKey = Exclude<keyof IAccountRateProfile, "enabled">;
+export type TAccountRateKey = Exclude<keyof IAccountRateProfile, "enabled" | "expiresAt">;
+export type TResolvedAccountRateProfile = Required<Omit<IAccountRateProfile, "expiresAt">> &
+    Pick<IAccountRateProfile, "expiresAt">;
+
+const isValidExpiration = (value: unknown): value is string =>
+    typeof value == "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+    Number.isFinite(Date.parse(value));
 
 export interface IAccountRateDefinition {
     key: TAccountRateKey;
@@ -115,6 +122,9 @@ export const normalizeAccountRateProfile = (value: unknown): IAccountRateProfile
     if (typeof raw.enabled == "boolean") {
         profile.enabled = raw.enabled;
     }
+    if (isValidExpiration(raw.expiresAt)) {
+        profile.expiresAt = new Date(raw.expiresAt).toISOString();
+    }
 
     for (const definition of ACCOUNT_RATE_DEFINITIONS) {
         const rawValue = raw[definition.key];
@@ -134,8 +144,11 @@ export const parseAccountRateProfile = (value: unknown): IAccountRateProfile => 
     if (raw.enabled !== undefined && typeof raw.enabled != "boolean") {
         throw new Error("enabled must be a boolean");
     }
+    if (raw.expiresAt !== undefined && !isValidExpiration(raw.expiresAt)) {
+        throw new Error("expiresAt must be an ISO 8601 date-time with a timezone");
+    }
     for (const [key, multiplier] of Object.entries(raw)) {
-        if (key == "enabled") continue;
+        if (key == "enabled" || key == "expiresAt") continue;
         const definition = ACCOUNT_RATE_DEFINITIONS.find(item => item.key == key);
         if (!definition) throw new Error(`Unknown rate: ${key}`);
         if (
@@ -147,10 +160,10 @@ export const parseAccountRateProfile = (value: unknown): IAccountRateProfile => 
             throw new Error(`${key} must be between ${definition.min} and ${definition.max}`);
         }
     }
-    return raw as IAccountRateProfile;
+    return normalizeAccountRateProfile(raw);
 };
 
-export const getDefaultAccountRateProfile = (): Required<IAccountRateProfile> => ({
+export const getDefaultAccountRateProfile = (): TResolvedAccountRateProfile => ({
     enabled: true,
     resourceDropMultiplier: 1,
     modDropMultiplier: 1,
@@ -167,7 +180,7 @@ export const getDefaultAccountRateProfile = (): Required<IAccountRateProfile> =>
 export const getAccountRateProfile = (account: {
     _id: { toString(): string };
     DisplayName: string;
-}): Required<IAccountRateProfile> => {
+}): TResolvedAccountRateProfile => {
     const defaults = getDefaultAccountRateProfile();
     const legacy = config.accountDropMultipliers?.[account.DisplayName];
     const configured = config.accountRateProfiles?.[account._id.toString()];
@@ -184,5 +197,5 @@ export const getAccountRateProfile = (account: {
     };
 };
 
-export const getEffectiveAccountRate = (profile: Required<IAccountRateProfile>, key: TAccountRateKey): number =>
-    profile.enabled ? profile[key] : 1;
+export const getEffectiveAccountRate = (profile: TResolvedAccountRateProfile, key: TAccountRateKey): number =>
+    profile.enabled && (!profile.expiresAt || Date.now() < Date.parse(profile.expiresAt)) ? profile[key] : 1;

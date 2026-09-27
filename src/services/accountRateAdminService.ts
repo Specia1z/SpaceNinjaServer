@@ -1,12 +1,16 @@
 import { Account } from "../models/loginModel.ts";
 import type { TAccountDocument } from "./loginService.ts";
-import { ACCOUNT_RATE_DEFINITIONS, getAccountRateProfile } from "./accountRateService.ts";
+import {
+    ACCOUNT_RATE_DEFINITIONS,
+    getAccountRateProfile,
+    type TResolvedAccountRateProfile
+} from "./accountRateService.ts";
 import { config, type IAccountRateProfile } from "./configService.ts";
 import { saveConfig } from "./configWriterService.ts";
 
 export const listAccountRates = async (): Promise<{
     definitions: typeof ACCOUNT_RATE_DEFINITIONS;
-    accounts: { id: string; displayName: string; profile: Required<IAccountRateProfile>; hasCustomProfile: boolean }[];
+    accounts: { id: string; displayName: string; profile: TResolvedAccountRateProfile; hasCustomProfile: boolean }[];
     orphanedProfiles: string[];
 }> => {
     const accounts = await Account.find({}, "DisplayName").sort({ DisplayName: 1 });
@@ -31,7 +35,7 @@ export const findAccountForRates = (id: string): Promise<TAccountDocument | null
 export const saveAccountRates = async (
     account: TAccountDocument,
     profile: IAccountRateProfile
-): Promise<{ id: string; displayName: string; profile: Required<IAccountRateProfile> }> => {
+): Promise<{ id: string; displayName: string; profile: TResolvedAccountRateProfile }> => {
     const id = account._id.toString();
     config.accountRateProfiles ??= {};
     config.accountRateProfiles[id] = profile;

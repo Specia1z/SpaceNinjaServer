@@ -40,6 +40,19 @@ void test("disabled profiles leave rates at 1x without losing saved values", () 
     assert.equal(getEffectiveAccountRate(profile, "creditMultiplier"), 1);
 });
 
+void test("expiring profiles apply only before their absolute expiration time", () => {
+    const future = parseAccountRateProfile({
+        enabled: true,
+        expiresAt: "2099-01-01T00:00:00+08:00",
+        creditMultiplier: 10
+    });
+    assert.equal(future.expiresAt, "2098-12-31T16:00:00.000Z");
+    assert.equal(getEffectiveAccountRate({ ...getAccountRateProfile(account), ...future }, "creditMultiplier"), 10);
+
+    const expired = parseAccountRateProfile({ enabled: true, expiresAt: "2000-01-01T00:00:00Z", creditMultiplier: 10 });
+    assert.equal(getEffectiveAccountRate({ ...getAccountRateProfile(account), ...expired }, "creditMultiplier"), 1);
+});
+
 void test("save validation accepts supported rates and rejects malformed values", () => {
     assert.deepEqual(parseAccountRateProfile({ enabled: true, creditMultiplier: 2.5 }), {
         enabled: true,
@@ -50,6 +63,9 @@ void test("save validation accepts supported rates and rejects malformed values"
     }
     assert.throws(() => parseAccountRateProfile({ unknownMultiplier: 3 }));
     assert.throws(() => parseAccountRateProfile({ enabled: "true" }));
+    for (const expiresAt of ["", "2099-01-01", "2099-01-01T00:00:00", "not-a-date", 123]) {
+        assert.throws(() => parseAccountRateProfile({ expiresAt }));
+    }
     assert.throws(() => parseAccountRateProfile({ relicRewardMultiplier: 0 }));
     assert.throws(() => parseAccountRateProfile({ dailyTributeMultiplier: 0 }));
     assert.equal(
