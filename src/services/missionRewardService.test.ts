@@ -7,7 +7,8 @@ import {
     getRotations,
     scaleAccountDropCount,
     scaleAccountMissionRewards,
-    scaleAccountResourceItems
+    scaleAccountResourceItems,
+    scaleReportedModItems
 } from "./missionRewardService.ts";
 
 void test("fixed mission rewards preserve counted items and credit bonuses", async () => {
@@ -37,52 +38,66 @@ void test("spy rotations and account drop counts retain their limits", async () 
     assert.equal(scaleAccountDropCount(3, -1), 0);
 });
 
-void test("scaleAccountResourceItems scales resources but preserves recipes and other misc items", () => {
-    assert.deepEqual(
-        scaleAccountResourceItems(
-            [
-                { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: 24 },
-                { ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 98 },
-                { ItemType: "/Lotus/Types/Recipes/ExampleBlueprint", ItemCount: 2 },
-                { ItemType: "/Lotus/Types/Items/MiscItems/SomeToken", ItemCount: 1 },
-                { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: -1 }
-            ],
-            10
-        ),
-        [
-            { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: 240 },
-            { ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 980 },
-            { ItemType: "/Lotus/Types/Recipes/ExampleBlueprint", ItemCount: 2 },
-            { ItemType: "/Lotus/Types/Items/MiscItems/SomeToken", ItemCount: 1 },
-            { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: -1 }
-        ]
-    );
+void test("reported mods scale only positive quantities at final settlement", () => {
+    const mods = [
+        { ItemType: "/Lotus/Upgrades/Mods/Pistol/WeaponAmmoMaxMod", ItemCount: 1 },
+        { ItemType: "/Lotus/Upgrades/Mods/Pistol/WeaponAmmoMaxMod", ItemCount: -1 },
+        { ItemType: "/Lotus/Upgrades/Arcanes/ExampleArcane", ItemCount: 1 }
+    ];
+    assert.deepEqual(scaleReportedModItems(mods, 10), [
+        { ItemType: mods[0].ItemType, ItemCount: 10 },
+        mods[1],
+        mods[2]
+    ]);
+    assert.deepEqual(scaleReportedModItems(mods, 1), mods);
 });
 
-void test("scaleAccountMissionRewards scales all mission resource and mod rewards once", () => {
+void test("legacy resource fallback leaves recipes and negative counts unchanged", () => {
+    const drops = [
+        { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: 24 },
+        { ItemType: "/Lotus/Types/Recipes/ExampleBlueprint", ItemCount: 2 },
+        { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: -1 }
+    ];
+    assert.deepEqual(scaleAccountResourceItems(drops, 10), [
+        { ItemType: drops[0].ItemType, ItemCount: 240 },
+        drops[1],
+        drops[2]
+    ]);
+});
+
+void test("scaleAccountMissionRewards scales mission and cache rewards but not stripped items", () => {
     assert.deepEqual(
         scaleAccountMissionRewards(
             [
                 { StoreItem: "/Lotus/StoreItems/Upgrades/Mods/Pistol/WeaponAmmoMaxMod", ItemCount: 1 },
                 { StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Rubedo", ItemCount: 24 },
+                {
+                    StoreItem: "/Lotus/StoreItems/Upgrades/Mods/Pistol/WeaponAmmoMaxMod",
+                    ItemCount: 1,
+                    FromEnemyCache: true
+                },
                 { StoreItem: "/Lotus/StoreItems/Types/Game/Projections/Example", ItemCount: 1 },
                 {
                     StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Ferrite",
                     ItemCount: 1,
-                    FromEnemyCache: true
+                    IsStrippedItem: true
                 }
             ],
-            10,
             10
         ),
         [
             { StoreItem: "/Lotus/StoreItems/Upgrades/Mods/Pistol/WeaponAmmoMaxMod", ItemCount: 10 },
-            { StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Rubedo", ItemCount: 240 },
+            { StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Rubedo", ItemCount: 24 },
+            {
+                StoreItem: "/Lotus/StoreItems/Upgrades/Mods/Pistol/WeaponAmmoMaxMod",
+                ItemCount: 10,
+                FromEnemyCache: true
+            },
             { StoreItem: "/Lotus/StoreItems/Types/Game/Projections/Example", ItemCount: 1 },
             {
                 StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Ferrite",
                 ItemCount: 1,
-                FromEnemyCache: true
+                IsStrippedItem: true
             }
         ]
     );

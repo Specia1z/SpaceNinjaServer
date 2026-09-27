@@ -6,6 +6,7 @@ import { Account } from "../../models/loginModel.ts";
 import {
     createAccount,
     createNonce,
+    getAccountWorldStateToken,
     getBuildLabelForUnauthenticatedRequest,
     getGoogleAccountData,
     getUsernameFromEmail,
@@ -28,6 +29,7 @@ import { getRegistrationAddress, reserveRegistration } from "../../services/regi
 import type { AddressInfo } from "node:net";
 import { buildLabelToVersionInt } from "../../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
+import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
 
 export const loginController: RequestHandler = async (request, response) => {
     const loginRequest = JSON.parse(String(request.body)) as ILoginRequest; // parse octet stream of json data to json object
@@ -254,12 +256,23 @@ const createLoginResponse = (request: Request, account: IDatabaseAccountJson, bu
         resp.MatchmakingBuildId = buildVersion.toString();
     }
     if (buildVersion >= gameToBuildVersionInt["33.0.0"]) {
+        const accountPickupRate = getEffectiveAccountRate(
+            getAccountRateProfile({
+                _id: account.id,
+                DisplayName: account.DisplayName
+            }),
+            "resourceDropMultiplier"
+        );
+        const scopedCdnPath =
+            accountPickupRate != 1 && buildVersion >= gameToBuildVersionInt["39.1.0"]
+                ? `account/${account.id}/${getAccountWorldStateToken(account.id, account.Nonce)}/`
+                : "";
         if (buildVersion >= gameToBuildVersionInt["40.0.0"]) {
             // U40 is when they changed this from content.warframe.com/dynamic/ to api.warframe.com/cdn/
-            resp.platformCDNs = [`${myUrlBase}/cdn/`];
+            resp.platformCDNs = [`${myUrlBase}/cdn/${scopedCdnPath}`];
         } else if (buildVersion >= gameToBuildVersionInt["39.1.0"]) {
             // U39.1 is when they made dynamic/ explicit
-            resp.platformCDNs = [`${myUrlBase}/dynamic/`];
+            resp.platformCDNs = [`${myUrlBase}/dynamic/${scopedCdnPath}`];
         } else {
             // Pre-39.1 implied dynamic/ for all content requests
             resp.platformCDNs = [`${myUrlBase}/`];

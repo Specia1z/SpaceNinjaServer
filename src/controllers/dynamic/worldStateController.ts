@@ -6,18 +6,28 @@ import {
     populateFissures,
     populateAlerts
 } from "../../services/worldStateService.ts";
-import { getAccountForRequest, getBuildLabel } from "../../services/loginService.ts";
+import { getAccountForQuery, getAccountForRequest, getBuildLabel } from "../../services/loginService.ts";
 import { BL_LATEST } from "../../constants/gameVersions.ts";
 import { getInventory2 } from "../../services/inventoryService.ts";
 import { applyLiveWorldState, refreshLiveWorldState } from "../../services/liveWorldStateService.ts";
 import { applyStoreOverrides } from "../../services/storeOverrideService.ts";
+import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
+import { applyAccountPickupBoost } from "../../services/accountPickupBoostService.ts";
+import { logger } from "../../utils/logger.ts";
 
 export const worldStateController: RequestHandler = async (req, res) => {
     let buildLabel: string;
     let language: string | undefined;
     let elionWorkaroundNeeded = false;
-    if (req.query.accountId) {
-        const account = await getAccountForRequest(req);
+    let accountPickupMultiplier = 1;
+    if (req.params.accountId || req.query.accountId) {
+        const account = req.params.accountId
+            ? await getAccountForQuery(
+                  { accountId: req.params.accountId, token: req.params.accountToken, ct: "WORLDSTATE" },
+                  "WORLDSTATE"
+              )
+            : await getAccountForRequest(req);
+        accountPickupMultiplier = getEffectiveAccountRate(getAccountRateProfile(account), "resourceDropMultiplier");
         buildLabel = getBuildLabel(req, account);
         language = account.Language;
         if (buildLabel == "2013.07.04.20.17/") {
@@ -45,6 +55,15 @@ export const worldStateController: RequestHandler = async (req, res) => {
     ]);
     applyLiveWorldState(worldState);
     applyStoreOverrides(worldState, buildLabel);
+    if (req.params.accountId) {
+        applyAccountPickupBoost(worldState, buildLabel, accountPickupMultiplier);
+        if (accountPickupMultiplier != 1) {
+            logger.debug("sending account pickup boost", {
+                accountId: req.params.accountId,
+                resourceDropMultiplier: accountPickupMultiplier
+            });
+        }
+    }
 
     if (elionWorkaroundNeeded) {
         worldState.Alerts.push({

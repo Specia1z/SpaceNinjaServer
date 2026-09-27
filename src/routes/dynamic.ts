@@ -5,7 +5,7 @@ import { getProfileViewingDataGetController } from "../controllers/dynamic/getPr
 import { getShipController } from "../controllers/dynamic/getShipController.ts";
 import { worldStateController } from "../controllers/dynamic/worldStateController.ts";
 
-const dynamicRouter = express.Router();
+const dynamicRouter = express.Router({ mergeParams: true });
 
 dynamicRouter.get("/aggregateSessions.php", aggregateSessionsController);
 dynamicRouter.get("/getGuildAds.php", getGuildAdsController);

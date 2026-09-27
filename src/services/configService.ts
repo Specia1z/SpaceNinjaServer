@@ -29,7 +29,7 @@ export interface IMetadataPatchConfig {
 }
 
 export interface IAccountDropMultiplier {
-    /** Multiplier for resource drops reported in StrippedItems.DROP_MISC_ITEM. */
+    /** Per-account pickup amount on modern clients; final-settlement fallback for legacy clients. */
     resourceMultiplier?: number;
     /** Multiplier for mod drops reported in StrippedItems.DROP_MOD. */
     modMultiplier?: number;

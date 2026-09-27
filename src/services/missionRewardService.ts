@@ -7,9 +7,9 @@ import type {
 } from "warframe-public-export-plus";
 import { ExportResources, ExportRewards } from "warframe-public-export-plus";
 import type { IMissionReward } from "../types/missionTypes.ts";
+import type { ITypeCount } from "../types/commonTypes.ts";
 import type { IMission } from "../types/inventoryTypes/inventoryTypes.ts";
 import type { IRewardInfo } from "../types/requestTypes.ts";
-import type { ITypeCount } from "../types/commonTypes.ts";
 import type { IRngResult } from "./rngService.ts";
 import { SRng, generateRewardSeed, getRandomReward } from "./rngService.ts";
 import { fromStoreItem, getRegion, getMissionDeck, toStoreItem } from "./itemDataService.ts";
@@ -190,7 +190,7 @@ export const getRandomRewardByChance = (pool: readonly IReward[], rng?: SRng): I
 export const scaleAccountDropCount = (count: number, multiplier: number): number =>
     Math.max(0, Math.trunc(count * multiplier));
 
-/** Scale final mission resource entries while leaving recipes and other misc items unchanged. */
+/** Legacy clients do not receive account-scoped world state; boost their final reported resources instead. */
 export const scaleAccountResourceItems = (items: readonly ITypeCount[], multiplier: number): ITypeCount[] =>
     items.map(item =>
         item.ItemCount > 0 && item.ItemType in ExportResources
@@ -198,22 +198,26 @@ export const scaleAccountResourceItems = (items: readonly ITypeCount[], multipli
             : item
     );
 
+export const scaleReportedModItems = (items: readonly ITypeCount[], multiplier: number): ITypeCount[] =>
+    items.map(item =>
+        item.ItemCount > 0 && item.ItemType.includes("/Upgrades/Mods/") && multiplier != 1
+            ? { ...item, ItemCount: scaleAccountDropCount(item.ItemCount, multiplier) }
+            : item
+    );
+
 export const scaleAccountMissionRewards = (
     rewards: readonly IMissionReward[],
-    resourceMultiplier: number,
     modMultiplier: number
 ): IMissionReward[] =>
     rewards.map(reward => {
-        // StrippedItems have already been expanded from their drop table before they enter MissionRewards.
-        if (reward.FromEnemyCache || reward.IsStrippedItem || reward.ItemCount <= 0) return reward;
+        // FromEnemyCache also marks ordinary spy/cache rewards; it does not mean the reward was pre-scaled.
+        if (reward.IsStrippedItem || reward.ItemCount <= 0) return reward;
 
         const itemType = reward.StoreItem.startsWith("/Lotus/StoreItems/")
             ? fromStoreItem(reward.StoreItem)
             : reward.StoreItem;
-        const multiplier =
-            itemType in ExportResources ? resourceMultiplier : itemType.includes("/Upgrades/Mods/") ? modMultiplier : 1;
-        if (multiplier == 1) return reward;
-        return { ...reward, ItemCount: scaleAccountDropCount(reward.ItemCount, multiplier) };
+        if (!itemType.includes("/Upgrades/Mods/") || modMultiplier == 1) return reward;
+        return { ...reward, ItemCount: scaleAccountDropCount(reward.ItemCount, modMultiplier) };
     });
 
 export const isEligibleForCreditReward = async (

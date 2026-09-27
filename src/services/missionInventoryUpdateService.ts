@@ -117,7 +117,8 @@ import {
     labConquestRewards,
     scaleAccountDropCount,
     scaleAccountMissionRewards,
-    scaleAccountResourceItems
+    scaleAccountResourceItems,
+    scaleReportedModItems
 } from "./missionRewardService.ts";
 export { addFixedLevelRewards } from "./missionRewardService.ts";
 export { handleConservation } from "./conservationRewardService.ts";
@@ -344,9 +345,21 @@ export const addMissionInventoryUpdates = async (
                     inventory.LastRegionPlayed = value;
                 }
                 break;
-            case "RawUpgrades":
-                addMods(inventory, value);
+            case "RawUpgrades": {
+                const modMultiplier = inventoryUpdates.EndOfMatchUpload
+                    ? getEffectiveAccountRate(accountRates, "modDropMultiplier")
+                    : 1;
+                const scaledMods = scaleReportedModItems(value, modMultiplier);
+                if (scaledMods.some((item, index) => item.ItemCount != value[index].ItemCount)) {
+                    logger.debug(`applying account multiplier to reported mods`, {
+                        account: account.DisplayName,
+                        modMultiplier,
+                        mods: scaledMods
+                    });
+                }
+                addMods(inventory, scaledMods);
                 break;
+            }
             case "CollectedQuestKeys":
                 for (const questKey of value) {
                     addQuestKey(inventory, { ItemType: questKey });
@@ -366,23 +379,14 @@ export const addMissionInventoryUpdates = async (
                     }
                 }
                 if (miscItems.length > 0) {
-                    const resourceDropMultiplier = inventoryUpdates.EndOfMatchUpload
-                        ? getEffectiveAccountRate(accountRates, "resourceDropMultiplier")
-                        : 1;
-                    const scaledMiscItems = scaleAccountResourceItems(miscItems, resourceDropMultiplier);
-                    if (resourceDropMultiplier != 1) {
-                        const scaledItems = scaledMiscItems.filter(
-                            (item, index) => item.ItemCount != miscItems[index].ItemCount
-                        );
-                        if (scaledItems.length) {
-                            logger.debug(`applying account resource multiplier to reported drops`, {
-                                account: account.DisplayName,
-                                resourceDropMultiplier,
-                                drops: scaledItems
-                            });
-                        }
-                    }
-                    addMiscItemsComplex(inventory, scaledMiscItems);
+                    // Account pickup boosts reach the client in account-scoped world state on modern builds.
+                    // Older clients need the server-side final-settlement fallback.
+                    const legacyMultiplier =
+                        inventoryUpdates.EndOfMatchUpload &&
+                        version_compare(buildLabel, gameToBuildVersion["39.1.0"]) < 0
+                            ? getEffectiveAccountRate(accountRates, "resourceDropMultiplier")
+                            : 1;
+                    addMiscItemsComplex(inventory, scaleAccountResourceItems(miscItems, legacyMultiplier));
                 }
                 if (recipes.length > 0) {
                     addRecipes(inventory, recipes);
@@ -1486,16 +1490,14 @@ export const addMissionRewards = async (
         }
     }
 
-    const resourceDropMultiplier = getEffectiveAccountRate(accountRates, "resourceDropMultiplier");
     const modDropMultiplier = getEffectiveAccountRate(accountRates, "modDropMultiplier");
-    const scaledMissionRewards = scaleAccountMissionRewards(MissionRewards, resourceDropMultiplier, modDropMultiplier);
+    const scaledMissionRewards = scaleAccountMissionRewards(MissionRewards, modDropMultiplier);
     const scaledRewardEntries = scaledMissionRewards.filter(
         (reward, index) => reward.ItemCount != MissionRewards[index].ItemCount
     );
     if (scaledRewardEntries.length) {
-        logger.debug(`applying account multipliers to mission rewards`, {
+        logger.debug(`applying mission reward multipliers`, {
             account: account.DisplayName,
-            resourceDropMultiplier,
             modDropMultiplier,
             rewards: scaledRewardEntries
         });
@@ -1595,12 +1597,15 @@ export const addMissionRewards = async (
 
     if (strippedItems) {
         if (endOfMatchUpload) {
-            const resourceDropMultiplier = getEffectiveAccountRate(accountRates, "resourceDropMultiplier");
             const modDropMultiplier = getEffectiveAccountRate(accountRates, "modDropMultiplier");
-            if (resourceDropMultiplier != 1 || modDropMultiplier != 1) {
+            const legacyResourceMultiplier =
+                version_compare(buildLabel, gameToBuildVersion["39.1.0"]) < 0
+                    ? getEffectiveAccountRate(accountRates, "resourceDropMultiplier")
+                    : 1;
+            if (modDropMultiplier != 1 || legacyResourceMultiplier != 1) {
                 logger.debug(`applying account drop multipliers`, {
                     account: account.DisplayName,
-                    resourceDropMultiplier,
+                    legacyResourceMultiplier,
                     modDropMultiplier
                 });
             }
@@ -1695,7 +1700,7 @@ export const addMissionRewards = async (
                 if (si.DROP_MISC_ITEM) {
                     const resourceDroptable = droptables.find(x => x.type == "resource");
                     if (resourceDroptable) {
-                        const dropCount = scaleAccountDropCount(si.DROP_MISC_ITEM.length, resourceDropMultiplier);
+                        const dropCount = scaleAccountDropCount(si.DROP_MISC_ITEM.length, legacyResourceMultiplier);
                         for (let i = 0; i != dropCount; ++i) {
                             const reward = getRandomReward(resourceDroptable.items)!;
                             logger.debug(`stripped droptable (resources pool) rolled`, reward);

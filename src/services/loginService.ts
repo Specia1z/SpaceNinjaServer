@@ -105,6 +105,9 @@ export type TAccountDocument = Document<unknown, {}, IDatabaseAccountJson> &
 // already-validated possesser authority. A WeakSet avoids adding an enumerable/persisted field to the Mongoose doc.
 const administratorAuthorizedAccounts = new WeakSet<object>();
 
+export const getAccountWorldStateToken = (accountId: string, nonce: number): string =>
+    crypto.createHmac("sha256", nonce.toString()).update(`accountId=${accountId}&ct=WORLDSTATE`).digest("hex");
+
 export const getAccountForQuery = async (
     query: Record<string, string>,
     acceptToken?: string

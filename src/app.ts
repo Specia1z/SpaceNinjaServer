@@ -43,7 +43,9 @@ app.use("/api", apiRouter);
 app.use("/api", arbiterRouter);
 app.use("/", cacheRouter);
 app.use("/custom", customRouter);
+app.use("/cdn/account/:accountId/:accountToken", dynamicRouter);
 app.use("/cdn", dynamicRouter); // >= U40
+app.use("/dynamic/account/:accountId/:accountToken", dynamicRouter);
 app.use("/dynamic", dynamicRouter); // < U40
 app.use("/:id/dynamic", dynamicRouter);
 app.use("/pay", payRouter);

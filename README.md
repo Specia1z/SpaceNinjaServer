@@ -89,7 +89,7 @@ Important settings include:
 - `hubServers`: the Hub service itself must be running and reachable on its configured UDP address, usually port `6952`. The relay is only a transport layer and does not replace `warframe-hub-server`.
 - `administratorNames`: accounts allowed to use administrator features.
 - `registrationRateLimit`: game auto-registration and WebUI signups share a rolling 24-hour quota (default: three attempts per client address, 100 account creations server-wide, and 1000 attempts including failed writes). Configure `windowMinutes`, `perAddress`, `global`, and `globalAttempts` in `config.json` (Docker: `docker-data/conf/config.json`). Existing-account logins are unaffected. Client-supplied `X-Forwarded-For` is ignored unless the connecting reverse proxy's exact IP is listed in `trustedProxies`; without that setting, users behind one proxy share a quota. Counters are process-local and reset on restart; multiple replicas need a shared store, and distributed abuse requires invitations or identity verification.
-- `accountDropMultipliers`: configure per-account mission resource and mod drop multipliers, keyed by the exact in-game display name. For example:
+- `accountDropMultipliers`: configure per-account resource pickup amount and mission Mod multipliers, keyed by the exact in-game display name. For example:
 
   ```json
   {
@@ -102,8 +102,8 @@ Important settings include:
   }
   ```
 
-  Unconfigured accounts keep the normal behavior. A multiplier of `0` disables that drop category; fractional results are truncated. This applies to server-rolled resource and mod drops from mission settlement, not fixed mission rewards, blueprints, or credits.
-- `accountRateProfiles`: account-ID-based multiplier profiles managed from the admin-only Account Rates WebUI page. The editor covers resource and Mod drops, mission credits, Focus XP, syndicate and Nightwave standing, relic item count and platinum, mission platinum, and daily tribute. Changes apply to their respective server settlement paths; client-side drop odds and affinity calculations are not altered. Existing display-name-based drop rates appear in the editor and are migrated to the ID-based profile when saved.
+  Unconfigured accounts keep the normal behavior. Modern clients (39.1+) receive a signed, account-scoped world state with a resource pickup amount bonus, independent of the shared global setting; re-login after changing the rate. Older clients instead receive a final-settlement resource fallback. Mod quantities from reported pickups, mission rewards, and server-rolled drops are scaled at settlement, not in the in-mission pickup display. Fixed mission resource rewards, blueprints, and credits are unaffected.
+- `accountRateProfiles`: account-ID-based multiplier profiles managed from the admin-only Account Rates WebUI page. The editor covers resource pickup amounts and Mod drops, mission credits, Focus XP, syndicate and Nightwave standing, relic item count and platinum, mission platinum, and daily tribute. Other categories retain their existing server-side behavior. Existing display-name-based drop rates appear in the editor and are migrated to the ID-based profile when saved.
 - `worldState.liveSync`: enables live world-state synchronization. The active fork configuration enables this by default; the vanilla template leaves it disabled.
 - `worldState.eidolonOverride`: set to `day` or `night` to lock Plains of Eidolon or Cambion Drift time.
 - `worldState.vallisOverride`: set to `warm` or `cold` to lock Orb Vallis temperature.
