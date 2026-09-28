@@ -273,8 +273,8 @@ export class WarframeIrcServer {
     private handleNick(session: IIrcClientSession, requestedNick: string | undefined): void {
         const nick = requestedNick?.replace(/^:/, "");
         if (!nick) return;
-        const existing = this.findClient(nick);
-        if (existing && existing != session) {
+        const existing = this.clientsByNick.get(casefold(nick));
+        if (existing && existing != session && session.registered) {
             this.send(session, `:Soup 433 * ${nick} :Nickname is already in use`);
             return;
         }
@@ -335,8 +335,19 @@ export class WarframeIrcServer {
             !session.user
         )
             return;
+        const nickKey = casefold(session.nick);
+        const existing = this.clientsByNick.get(nickKey);
+        if (existing && existing != session) {
+            if (existing.accountId != session.accountId) {
+                this.send(session, `:Soup 433 * ${session.nick} :Nickname is already in use`);
+                session.nick = undefined;
+                return;
+            }
+            this.clientsByNick.delete(nickKey);
+            existing.socket.destroy();
+        }
         session.registered = true;
-        this.clientsByNick.set(casefold(session.nick), session);
+        this.clientsByNick.set(nickKey, session);
         this.send(session, `:Soup 001 ${session.nick} :Welcome to the Warframe IRC service ${session.nick}`);
         this.send(session, `:Soup 002 ${session.nick} :Your host is Soup`);
         this.send(session, `:Soup 003 ${session.nick} :This server was created for local U44 clients`);
@@ -566,7 +577,8 @@ export class WarframeIrcServer {
     private removeSession(session: IIrcClientSession): void {
         if (!this.sessions.delete(session)) return;
         if (session.nick) {
-            this.clientsByNick.delete(casefold(session.nick));
+            const key = casefold(session.nick);
+            if (this.clientsByNick.get(key) == session) this.clientsByNick.delete(key);
             this.broadcastShared(session, `:${this.prefix(session)} QUIT :Connection closed`);
             this.notifyAvailability(session, false);
             logger.info(`IRC client disconnected: ${session.nick}`);

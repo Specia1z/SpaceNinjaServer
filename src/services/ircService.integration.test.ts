@@ -139,3 +139,37 @@ void test("TLS IRC supports U44 social commands and Unicode platform suffixes", 
     ordis.send("QUIT :test complete");
     assert.equal(await lotus.waitFor(line => line.includes(" 731 ")), `:Soup 731 ${lotusNick} :${ordisNick}`);
 });
+
+void test("TLS IRC distinguishes platform suffixes and replaces stale same-account sessions", async t => {
+    const server = new WarframeIrcServer({
+        address: "127.0.0.1",
+        ports: [0],
+        certFile: path.join(repoDir, "static/cert/cert.pem"),
+        keyFile: path.join(repoDir, "static/cert/key.pem")
+    });
+    const [port] = await server.start();
+    t.after(() => server.stop());
+
+    const pcNick = "Lotus\uE000";
+    const consoleNick = "Lotus\uE001";
+    const pcAccountId = "6ab9efe99abfe032aae9a6bb";
+    const consoleAccountId = "6aba30199abfe032aae9b8f5";
+    const pc = await IrcTestClient.connect(port);
+    const console = await IrcTestClient.connect(port);
+    const replacement = await IrcTestClient.connect(port);
+    t.after(async () => {
+        await Promise.all([pc.close(), console.close(), replacement.close()]);
+    });
+
+    await register(pc, pcNick, pcAccountId);
+    await register(console, consoleNick, consoleAccountId);
+    pc.send(`PRIVMSG ${consoleNick} :cross-platform`);
+    assert.equal(
+        await console.waitFor(line => line.includes(" PRIVMSG ")),
+        `:${pcNick}!${pcAccountId}_0@Soup PRIVMSG ${consoleNick} :cross-platform`
+    );
+
+    await register(replacement, pcNick, pcAccountId);
+    replacement.send(`ISON ${consoleNick}`);
+    assert.equal(await replacement.waitFor(line => line.includes(" 303 ")), `:Soup 303 ${pcNick} :${consoleNick}`);
+});
