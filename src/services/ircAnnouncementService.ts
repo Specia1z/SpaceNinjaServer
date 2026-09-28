@@ -2,6 +2,7 @@ import { get as httpGet } from "node:http";
 import { get as httpsGet } from "node:https";
 import { args } from "../helpers/commandLineArguments.ts";
 import { config } from "./configService.ts";
+import { broadcastBuiltinIrcAnnouncement } from "./ircService.ts";
 
 export const isValidIrcAnnouncement = (message: unknown): message is string =>
     typeof message == "string" &&
@@ -10,6 +11,11 @@ export const isValidIrcAnnouncement = (message: unknown): message is string =>
     Buffer.byteLength(message, "utf8") <= 400;
 
 export const sendIrcAnnouncement = async (message: string): Promise<void> => {
+    if (config.builtinIrcEnabled) {
+        broadcastBuiltinIrcAnnouncement(message);
+        return;
+    }
+
     const baseUrl =
         config.ircManagementUrl ?? (args.docker ? "http://warframe-irc-server:6688" : "http://127.0.0.1:6688");
     const url = new URL(baseUrl);

@@ -111,10 +111,12 @@ export class WarframeIrcServer {
             await this.stop();
             throw error;
         }
+        registerActiveIrcServer(this);
         return [...this.listeningPorts];
     }
 
     public async stop(): Promise<void> {
+        unregisterActiveIrcServer(this);
         for (const session of this.sessions) session.socket.destroy();
         await Promise.all(
             this.servers.map(
@@ -129,6 +131,10 @@ export class WarframeIrcServer {
         this.sessions.clear();
         this.clientsByNick.clear();
         this.channels.clear();
+    }
+
+    public broadcastAnnouncement(message: string): void {
+        this.broadcast(this.sessions, `:Soup WALLOPS :${message}`);
     }
 
     private handleConnection(socket: tls.TLSSocket): void {
@@ -638,3 +644,18 @@ export class WarframeIrcServer {
         if (!session.socket.destroyed) session.socket.write(line + "\r\n");
     }
 }
+
+let activeIrcServer: WarframeIrcServer | undefined;
+
+const registerActiveIrcServer = (server: WarframeIrcServer): void => {
+    activeIrcServer = server;
+};
+
+const unregisterActiveIrcServer = (server: WarframeIrcServer): void => {
+    if (activeIrcServer == server) activeIrcServer = undefined;
+};
+
+export const broadcastBuiltinIrcAnnouncement = (message: string): void => {
+    if (!activeIrcServer) throw new Error("Built-in IRC server is not running");
+    activeIrcServer.broadcastAnnouncement(message);
+};

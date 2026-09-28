@@ -3,7 +3,7 @@ import path from "node:path";
 import tls from "node:tls";
 import { test } from "node:test";
 import { repoDir } from "../helpers/pathHelper.ts";
-import { WarframeIrcServer } from "./ircService.ts";
+import { broadcastBuiltinIrcAnnouncement, WarframeIrcServer } from "./ircService.ts";
 
 class IrcTestClient {
     private readonly socket: tls.TLSSocket;
@@ -107,6 +107,10 @@ void test("TLS IRC supports U44 social commands and Unicode platform suffixes", 
     await register(lotus, lotusNick, lotusAccountId);
     await register(ordis, ordisNick, ordisAccountId);
     assert.deepEqual(validatedAccountIds, [lotusAccountId, ordisAccountId]);
+
+    broadcastBuiltinIrcAnnouncement("Void Trader has arrived");
+    assert.equal(await lotus.waitFor(line => line.includes(" WALLOPS ")), ":Soup WALLOPS :Void Trader has arrived");
+    assert.equal(await ordis.waitFor(line => line.includes(" WALLOPS ")), ":Soup WALLOPS :Void Trader has arrived");
 
     const payload = "你好 : exact payload  ";
     lotus.send(`PRIVMSG Ordis :${payload}`);

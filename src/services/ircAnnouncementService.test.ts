@@ -29,8 +29,11 @@ void test("IRC relay submits URL-encoded redtext without a server reply", async 
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
     t.after(() => server.close());
     const previous = config.ircManagementUrl;
+    const previousBuiltinIrcEnabled = config.builtinIrcEnabled;
+    config.builtinIrcEnabled = false;
     config.ircManagementUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     t.after(() => {
+        config.builtinIrcEnabled = previousBuiltinIrcEnabled;
         config.ircManagementUrl = previous;
     });
 

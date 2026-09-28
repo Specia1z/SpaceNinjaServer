@@ -13,6 +13,9 @@ services:
             # The lefthand value determines the port you actually connect to. Within the container, SpaceNinjaServer will always use 80 and 443 (righthand values).
             - 8800:80
             - 8801:443
+            # Built-in TLS IRC service. Keep these aligned with builtinIrcPorts in config.json.
+            - "6695-6699:6695-6699/tcp"
+            # Optional Hub UDP relay. Remove this mapping when udpRelayPort is disabled.
             - "6953:6953/udp"
 
         # `docker compose up` uses the published GHCR image. Add `--build` to build this checkout locally.
@@ -27,36 +30,3 @@ services:
         volumes:
             - ./docker-data/database:/data/db
         command: mongod --quiet --logpath /dev/null
-
-    warframe-irc-server:
-        build:
-            context: ./docker/warframe-irc-server
-        volumes:
-            - ./docker-data/conf:/app/conf
-        ports:
-            - 6665:6665
-            - 6666:6666
-            - 6667:6667
-            - 6668:6668
-            - 6669:6669
-        depends_on:
-            - spaceninjaserver
-
-    warframe-irc-tls-proxy:
-        build:
-            context: ./docker/warframe-irc-tls-proxy
-        ports:
-            - 6695:6695
-            - 6696:6696
-            - 6697:6697
-            - 6698:6698
-            - 6699:6699
-        depends_on:
-            - warframe-irc-server
-
-    warframe-hub-server:
-        image: openwf/warframe-hub-server
-        ports:
-            - "6952:6952/udp"
-        depends_on:
-            - spaceninjaserver

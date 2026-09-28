@@ -141,15 +141,12 @@ Linux 上普通用户通常不能直接监听 `80` 和 `443` 端口。推荐在 
 - `ghcr.io/specia1z/spaceninjaserver:latest`：跟随 `main` 分支。
 - `ghcr.io/specia1z/spaceninjaserver:<commit-sha>`：对应不可变的具体提交。
 
-Compose 包含五个服务：
+Compose 仅包含两个服务：
 
-- `spaceninjaserver`：使用本仓库发布的 GHCR 镜像。
+- `spaceninjaserver`：使用本仓库发布的 GHCR 镜像，同时运行 Web 服务和内置 TLS IRC。
 - `mongodb`：使用 MongoDB 官方镜像。
-- `warframe-irc-server`：基于固定的上游版本在本地构建。
-- `warframe-irc-tls-proxy`：在 `6695-6699` 端口终止 TLS 1.2/1.3，使 U43 和仅支持 TLS 1.3 的 U44 均可连接，再将流量转发到 IRC 服务。
-- `warframe-hub-server`：保留 `openwf/warframe-hub-server` 上游镜像。
 
-管理员可在 **WebUI → 用户管理 → 全服 IRC 公告** 向所有当前连接 IRC 的玩家提交红字公告。功能直接使用**未修改源码**的 IRC 服务 `/redtext` 接口；原接口不返回广播回执，因此“已提交”不代表能确认每位玩家已收到。Compose 启动 IRC 容器时会将 `mgmt_loopback_only` 设置为 false，供 Web 容器访问内部管理端口 `6688`，该端口不向宿主机发布。非 Docker 部署默认连接 `http://127.0.0.1:6688`，可在 Web 服务配置中通过 `ircManagementUrl` 修改。不要把 `6688` 端口暴露到公网。
+Hub 与 NRS 按裸机服务部署，不由本 Compose 创建或管理。管理员可在 **WebUI → 用户管理 → 全服 IRC 公告** 向所有当前连接 IRC 的玩家提交红字公告；启用内置 IRC 时由 SpaceNinjaServer 进程直接广播，不再需要 `6688` 管理端口。只有改用外部 IRC 服务时才需要配置 `ircManagementUrl`，且不得将该管理接口暴露到公网。
 
 只拉了镜像的服务器上，`docker compose up` 会因为找不到编排文件而报 `no configuration file provided`：compose 文件在仓库里，不在镜像里。用部署脚本一步拉取编排文件并建好数据目录：
 
@@ -171,7 +168,7 @@ docker compose up -d --build
 docker compose up -d --build
 ```
 
-Web 服务占用 TCP `80` 和 `443`，IRC 服务占用 TCP `6665-6669` 与 `6695-6699`，Hub 服务占用 UDP `6952`。如果启用透明 UDP Relay，SpaceNinjaServer 还会占用配置的 `udpRelayPort`；`udpRelayPortPoolSize` 大于 `1` 时会连续占用多个端口，并映射到连续的 Hub 目标端口。`hubServers[].portPoolSize` 同样可为账号稳定分配连续 Hub 端口。对公网开放前应根据实际需求配置防火墙，不需要的端口不要暴露。
+Compose 默认将宿主机 TCP `8800`、`8801` 映射到容器内 Web 端口 `80`、`443`，并将内置 TLS IRC 的 TCP `6695-6699` 直接发布。当前编排还发布 UDP `6953`，用于将 U44 Hub 流量透明转发到 `udpRelayTarget` 指定的裸机 Hub；禁用 `udpRelayPort` 或让客户端直连 Hub 时可删除该映射。裸机 Hub 的实际 UDP 端口、裸机 NRS 的 DTLS 端口及其可选 relay 端口池必须在宿主机防火墙中单独开放，不应加入 Compose 服务。`udpRelayPortPoolSize` 大于 `1` 时还需同步扩展 Compose 的 UDP 端口范围。
 
 首次启动时，容器会自动创建 `docker-data/conf/config.json`，并将数据库地址设置为 Compose 中的 MongoDB 服务。持久化目录包括：
 
