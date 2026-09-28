@@ -5,7 +5,9 @@ import type {
     IFindSessionRequest,
     IFindSessionResponseSession,
     IHostSessionRequest,
-    ISessionDatabase
+    IMatchmakingSessionRequest,
+    ISessionDatabase,
+    TSessionSlotType
 } from "../types/sessionTypes.ts";
 import { logger } from "../utils/logger.ts";
 import { JSONParse } from "json-with-bigint";
@@ -21,6 +23,7 @@ export const createNewSession = async (
         _id: new Types.ObjectId(),
         ...sessionData,
         creatorId: Creator,
+        members: [{ accountId: Creator, slotType: "host" }],
         //maxPlayers: sessionData.maxPlayers ?? 4,
         //minPlayers: sessionData.minPlayers ?? 1,
         //privateSlots: sessionData.privateSlots ?? 0,
@@ -61,6 +64,67 @@ export const getSessionByID = async (sessionId: string | Types.ObjectId): Promis
     return await Session.findById(sessionId);
 };
 
+type IRankableSession = Pick<
+    ISessionDatabase,
+    "_id" | "eloRating" | "maxPlayers" | "freePublic" | "freePrivate" | "lastUpdate"
+>;
+
+export const buildMatchmakingQuery = (request: IMatchmakingSessionRequest): QueryFilter<ISessionDatabase> => {
+    const query: QueryFilter<ISessionDatabase> = {
+        buildId: request.buildId,
+        gameModeId: request.gameModeId,
+        regionId: request.regionId,
+        freePublic: { $gte: 1 }
+    };
+    if (request.allowJIP !== true) {
+        query.hasStarted = false;
+    }
+    if (request.enforceElo === true && request.eloRating !== undefined && request.maxEloDifference !== undefined) {
+        query.eloRating = {
+            $gte: request.eloRating - request.maxEloDifference,
+            $lte: request.eloRating + request.maxEloDifference
+        };
+    }
+    if (request.maps) {
+        query.maps = request.maps;
+    }
+    if (request.platform !== undefined) {
+        if (request.xplatform === true) {
+            query.$or = [{ xplatform: true }, { platform: request.platform }];
+        } else {
+            query.platform = request.platform;
+        }
+    }
+    return query;
+};
+
+export const rankSessionCandidates = <T extends IRankableSession>(
+    sessions: readonly T[],
+    request: IMatchmakingSessionRequest
+): T[] => {
+    return [...sessions].sort((left, right) => {
+        if (request.eloRating !== undefined) {
+            const leftDifference = Math.abs((left.eloRating ?? request.eloRating) - request.eloRating);
+            const rightDifference = Math.abs((right.eloRating ?? request.eloRating) - request.eloRating);
+            if (leftDifference != rightDifference) {
+                return leftDifference - rightDifference;
+            }
+        }
+
+        const leftPlayers = Math.max(0, left.maxPlayers - left.freePublic - left.freePrivate);
+        const rightPlayers = Math.max(0, right.maxPlayers - right.freePublic - right.freePrivate);
+        if (leftPlayers != rightPlayers) {
+            return rightPlayers - leftPlayers;
+        }
+
+        const freshness = right.lastUpdate.getTime() - left.lastUpdate.getTime();
+        if (freshness != 0) {
+            return freshness;
+        }
+        return left._id.toString().localeCompare(right._id.toString());
+    });
+};
+
 export const getSession = async (request: IFindSessionRequest): Promise<IFindSessionResponseSession[]> => {
     const query: QueryFilter<ISessionDatabase> = {};
     if ("id" in request) {
@@ -68,24 +132,14 @@ export const getSession = async (request: IFindSessionRequest): Promise<IFindSes
     } else if ("originalSessionId" in request) {
         query.originalSessionId = request.originalSessionId;
     } else {
-        query.hasStarted = false;
-        query.buildId = request.buildId;
-        query.gameModeId = request.gameModeId;
-        if (request.freePublic) {
-            query.freePublic = { $gte: 1 };
-        }
-        query.regionId = request.regionId;
-        if (request.eloRating !== undefined && request.maxEloDifference !== undefined) {
-            query.eloRating = {
-                $gte: request.eloRating - request.maxEloDifference,
-                $lte: request.eloRating + request.maxEloDifference
-            };
-        }
-        if (request.maps) {
-            query.maps = request.maps;
-        }
+        Object.assign(query, buildMatchmakingQuery(request));
     }
-    return (await Session.find(query, "creatorId")).map(session => ({
+    const sessions = await Session.find(
+        query,
+        "creatorId eloRating maxPlayers freePublic freePrivate lastUpdate"
+    );
+    const rankedSessions = "id" in request || "originalSessionId" in request ? sessions : rankSessionCandidates(sessions, request);
+    return rankedSessions.map(session => ({
         createdBy: session.creatorId.toString(),
         id: session._id.toString()
     }));
@@ -114,25 +168,134 @@ export const getSession = async (request: IFindSessionRequest): Promise<IFindSes
         }));*/
 };
 
+const findExistingMembership = async (
+    sessionId: string,
+    accountId: Types.ObjectId
+): Promise<ISessionDatabase | null> => {
+    return await Session.findOne({ _id: sessionId, "members.accountId": accountId });
+};
+
+const reserveSlot = async (
+    sessionId: string,
+    accountId: Types.ObjectId,
+    slotType: Exclude<TSessionSlotType, "host">
+): Promise<ISessionDatabase | null> => {
+    const slotField = slotType === "public" ? "freePublic" : "freePrivate";
+    return await Session.findOneAndUpdate(
+        {
+            _id: sessionId,
+            [slotField]: { $gte: 1 },
+            "members.accountId": { $ne: accountId }
+        },
+        {
+            $inc: { [slotField]: -1 },
+            $push: { members: { accountId, slotType } },
+            $set: { lastUpdate: new Date() }
+        },
+        { new: true }
+    );
+};
+
+export const reserveSessionSlot = async (
+    sessionIds: readonly string[],
+    accountId: Types.ObjectId
+): Promise<ISessionDatabase | null> => {
+    for (const sessionId of sessionIds) {
+        const existingMembership = await findExistingMembership(sessionId, accountId);
+        if (existingMembership) {
+            return existingMembership;
+        }
+        const publicSession = await reserveSlot(sessionId, accountId, "public");
+        if (publicSession) {
+            return publicSession;
+        }
+        const privateSession = await reserveSlot(sessionId, accountId, "private");
+        if (privateSession) {
+            return privateSession;
+        }
+        const concurrentMembership = await findExistingMembership(sessionId, accountId);
+        if (concurrentMembership) {
+            return concurrentMembership;
+        }
+    }
+    return null;
+};
+
+const releaseSessionSlot = async (
+    sessionId: string | Types.ObjectId,
+    creatorId: Types.ObjectId,
+    memberAccountId: Types.ObjectId
+): Promise<boolean> => {
+    const session = await Session.findOne(
+        { _id: sessionId, creatorId, "members.accountId": memberAccountId },
+        "members"
+    );
+    const member = session?.members.find(candidate => candidate.accountId.equals(memberAccountId));
+    if (!member || member.slotType === "host") {
+        return false;
+    }
+    const slotField = member.slotType === "public" ? "freePublic" : "freePrivate";
+    const updated = await Session.findOneAndUpdate(
+        {
+            _id: sessionId,
+            creatorId,
+            members: { $elemMatch: { accountId: memberAccountId, slotType: member.slotType } }
+        },
+        {
+            $inc: { [slotField]: 1 },
+            $pull: { members: { accountId: memberAccountId } },
+            $set: { lastUpdate: new Date() }
+        },
+        { new: true }
+    );
+    return updated != null;
+};
+
 export const updateSession = async (
     sessionId: string | Types.ObjectId,
-    updateData: string | undefined
+    updateData: string | undefined,
+    creatorId: Types.ObjectId
 ): Promise<boolean> => {
     //const session = sessions.find(session => session._id.equals(sessionId));
-    const session = await Session.findById(sessionId);
+    let parsedUpdate: Record<string, unknown> | undefined;
+    if (updateData?.substring(0, 1) == "{") {
+        try {
+            parsedUpdate = JSONParse(updateData) as Record<string, unknown>;
+        } catch (error) {
+            logger.error("Invalid JSON string for session update.");
+            return false;
+        }
+
+        const releasesSlot =
+            Number(parsedUpdate.freePublicInc ?? 0) > 0 || Number(parsedUpdate.freePrivateInc ?? 0) > 0;
+        if (typeof parsedUpdate.memberAccountId === "string" && releasesSlot) {
+            if (!Types.ObjectId.isValid(parsedUpdate.memberAccountId)) {
+                logger.error(`Invalid session member account id: ${parsedUpdate.memberAccountId}`);
+                return false;
+            }
+            const memberAccountId = new Types.ObjectId(parsedUpdate.memberAccountId);
+            const released = await releaseSessionSlot(sessionId, creatorId, memberAccountId);
+            if (!released) {
+                logger.debug(`session member ${memberAccountId.toString()} was already released`);
+            }
+        }
+        delete parsedUpdate.memberAccountId;
+        delete parsedUpdate.freePublicInc;
+        delete parsedUpdate.freePrivateInc;
+        delete parsedUpdate.members;
+        delete parsedUpdate.creatorId;
+        delete parsedUpdate._id;
+    }
+
+    const session = await Session.findOne({ _id: sessionId, creatorId });
     if (!session) {
         return false;
     }
 
     if (updateData) {
         logger.debug(`session update: ${updateData}`);
-        if (updateData.substring(0, 1) == "{") {
-            try {
-                Object.assign(session, JSONParse(updateData));
-            } catch (error) {
-                logger.error("Invalid JSON string for session update.");
-                return false;
-            }
+        if (parsedUpdate) {
+            Object.assign(session, parsedUpdate);
         } else {
             const updates: string[] = updateData.split("&");
             for (const update of updates) {
@@ -170,8 +333,12 @@ export const updateSession = async (
     return true;
 };
 
-export const deleteSession = async (sessionId: string | Types.ObjectId): Promise<void> => {
-    await Session.deleteOne({ _id: sessionId });
+export const deleteSession = async (
+    sessionId: string | Types.ObjectId,
+    creatorId: Types.ObjectId
+): Promise<boolean> => {
+    const result = await Session.deleteOne({ _id: sessionId, creatorId });
+    return result.deletedCount == 1;
 
     /*const index = sessions.findIndex(session => session._id.equals(sessionId));
     if (index !== -1) {

@@ -24,6 +24,13 @@ const sessionSchema = new Schema<ISessionDatabase>({
     fullReset: Number,
 
     creatorId: Types.ObjectId,
+    members: [
+        {
+            _id: false,
+            accountId: { type: Types.ObjectId, required: true },
+            slotType: { type: String, enum: ["host", "public", "private"], required: true }
+        }
+    ],
     rewardSeed: BigInt,
     platform: Number,
     xplatform: Boolean,
@@ -32,6 +39,7 @@ const sessionSchema = new Schema<ISessionDatabase>({
 });
 
 sessionSchema.index({ originalSessionId: 1 });
+sessionSchema.index({ buildId: 1, gameModeId: 1, regionId: 1, hasStarted: 1, freePublic: 1 });
 
 // The client seems to send an updateSession request at least once every 2 minutes.
 sessionSchema.index({ lastUpdate: 1 }, { expireAfterSeconds: 5 * 60 });

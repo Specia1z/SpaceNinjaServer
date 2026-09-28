@@ -27,9 +27,17 @@ export interface IHostSessionRequest {
     fullReset?: number;
 }
 
+export type TSessionSlotType = "host" | "public" | "private";
+
+export interface ISessionMember {
+    accountId: Types.ObjectId;
+    slotType: TSessionSlotType;
+}
+
 export interface ISession extends Omit<IHostSessionRequest, "hasStarted" | "rewardSeed"> {
     _id: Types.ObjectId;
     creatorId: Types.ObjectId;
+    members: ISessionMember[];
 
     hasStarted: boolean;
     rewardSeed: number | bigint;
@@ -39,6 +47,21 @@ export interface ISessionDatabase extends ISession {
     lastUpdate: Date;
 }
 
+export interface IMatchmakingSessionRequest {
+    buildId: number | bigint;
+    gameModeId: number;
+    freePublic?: { $gte: 1 };
+    maps?: string;
+    regionId: number;
+    maxEloDifference?: number;
+    eloRating?: number;
+    enforceElo?: boolean;
+    allowJIP?: boolean;
+    allowLobby?: boolean; // for conclave
+    platform?: TPlatform;
+    xplatform?: boolean;
+}
+
 export type IFindSessionRequest = { queryId: number } & (
     | {
           id: string;
@@ -46,19 +69,7 @@ export type IFindSessionRequest = { queryId: number } & (
     | {
           originalSessionId: string;
       }
-    | {
-          buildId: number | bigint;
-          gameModeId: number;
-          freePublic?: { $gte: 1 };
-          maps?: string;
-          regionId: number;
-          maxEloDifference?: number;
-          eloRating?: number;
-          enforceElo?: boolean;
-          allowLobby?: boolean; // for conclave
-          platform?: TPlatform;
-          xplatform?: boolean;
-      }
+    | IMatchmakingSessionRequest
 );
 
 export interface IFindSessionResponse {

@@ -6,7 +6,10 @@ import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 
 export const deleteSessionController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
-    await deleteSession(req.query.sessionId as string);
+    if (!(await deleteSession(req.query.sessionId as string, account._id))) {
+        res.sendStatus(400);
+        return;
+    }
     const buildLabel = getBuildLabel(req, account);
     if (version_compare(buildLabel, gameToBuildVersion["18.16.0"]) < 0) {
         // Pre-Specters of the Rail
