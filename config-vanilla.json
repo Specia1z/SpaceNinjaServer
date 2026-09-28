@@ -21,10 +21,12 @@
   "ircAddress": "%THIS_MACHINE%",
   "hubExecutable": null,
   "udpRelayPort": null,
+  "udpRelayPortPoolSize": 1,
   "udpRelayTarget": null,
   "hubServers": [
     {
       "address": "%THIS_MACHINE%:6952",
+      "portPoolSize": 1,
       "regions": ["ASIA", "OCEANIA", "EUROPE", "RUSSIA", "NORTH_AMERICA", "SOUTH_AMERICA"],
       "dtlsUnsupported": true
     }

@@ -12,6 +12,7 @@ export interface IHubServer {
     address: string;
     regions?: TRegionId[];
     dtlsUnsupported?: boolean;
+    portPoolSize?: number;
 }
 
 export interface IWebuiConfig {
@@ -93,6 +94,7 @@ export interface IConfig {
     hubExecutable?: string;
     udpRelayBindAddress?: string;
     udpRelayPort?: number;
+    udpRelayPortPoolSize?: number;
     udpRelayTarget?: string;
     udpRelayIdleTimeoutMs?: number;
     /** @deprecated */ hubAddress?: string;

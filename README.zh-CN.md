@@ -171,7 +171,7 @@ docker compose up -d --build
 docker compose up -d --build
 ```
 
-Web 服务占用 TCP `80` 和 `443`，IRC 服务占用 TCP `6665-6669` 与 `6695-6699`，Hub 服务占用 UDP `6952`。如果启用透明 UDP Relay，SpaceNinjaServer 还会占用配置的 `udpRelayPort`，默认示例为 UDP `6953`。对公网开放前应根据实际需求配置防火墙，不需要的端口不要暴露。
+Web 服务占用 TCP `80` 和 `443`，IRC 服务占用 TCP `6665-6669` 与 `6695-6699`，Hub 服务占用 UDP `6952`。如果启用透明 UDP Relay，SpaceNinjaServer 还会占用配置的 `udpRelayPort`；`udpRelayPortPoolSize` 大于 `1` 时会连续占用多个端口，并映射到连续的 Hub 目标端口。`hubServers[].portPoolSize` 同样可为账号稳定分配连续 Hub 端口。对公网开放前应根据实际需求配置防火墙，不需要的端口不要暴露。
 
 首次启动时，容器会自动创建 `docker-data/conf/config.json`，并将数据库地址设置为 Compose 中的 MongoDB 服务。持久化目录包括：
 

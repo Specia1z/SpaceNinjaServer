@@ -9,6 +9,64 @@ export interface IHubInstance {
 
 export const hubInstances: Record<string, IHubInstance> = {};
 
+const endpointAssignments = new Map<string, Map<string, number>>();
+const endpointOwners = new Map<string, Map<number, string>>();
+
+const hashAccountId = (accountId: string): number => {
+    let hash = 0x811c9dc5;
+    for (let index = 0; index < accountId.length; ++index) {
+        hash ^= accountId.charCodeAt(index);
+        hash = Math.imul(hash, 0x01000193);
+    }
+    return hash >>> 0;
+};
+
+export const assignEndpointPort = (address: string, accountId: string | undefined, poolSize = 1): string => {
+    if (!accountId || poolSize <= 1) {
+        return address;
+    }
+    if (!Number.isInteger(poolSize) || poolSize < 1) {
+        throw new Error(`Invalid Hub port pool size: ${poolSize}`);
+    }
+
+    const match = address.match(/^(.+):(\d+)$/);
+    if (!match) {
+        throw new Error(`Invalid Hub endpoint: ${address}`);
+    }
+    const basePort = Number.parseInt(match[2], 10);
+    if (basePort + poolSize - 1 > 65535) {
+        throw new Error(`Hub port pool exceeds 65535: ${address} + ${poolSize}`);
+    }
+
+    let assignments = endpointAssignments.get(address);
+    let owners = endpointOwners.get(address);
+    if (!assignments || !owners) {
+        assignments = new Map();
+        owners = new Map();
+        endpointAssignments.set(address, assignments);
+        endpointOwners.set(address, owners);
+    }
+
+    let offset = assignments.get(accountId);
+    if (offset === undefined) {
+        const initialOffset = hashAccountId(accountId) % poolSize;
+        for (let attempt = 0; attempt < poolSize; ++attempt) {
+            const candidate = (initialOffset + attempt) % poolSize;
+            if (!owners.has(candidate)) {
+                offset = candidate;
+                assignments.set(accountId, candidate);
+                owners.set(candidate, accountId);
+                break;
+            }
+        }
+    }
+    if (offset === undefined) {
+        throw new Error(`Hub port pool exhausted for ${address}`);
+    }
+
+    return `${match[1]}:${basePort + offset}`;
+};
+
 export interface IHubServerStats {
     Players: number;
     Instances: number;

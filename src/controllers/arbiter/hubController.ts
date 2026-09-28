@@ -6,7 +6,7 @@ import {
     type IHubServer,
     type TRegionId
 } from "../../services/configService.ts";
-import { hubInstances, pickHubServer } from "../../services/arbiterService.ts";
+import { assignEndpointPort, hubInstances, pickHubServer } from "../../services/arbiterService.ts";
 import { getBuildLabelForUnauthenticatedRequest } from "../../services/loginService.ts";
 import { version_compare } from "../../helpers/inventoryHelpers.ts";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
@@ -32,8 +32,16 @@ export const hubController: RequestHandler = (req, res) => {
     const buildLabel = getBuildLabelForUnauthenticatedRequest(req);
     const dtlsLevel = version_compare(buildLabel, gameToBuildVersion["43.0.0"]) >= 0 ? 99 : (config.dtls ?? 0);
     const needToUseUdpProxy = dtlsLevel & 1 && hubServer.dtlsUnsupported;
-    const hubAddr = hubServer.address.replaceAll("%THIS_MACHINE%", getReflexiveAddress(req).myAddress);
-    const relayAddr = getUdpRelayAddress(req);
+    const accountId = typeof req.query.accountId == "string" ? req.query.accountId : undefined;
+    const hubAddr = assignEndpointPort(
+        hubServer.address.replaceAll("%THIS_MACHINE%", getReflexiveAddress(req).myAddress),
+        accountId,
+        hubServer.portPoolSize
+    );
+    const relayBaseAddr = getUdpRelayAddress(req);
+    const relayAddr = relayBaseAddr
+        ? assignEndpointPort(relayBaseAddr, accountId, config.udpRelayPortPoolSize)
+        : undefined;
     const addr = needToUseUdpProxy && relayAddr ? relayAddr : hubAddr;
 
     if (`${level}_${instanceId}` == req.query.level) {
