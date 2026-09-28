@@ -13,6 +13,7 @@ export interface ITunables {
     nrs?: string;
     irc?: string;
     udp_proxy_upstream?: string;
+    force_native_proxy?: boolean;
     metadata_patches?: string;
     metadata_patches_revision?: string;
 }

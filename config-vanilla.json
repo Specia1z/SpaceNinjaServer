@@ -188,6 +188,7 @@
     "prohibitScripts": true,
     "prohibitLocalMetadataPatches": true,
     "motd": null,
+    "forceNativeProxy": false,
     "metadataPatches": [],
     "accountMetadataPatches": {}
   },

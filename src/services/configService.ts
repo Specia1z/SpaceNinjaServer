@@ -260,6 +260,7 @@ export interface IConfig {
         prohibitLocalMetadataPatches?: boolean;
         motd?: string;
         udpProxyUpstream?: string;
+        forceNativeProxy?: boolean;
         metadataPatches?: IMetadataPatchConfig[];
         /** Metadata patches appended after the global patches for a matching account ID. */
         accountMetadataPatches?: Record<string, IMetadataPatchConfig[]>;

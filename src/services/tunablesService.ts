@@ -115,6 +115,9 @@ export const getTunablesForClient = (
     if (config.tunables?.udpProxyUpstream) {
         tunables.udp_proxy_upstream = config.tunables.udpProxyUpstream.replaceAll("%THIS_MACHINE%", reflexiveAddress);
     }
+    if (config.tunables?.forceNativeProxy) {
+        tunables.force_native_proxy = true;
+    }
     const metadataPatches = compileMetadataPatchesForAccount(accountId);
     if (metadataPatches) {
         tunables.metadata_patches = metadataPatches;

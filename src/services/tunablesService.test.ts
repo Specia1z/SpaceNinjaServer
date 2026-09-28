@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { config } from "./configService.ts";
-import { compileMetadataPatchesForAccount, getMetadataPatchesForAccount } from "./tunablesService.ts";
+import {
+    compileMetadataPatchesForAccount,
+    getMetadataPatchesForAccount,
+    getTunablesForClient
+} from "./tunablesService.ts";
 
 const previousTunables = config.tunables;
 const accountId = "507f1f77bcf86cd799439011";
@@ -43,4 +47,12 @@ void test("compiled account output preserves override order and skips disabled p
         "# Server patch: global base\n/Resource\nCredits = 100\n\n# Server patch: global second\n/Resource\nOther = true\n\n# Server patch: account override\n/Resource\nCredits = 1000"
     );
     assert.equal(compileMetadataPatchesForAccount("507f1f77bcf86cd799439012").includes("account override"), false);
+});
+
+void test("native proxy forcing is only emitted when explicitly enabled", () => {
+    assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1").force_native_proxy, undefined);
+
+    config.tunables!.forceNativeProxy = true;
+    assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1").force_native_proxy, true);
+    delete config.tunables!.forceNativeProxy;
 });
