@@ -1,4 +1,4 @@
-import { config, configPath, loadConfig } from "./services/configService.ts";
+import { config, configPath, getWebServerParams, loadConfig } from "./services/configService.ts";
 import fs from "fs";
 import { initLogger, logger } from "./utils/logger.ts";
 import mongoose from "mongoose";
@@ -16,6 +16,25 @@ import { initializeStoreOverrides } from "./services/storeOverrideService.ts";
 import { initializeAdminItemData } from "./services/adminItemDataService.ts";
 import { initializeCraftingConfigs } from "./services/craftingConfigService.ts";
 import { initializeRedeemCodes } from "./services/redeemCodeService.ts";
+import { WarframeIrcServer } from "./services/ircService.ts";
+
+const validateIrcCredentials = async (accountId: string, token: string): Promise<boolean> => {
+    const url = new URL("/custom/getAccountInfo", `http://127.0.0.1:${config.httpPort || 80}`);
+    url.searchParams.set("accountId", accountId);
+    url.searchParams.set("token", token);
+    url.searchParams.set("ct", "IRC");
+    const response = await fetch(url, { redirect: "error" });
+    await response.body?.cancel();
+    return response.ok;
+};
+
+const stopIrcThenReraiseSignal = (ircServer: WarframeIrcServer): void => {
+    for (const signal of ["SIGINT", "SIGTERM"] as const) {
+        process.once(signal, () => {
+            void ircServer.stop().finally(() => process.kill(process.pid, signal));
+        });
+    }
+};
 
 try {
     loadConfig();
@@ -119,10 +138,30 @@ if (args.test) {
         process.exit(1);
     }
 
+    if (config.builtinIrcEnabled) {
+        const webParams = getWebServerParams();
+        const ircServer = new WarframeIrcServer({
+            address: webParams.address,
+            ports: config.builtinIrcPorts ?? [6695, 6696, 6697, 6698, 6699],
+            certFile: webParams.certFile,
+            keyFile: webParams.keyFile,
+            validateCredentials: validateIrcCredentials
+        });
+        try {
+            const ports = await ircServer.start();
+            logger.info(`Built-in IRC server started on ${webParams.address}:${ports.join(",")}`);
+            stopIrcThenReraiseSignal(ircServer);
+        } catch (error) {
+            logger.error(`Failed to start built-in IRC server: ${(error as Error).message}`);
+            process.exit(1);
+        }
+    }
+
     for (const [what, key] of [
         ["IRC", "ircExecutable"],
         ["HUB", "hubExecutable"]
     ] as const) {
+        if (key == "ircExecutable" && config.builtinIrcEnabled) continue;
         if (config[key]) {
             logger.info(`Starting ${what}: ${config[key]}`);
             child_process.execFile(config[key], (error, _stdout, _stderr) => {

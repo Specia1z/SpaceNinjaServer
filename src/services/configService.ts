@@ -84,6 +84,8 @@ export interface IConfig {
     httpsPort?: number;
     httpsCertFile?: string;
     httpsKeyFile?: string;
+    builtinIrcEnabled?: boolean;
+    builtinIrcPorts?: number[];
     ircExecutable?: string;
     ircAddress?: string;
     /** Internal IRC management URL (not the public chat address). */

@@ -15,6 +15,8 @@
   "httpsPort": 443,
   "httpsCertFile": "static/cert/cert.pem",
   "httpsKeyFile": "static/cert/key.pem",
+  "builtinIrcEnabled": false,
+  "builtinIrcPorts": [6695, 6696, 6697, 6698, 6699],
   "ircExecutable": null,
   "ircAddress": "%THIS_MACHINE%",
   "hubExecutable": null,
