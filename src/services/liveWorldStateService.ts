@@ -20,8 +20,8 @@ import syndicateMissionNodes from "../../static/fixed_responses/worldState/syndi
 import { LiveGoalState, LiveWorldActivityState } from "../models/worldStateModel.ts";
 
 const LIVE_WORLD_STATE_SOURCES = [
-    { name: "official Warframe world state", url: "https://api.warframe.com/cdn/worldState.php" },
-    { name: "browse.wf", url: "https://oracle.browse.wf/worldState.min.json" }
+    { name: "browse.wf", url: "https://oracle.browse.wf/worldState.json" },
+    { name: "official Warframe world state", url: "https://api.warframe.com/cdn/worldState.php" }
 ] as const;
 const SUPPLEMENTAL_WORLD_STATE_URLS = [
     "https://cdn.jsdelivr.net/gh/calamity-inc/warframe-worldstate-history@senpai/worldState.json?source=browse.wf",
@@ -211,6 +211,16 @@ export const parseLiveWorldState = (value: unknown): ILiveWorldState => {
     return structuredClone(candidate) as ILiveWorldState;
 };
 
+export const getLocalizedLiveEvents = (events: IWorldState["Events"], language?: string): IWorldState["Events"] =>
+    events.map(event => {
+        const message =
+            (language ? event.Messages.find(entry => entry.LanguageCode == language)?.Message : undefined) ??
+            event.Messages.find(entry => entry.LanguageCode == "en")?.Message ??
+            event.Msg ??
+            event.Messages[0]?.Message;
+        return { ...event, Messages: message ? [{ Message: message }] : [] };
+    });
+
 const isUpdate41Goal = (goal: IWorldState["Goals"][number]): boolean =>
     update41GoalTags.has(goal.Tag) || /^Anniversary\d+TacAlert(?:CM[A-Z])?$/.test(goal.Tag);
 
@@ -229,9 +239,7 @@ export const mergeLiveWorldStateProgress = (
         goal => goalOverrides.get(getGoalOid(goal)) ?? goal
     ) as IWorldState["Goals"];
     if (Array.isArray(merged.Invasions)) {
-        merged.Invasions = merged.Invasions.map(
-            invasion => invasionOverrides.get(invasion._id.$oid ?? "") ?? invasion
-        );
+        merged.Invasions = merged.Invasions.map(invasion => invasionOverrides.get(invasion._id.$oid ?? "") ?? invasion);
     }
     return merged;
 };
@@ -991,7 +999,7 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
 
     const liveWorldState = structuredClone(cachedWorldState);
     const compatibleSeasonInfo = getCompatibleSeasonInfo(liveWorldState.SeasonInfo, buildVersion);
-    if (!filterByBuild || buildVersion >= gameToBuildVersionInt["44.0.0"]) {
+    if (!filterByBuild) {
         const mergedLiveWorldState = mergeLiveWorldStateProgress(
             liveWorldState,
             new Map([...liveGoals].map(([id, entry]) => [id, entry.goal])),
@@ -1228,9 +1236,9 @@ export const getLiveDailyDealForPurchase = (
     if (filterByBuild && buildVersion < gameToBuildVersionInt["41.0.0"]) {
         return undefined;
     }
-    return (filterByBuild ? getCompatibleDailyDeals(cachedWorldState.DailyDeals, buildVersion) : cachedWorldState.DailyDeals).find(
-        deal => deal.StoreItem == storeItem
-    );
+    return (
+        filterByBuild ? getCompatibleDailyDeals(cachedWorldState.DailyDeals, buildVersion) : cachedWorldState.DailyDeals
+    ).find(deal => deal.StoreItem == storeItem);
 };
 
 export const selfTestLiveWorldState = (): boolean => {

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import type { IWorldState } from "../types/worldStateTypes.ts";
 import {
     fetchCurrentLiveWorldState,
+    getLocalizedLiveEvents,
     mergeLiveWorldStateProgress,
     parseLiveWorldState
 } from "./liveWorldStateService.ts";
@@ -31,9 +32,18 @@ void test("live world state preserves unknown future top-level fields", () => {
 });
 
 void test("progress overlays keep unknown official goals and invasions", () => {
-    const knownGoal = { _id: { $oid: "000000000000000000000001" }, Count: 1 } as unknown as IWorldState["Goals"][number];
-    const futureGoal = { _id: { $oid: "000000000000000000000002" }, FutureProgress: true } as unknown as IWorldState["Goals"][number];
-    const knownInvasion = { _id: { $oid: "000000000000000000000003" }, Count: 1 } as unknown as IWorldState["Invasions"][number];
+    const knownGoal = {
+        _id: { $oid: "000000000000000000000001" },
+        Count: 1
+    } as unknown as IWorldState["Goals"][number];
+    const futureGoal = {
+        _id: { $oid: "000000000000000000000002" },
+        FutureProgress: true
+    } as unknown as IWorldState["Goals"][number];
+    const knownInvasion = {
+        _id: { $oid: "000000000000000000000003" },
+        Count: 1
+    } as unknown as IWorldState["Invasions"][number];
     const futureInvasion = {
         _id: { $oid: "000000000000000000000004" },
         FutureFaction: "FC_FUTURE"
@@ -55,23 +65,35 @@ void test("progress overlays keep unknown official goals and invasions", () => {
     const mergedInvasions = merged.Invasions;
     assert.ok(mergedInvasions);
     assert.equal(mergedInvasions[0].Count, 7);
-    assert.equal(
-        (mergedInvasions[1] as unknown as { FutureFaction: string }).FutureFaction,
-        "FC_FUTURE"
-    );
+    assert.equal((mergedInvasions[1] as unknown as { FutureFaction: string }).FutureFaction, "FC_FUTURE");
     assert.deepEqual(merged.FutureRotation, { Enabled: true });
 });
 
-void test("official world state is preferred and browse.wf is a fallback", async () => {
+void test("live events are localized without leaking LanguageCode", () => {
+    const events = getLocalizedLiveEvents(
+        [
+            {
+                Prop: "TestEvent",
+                Msg: "Fallback",
+                Messages: [
+                    { LanguageCode: "en", Message: "English" },
+                    { LanguageCode: "zh", Message: "Chinese" }
+                ]
+            }
+        ],
+        "zh"
+    );
+
+    assert.deepEqual(events[0].Messages, [{ Message: "Chinese" }]);
+});
+
+void test("the complete browse.wf world state is preferred", async () => {
     const originalFetch = globalThis.fetch;
     const calls: string[] = [];
     try {
         globalThis.fetch = (input): Promise<Response> => {
             const url = String(input);
             calls.push(url);
-            if (url.includes("api.warframe.com")) {
-                return Promise.reject(new Error("official unavailable"));
-            }
             return Promise.resolve(
                 new Response(JSON.stringify({ ...emptyLiveWorldState, FutureRotation: { Enabled: true } }), {
                     status: 200
@@ -80,16 +102,13 @@ void test("official world state is preferred and browse.wf is a fallback", async
         };
 
         const result = await fetchCurrentLiveWorldState();
-        assert.deepEqual(calls, [
-            "https://api.warframe.com/cdn/worldState.php",
-            "https://oracle.browse.wf/worldState.min.json"
-        ]);
+        assert.deepEqual(calls, ["https://oracle.browse.wf/worldState.json"]);
         assert.equal(result.source.name, "browse.wf");
         assert.deepEqual(result.worldState.FutureRotation, { Enabled: true });
 
         calls.length = 0;
         await fetchCurrentLiveWorldState();
-        assert.deepEqual(calls, ["https://oracle.browse.wf/worldState.min.json"]);
+        assert.deepEqual(calls, ["https://oracle.browse.wf/worldState.json"]);
     } finally {
         globalThis.fetch = originalFetch;
     }
