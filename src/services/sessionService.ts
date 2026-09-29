@@ -76,7 +76,7 @@ export const buildMatchmakingQuery = (request: IMatchmakingSessionRequest): Quer
         regionId: request.regionId,
         freePublic: { $gte: 1 }
     };
-    if (request.allowJIP !== true) {
+    if (request.allowJIP === false) {
         query.hasStarted = false;
     }
     if (request.enforceElo === true && request.eloRating !== undefined && request.maxEloDifference !== undefined) {
@@ -130,7 +130,7 @@ export const getSession = async (request: IFindSessionRequest): Promise<IFindSes
     if ("id" in request) {
         query._id = request.id;
     } else if ("originalSessionId" in request) {
-        query._id = request.originalSessionId;
+        query.originalSessionId = request.originalSessionId;
     } else {
         Object.assign(query, buildMatchmakingQuery(request));
     }

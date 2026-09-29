@@ -29,6 +29,12 @@ void test("public matchmaking query enforces compatibility and available slots",
     });
 });
 
+void test("public matchmaking allows join in progress when allowJIP is omitted", () => {
+    const query = buildMatchmakingQuery({ ...request, allowJIP: undefined });
+
+    assert.equal("hasStarted" in query, false);
+});
+
 void test("matchmaking ranks ELO first, then populated and fresh sessions", () => {
     const now = Date.now();
     const makeCandidate = (
@@ -62,17 +68,18 @@ void test("matchmaking ranks ELO first, then populated and fresh sessions", () =
     ]);
 });
 
-void test("original session lookup uses the session id", async t => {
-    const sessionId = new Types.ObjectId();
+void test("original session lookup returns the migrated replacement session", async t => {
+    const originalSessionId = new Types.ObjectId();
+    const migratedSessionId = new Types.ObjectId();
     const creatorId = new Types.ObjectId();
     const find = t.mock.method(Session, "find", () =>
-        Promise.resolve([{ _id: sessionId, creatorId }] as ISessionDatabase[])
+        Promise.resolve([{ _id: migratedSessionId, creatorId }] as ISessionDatabase[])
     );
 
-    assert.deepEqual(await getSession({ queryId: 1, originalSessionId: sessionId.toString() }), [
-        { createdBy: creatorId.toString(), id: sessionId.toString() }
+    assert.deepEqual(await getSession({ queryId: 1, originalSessionId: originalSessionId.toString() }), [
+        { createdBy: creatorId.toString(), id: migratedSessionId.toString() }
     ]);
-    assert.deepEqual(find.mock.calls[0].arguments[0], { _id: sessionId.toString() });
+    assert.deepEqual(find.mock.calls[0].arguments[0], { originalSessionId: originalSessionId.toString() });
 });
 
 void test("slot reservation is idempotent for an existing member", async t => {
