@@ -104,7 +104,7 @@ import {
 } from "./liveWorldStateService.ts";
 import { config, shouldDoServerQol } from "./configService.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "./accountRateService.ts";
-import { addMissionPlatinumReward } from "./missionPlatinumRewardService.ts";
+import { addMissionAyaReward, addMissionPlatinumReward } from "./missionPlatinumRewardService.ts";
 import { addMissionCredits } from "./missionCreditService.ts";
 import {
     addFixedLevelRewards,
@@ -1041,12 +1041,14 @@ export const addMissionRewards = async (
     // same InventoryChanges object the rest of this function builds up.
     const inventoryChanges: IInventoryChanges = {};
     let platinumReward = 0;
+    let ayaReward = 0;
 
     if (missionStatus === undefined || missionStatus == "GS_SUCCESS") {
         platinumReward = addMissionPlatinumReward(
             inventory,
             getEffectiveAccountRate(accountRates, "missionPlatinumMultiplier")
         );
+        ayaReward = addMissionAyaReward(inventory);
     }
 
     //TODO: check double reward merging
@@ -1063,6 +1065,13 @@ export const addMissionRewards = async (
 
     if (platinumReward > 0) {
         inventoryChanges.PremiumCredits = (inventoryChanges.PremiumCredits ?? 0) + platinumReward;
+    }
+
+    if (ayaReward > 0) {
+        MissionRewards.push({
+            StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/SchismKey",
+            ItemCount: ayaReward
+        });
     }
 
     const isSteelPath = missions?.Tier || alerts?.Tier;

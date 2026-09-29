@@ -1726,6 +1726,12 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         //Gift Platinum(Non trade)
         PremiumCreditsFree: { type: Number, default: 0 },
         pendingPremiumCredits: Number,
+        missionAyaRewardDate: Date,
+        missionAyaRewardToday: Number,
+        missionAyaRewardPity: Number,
+        missionPlatinumRewardDate: Date,
+        missionPlatinumRewardToday: Number,
+        missionPlatinumRewardPity: Number,
         //Endo
         FusionPoints: { type: Number, default: 0 },
         //Dirac
@@ -2126,6 +2132,12 @@ inventorySchema.set("toJSON", {
         delete returnedObject.duviriSeedRefresh;
         delete returnedObject.HybridFusionTreasures;
         delete returnedObject.receivedThousandYearFishDeco;
+        delete returnedObject.missionAyaRewardDate;
+        delete returnedObject.missionAyaRewardToday;
+        delete returnedObject.missionAyaRewardPity;
+        delete returnedObject.missionPlatinumRewardDate;
+        delete returnedObject.missionPlatinumRewardToday;
+        delete returnedObject.missionPlatinumRewardPity;
 
         const inventoryDatabase = returnedObject as Partial<IInventoryDatabase>;
         const inventoryResponse = returnedObject as IInventoryClient;

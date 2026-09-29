@@ -1,7 +1,9 @@
 FROM node:24-alpine3.21
 WORKDIR /app
 
-RUN apk add --no-cache bash jq
+ENV TZ=Asia/Shanghai
+
+RUN apk add --no-cache bash jq tzdata
 
 COPY package.json package-lock.json /app
 RUN npm i --omit=dev --omit=optional --no-audit

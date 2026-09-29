@@ -126,10 +126,22 @@ export interface IConfig {
     unlockDoubleCapacityPotatoesEverywhere?: boolean;
     unlockExilusEverywhere?: boolean;
     unlockArcanesEverywhere?: boolean;
+    missionAyaRewardMin?: number;
+    missionAyaRewardMax?: number;
+    /** Chance, in percent, that a successful mission awards Aya. */
+    missionAyaRewardChance?: number;
+    /** Maximum Aya granted by mission rewards per UTC day. */
+    missionAyaRewardDailyCap?: number;
+    /** Successful mission completions needed for a guaranteed Aya drop. 0 disables the pity rule. */
+    missionAyaRewardPityCompletions?: number;
     missionPlatinumRewardMin?: number;
     missionPlatinumRewardMax?: number;
     /** Chance, in percent, that a completed mission awards the platinum reward at all. Undefined or 100 means always. */
     missionPlatinumRewardChance?: number;
+    /** Maximum platinum granted by mission rewards per UTC day. */
+    missionPlatinumRewardDailyCap?: number;
+    /** Successful mission completions needed for a guaranteed platinum drop. 0 disables the pity rule. */
+    missionPlatinumRewardPityCompletions?: number;
     /** When true, the platinum reward is delivered as an Ordis inbox message instead of being credited silently. */
     missionPlatinumRewardSendMail?: boolean;
     /** Per-account mission drop multipliers, keyed by the exact DisplayName. */

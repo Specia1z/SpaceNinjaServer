@@ -273,6 +273,37 @@ export const validateConfig = (): void => {
         config.missionPlatinumRewardChance = 100;
         modified = true;
     }
+    for (const key of [
+        "missionAyaRewardMin",
+        "missionAyaRewardMax",
+        "missionAyaRewardDailyCap",
+        "missionAyaRewardPityCompletions",
+        "missionPlatinumRewardDailyCap",
+        "missionPlatinumRewardPityCompletions"
+    ] as const) {
+        const value = config[key];
+        if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
+            config[key] = 0;
+            modified = true;
+        }
+    }
+    if (
+        config.missionAyaRewardMin !== undefined &&
+        config.missionAyaRewardMax !== undefined &&
+        config.missionAyaRewardMax < config.missionAyaRewardMin
+    ) {
+        config.missionAyaRewardMax = config.missionAyaRewardMin;
+        modified = true;
+    }
+    if (
+        config.missionAyaRewardChance !== undefined &&
+        (!Number.isFinite(config.missionAyaRewardChance) ||
+            config.missionAyaRewardChance < 0 ||
+            config.missionAyaRewardChance > 100)
+    ) {
+        config.missionAyaRewardChance = 0;
+        modified = true;
+    }
     if (config.relicPlatinumReward) {
         for (const rarity of ["common", "uncommon", "rare"] as const) {
             const amount = config.relicPlatinumReward[rarity];

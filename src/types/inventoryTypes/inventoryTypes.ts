@@ -173,6 +173,12 @@ export interface IInventoryDatabase
     HybridFusionTreasures: IHybridFusionTreasure[]; // SNS-specific in-database format to support both modern & legacy clients
     receivedThousandYearFishDeco?: true; // placed decos are not in inventory, hence this boolean
     pendingPremiumCredits?: number;
+    missionAyaRewardDate?: Date;
+    missionAyaRewardToday?: number;
+    missionAyaRewardPity?: number;
+    missionPlatinumRewardDate?: Date;
+    missionPlatinumRewardToday?: number;
+    missionPlatinumRewardPity?: number;
 
     Created: Date;
     CurrentLoadOutIds: Types.ObjectId[];
