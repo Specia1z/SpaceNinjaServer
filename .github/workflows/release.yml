@@ -61,6 +61,7 @@ jobs:
                       mkdir -p "$package_dir"
                       cp -R build static node_modules "$package_dir/"
                       cp config-vanilla.json package.json package-lock.json LICENSE README.md README.zh-CN.md CHANGELOG.md "$package_dir/"
+                      cp scripts/publicExportUpdater.mjs "$package_dir/publicExportUpdater.mjs"
                       date -u '+%d %B %Y' > "${package_dir}/BUILD_DATE"
 
                       curl --fail --location --silent --show-error \

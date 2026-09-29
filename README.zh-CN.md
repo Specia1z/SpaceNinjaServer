@@ -116,6 +116,8 @@ npm start
 
 默认 WebUI 地址为 `http://localhost/webui/`。如果修改了 HTTP 端口，例如 `8080`，则访问 `http://localhost:8080/webui/`。
 
+`warframe-public-export-plus` 数据快照已内置在安装目录和 Docker 镜像中，因此断网时仍可启动。`npm start`、`npm run dev`、`npm run raw` 以及自包含 Release 启动器都会在加载服务端模块前查询 npm 官方 registry；默认只提示新版本。设置 `PUBLIC_EXPORT_AUTO_UPDATE=1` 后，会自动下载同一 `0.6.x` 兼容系列的新版本，校验 registry 提供的 SHA-512、检查归档路径，并只原子替换该数据包。检测或更新失败会继续使用内置快照；跨 minor 或 major 版本必须升级 SpaceNinjaServer。完全离线部署可设置 `PUBLIC_EXPORT_CHECK_UPDATES=0`；慢速网络可用 `PUBLIC_EXPORT_DOWNLOAD_TIMEOUT_MS` 覆盖默认 120 秒下载超时。也可手动运行 `npm run check-public-export` 或 `npm run update-public-export`。
+
 ## Linux 部署
 
 以下命令假设 Node.js 24、Git 和构建环境已经安装：

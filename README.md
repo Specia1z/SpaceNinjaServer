@@ -43,6 +43,8 @@ npm start
 
 The server can also be run with Docker Compose. The included compose file starts SpaceNinjaServer together with MongoDB, a locally patched OpenWF IRC build, and the upstream Hub image. Configuration, logs, static data, and database files are stored under `docker-data/`.
 
+`warframe-public-export-plus` is bundled with the installation and Docker image, so the server can start without network access. `npm start`, `npm run dev`, `npm run raw`, and the self-contained release launchers check the official npm registry before loading server modules. By default they only report a newer version. Set `PUBLIC_EXPORT_AUTO_UPDATE=1` to download a compatible update in the same `0.6.x` series, verify its registry SHA-512 integrity and archive paths, and atomically replace only that package. A failed check or update falls back to the bundled snapshot. Cross-minor or major versions require a SpaceNinjaServer upgrade. Set `PUBLIC_EXPORT_CHECK_UPDATES=0` for fully offline startup. Slow links can override the default 120-second package download timeout with `PUBLIC_EXPORT_DOWNLOAD_TIMEOUT_MS`. Manual commands are also available: `npm run check-public-export` and `npm run update-public-export`.
+
 ## Docker
 
 Images for this fork are published to `ghcr.io/specia1z/spaceninjaserver` for `linux/amd64` and `linux/arm64`. The `latest` tag tracks `main`, while every build also receives an immutable commit-SHA tag.

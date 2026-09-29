@@ -22,6 +22,8 @@ services:
 
         environment:
             - CHOKIDAR_USEPOLLING=true
+            # Enable compatible 0.6.x Public Export updates before server modules load.
+            # - PUBLIC_EXPORT_AUTO_UPDATE=1
         depends_on:
             - mongodb
 
