@@ -39,6 +39,7 @@ import {
     getSyndicate,
     getVendor,
     slotPurchaseData,
+    supplementalResources,
     supplementalVendors,
     toStoreItem
 } from "./itemDataService.ts";
@@ -675,8 +676,10 @@ export const handleStoreItemAcquisition = async (
             if (internalName in ExportGear) {
                 quantity *= ExportGear[internalName].purchaseQuantity || 1;
                 logger.debug(`factored quantity is ${quantity}`);
-            } else if (internalName in ExportResources) {
-                quantity *= ExportResources[internalName].purchaseQuantity || 1;
+            } else if (internalName in ExportResources || internalName in supplementalResources) {
+                const resource =
+                    internalName in ExportResources ? ExportResources[internalName] : supplementalResources[internalName];
+                quantity *= resource.purchaseQuantity || 1;
                 logger.debug(`factored quantity is ${quantity}`);
             }
         }

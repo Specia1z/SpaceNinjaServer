@@ -37,7 +37,9 @@ import {
     getPowerSuit,
     supplementalKeys,
     supplementalRecipes,
+    supplementalResources,
     supplementalUpgrades,
+    supplementalWeapons,
     U5ModsWeights,
     U5Modules,
     getDefaultUpgrades
@@ -605,12 +607,13 @@ export const addItem = async (
         addRecipes(inventory, inventoryChanges.Recipes);
         return inventoryChanges;
     }
-    if (typeName in ExportResources) {
+    if (typeName in ExportResources || typeName in supplementalResources) {
+        const resource = typeName in ExportResources ? ExportResources[typeName] : supplementalResources[typeName];
         const inventoryChanges: IInventoryChanges = {};
-        if (ExportResources[typeName].oneTimePurchasable) {
+        if (resource.oneTimePurchasable) {
             handleOneTimePurchasable(inventory, typeName, inventoryChanges);
         }
-        if (ExportResources[typeName].productCategory == "MiscItems") {
+        if (resource.productCategory == "MiscItems") {
             inventoryChanges.MiscItems = [
                 {
                     ItemType: typeName,
@@ -645,7 +648,7 @@ export const addItem = async (
             }
 
             return inventoryChanges;
-        } else if (ExportResources[typeName].productCategory == "FusionTreasures") {
+        } else if (resource.productCategory == "FusionTreasures") {
             inventoryChanges.FusionTreasures = [
                 {
                     ItemType: typeName,
@@ -655,7 +658,7 @@ export const addItem = async (
             ];
             addFusionTreasures(inventory, inventoryChanges.FusionTreasures);
             return inventoryChanges;
-        } else if (ExportResources[typeName].productCategory == "Ships") {
+        } else if (resource.productCategory == "Ships") {
             if (quantity != 1) {
                 throw new Error(`unexpected acquisition quantity of Ships: got ${quantity}, expected 1`);
             }
@@ -668,7 +671,7 @@ export const addItem = async (
                 }
             ];
             return inventoryChanges;
-        } else if (ExportResources[typeName].productCategory == "CrewShips") {
+        } else if (resource.productCategory == "CrewShips") {
             if (quantity != 1) {
                 throw new Error(`unexpected acquisition quantity of CrewShips: got ${quantity}, expected 1`);
             }
@@ -679,7 +682,7 @@ export const addItem = async (
                 addCrewShipHarness(inventory, "/Lotus/Types/Game/CrewShip/RailJack/DefaultHarness", inventoryChanges);
             }
             return inventoryChanges;
-        } else if (ExportResources[typeName].productCategory == "ShipDecorations") {
+        } else if (resource.productCategory == "ShipDecorations") {
             inventoryChanges.ShipDecorations = [
                 {
                     ItemType: typeName,
@@ -689,7 +692,7 @@ export const addItem = async (
             addShipDecorations(inventory, inventoryChanges.ShipDecorations);
             return inventoryChanges;
         } else {
-            throw new Error(`unknown product category: ${ExportResources[typeName].productCategory}`);
+            throw new Error(`unknown product category: ${resource.productCategory}`);
         }
     }
     if (typeName in ExportCustoms) {
@@ -822,8 +825,9 @@ export const addItem = async (
         };
     }
     const syncedWeapon = getSyncedWeapon(typeName);
-    if (typeName in ExportWeapons || syncedWeapon) {
-        const weapon = syncedWeapon ?? ExportWeapons[typeName];
+    if (typeName in ExportWeapons || typeName in supplementalWeapons || syncedWeapon) {
+        const weapon =
+            syncedWeapon ?? (typeName in ExportWeapons ? ExportWeapons[typeName] : supplementalWeapons[typeName]);
         const inventoryChanges: IInventoryChanges = {};
         if (weapon.oneTimePurchasable) {
             handleOneTimePurchasable(inventory, typeName, inventoryChanges);
@@ -1254,6 +1258,15 @@ export const addItem = async (
                         ];
                         addMiscItems(inventory, miscItemChanges);
                         return { MiscItems: miscItemChanges };
+                    } else if (typeName.substring(1).split("/")[3] == "ShipDecos") {
+                        const decorationChanges = [
+                            {
+                                ItemType: typeName,
+                                ItemCount: quantity
+                            } satisfies IMiscItem
+                        ];
+                        addShipDecorations(inventory, decorationChanges);
+                        return { ShipDecorations: decorationChanges };
                     }
                     break;
                 }
@@ -1940,6 +1953,8 @@ const FLAVOUR_ITEM_PATH_PREFIXES = [
     "/Lotus/Types/Items/Arcade/",
     "/Lotus/Types/Items/Emotes/",
     "/Lotus/Types/Items/Events/",
+    "/Lotus/Types/Items/PhotoBooth/",
+    "/Lotus/Types/Items/SongItems/",
     "/Lotus/Types/Items/Titles/",
     "/Lotus/Types/Items/VideoWallBackdrops/",
     "/Lotus/Types/Items/VideoWallSoundscapes/",

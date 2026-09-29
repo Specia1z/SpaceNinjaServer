@@ -10,9 +10,12 @@ import type {
     IPowersuit,
     IRecipe,
     IRegion,
+    IResource,
     ISyndicate,
     IUpgrade,
     IVendor,
+    IVendorOffer,
+    IWeapon,
     TMissionDeck,
     TRarity,
     TReward
@@ -100,6 +103,90 @@ export type WeaponTypeInternal =
     | "SentinelWeapons"
     | "OperatorAmps"
     | "SpecialItems";
+
+const supplementalResource = (name: string, icon: string): IResource => ({
+    name,
+    description: name,
+    icon,
+    codexSecret: false,
+    parentName: "",
+    productCategory: "MiscItems",
+    showInInventory: true
+});
+
+export const supplementalResources: Record<string, IResource> = {
+    "/Lotus/Types/Recipes/WarframeRecipes/NarinChassisComponent": supplementalResource(
+        "Narin Chassis",
+        "/Lotus/Interface/Icons/StoreIcons/Warframes/Narin.png"
+    ),
+    "/Lotus/Types/Recipes/WarframeRecipes/NarinHelmetComponent": supplementalResource(
+        "Narin Helmet",
+        "/Lotus/Interface/Icons/StoreIcons/Warframes/Narin.png"
+    ),
+    "/Lotus/Types/Recipes/WarframeRecipes/NarinSystemsComponent": supplementalResource(
+        "Narin Systems",
+        "/Lotus/Interface/Icons/StoreIcons/Warframes/Narin.png"
+    ),
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowUpperLimb": supplementalResource(
+        "Duelist Bow Upper Limb",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistBow.png"
+    ),
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowLowerLimb": supplementalResource(
+        "Duelist Bow Lower Limb",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistBow.png"
+    ),
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowString": supplementalResource(
+        "Duelist Bow String",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistBow.png"
+    ),
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowGrip": supplementalResource(
+        "Duelist Bow Grip",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistBow.png"
+    ),
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsBarrel": supplementalResource(
+        "Duelist Pistols Barrel",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistPistols.png"
+    ),
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsReceiver": supplementalResource(
+        "Duelist Pistols Receiver",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistPistols.png"
+    ),
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsLink": supplementalResource(
+        "Duelist Pistols Link",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistPistols.png"
+    )
+};
+
+const supplementalWeapon = (
+    name: string,
+    productCategory: IWeapon["productCategory"],
+    icon: string
+): IWeapon => ({
+    name,
+    parentName: "",
+    icon,
+    codexSecret: false,
+    description: name,
+    totalDamage: 1,
+    omegaAttenuation: 1,
+    masteryReq: 0,
+    productCategory,
+    variantType: "VT_NORMAL",
+    tradable: false
+});
+
+export const supplementalWeapons: Record<string, IWeapon> = {
+    "/Lotus/Weapons/Tenno/Bows/DuelistBow/DuelistBow": supplementalWeapon(
+        "Nunchasa",
+        "LongGuns",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistBow.png"
+    ),
+    "/Lotus/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols": supplementalWeapon(
+        "Aksondol",
+        "Pistols",
+        "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistPistols.png"
+    )
+};
 
 export const supplementalRecipes: Record<string, IRecipe> = {
     // Removed in 39.0.0
@@ -1121,10 +1208,268 @@ export const supplementalRecipes: Record<string, IRecipe> = {
             }
         ],
         tradable: false
+    },
+    "/Lotus/Types/Recipes/WarframeRecipes/NarinBlueprint": {
+        resultType: "/Lotus/Powersuits/Duelist/Duelist",
+        buildPrice: 25000,
+        buildTime: 259200,
+        skipBuildTimePrice: 50,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Recipes/WarframeRecipes/NarinHelmetComponent", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Recipes/WarframeRecipes/NarinChassisComponent", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Recipes/WarframeRecipes/NarinSystemsComponent", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/OrokinCell", ItemCount: 1 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/WarframeRecipes/NarinChassisBlueprint": {
+        resultType: "/Lotus/Types/Recipes/WarframeRecipes/NarinChassisComponent",
+        buildPrice: 15000,
+        buildTime: 43200,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Items/MiscItems/AlloyPlate", ItemCount: 3300 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/PolymerBundle", ItemCount: 1200 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Cryotic", ItemCount: 800 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Morphic", ItemCount: 10 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/WarframeRecipes/NarinHelmetBlueprint": {
+        resultType: "/Lotus/Types/Recipes/WarframeRecipes/NarinHelmetComponent",
+        buildPrice: 15000,
+        buildTime: 43200,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Items/MiscItems/Plastids", ItemCount: 2900 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/NeuralSensor", ItemCount: 4 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/ZarimanMiscItemB", ItemCount: 6 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/VoidWraithItem", ItemCount: 400 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/WarframeRecipes/NarinSystemsBlueprint": {
+        resultType: "/Lotus/Types/Recipes/WarframeRecipes/NarinSystemsComponent",
+        buildPrice: 15000,
+        buildTime: 43200,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/ZarimanMiscItemA", ItemCount: 55 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/ArgonCrystal", ItemCount: 2 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Circuits", ItemCount: 2100 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/ControlModule", ItemCount: 10 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/DuelistBowBlueprint": {
+        resultType: "/Lotus/Weapons/Tenno/Bows/DuelistBow/DuelistBow",
+        buildPrice: 20000,
+        buildTime: 86400,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        excludeFromCodex: true,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowUpperLimb", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowString", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowGrip", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowLowerLimb", ItemCount: 1 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowUpperLimbBlueprint": {
+        resultType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowUpperLimb",
+        buildPrice: 15000,
+        buildTime: 43200,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Items/MiscItems/AlloyPlate", ItemCount: 1700 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/ZarimanMiscItemA", ItemCount: 30 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/VoidAngelItem", ItemCount: 2 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Plastids", ItemCount: 800 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowLowerLimbBlueprint": {
+        resultType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowLowerLimb",
+        buildPrice: 15000,
+        buildTime: 43200,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Items/MiscItems/AlloyPlate", ItemCount: 1700 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/ZarimanMiscItemA", ItemCount: 30 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/VoidAngelItem", ItemCount: 2 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Plastids", ItemCount: 800 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowStringBlueprint": {
+        resultType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowString",
+        buildPrice: 15000,
+        buildTime: 43200,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Items/MiscItems/PolymerBundle", ItemCount: 750 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Gallium", ItemCount: 4 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/OxiumAlloy", ItemCount: 100 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Neurode", ItemCount: 2 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowGripBlueprint": {
+        resultType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistBowGrip",
+        buildPrice: 15000,
+        buildTime: 43200,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Items/MiscItems/Cryotic", ItemCount: 400 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Salvage", ItemCount: 2500 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/ZarimanMiscItemB", ItemCount: 2 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Morphic", ItemCount: 5 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/DuelistPistolsBlueprint": {
+        resultType: "/Lotus/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols",
+        buildPrice: 15000,
+        buildTime: 43200,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        excludeFromCodex: true,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsBarrel", ItemCount: 2 },
+            { ItemType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsReceiver", ItemCount: 2 },
+            { ItemType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsLink", ItemCount: 1 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsBarrelBlueprint": {
+        resultType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsBarrel",
+        buildPrice: 10000,
+        buildTime: 21600,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Items/MiscItems/PolymerBundle", ItemCount: 650 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/ZarimanMiscItemB", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/AlloyPlate", ItemCount: 1200 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Cryotic", ItemCount: 100 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsReceiverBlueprint": {
+        resultType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsReceiver",
+        buildPrice: 10000,
+        buildTime: 21600,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Items/MiscItems/Rubedo", ItemCount: 400 },
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/ZarimanMiscItemA", ItemCount: 40 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Neurode", ItemCount: 1 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Salvage", ItemCount: 900 }
+        ],
+        tradable: false
+    },
+    "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsLinkBlueprint": {
+        resultType: "/Lotus/Types/Recipes/Weapons/WeaponParts/DuelistPistolsLink",
+        buildPrice: 10000,
+        buildTime: 21600,
+        skipBuildTimePrice: 25,
+        consumeOnUse: true,
+        num: 1,
+        codexSecret: false,
+        ingredients: [
+            { ItemType: "/Lotus/Types/Gameplay/Zariman/Resources/VoidWraithItem", ItemCount: 50 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Nanospores", ItemCount: 8200 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Circuits", ItemCount: 600 },
+            { ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 2600 }
+        ],
+        tradable: false
     }
 };
 
 export const supplementalSuits: Record<string, IPowersuit> = {
+    "/Lotus/Powersuits/Duelist/Duelist": {
+        name: "Narin",
+        parentName: "/Lotus/Powersuits/Duelist/DuelistBaseSuit",
+        description: "Narin descends in swirling eddies, her blade keen and deadly as an icy wind.",
+        icon: "/Lotus/Interface/Icons/StoreIcons/Warframes/Narin.png",
+        health: 270,
+        shield: 550,
+        armor: 165,
+        stamina: 3,
+        power: 200,
+        codexSecret: false,
+        masteryReq: 0,
+        sprintSpeed: 1.1,
+        passiveDescription:
+            "Each stack of Cold Status Effect on enemies increases the chance to spawn Sangodae pickups. Narin also gains Cold Damage for her abilities.",
+        abilities: [
+            {
+                uniqueName: "/Lotus/Powersuits/Duelist/Abilities/DuelistThrustAbility",
+                name: "Neote",
+                description: "Lunge with Narin's ice rapier, inflicting Cold and Puncture Status Effects.",
+                icon: "/Lotus/Interface/Icons/Abilities/NarinThrust.png",
+                energyRequiredToActivate: 25
+            },
+            {
+                uniqueName: "/Lotus/Powersuits/Duelist/Abilities/DuelistRiposteAbility",
+                name: "Naraemagi",
+                description: "Recover Shields by absorbing Cold Status from nearby enemies.",
+                icon: "/Lotus/Interface/Icons/Abilities/NarinRiposte.png",
+                energyRequiredToActivate: 50
+            },
+            {
+                uniqueName: "/Lotus/Powersuits/Duelist/Abilities/DuelistLeapAbility",
+                name: "Hakchum",
+                description: "Leap through the air and apply Cold Damage Vulnerability upon landing.",
+                icon: "/Lotus/Interface/Icons/Abilities/NarinLeap.png",
+                energyRequiredToActivate: 75
+            },
+            {
+                uniqueName: "/Lotus/Powersuits/Duelist/Abilities/DuelistBladeDanceAbility",
+                name: "Nurinarim",
+                description: "Summon an ancestral spirit for continuous nearby Cold Damage.",
+                icon: "/Lotus/Interface/Icons/Abilities/NarinBladeDance.png",
+                energyRequiredToActivate: 100
+            }
+        ],
+        productCategory: "Suits",
+        variantType: "VT_NORMAL",
+        introducedAt: 1758585600
+    },
     "/Lotus/Powersuits/Excalibur/DarkExcalibur": {
         name: "/Lotus/Language/Changyou/DarkExcaliburName",
         parentName: "/Lotus/Powersuits/Excalibur/ExcaliburBaseSuit",
@@ -1530,6 +1875,19 @@ export const supplementalKeys: Record<string, IKey> = {
     }
 };
 
+const MELICA_VENDOR_MANIFEST = "/Lotus/Types/Game/VendorManifests/Zariman/MelicaVendorManifest";
+const MELICA_CURRENCY = "/Lotus/Types/Gameplay/Zariman/Resources/EntropicKuvaItem";
+
+const melicaOffer = (storeItem: string, cost: number, purchaseLimit?: number): IVendorOffer => ({
+    storeItem,
+    quantity: 1,
+    alwaysOffered: true,
+    bin: 0,
+    duplicates: 0,
+    itemPrices: [{ ItemType: MELICA_CURRENCY, ItemCount: cost }],
+    ...(purchaseLimit ? { purchaseLimit, durationHours: 168 } : {})
+});
+
 export const supplementalVendors: Record<string, IVendor> = {
     "/Lotus/Types/Game/VendorManifests/Hubs/RailjackResourcesVendorManifest": {
         isDynamic: false,
@@ -1602,6 +1960,46 @@ export const supplementalVendors: Record<string, IVendor> = {
                     }
                 ]
             }
+        ]
+    },
+    [MELICA_VENDOR_MANIFEST]: {
+        isDynamic: false,
+        items: [
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/WarframeRecipes/NarinBlueprint", 400),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/WarframeRecipes/NarinChassisBlueprint", 130),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/WarframeRecipes/NarinHelmetBlueprint", 130),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/WarframeRecipes/NarinSystemsBlueprint", 130),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/DuelistBowBlueprint", 200),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/WeaponParts/DuelistBowUpperLimbBlueprint", 50),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/WeaponParts/DuelistBowStringBlueprint", 50),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/WeaponParts/DuelistBowGripBlueprint", 50),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/WeaponParts/DuelistBowLowerLimbBlueprint", 50),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/DuelistPistolsBlueprint", 200),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/WeaponParts/DuelistPistolsBarrelBlueprint", 30),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/WeaponParts/DuelistPistolsReceiverBlueprint", 30),
+            melicaOffer("/Lotus/StoreItems/Types/Recipes/Weapons/WeaponParts/DuelistPistolsLinkBlueprint", 60),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Sigils/FrozenSigil", 250),
+            melicaOffer("/Lotus/StoreItems/Types/Items/Titles/NarinTitle", 500),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Effects/DuelistSpiritEphemera", 500),
+            melicaOffer("/Lotus/StoreItems/Types/Items/ShipDecos/TarotCardNarin", 500),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Liset/DuelistHoodOrnament", 500),
+            melicaOffer("/Lotus/StoreItems/Types/Items/MiscItems/PhotoboothTileTWWMountainPeakHub", 500),
+            melicaOffer("/Lotus/StoreItems/Types/Items/PhotoBooth/Zariman/PhotoboothTileZarMelicaLab", 500),
+            melicaOffer("/Lotus/StoreItems/Types/Items/SongItems/NeotesDanceSongItem", 50),
+            melicaOffer("/Lotus/StoreItems/Types/Items/SongItems/IceSpeakerSongItem", 50),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Armor/DuelistArmour/DuelistArmourA", 80),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Armor/DuelistArmour/DuelistArmourC", 80),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Armor/DuelistArmour/DuelistArmourL", 80),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Weapons/Daggers/ArchonDaggerDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Weapons/Swords/DarkSplitSwordDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Weapons/Swords/DarkDaggerDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Weapons/Swords/DarkSwordDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Weapons/GreatSword/BallasSwordDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Weapons/Glaives/TeshinGlaiveDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Weapons/LongGuns/CrpFreezeRayDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Weapons/LongGuns/RailjackRifleDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Upgrades/Skins/Liset/LisetDuelistSkin", 150),
+            melicaOffer("/Lotus/StoreItems/Types/Items/MiscItems/Kuva", 150, 4)
         ]
     }
 };
@@ -4795,8 +5193,8 @@ export const getItemCategoryByUniqueName = (uniqueName: string): string | undefi
     if (uniqueName in ExportGear) {
         return "Consumables";
     }
-    if (uniqueName in ExportResources) {
-        return ExportResources[uniqueName].productCategory;
+    if (uniqueName in ExportResources || uniqueName in supplementalResources) {
+        return (ExportResources[uniqueName] ?? supplementalResources[uniqueName]).productCategory;
     }
     if (uniqueName in ExportSentinels) {
         return ExportSentinels[uniqueName].productCategory;
@@ -4809,6 +5207,9 @@ export const getItemCategoryByUniqueName = (uniqueName: string): string | undefi
     }
     if (uniqueName in ExportWeapons) {
         return ExportWeapons[uniqueName].productCategory;
+    }
+    if (uniqueName in supplementalWeapons) {
+        return supplementalWeapons[uniqueName].productCategory;
     }
     if (uniqueName == "/Lotus/Types/Game/SolarRails/BasicSolarRail") {
         return "SolarRails";
@@ -4838,8 +5239,8 @@ export const getItemName = (uniqueName: string): string | undefined => {
     if (uniqueName in ExportGear) {
         return ExportGear[uniqueName].name;
     }
-    if (uniqueName in ExportResources) {
-        return ExportResources[uniqueName].name;
+    if (uniqueName in ExportResources || uniqueName in supplementalResources) {
+        return (ExportResources[uniqueName] ?? supplementalResources[uniqueName]).name;
     }
     if (uniqueName in ExportSentinels) {
         return ExportSentinels[uniqueName].name;
@@ -4852,6 +5253,9 @@ export const getItemName = (uniqueName: string): string | undefined => {
     }
     if (uniqueName in ExportWeapons) {
         return ExportWeapons[uniqueName].name;
+    }
+    if (uniqueName in supplementalWeapons) {
+        return supplementalWeapons[uniqueName].name;
     }
     if (uniqueName in ExportRailjackWeapons) {
         return ExportRailjackWeapons[uniqueName].name;
@@ -5065,11 +5469,14 @@ export const getProductCategory = (uniqueName: string): string => {
     if (uniqueName in ExportGear) {
         return "Consumables";
     }
-    if (uniqueName in ExportResources) {
-        return ExportResources[uniqueName].productCategory;
+    if (uniqueName in ExportResources || uniqueName in supplementalResources) {
+        return (ExportResources[uniqueName] ?? supplementalResources[uniqueName]).productCategory;
     }
     if (uniqueName in ExportWeapons) {
         return ExportWeapons[uniqueName].productCategory;
+    }
+    if (uniqueName in supplementalWeapons) {
+        return supplementalWeapons[uniqueName].productCategory;
     }
     throw new Error(`don't know product category of ${uniqueName}`);
 };
@@ -5544,8 +5951,10 @@ const getUndiscountedPrice = (
             ExportGear,
             ExportRecipes,
             ExportResources,
+            supplementalResources,
             ExportSentinels,
             ExportWarframes,
+            supplementalWeapons,
             ExportWeapons
         ];
         const category = categories.find(c => internalName in c);
