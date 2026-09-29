@@ -2,8 +2,12 @@ import type { RequestHandler } from "express";
 import { getAccountForRequest, getBuildLabel } from "../../services/loginService.ts";
 import { addMiscItems, getInventory } from "../../services/inventoryService.ts";
 import { getJSONfromString } from "../../helpers/stringHelpers.ts";
-import type { RivenFingerprint } from "../../helpers/rivenHelper.ts";
-import { createUnveiledRivenFingerprint, randomiseRivenStats } from "../../helpers/rivenHelper.ts";
+import {
+    createUnveiledRivenFingerprint,
+    getRivenRerollCost,
+    randomiseRivenStats,
+    type RivenFingerprint
+} from "../../helpers/rivenHelper.ts";
 import { ExportUpgrades } from "warframe-public-export-plus";
 import type { IOidWithLegacySupport } from "../../types/commonTypes.ts";
 import { toObjectId, toOid2 } from "../../helpers/inventoryHelpers.ts";
@@ -26,7 +30,7 @@ export const rerollRandomModController: RequestHandler = async (req, res) => {
             } else {
                 fingerprint.rerolls ??= 0;
                 if (!inventory.dontSubtractKuvaForRivens) {
-                    const kuvaCost = fingerprint.rerolls < rerollCosts.length ? rerollCosts[fingerprint.rerolls] : 3500;
+                    const kuvaCost = getRivenRerollCost(fingerprint.rerolls, !!request.LockedTraits?.length);
                     totalKuvaCost += kuvaCost;
                     addMiscItems(inventory, [
                         {
@@ -39,12 +43,12 @@ export const rerollRandomModController: RequestHandler = async (req, res) => {
                 fingerprint.rerolls++;
                 upgrade.UpgradeFingerprint = JSON.stringify(fingerprint);
 
-                randomiseRivenStats(ExportUpgrades[upgrade.ItemType], fingerprint);
+                randomiseRivenStats(ExportUpgrades[upgrade.ItemType], fingerprint, request.LockedTraits);
                 upgrade.PendingRerollFingerprint = JSON.stringify(fingerprint);
             }
 
             changes.push({
-                ItemId: toOid2(toObjectId(request.ItemIds[0]), buildLabel),
+                ItemId: toOid2(toObjectId(itemId), buildLabel),
                 UpgradeFingerprint: upgrade.UpgradeFingerprint,
                 PendingRerollFingerprint: upgrade.PendingRerollFingerprint
             });
@@ -72,6 +76,7 @@ type RerollRandomModRequest = LetsGoGamblingRequest | AwDangitRequest;
 
 interface LetsGoGamblingRequest {
     ItemIds: string[];
+    LockedTraits?: string[];
 }
 
 interface AwDangitRequest {
@@ -84,5 +89,3 @@ interface IChange {
     UpgradeFingerprint?: string;
     PendingRerollFingerprint?: string;
 }
-
-const rerollCosts = [900, 1000, 1200, 1400, 1700, 2000, 2350, 2750, 3150];

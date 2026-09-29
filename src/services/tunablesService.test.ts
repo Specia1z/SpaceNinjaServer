@@ -12,6 +12,7 @@ const accountId = "507f1f77bcf86cd799439011";
 
 before(() => {
     config.tunables = {
+        rawMetadataPatches: "# raw global\n/RawResource\nRawValue = true",
         metadataPatches: [
             { name: "global base", targets: ["/Resource"], operations: ["Credits = 100"] },
             { name: "global second", targets: ["/Resource"], operations: ["Other = true"] }
@@ -44,9 +45,19 @@ void test("account metadata patches are appended after global patches in array o
 void test("compiled account output preserves override order and skips disabled patches", () => {
     assert.equal(
         compileMetadataPatchesForAccount(accountId),
-        "# Server patch: global base\n/Resource\nCredits = 100\n\n# Server patch: global second\n/Resource\nOther = true\n\n# Server patch: account override\n/Resource\nCredits = 1000"
+        "# raw global\n/RawResource\nRawValue = true\n\n# Server patch: global base\n/Resource\nCredits = 100\n\n# Server patch: global second\n/Resource\nOther = true\n\n# Server patch: account override\n/Resource\nCredits = 1000"
     );
     assert.equal(compileMetadataPatchesForAccount("507f1f77bcf86cd799439012").includes("account override"), false);
+});
+
+void test("raw metadata patch text is preserved exactly when no structured patches exist", () => {
+    const metadataPatches = config.tunables!.metadataPatches;
+    const accountMetadataPatches = config.tunables!.accountMetadataPatches;
+    config.tunables!.metadataPatches = [];
+    config.tunables!.accountMetadataPatches = {};
+    assert.equal(compileMetadataPatchesForAccount(accountId), config.tunables!.rawMetadataPatches);
+    config.tunables!.metadataPatches = metadataPatches;
+    config.tunables!.accountMetadataPatches = accountMetadataPatches;
 });
 
 void test("native proxy forcing is only emitted when explicitly enabled", () => {

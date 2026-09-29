@@ -81,24 +81,40 @@ export const createUnveiledRivenFingerprint = (
     return fingerprint;
 };
 
-export const randomiseRivenStats = (meta: IUpgrade, fingerprint: IUnveiledRivenFingerprint): void => {
-    fingerprint.buffs = [];
-    const numBuffs = 2 + Math.trunc(Math.random() * 2); // 2 or 3
-    const buffEntries = meta.upgradeEntries!.filter(x => x.canBeBuff);
-    for (let i = 0; i != numBuffs; ++i) {
-        const buffIndex = Math.trunc(Math.random() * buffEntries.length);
-        const entry = buffEntries[buffIndex];
+export const randomiseRivenStats = (
+    meta: IUpgrade,
+    fingerprint: IUnveiledRivenFingerprint,
+    lockedTraits?: readonly string[]
+): void => {
+    const lockedTraitSet = new Set(lockedTraits);
+    const hasLockedTrait = lockedTraitSet.size > 0;
+    const numBuffs = hasLockedTrait ? fingerprint.buffs.length : 2 + Math.trunc(Math.random() * 2); // 2 or 3
+    const numCurses = hasLockedTrait ? fingerprint.curses.length : Math.random() < 0.5 ? 1 : 0;
+
+    fingerprint.buffs = hasLockedTrait ? fingerprint.buffs.filter(x => lockedTraitSet.has(x.Tag)) : [];
+    fingerprint.curses = hasLockedTrait ? fingerprint.curses.filter(x => lockedTraitSet.has(x.Tag)) : [];
+
+    const isUsed = (tag: string): boolean =>
+        fingerprint.buffs.some(x => x.Tag == tag) || fingerprint.curses.some(x => x.Tag == tag);
+
+    while (fingerprint.buffs.length < numBuffs) {
+        const entry = getRandomElement(meta.upgradeEntries!.filter(x => x.canBeBuff && !isUsed(x.tag)));
+        if (!entry) break;
         fingerprint.buffs.push({ Tag: entry.tag, Value: Math.trunc(Math.random() * 0x40000000) });
-        buffEntries.splice(buffIndex, 1);
     }
 
-    fingerprint.curses = [];
-    if (Math.random() < 0.5) {
-        const entry = getRandomElement(
-            meta.upgradeEntries!.filter(x => x.canBeCurse && !fingerprint.buffs.find(y => y.Tag == x.tag))
-        )!;
+    while (fingerprint.curses.length < numCurses) {
+        const entry = getRandomElement(meta.upgradeEntries!.filter(x => x.canBeCurse && !isUsed(x.tag)));
+        if (!entry) break;
         fingerprint.curses.push({ Tag: entry.tag, Value: Math.trunc(Math.random() * 0x40000000) });
     }
+};
+
+const rivenRerollCosts = [900, 1000, 1200, 1400, 1700, 2000, 2350, 2750, 3150];
+
+export const getRivenRerollCost = (rerolls: number, hasLockedTrait = false): number => {
+    const baseCost = rerolls < rivenRerollCosts.length ? rivenRerollCosts[rerolls] : 3500;
+    return hasLockedTrait ? baseCost * 2 : baseCost;
 };
 
 export const rivenRawToRealWeighted: Record<string, string[]> = {

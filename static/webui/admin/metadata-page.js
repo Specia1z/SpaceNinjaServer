@@ -2,6 +2,7 @@
     const root = document.querySelector("[data-route='/webui/metadata-patches']");
     const find = selector => root.querySelector(selector);
     const state = {
+        rawPatches: "",
         globalPatches: [],
         accountPatches: {},
         accounts: [],
@@ -32,21 +33,43 @@
     }
 
     function getSources() {
-        return effectivePatches().map((patch, index) => ({
-            order: index + 1,
-            source: index < state.globalPatches.length ? "global" : "account",
-            sourceLabel:
-                index < state.globalPatches.length
-                    ? loc("metadataPatches_globalSource")
-                    : `${loc("metadataPatches_accountSource")} ${state.selectedId ?? ""}`,
-            name: patch.name,
-            enabled: patch.enabled !== false,
-            targets: patch.targets
-        }));
+        const rawOffset = state.rawPatches ? 1 : 0;
+        const sources = state.rawPatches
+            ? [
+                  {
+                      order: 1,
+                      source: "global",
+                      sourceLabel: loc("metadataPatches_globalSource"),
+                      name: loc("metadataPatches_rawSource"),
+                      enabled: true,
+                      targets: []
+                  }
+              ]
+            : [];
+        return sources.concat(
+            effectivePatches().map((patch, index) => ({
+                order: index + 1 + rawOffset,
+                source: index < state.globalPatches.length ? "global" : "account",
+                sourceLabel:
+                    index < state.globalPatches.length
+                        ? loc("metadataPatches_globalSource")
+                        : `${loc("metadataPatches_accountSource")} ${state.selectedId ?? ""}`,
+                name: patch.name,
+                enabled: patch.enabled !== false,
+                targets: patch.targets
+            }))
+        );
+    }
+
+    function compiledPreview() {
+        const structured = metadataPatchText.preview(effectivePatches());
+        if (!state.rawPatches) return structured;
+        if (!structured) return state.rawPatches;
+        return `${state.rawPatches}${state.rawPatches.endsWith("\n") ? "\n" : "\n\n"}${structured}`;
     }
 
     function renderPreview() {
-        const compiled = metadataPatchText.preview(effectivePatches());
+        const compiled = compiledPreview();
         find("#metadata-patches-preview").textContent = compiled || loc("metadataPatches_emptyPreview");
         find("#metadata-patches-revision").textContent =
             state.dirty || !state.revision ? "" : `${loc("metadataPatches_revision")}: ${state.revision}`;
@@ -234,6 +257,9 @@
     }
 
     function render() {
+        const rawEditor = find("#metadata-patches-raw");
+        if (document.activeElement !== rawEditor) rawEditor.value = state.rawPatches;
+        rawEditor.disabled = state.busy;
         renderPatchList("#metadata-patches-list", state.globalPatches, "metadataPatches_empty");
         renderAccounts();
         const account = selectedAccount();
@@ -284,6 +310,7 @@
 
     async function load() {
         const data = await window.metadataPatchApi.list();
+        state.rawPatches = data.rawPatches ?? "";
         state.globalPatches = (data.patches ?? []).map(normalize);
         state.accountPatches = Object.fromEntries(
             Object.entries(data.accountMetadataPatches ?? {}).map(([id, patches]) => [id, patches.map(normalize)])
@@ -309,18 +336,13 @@
         markDirty();
         render();
     });
-    find("#metadata-patches-import-button").addEventListener("click", () => {
-        try {
-            state.globalPatches = metadataPatchText.parse(find("#metadata-patches-import").value, loc);
-            markDirty();
-            render();
-        } catch (error) {
-            toast(error.message || loc("settings_changeFailed"), "danger");
-        }
+    find("#metadata-patches-raw").addEventListener("input", event => {
+        state.rawPatches = event.target.value;
+        markDirty();
     });
     find("#metadata-patches-account-search").addEventListener("input", renderAccounts);
     find("[data-loc='metadataPatches_copy']").addEventListener("click", async () => {
-        const compiled = metadataPatchText.preview(effectivePatches());
+        const compiled = compiledPreview();
         if (!compiled) {
             toast(loc("metadataPatches_emptyPreview"), "warning");
             return;
@@ -354,10 +376,12 @@
                 Object.entries(state.accountPatches).filter(([, patches]) => patches.length)
             );
             const data = await window.metadataPatchApi.save(
+                state.rawPatches,
                 state.globalPatches,
                 accountMetadataPatches,
                 state.selectedId
             );
+            state.rawPatches = data.rawPatches ?? "";
             state.globalPatches = (data.patches ?? []).map(normalize);
             state.accountPatches = Object.fromEntries(
                 Object.entries(data.accountMetadataPatches ?? {}).map(([id, patches]) => [id, patches.map(normalize)])

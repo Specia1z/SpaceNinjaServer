@@ -4,7 +4,7 @@ import { config, type IMetadataPatchConfig } from "../../services/configService.
 import { saveConfig } from "../../services/configWriterService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
 import {
-    compileMetadataPatches,
+    compileMetadataPatchesForAccount,
     getMetadataPatchesForAccount,
     getTunablesForClient,
     type IMetadataPatchSource
@@ -17,11 +17,13 @@ const MAX_NAME_LENGTH = 200;
 const MAX_TARGET_LENGTH = 1000;
 const MAX_OPERATION_LENGTH = 10000;
 const MAX_ACCOUNT_PATCH_ENTRIES = 5000;
+const MAX_RAW_PATCH_LENGTH = 12 * 1024 * 1024;
 
 const sourceLabel = (entry: IMetadataPatchSource): string =>
     entry.source == "global" ? "Global" : `Account ${entry.sourceId ?? ""}`;
 
 interface IMetadataPatchesResponse {
+    rawPatches: string;
     patches: IMetadataPatchConfig[];
     accountMetadataPatches: Record<string, IMetadataPatchConfig[]>;
     selectedAccountId: string;
@@ -41,8 +43,9 @@ const getResponse = (accountId?: string): IMetadataPatchesResponse => {
     const patches = config.tunables?.metadataPatches ?? [];
     const accountMetadataPatches = config.tunables?.accountMetadataPatches ?? {};
     const entries = getMetadataPatchesForAccount(accountId);
-    const compiled = compileMetadataPatches(entries.map(entry => entry.patch));
+    const compiled = compileMetadataPatchesForAccount(accountId);
     return {
+        rawPatches: config.tunables?.rawMetadataPatches ?? "",
         patches,
         accountMetadataPatches,
         selectedAccountId: accountId ?? "",
@@ -57,6 +60,16 @@ const getResponse = (accountId?: string): IMetadataPatchesResponse => {
         })),
         revision: compiled ? crypto.createHash("sha256").update(compiled).digest("hex") : ""
     };
+};
+
+const parseRawMetadataPatches = (value: unknown): string => {
+    if (typeof value != "string") {
+        throw new Error("rawPatches must be a string");
+    }
+    if (value.length > MAX_RAW_PATCH_LENGTH) {
+        throw new Error(`rawPatches must be at most ${MAX_RAW_PATCH_LENGTH} characters`);
+    }
+    return value;
 };
 
 export const parseMetadataPatches = (value: unknown): IMetadataPatchConfig[] => {
@@ -160,12 +173,17 @@ export const saveMetadataPatchesController: RequestHandler = async (req, res) =>
 
     try {
         const body = req.body as Record<string, unknown>;
+        const rawPatches =
+            body.rawPatches === undefined
+                ? (config.tunables?.rawMetadataPatches ?? "")
+                : parseRawMetadataPatches(body.rawPatches);
         const patches = parseMetadataPatches(body.patches);
         const accountMetadataPatches =
             body.accountMetadataPatches === undefined
                 ? (config.tunables?.accountMetadataPatches ?? {})
                 : parseAccountMetadataPatches(body.accountMetadataPatches);
         config.tunables ??= {};
+        config.tunables.rawMetadataPatches = rawPatches;
         config.tunables.metadataPatches = patches;
         config.tunables.accountMetadataPatches = accountMetadataPatches;
         await saveConfig();
@@ -180,7 +198,8 @@ export const saveMetadataPatchesController: RequestHandler = async (req, res) =>
             }
         });
         sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
-        const selectedAccountId = typeof req.query.selectedAccountId == "string" ? req.query.selectedAccountId : undefined;
+        const selectedAccountId =
+            typeof req.query.selectedAccountId == "string" ? req.query.selectedAccountId : undefined;
         res.json({
             ...getResponse(selectedAccountId),
             accounts: (await Account.find({}, "DisplayName").sort({ DisplayName: 1 })).map(account => ({
