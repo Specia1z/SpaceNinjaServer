@@ -192,7 +192,7 @@ const reserveSlot = async (
             $push: { members: { accountId, slotType } },
             $set: { lastUpdate: new Date() }
         },
-        { new: true }
+        { returnDocument: "after" }
     );
 };
 
@@ -246,7 +246,7 @@ const releaseSessionSlot = async (
             $pull: { members: { accountId: memberAccountId } },
             $set: { lastUpdate: new Date() }
         },
-        { new: true }
+        { returnDocument: "after" }
     );
     return updated != null;
 };
