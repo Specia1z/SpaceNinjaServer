@@ -366,8 +366,7 @@ dict = {
     cheats_missionPlatinumRewardSendMailHint: `When disabled, platinum is credited straight to the balance with no inbox message.`,
 
     worldState: `World State`,
-    worldState_liveSync: `Synchronize the complete Live World State from browse.wf`,
-    worldState_liveSyncVersionFilter: `Clean live world state for the requested client version (U44 supported)`,
+    worldState_liveSync: `Synchronize Live World State from browse.wf`,
     worldState_creditBoostMultiplier: `Credit Boost Multiplier (0 to disable)`,
     worldState_affinityBoostMultiplier: `Affinity Boost Multiplier (0 to disable)`,
     worldState_resourceBoostMultiplier: `Resource Boost Multiplier (0 to disable)`,

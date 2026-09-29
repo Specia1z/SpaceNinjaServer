@@ -9,11 +9,7 @@ import {
 import { getAccountForQuery, getAccountForRequest, getBuildLabel } from "../../services/loginService.ts";
 import { BL_LATEST } from "../../constants/gameVersions.ts";
 import { getInventory2 } from "../../services/inventoryService.ts";
-import {
-    applyLiveWorldState,
-    getLocalizedLiveEvents,
-    refreshLiveWorldState
-} from "../../services/liveWorldStateService.ts";
+import { applyLiveWorldState, refreshLiveWorldState } from "../../services/liveWorldStateService.ts";
 import { applyStoreOverrides } from "../../services/storeOverrideService.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
 import { applyAccountPickupBoost, applyAccountWorldStateBoost } from "../../services/accountPickupBoostService.ts";
@@ -112,7 +108,17 @@ export const worldStateController: RequestHandler = async (req, res) => {
     }
 
     language = typeof req.query.l == "string" ? req.query.l : language;
-    worldState.Events = getLocalizedLiveEvents(worldState.Events, language);
+    if (language) {
+        for (const event of worldState.Events) {
+            const msg =
+                event.Messages.find(x => x.LanguageCode == language)?.Message ??
+                event.Messages.find(x => x.LanguageCode == "en")?.Message ??
+                event.Msg;
+            if (msg) {
+                event.Messages = [{ Message: msg }];
+            }
+        }
+    }
 
     res.json(worldState);
 };
