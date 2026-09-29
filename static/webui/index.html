@@ -1352,27 +1352,83 @@
                                         </div>
                                         <div class="form-text" data-loc="cheats_relicPlatinumRewardHint"></div>
                                     </form>
-                                    <form class="form-group mt-3" onsubmit="doSaveConfigInt('missionPlatinumRewardMin'); return false;">
+                                    <h6 class="mt-4" data-loc="cheats_missionAyaReward"></h6>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionAyaRewardMin'); return false;">
+                                        <label class="form-label" for="missionAyaRewardMin" data-loc="cheats_missionAyaRewardMin"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardMin" type="number" min="0" step="1" data-default="1" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionAyaRewardMax'); return false;">
+                                        <label class="form-label" for="missionAyaRewardMax" data-loc="cheats_missionAyaRewardMax"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardMax" type="number" min="0" step="1" data-default="2" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigFloat('missionAyaRewardChance'); return false;">
+                                        <label class="form-label" for="missionAyaRewardChance" data-loc="cheats_missionAyaRewardChance"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardChance" type="number" min="0" max="100" step="0.1" data-default="8" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionAyaRewardChanceHint"></div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionAyaRewardDailyCap'); return false;">
+                                        <label class="form-label" for="missionAyaRewardDailyCap" data-loc="cheats_missionAyaRewardDailyCap"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardDailyCap" type="number" min="0" step="1" data-default="3" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionRewardDailyCapHint"></div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionAyaRewardPityCompletions'); return false;">
+                                        <label class="form-label" for="missionAyaRewardPityCompletions" data-loc="cheats_missionAyaRewardPityCompletions"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardPityCompletions" type="number" min="0" step="1" data-default="12" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionRewardPityHint"></div>
+                                    </form>
+                                    <h6 class="mt-4" data-loc="cheats_missionPlatinumReward"></h6>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionPlatinumRewardMin'); return false;">
                                         <label class="form-label" for="missionPlatinumRewardMin" data-loc="cheats_missionPlatinumRewardMin"></label>
                                         <div class="input-group">
-                                            <input class="form-control" id="missionPlatinumRewardMin" type="number" min="0" step="1" data-default="0" />
+                                            <input class="form-control" id="missionPlatinumRewardMin" type="number" min="0" step="1" data-default="1" />
                                             <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
                                         </div>
                                     </form>
                                     <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionPlatinumRewardMax'); return false;">
                                         <label class="form-label" for="missionPlatinumRewardMax" data-loc="cheats_missionPlatinumRewardMax"></label>
                                         <div class="input-group">
-                                            <input class="form-control" id="missionPlatinumRewardMax" type="number" min="0" step="1" data-default="0" />
+                                            <input class="form-control" id="missionPlatinumRewardMax" type="number" min="0" step="1" data-default="2" />
                                             <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
                                         </div>
                                     </form>
                                     <form class="form-group mt-2" onsubmit="doSaveConfigFloat('missionPlatinumRewardChance'); return false;">
                                         <label class="form-label" for="missionPlatinumRewardChance" data-loc="cheats_missionPlatinumRewardChance"></label>
                                         <div class="input-group">
-                                            <input class="form-control" id="missionPlatinumRewardChance" type="number" min="0" max="100" step="0.1" data-default="100" />
+                                            <input class="form-control" id="missionPlatinumRewardChance" type="number" min="0" max="100" step="0.1" data-default="1" />
                                             <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
                                         </div>
                                         <div class="form-text" data-loc="cheats_missionPlatinumRewardChanceHint"></div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionPlatinumRewardDailyCap'); return false;">
+                                        <label class="form-label" for="missionPlatinumRewardDailyCap" data-loc="cheats_missionPlatinumRewardDailyCap"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionPlatinumRewardDailyCap" type="number" min="0" step="1" data-default="2" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionRewardDailyCapHint"></div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionPlatinumRewardPityCompletions'); return false;">
+                                        <label class="form-label" for="missionPlatinumRewardPityCompletions" data-loc="cheats_missionPlatinumRewardPityCompletions"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionPlatinumRewardPityCompletions" type="number" min="0" step="1" data-default="30" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionRewardPityHint"></div>
                                     </form>
                                     <div class="form-check mt-2">
                                         <input class="form-check-input" type="checkbox" id="missionPlatinumRewardSendMail" />
