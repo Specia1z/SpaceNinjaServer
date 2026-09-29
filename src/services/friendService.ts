@@ -28,7 +28,10 @@ export const addAccountDataToFriendInfo = async (
 };
 
 export const addInventoryDataToFriendInfo = async (info: IFriendInfo): Promise<void> => {
-    const inventory = await getInventory(fromOid(info._id), "PlayerLevel ActiveAvatarImageType spoofMasteryRank");
+    const inventory = await getInventory(
+        fromOid(info._id),
+        "PlayerLevel ActiveAvatarImageType TitleType spoofMasteryRank"
+    );
     info.PlayerLevel = inventory.spoofMasteryRank == -1 ? inventory.PlayerLevel : inventory.spoofMasteryRank;
     info.ActiveAvatarImageType = inventory.ActiveAvatarImageType;
     info.TitleType = inventory.TitleType;
