@@ -101,6 +101,7 @@
   },
   "worldState": {
     "liveSync": false,
+    "liveSyncVersionFilter": false,
     "creditBoostMultiplier": 0,
     "affinityBoostMultiplier": 0,
     "resourceBoostMultiplier": 0,
