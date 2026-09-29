@@ -1,11 +1,29 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+    ExportAbilities as bundledAbilities,
+    ExportArcanes as bundledArcanes,
+    ExportAvionics as bundledAvionics,
     ExportBoosterPacks as bundledBoosterPacks,
+    ExportBoosters as bundledBoosters,
     ExportBundles as bundledBundles,
     ExportChallenges as bundledChallenges,
     ExportCreditBundles as bundledCreditBundles,
+    ExportCustoms as bundledCustoms,
+    ExportDojoRecipes as bundledDojoRecipes,
+    ExportDrones as bundledDrones,
+    ExportFactions as bundledFactions,
+    ExportFlavour as bundledFlavour,
+    ExportGear as bundledGear,
+    ExportKeys as bundledKeys,
+    ExportMissionTypes as bundledMissionTypes,
+    ExportRailjackWeapons as bundledRailjackWeapons,
+    ExportRecipes as bundledRecipes,
+    ExportRegions as bundledRegions,
+    ExportRelics as bundledRelics,
+    ExportResources as bundledResources,
     ExportSentinels as bundledSentinels,
+    ExportSyndicates as bundledSyndicates,
     ExportUpgrades as bundledUpgrades,
     ExportWarframes as bundledWarframes,
     ExportWeapons as bundledWeapons
@@ -14,9 +32,8 @@ import type { IBundle, IChallenge, IPowersuit, ISentinel, IUpgrade, IWeapon } fr
 import gameToBuildVersion from "../constants/gameToBuildVersion.ts";
 import { repoDir } from "../helpers/pathHelper.ts";
 
-const SOURCE_BASE = "https://browse.wf/warframe-public-export-plus";
-const SNAPSHOT_DIR = path.join(repoDir, "static", "data", "admin-item-data");
-const METADATA_FILE = "metadata.json";
+const PUBLIC_EXPORT_DIR = path.join(repoDir, "node_modules", "warframe-public-export-plus");
+const PACKAGE_MANIFEST = path.join(PUBLIC_EXPORT_DIR, "package.json");
 const SUPPORTED_LANGUAGES = [
     "en",
     "de",
@@ -35,44 +52,111 @@ const SUPPORTED_LANGUAGES = [
     "zh"
 ] as const;
 
-interface AdminItemData {
-    warframes: Record<string, IPowersuit>;
-    weapons: Record<string, IWeapon>;
-    upgrades: Record<string, IUpgrade>;
-    sentinels: Record<string, ISentinel>;
-    bundles: Record<string, IBundle>;
-    challenges: Record<string, IChallenge>;
+interface CoreSnapshot {
+    abilities: typeof bundledAbilities;
+    arcanes: typeof bundledArcanes;
+    avionics: typeof bundledAvionics;
+    boosterPacks: typeof bundledBoosterPacks;
+    boosters: typeof bundledBoosters;
+    bundles: typeof bundledBundles;
+    challenges: typeof bundledChallenges;
+    creditBundles: typeof bundledCreditBundles;
+    customs: typeof bundledCustoms;
+    dojoRecipes: typeof bundledDojoRecipes;
+    drones: typeof bundledDrones;
+    factions: typeof bundledFactions;
+    flavour: typeof bundledFlavour;
+    gear: typeof bundledGear;
+    keys: typeof bundledKeys;
+    missionTypes: typeof bundledMissionTypes;
+    railjackWeapons: typeof bundledRailjackWeapons;
+    recipes: typeof bundledRecipes;
+    regions: typeof bundledRegions;
+    relics: typeof bundledRelics;
+    resources: typeof bundledResources;
+    sentinels: typeof bundledSentinels;
+    syndicates: typeof bundledSyndicates;
+    upgrades: typeof bundledUpgrades;
+    warframes: typeof bundledWarframes;
+    weapons: typeof bundledWeapons;
+}
+
+interface AdminItemData extends CoreSnapshot {
     dictionary?: Record<string, string>;
 }
 
 interface SnapshotMetadata {
     source: string;
+    packageVersion: string;
     syncedAt: string;
     counts: Record<string, number>;
-    etags: Record<string, string>;
     newestIntroducedAt?: number;
 }
 
-interface CoreSnapshot {
-    warframes: Record<string, IPowersuit>;
-    weapons: Record<string, IWeapon>;
-    upgrades: Record<string, IUpgrade>;
-    sentinels: Record<string, ISentinel>;
-    bundles: Record<string, IBundle>;
-    challenges: Record<string, IChallenge>;
-    creditBundles: Record<string, unknown>;
-    boosterPacks: Record<string, unknown>;
+interface PackageManifest {
+    name: string;
+    version: string;
 }
 
+const TABLE_FILES: { [Key in keyof CoreSnapshot]: string } = {
+    abilities: "ExportAbilities.json",
+    arcanes: "ExportArcanes.json",
+    avionics: "ExportAvionics.json",
+    boosterPacks: "ExportBoosterPacks.json",
+    boosters: "ExportBoosters.json",
+    bundles: "ExportBundles.json",
+    challenges: "ExportChallenges.json",
+    creditBundles: "ExportCreditBundles.json",
+    customs: "ExportCustoms.json",
+    dojoRecipes: "ExportDojoRecipes.json",
+    drones: "ExportDrones.json",
+    factions: "ExportFactions.json",
+    flavour: "ExportFlavour.json",
+    gear: "ExportGear.json",
+    keys: "ExportKeys.json",
+    missionTypes: "ExportMissionTypes.json",
+    railjackWeapons: "ExportRailjackWeapons.json",
+    recipes: "ExportRecipes.json",
+    regions: "ExportRegions.json",
+    relics: "ExportRelics.json",
+    resources: "ExportResources.json",
+    sentinels: "ExportSentinels.json",
+    syndicates: "ExportSyndicates.json",
+    upgrades: "ExportUpgrades.json",
+    warframes: "ExportWarframes.json",
+    weapons: "ExportWeapons.json"
+};
+const FILE_TO_TABLE = Object.fromEntries(
+    Object.entries(TABLE_FILES).map(([key, fileName]) => [fileName, key])
+) as Partial<Record<string, keyof CoreSnapshot>>;
+
 const bundledData: CoreSnapshot = {
-    warframes: bundledWarframes,
-    weapons: bundledWeapons,
-    upgrades: bundledUpgrades,
-    sentinels: bundledSentinels,
+    abilities: bundledAbilities,
+    arcanes: bundledArcanes,
+    avionics: bundledAvionics,
+    boosterPacks: bundledBoosterPacks,
+    boosters: bundledBoosters,
     bundles: bundledBundles,
     challenges: bundledChallenges,
     creditBundles: bundledCreditBundles,
-    boosterPacks: bundledBoosterPacks
+    customs: bundledCustoms,
+    dojoRecipes: bundledDojoRecipes,
+    drones: bundledDrones,
+    factions: bundledFactions,
+    flavour: bundledFlavour,
+    gear: bundledGear,
+    keys: bundledKeys,
+    missionTypes: bundledMissionTypes,
+    railjackWeapons: bundledRailjackWeapons,
+    recipes: bundledRecipes,
+    regions: bundledRegions,
+    relics: bundledRelics,
+    resources: bundledResources,
+    sentinels: bundledSentinels,
+    syndicates: bundledSyndicates,
+    upgrades: bundledUpgrades,
+    warframes: bundledWarframes,
+    weapons: bundledWeapons
 };
 
 let snapshot: CoreSnapshot | undefined;
@@ -85,47 +169,104 @@ const readJson = async <T>(filePath: string): Promise<T> => {
     return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    return typeof value == "object" && value !== null && !Array.isArray(value);
+const getCollectionCount = (value: unknown): number => {
+    if (Array.isArray(value)) return value.length;
+    if (typeof value == "object" && value !== null) return Object.keys(value).length;
+    return 0;
 };
 
-const validateRecord = (name: string, value: unknown, minimumEntries: number): Record<string, unknown> => {
-    if (!isRecord(value) || Object.keys(value).length < minimumEntries) {
+const validateCollection = (name: string, value: unknown): void => {
+    if (getCollectionCount(value) === 0) {
         throw new Error(`${name} failed validation`);
     }
-    return value;
+};
+
+const collectDataFiles = async (directory = PUBLIC_EXPORT_DIR, prefix = ""): Promise<string[]> => {
+    const files: string[] = [];
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+        const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+            files.push(...(await collectDataFiles(path.join(directory, entry.name), relativePath)));
+        } else if (
+            /^Export[^/]*\.json$/.test(relativePath) ||
+            /^dict\.[a-z]+\.json$/.test(relativePath) ||
+            /^supplementals\/.+\.json$/.test(relativePath)
+        ) {
+            files.push(relativePath);
+        }
+    }
+    return files.sort();
+};
+
+const loadPackageData = async (): Promise<{ snapshot: CoreSnapshot; counts: Record<string, number> }> => {
+    const counts: Record<string, number> = {};
+    const snapshotEntries: [keyof CoreSnapshot, unknown][] = [];
+    for (const relativePath of await collectDataFiles()) {
+        const data = await readJson<unknown>(path.join(PUBLIC_EXPORT_DIR, ...relativePath.split("/")));
+        validateCollection(relativePath, data);
+        counts[relativePath.replace(/\.json$/, "")] = getCollectionCount(data);
+        const table = FILE_TO_TABLE[relativePath];
+        if (table) snapshotEntries.push([table, data]);
+    }
+    if (snapshotEntries.length != Object.keys(TABLE_FILES).length) {
+        throw new Error("Bundled Public Export package is missing required item tables");
+    }
+    return {
+        snapshot: Object.fromEntries(snapshotEntries) as unknown as CoreSnapshot,
+        counts
+    };
+};
+
+const getNewestIntroducedAt = (data: CoreSnapshot): number | undefined => {
+    const introducedDates = [
+        ...Object.values(data.warframes),
+        ...Object.values(data.weapons),
+        ...Object.values(data.upgrades)
+    ]
+        .map(item => item.introducedAt)
+        .filter((value): value is number => typeof value == "number");
+    return introducedDates.length ? Math.max(...introducedDates) : undefined;
+};
+
+const refreshPackageSnapshot = async (): Promise<void> => {
+    const [{ snapshot: nextSnapshot, counts }, packageManifest] = await Promise.all([
+        loadPackageData(),
+        readJson<PackageManifest>(PACKAGE_MANIFEST)
+    ]);
+    if (packageManifest.name != "warframe-public-export-plus") {
+        throw new Error("Invalid bundled Public Export package manifest");
+    }
+
+    snapshot = nextSnapshot;
+    metadata = {
+        source: "self-contained warframe-public-export-plus",
+        packageVersion: packageManifest.version,
+        syncedAt: new Date().toISOString(),
+        counts,
+        newestIntroducedAt: getNewestIntroducedAt(nextSnapshot)
+    };
+    dictionaryCache.clear();
 };
 
 const loadSnapshot = async (): Promise<void> => {
     if (loaded) return;
     loaded = true;
     try {
-        const [
-            warframes,
-            weapons,
-            upgrades,
-            sentinels,
-            bundles,
-            challenges,
-            creditBundles,
-            boosterPacks,
-            savedMetadata
-        ] = await Promise.all([
-            readJson<Record<string, IPowersuit>>(path.join(SNAPSHOT_DIR, "ExportWarframes.json")),
-            readJson<Record<string, IWeapon>>(path.join(SNAPSHOT_DIR, "ExportWeapons.json")),
-            readJson<Record<string, IUpgrade>>(path.join(SNAPSHOT_DIR, "ExportUpgrades.json")),
-            readJson<Record<string, ISentinel>>(path.join(SNAPSHOT_DIR, "ExportSentinels.json")),
-            readJson<Record<string, IBundle>>(path.join(SNAPSHOT_DIR, "ExportBundles.json")),
-            readJson<Record<string, IChallenge>>(path.join(SNAPSHOT_DIR, "ExportChallenges.json")),
-            readJson<Record<string, unknown>>(path.join(SNAPSHOT_DIR, "ExportCreditBundles.json")),
-            readJson<Record<string, unknown>>(path.join(SNAPSHOT_DIR, "ExportBoosterPacks.json")),
-            readJson<SnapshotMetadata>(path.join(SNAPSHOT_DIR, METADATA_FILE))
-        ]);
-        snapshot = { warframes, weapons, upgrades, sentinels, bundles, challenges, creditBundles, boosterPacks };
-        metadata = savedMetadata;
+        await refreshPackageSnapshot();
     } catch {
-        snapshot = undefined;
-        metadata = undefined;
+        snapshot = bundledData;
+        metadata = {
+            source: "self-contained module imports",
+            packageVersion: "unknown",
+            syncedAt: new Date().toISOString(),
+            counts: Object.fromEntries(
+                Object.entries(TABLE_FILES).map(([key, fileName]) => [
+                    fileName.replace(/\.json$/, ""),
+                    getCollectionCount(bundledData[key as keyof CoreSnapshot])
+                ])
+            ),
+            newestIntroducedAt: getNewestIntroducedAt(bundledData)
+        };
     }
 };
 
@@ -139,8 +280,9 @@ const loadDictionary = async (language: string): Promise<Record<string, string> 
     if (cached) return cached;
     try {
         const dictionary = await readJson<Record<string, string>>(
-            path.join(SNAPSHOT_DIR, `dict.${normalizedLanguage}.json`)
+            path.join(PUBLIC_EXPORT_DIR, `dict.${normalizedLanguage}.json`)
         );
+        validateCollection(`dict.${normalizedLanguage}.json`, dictionary);
         dictionaryCache.set(normalizedLanguage, dictionary);
         return dictionary;
     } catch {
@@ -153,7 +295,7 @@ export const getAdminItemData = async (language: string): Promise<AdminItemData>
     await loadSnapshot();
     return {
         ...(snapshot ?? bundledData),
-        dictionary: snapshot ? await loadDictionary(language) : undefined
+        dictionary: await loadDictionary(language)
     };
 };
 
@@ -193,122 +335,39 @@ export const isAvailableAt = (item: { introducedAt?: number }, cutoff: number | 
 
 export const getAdminItemDataStatus = async (): Promise<{
     source: string;
+    packageVersion: string;
     usingSyncedData: boolean;
     running: boolean;
     syncedAt?: string;
     counts: Record<string, number>;
+    fileCount: number;
+    totalEntries: number;
     newestIntroducedAt?: number;
     gameVersions: string[];
 }> => {
     await loadSnapshot();
-    const activeData = snapshot ?? bundledData;
+    const counts = metadata?.counts ?? {};
     return {
-        source: metadata?.source ?? "bundled warframe-public-export-plus",
+        source: metadata?.source ?? "self-contained warframe-public-export-plus",
+        packageVersion: metadata?.packageVersion ?? "unknown",
         usingSyncedData: !!snapshot,
         running: syncRunning,
         syncedAt: metadata?.syncedAt,
-        counts: metadata?.counts ?? {
-            warframes: Object.keys(activeData.warframes).length,
-            weapons: Object.keys(activeData.weapons).length,
-            upgrades: Object.keys(activeData.upgrades).length,
-            sentinels: Object.keys(activeData.sentinels).length,
-            bundles: Object.keys(activeData.bundles).length,
-            challenges: Object.keys(activeData.challenges).length,
-            creditBundles: Object.keys(activeData.creditBundles).length,
-            boosterPacks: Object.keys(activeData.boosterPacks).length
-        },
+        counts,
+        fileCount: Object.keys(counts).length,
+        totalEntries: Object.values(counts).reduce((total, count) => total + count, 0),
         newestIntroducedAt: metadata?.newestIntroducedAt,
         gameVersions: Object.keys(gameToBuildVersion)
-    };
-};
-
-const downloadJson = async (fileName: string): Promise<{ data: unknown; etag: string }> => {
-    const response = await fetch(`${SOURCE_BASE}/${fileName}?sync=${Date.now()}`, {
-        headers: { "User-Agent": "SpaceNinjaServer-admin-sync" },
-        signal: AbortSignal.timeout(60_000)
-    });
-    if (!response.ok) throw new Error(`${fileName} returned HTTP ${response.status}`);
-    return {
-        data: await response.json(),
-        etag: response.headers.get("etag") ?? ""
     };
 };
 
 export const syncAdminItemData = async (): Promise<Awaited<ReturnType<typeof getAdminItemDataStatus>>> => {
     if (syncRunning) throw new Error("An item data synchronization is already running");
     syncRunning = true;
-    const stagingDir = `${SNAPSHOT_DIR}.staging-${process.pid}-${Date.now()}`;
-    const backupDir = `${SNAPSHOT_DIR}.backup-${process.pid}`;
     try {
-        await fs.mkdir(stagingDir, { recursive: true });
-        const coreDefinitions = [
-            ["warframes", "ExportWarframes.json", 100],
-            ["weapons", "ExportWeapons.json", 700],
-            ["upgrades", "ExportUpgrades.json", 1400],
-            ["sentinels", "ExportSentinels.json", 30],
-            ["bundles", "ExportBundles.json", 1000],
-            ["challenges", "ExportChallenges.json", 300],
-            ["creditBundles", "ExportCreditBundles.json", 20],
-            ["boosterPacks", "ExportBoosterPacks.json", 30]
-        ] as const;
-        const downloadedCore: Partial<CoreSnapshot> = {};
-        const counts: Record<string, number> = {};
-        const etags: Record<string, string> = {};
-
-        for (const [key, fileName, minimumEntries] of coreDefinitions) {
-            const downloaded = await downloadJson(fileName);
-            const record = validateRecord(fileName, downloaded.data, minimumEntries);
-            downloadedCore[key] = record as never;
-            counts[key] = Object.keys(record).length;
-            etags[fileName] = downloaded.etag;
-            await fs.writeFile(path.join(stagingDir, fileName), JSON.stringify(record));
-        }
-
-        for (const language of SUPPORTED_LANGUAGES) {
-            const fileName = `dict.${language}.json`;
-            const downloaded = await downloadJson(fileName);
-            const dictionary = validateRecord(fileName, downloaded.data, 30_000);
-            counts[`dict.${language}`] = Object.keys(dictionary).length;
-            etags[fileName] = downloaded.etag;
-            await fs.writeFile(path.join(stagingDir, fileName), JSON.stringify(dictionary));
-        }
-
-        const introducedDates = [
-            ...Object.values(downloadedCore.warframes!),
-            ...Object.values(downloadedCore.weapons!),
-            ...Object.values(downloadedCore.upgrades!)
-        ]
-            .map(item => item.introducedAt)
-            .filter((value): value is number => typeof value == "number");
-        const nextMetadata: SnapshotMetadata = {
-            source: SOURCE_BASE,
-            syncedAt: new Date().toISOString(),
-            counts,
-            etags,
-            newestIntroducedAt: introducedDates.length ? Math.max(...introducedDates) : undefined
-        };
-        await fs.writeFile(path.join(stagingDir, METADATA_FILE), JSON.stringify(nextMetadata, null, 2));
-
-        await fs.rm(backupDir, { recursive: true, force: true });
-        try {
-            await fs.rename(SNAPSHOT_DIR, backupDir);
-        } catch (error) {
-            if ((error as NodeJS.ErrnoException).code != "ENOENT") throw error;
-        }
-        try {
-            await fs.rename(stagingDir, SNAPSHOT_DIR);
-        } catch (error) {
-            await fs.rename(backupDir, SNAPSHOT_DIR).catch(() => undefined);
-            throw error;
-        }
-        await fs.rm(backupDir, { recursive: true, force: true });
-
-        snapshot = downloadedCore as CoreSnapshot;
-        metadata = nextMetadata;
-        dictionaryCache.clear();
+        await refreshPackageSnapshot();
     } finally {
         syncRunning = false;
-        await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => undefined);
     }
     return await getAdminItemDataStatus();
 };

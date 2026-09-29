@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Administrator item data synchronization: the latest public export tables and per-language dictionaries can be downloaded from browse.wf into `static/data/admin-item-data/`, versioned by game build so items newer than a client's build are filtered out rather than leaking into old clients.
+- Administrator item data synchronization now reloads every Public Export table, per-language dictionary, and supplemental JSON file from the verified self-contained `warframe-public-export-plus` package. The item picker uses one package version for Warframes, weapons, Mods, resources, recipes, relics, cosmetics, nodes, and every other exported category, while game-build filtering still prevents newer items from leaking into old clients.
 - Store overrides for per-item listing state, discount percentage, and sale prices, applied to the world state and validated server-side at purchase time so a modified client cannot buy delisted or repriced items.
 - Crafting policy configuration with a server-wide policy plus optional per-recipe overrides, covering stock/instant/custom build duration and an independent rush cost (stock, free, or a fixed Platinum price).
 - Redemption codes with a standalone administrator management page: codes are stored in MongoDB, grant any item the server already understands via `uniqueName`, and support expiry, total-use limits, per-account limits, batch generation, custom length, and an optional prefix.

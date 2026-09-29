@@ -13,26 +13,6 @@ import {
 } from "../../services/itemDataService.ts";
 import type { IU5FingerprintUpgrade } from "../../services/itemDataService.ts";
 import type { TRarity, TRelicQuality } from "warframe-public-export-plus";
-import {
-    ExportAbilities,
-    ExportArcanes,
-    ExportAvionics,
-    ExportBoosters,
-    ExportCustoms,
-    ExportDojoRecipes,
-    ExportDrones,
-    ExportFactions,
-    ExportFlavour,
-    ExportGear,
-    ExportKeys,
-    ExportMissionTypes,
-    ExportRailjackWeapons,
-    ExportRecipes,
-    ExportRegions,
-    ExportRelics,
-    ExportResources,
-    ExportSyndicates
-} from "warframe-public-export-plus";
 import { evolutionWeapons, permanentEvolutionWeapons } from "../../constants/evolutionWeapons.ts";
 import supplementalDict from "../../../static/fixed_responses/supplementalDict/index.json" with { type: "json" };
 import varzia from "../../constants/varzia.ts";
@@ -177,10 +157,10 @@ const getItemListsController: RequestHandler = async (req, response) => {
         blueprintAndItem: getString("/Lotus/Language/Items/BlueprintAndItem", lang)
     };
     const eligibleForVault = new Set<string>([
-        ...Object.values(ExportDojoRecipes.research).flatMap(r => r.ingredients.map(i => i.ItemType)),
-        ...Object.values(ExportDojoRecipes.fabrications).flatMap(f => f.ingredients.map(i => i.ItemType)),
-        ...Object.values(ExportDojoRecipes.rooms).flatMap(r => r.ingredients.map(i => i.ItemType)),
-        ...Object.values(ExportDojoRecipes.decos).flatMap(d => d.ingredients.map(i => i.ItemType))
+        ...Object.values(adminItemData.dojoRecipes.research).flatMap(r => r.ingredients.map(i => i.ItemType)),
+        ...Object.values(adminItemData.dojoRecipes.fabrications).flatMap(f => f.ingredients.map(i => i.ItemType)),
+        ...Object.values(adminItemData.dojoRecipes.rooms).flatMap(r => r.ingredients.map(i => i.ItemType)),
+        ...Object.values(adminItemData.dojoRecipes.decos).flatMap(d => d.ingredients.map(i => i.ItemType))
     ]);
     for (const [uniqueName, item] of Object.entries({ ...adminItemData.warframes, ...supplementalSuits })) {
         if (!isAvailableAt(item, versionCutoff)) continue;
@@ -266,7 +246,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
             });
         }
     }
-    for (const [uniqueName, item] of Object.entries(ExportResources)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.resources)) {
         if (item.productCategory == "SupplyDrop") {
             continue; // skip helminth resources
         }
@@ -321,7 +301,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
             });
         }
     }
-    for (const [uniqueName, item] of Object.entries(ExportRelics)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.relics)) {
         const qualitySuffix =
             item.quality !== "VPQ_BRONZE"
                 ? ` [${toTitleCase(getString(relicQualitySuffixes[item.quality], lang))}]`
@@ -335,7 +315,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
                     .replaceAll("|CATEGORY|", item.category) + qualitySuffix
         });
     }
-    for (const [uniqueName, item] of Object.entries(ExportGear)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.gear)) {
         res.miscitems.push({
             uniqueName: uniqueName,
             name: getString(item.name, lang),
@@ -344,7 +324,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
         });
     }
     const recipeNameTemplate = getString("/Lotus/Language/Items/BlueprintAndItem", lang);
-    for (const [uniqueName, item] of Object.entries({ ...ExportRecipes, ...supplementalRecipes })) {
+    for (const [uniqueName, item] of Object.entries({ ...adminItemData.recipes, ...supplementalRecipes })) {
         if (!item.hidden && !(uniqueName in pseudoRecipeToOwnedRecipeMap)) {
             const resultName = getItemName(item.resultType);
             if (resultName) {
@@ -357,20 +337,20 @@ const getItemListsController: RequestHandler = async (req, response) => {
             }
         }
     }
-    for (const [uniqueName, item] of Object.entries(ExportDrones)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.drones)) {
         res.miscitems.push({
             uniqueName: uniqueName,
             name: getString(item.name, lang)
         });
     }
-    for (const [uniqueName, item] of Object.entries(ExportRailjackWeapons)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.railjackWeapons)) {
         res.miscitems.push({
             uniqueName: uniqueName,
             name: getString(item.name, lang),
             parentName: item.parentName
         });
     }
-    for (const [uniqueName, item] of Object.entries(ExportCustoms)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.customs)) {
         if (item.productCategory == "WeaponSkins") {
             if (
                 !uniqueName.startsWith("/Lotus/Types/Game/Lotus") && // Base Items
@@ -466,14 +446,14 @@ const getItemListsController: RequestHandler = async (req, response) => {
             });
         }
     }
-    for (const [uniqueName, upgrade] of Object.entries(ExportAvionics)) {
+    for (const [uniqueName, upgrade] of Object.entries(adminItemData.avionics)) {
         res.mods.push({
             uniqueName,
             name: getString(upgrade.name, lang),
             fusionLimit: upgrade.fusionLimit
         });
     }
-    for (const [uniqueName, arcane] of Object.entries(ExportArcanes)) {
+    for (const [uniqueName, arcane] of Object.entries(adminItemData.arcanes)) {
         if (uniqueName.substring(0, 18) != "/Lotus/Types/Game/") {
             const mod: ListedItem = {
                 uniqueName,
@@ -486,13 +466,13 @@ const getItemListsController: RequestHandler = async (req, response) => {
             res.mods.push(mod);
         }
     }
-    for (const [uniqueName, syndicate] of Object.entries(ExportSyndicates)) {
+    for (const [uniqueName, syndicate] of Object.entries(adminItemData.syndicates)) {
         res.Syndicates.push({
             uniqueName,
             name: getString(syndicate.name, lang)
         });
     }
-    for (const [uniqueName, key] of Object.entries({ ...ExportKeys, ...supplementalKeys })) {
+    for (const [uniqueName, key] of Object.entries({ ...adminItemData.keys, ...supplementalKeys })) {
         if (key.chainStages) {
             res.QuestKeys.push({
                 uniqueName,
@@ -508,7 +488,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
         }
     }
 
-    for (const item of Object.values(ExportBoosters)) {
+    for (const item of Object.values(adminItemData.boosters)) {
         res.Boosters.push({
             uniqueName: item.typeName,
             name: getString(item.name, lang)
@@ -522,23 +502,23 @@ const getItemListsController: RequestHandler = async (req, response) => {
         });
     }
 
-    for (const [uniqueName, ability] of Object.entries(ExportAbilities)) {
+    for (const [uniqueName, ability] of Object.entries(adminItemData.abilities)) {
         res.Abilities.push({
             uniqueName,
             name: getString(ability.name || uniqueName, lang)
         });
     }
 
-    for (const uniqueName of Object.keys(ExportDojoRecipes.research)) {
+    for (const uniqueName of Object.keys(adminItemData.dojoRecipes.research)) {
         if (
             !["Zekti", "Vidar", "Lavan"].some(house => uniqueName.includes(house)) &&
             !uniqueName.startsWith("/Lotus/Types/Items/ShipFeatureItems/Railjack/")
         ) {
             let resultType;
-            if (uniqueName in ExportRecipes) {
-                resultType = ExportRecipes[uniqueName].resultType;
-            } else if (uniqueName in ExportDojoRecipes.fabrications) {
-                resultType = ExportDojoRecipes.fabrications[uniqueName].resultType;
+            if (uniqueName in adminItemData.recipes) {
+                resultType = adminItemData.recipes[uniqueName].resultType;
+            } else if (uniqueName in adminItemData.dojoRecipes.fabrications) {
+                resultType = adminItemData.dojoRecipes.fabrications[uniqueName].resultType;
             } else if (uniqueName.startsWith("/Lotus/Types/Game/")) {
                 resultType = uniqueName.replace("Blueprint", "");
             } else {
@@ -547,8 +527,8 @@ const getItemListsController: RequestHandler = async (req, response) => {
 
             let name = getString(getItemName(resultType) || resultType, lang);
 
-            if (uniqueName in ExportRecipes) {
-                const recipeNum = ExportRecipes[uniqueName].num;
+            if (uniqueName in adminItemData.recipes) {
+                const recipeNum = adminItemData.recipes[uniqueName].num;
                 if (recipeNum > 1) {
                     name = `${name} X ${recipeNum}`;
                 }
@@ -562,7 +542,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
     }
 
     for (const uniqueName of [
-        ...Object.entries(ExportDojoRecipes.decos)
+        ...Object.entries(adminItemData.dojoRecipes.decos)
             .filter(([_, data]) => data.requiredInVault)
             .map(([uniqueName]) => uniqueName),
         // not requiredInVault:
@@ -580,7 +560,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
         let name = getString(getItemName(uniqueName) || uniqueName, lang);
         if (uniqueName.startsWith("/Lotus/Levels/ClanDojo/ComponentPropRecipes/GradivusDilemma")) {
             const factionTag = uniqueName.includes("Corpus") ? "FC_CORPUS" : "FC_GRINEER";
-            const faction = ExportFactions[factionTag].name;
+            const faction = adminItemData.factions[factionTag].name;
             name += ` [${getString(faction || factionTag, lang)}]`;
         }
         res.VaultDecoRecipes.push({
@@ -589,7 +569,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
         });
     }
 
-    for (const [uniqueName, item] of Object.entries(ExportFlavour)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.flavour)) {
         res.FlavourItems.push({
             uniqueName,
             name: getString(item.name, lang),
@@ -597,14 +577,14 @@ const getItemListsController: RequestHandler = async (req, response) => {
         });
     }
 
-    for (const [uniqueName, item] of Object.entries(ExportMissionTypes)) {
+    for (const [uniqueName, item] of Object.entries(adminItemData.missionTypes)) {
         res.MissionTypes.push({
             uniqueName,
             name: toTitleCase(getString(item.name || "", lang))
         });
     }
 
-    for (const [uniqueName, node] of Object.entries(ExportRegions)) {
+    for (const [uniqueName, node] of Object.entries(adminItemData.regions)) {
         res.Nodes.push({
             uniqueName,
             name: getString(node.name || uniqueName, lang)

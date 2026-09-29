@@ -112,13 +112,20 @@
         });
         select.value = [...select.options].some(option => option.value == selected) ? selected : "latest";
         const counts = status.counts;
+        const count = (fileName, legacyName) => counts[fileName] ?? counts[legacyName] ?? 0;
         document.getElementById("admin-item-data-status").textContent = loc("admin_itemDataStatus")
             .replace("|SOURCE|", status.source)
+            .replace("|VERSION|", status.packageVersion)
             .replace("|SYNCED_AT|", status.syncedAt ? new Date(status.syncedAt).toLocaleString() : loc("admin_never"))
-            .replace("|WARFRAMES|", counts.warframes ?? 0)
-            .replace("|WEAPONS|", counts.weapons ?? 0)
-            .replace("|MODS|", counts.upgrades ?? 0)
-            .replace("|SENTINELS|", counts.sentinels ?? 0);
+            .replace("|FILES|", status.fileCount ?? 0)
+            .replace("|ENTRIES|", (status.totalEntries ?? 0).toLocaleString())
+            .replace("|WARFRAMES|", count("ExportWarframes", "warframes"))
+            .replace("|WEAPONS|", count("ExportWeapons", "weapons"))
+            .replace("|MODS|", count("ExportUpgrades", "upgrades"))
+            .replace("|SENTINELS|", count("ExportSentinels", "sentinels"))
+            .replace("|RESOURCES|", count("ExportResources", "resources"))
+            .replace("|RECIPES|", count("ExportRecipes", "recipes"))
+            .replace("|RELICS|", count("ExportRelics", "relics"));
         document.getElementById("admin-item-sync").disabled = status.running;
     }
 
