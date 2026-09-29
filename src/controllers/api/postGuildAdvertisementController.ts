@@ -8,6 +8,7 @@ import {
     hasGuildPermissionEx
 } from "../../services/guildService.ts";
 import { getInventory } from "../../services/inventoryService.ts";
+import { normalizeGuildAdLanguages } from "../../services/guildAdvertisementService.ts";
 import { getAccountIdForRequest } from "../../services/loginService.ts";
 import { getVendorManifestByTypeName } from "../../services/serversideVendorsService.ts";
 import { eGuildPermission } from "../../types/guildTypes.ts";
@@ -57,6 +58,7 @@ export const postGuildAdvertisementController: RequestHandler = async (req, res)
             Expiry: new Date(Date.now() + 12 * 3600 * 1000),
             Features: payload.Features,
             GuildName: guild.Name,
+            Languages: normalizeGuildAdLanguages(payload.Languages),
             MemberCount: await GuildMember.countDocuments({ guildId: guild._id, status: 0 }),
             RecruitMsg: payload.RecruitMsg,
             Tier: guild.Tier

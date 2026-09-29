@@ -318,6 +318,7 @@ const guildAdSchema = new Schema<IGuildAdDatabase>({
     Expiry: { type: Date, required: true },
     Features: { type: Number, required: true },
     GuildName: { type: String, required: true },
+    Languages: { type: [String], default: undefined },
     MemberCount: { type: Number, required: true },
     RecruitMsg: { type: String, required: true },
     Tier: { type: Number, required: true }
@@ -325,6 +326,8 @@ const guildAdSchema = new Schema<IGuildAdDatabase>({
 
 guildAdSchema.index({ GuildId: 1 }, { unique: true });
 guildAdSchema.index({ Expiry: 1 }, { expireAfterSeconds: 0 });
+guildAdSchema.index({ Tier: 1, Expiry: -1 });
+guildAdSchema.index({ Languages: 1, Expiry: -1 });
 
 export const GuildAd = model<IGuildAdDatabase>("GuildAd", guildAdSchema);
 

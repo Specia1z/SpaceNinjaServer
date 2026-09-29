@@ -344,6 +344,7 @@ export interface IGuildAdInfoClient {
     Expiry: IMongoDate;
     Features: number;
     GuildName: string;
+    Languages?: string[];
     MemberCount: number;
     OriginalPlatform: number;
     RecruitMsg: string;
@@ -356,6 +357,7 @@ export interface IGuildAdDatabase {
     Expiry: Date;
     Features: number;
     GuildName: string;
+    Languages?: string[];
     MemberCount: number;
     RecruitMsg: string;
     Tier: number;
