@@ -71,11 +71,7 @@ interface IEvent {
         LanguageCode?: string;
         Message: string;
     }[];
-    Prop?: string;
-    Links?: {
-        LanguageCode?: string;
-        Link: string;
-    }[];
+    Prop: string;
     Icon?: string;
     Priority?: boolean;
     MobileOnly?: boolean;

@@ -15,7 +15,6 @@ import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/a
 import { applyAccountPickupBoost, applyAccountWorldStateBoost } from "../../services/accountPickupBoostService.ts";
 import { logger } from "../../utils/logger.ts";
 import { fromMongoDate } from "../../helpers/inventoryHelpers.ts";
-import { localizeWorldStateEvents } from "../../services/worldStateEventService.ts";
 
 export const worldStateController: RequestHandler = async (req, res) => {
     let buildLabel: string;
@@ -110,7 +109,15 @@ export const worldStateController: RequestHandler = async (req, res) => {
 
     language = typeof req.query.l == "string" ? req.query.l : language;
     if (language) {
-        worldState.Events = localizeWorldStateEvents(worldState.Events, language);
+        for (const event of worldState.Events) {
+            const msg =
+                event.Messages.find(x => x.LanguageCode == language)?.Message ??
+                event.Messages.find(x => x.LanguageCode == "en")?.Message ??
+                event.Msg;
+            if (msg) {
+                event.Messages = [{ Message: msg }];
+            }
+        }
     }
 
     res.json(worldState);
