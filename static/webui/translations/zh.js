@@ -367,7 +367,7 @@ dict = {
     cheats_missionPlatinumRewardSendMailHint: `关闭时，白金直接计入余额，不发送任何收件箱邮件。`,
 
     worldState: `世界状态配置`,
-    worldState_liveSync: `从官方数据源实时同步世界状态（browse.wf 备用）`,
+    worldState_liveSync: `从 browse.wf 实时同步世界状态`,
     worldState_liveSyncVersionFilter: `按旧客户端版本过滤实时世界状态`,
     worldState_creditBoostMultiplier: `现金加成倍率(0为禁用)`,
     worldState_affinityBoostMultiplier: `经验加成倍率(0为禁用)`,
