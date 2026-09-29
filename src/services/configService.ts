@@ -189,6 +189,7 @@ export interface IConfig {
     };
     worldState?: {
         liveSync?: boolean;
+        liveSyncVersionFilter?: boolean;
         creditBoostMultiplier?: number;
         affinityBoostMultiplier?: number;
         resourceBoostMultiplier?: number;

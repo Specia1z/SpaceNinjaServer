@@ -19,7 +19,10 @@ import invasionRewards from "../../static/fixed_responses/worldState/invasionRew
 import syndicateMissionNodes from "../../static/fixed_responses/worldState/syndicateMissions.json" with { type: "json" };
 import { LiveGoalState, LiveWorldActivityState } from "../models/worldStateModel.ts";
 
-const LIVE_WORLD_STATE_URL = "https://oracle.browse.wf/worldState.min.json";
+const LIVE_WORLD_STATE_SOURCES = [
+    { name: "official Warframe world state", url: "https://api.warframe.com/cdn/worldState.php" },
+    { name: "browse.wf", url: "https://oracle.browse.wf/worldState.min.json" }
+] as const;
 const SUPPLEMENTAL_WORLD_STATE_URLS = [
     "https://cdn.jsdelivr.net/gh/calamity-inc/warframe-worldstate-history@senpai/worldState.json?source=browse.wf",
     "https://api.warframe.com/cdn/worldState.php"
@@ -27,6 +30,8 @@ const SUPPLEMENTAL_WORLD_STATE_URLS = [
 const BOUNTY_CYCLE_URL = "https://oracle.browse.wf/bounty-cycle";
 const INVASIONS_URL = "https://oracle.browse.wf/invasions";
 const REFRESH_INTERVAL_MS = 60_000;
+const SOURCE_TIMEOUT_MS = 5_000;
+const SOURCE_RETRY_INTERVAL_MS = 5 * 60_000;
 
 const liveWorldStateArrayKeys = [
     "Events",
@@ -42,20 +47,7 @@ const liveWorldStateArrayKeys = [
 ] as const satisfies readonly (keyof IWorldState)[];
 
 type TLiveWorldStateArrayKey = (typeof liveWorldStateArrayKeys)[number];
-type ILiveWorldState = Pick<IWorldState, TLiveWorldStateArrayKey> &
-    Partial<
-        Pick<
-            IWorldState,
-            | "PrimeVaultTraders"
-            | "Invasions"
-            | "SyndicateMissions"
-            | "SeasonInfo"
-            | "KnownCalendarSeasons"
-            | "Descents"
-            | "EndlessXpSchedule"
-            | "Tmp"
-        >
-    >;
+type ILiveWorldState = Pick<IWorldState, TLiveWorldStateArrayKey> & Partial<IWorldState> & Record<string, unknown>;
 
 interface IBountyCycle {
     expiry: number;
@@ -203,8 +195,9 @@ let activeInvasionIds: Set<string> | undefined;
 let refreshPromise: Promise<void> | undefined;
 let lastRefreshAttempt = 0;
 let lastError: string | undefined;
+const sourceRetryAfter = new Map<string, number>();
 
-const parseLiveWorldState = (value: unknown): ILiveWorldState => {
+export const parseLiveWorldState = (value: unknown): ILiveWorldState => {
     if (!value || typeof value != "object") {
         throw new Error("response is not an object");
     }
@@ -215,10 +208,7 @@ const parseLiveWorldState = (value: unknown): ILiveWorldState => {
             throw new Error(`response field ${key} is not an array`);
         }
     }
-    return {
-        ...Object.fromEntries(liveWorldStateArrayKeys.map(key => [key, candidate[key]])),
-        ...(typeof candidate.Tmp == "string" ? { Tmp: candidate.Tmp } : {})
-    } as ILiveWorldState;
+    return structuredClone(candidate) as ILiveWorldState;
 };
 
 const isUpdate41Goal = (goal: IWorldState["Goals"][number]): boolean =>
@@ -228,6 +218,23 @@ const getGoalDateMs = (date: IWorldState["Goals"][number]["Activation"]): number
     "$date" in date ? Number(date.$date.$numberLong) : date.sec * 1000 + Math.trunc(date.usec / 1000);
 
 const getGoalOid = (goal: IWorldState["Goals"][number]): string => goal._id.$oid ?? goal._id.$id ?? "";
+
+export const mergeLiveWorldStateProgress = (
+    liveWorldState: ILiveWorldState,
+    goalOverrides: ReadonlyMap<string, IWorldState["Goals"][number]>,
+    invasionOverrides: ReadonlyMap<string, IWorldState["Invasions"][number]>
+): ILiveWorldState => {
+    const merged = structuredClone(liveWorldState);
+    merged.Goals = (merged.Goals as IWorldState["Goals"][number][]).map(
+        goal => goalOverrides.get(getGoalOid(goal)) ?? goal
+    ) as IWorldState["Goals"];
+    if (Array.isArray(merged.Invasions)) {
+        merged.Invasions = merged.Invasions.map(
+            invasion => invasionOverrides.get(invasion._id.$oid ?? "") ?? invasion
+        );
+    }
+    return merged;
+};
 
 const getStaticGoalSnapshot = (goal: IWorldState["Goals"][number]): IWorldState["Goals"][number] => {
     const snapshot = structuredClone(goal);
@@ -816,7 +823,10 @@ const fetchBrowseActivity = async (
     };
 };
 
-const fetchSupplementalAndActivity = async (): Promise<
+const fetchSupplementalAndActivity = async (
+    primaryWorldState?: ILiveWorldState,
+    primaryFreshnessMs = 0
+): Promise<
     ISupplementalWorldState & {
         bountyCycle?: IBountyCycle;
         invasionIds?: Set<string>;
@@ -826,7 +836,11 @@ const fetchSupplementalAndActivity = async (): Promise<
     const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
         const [supplemental, activity] = await Promise.all([
-            fetchSupplementalWorldState(controller.signal),
+            primaryWorldState
+                ? Promise.resolve()
+                      .then(() => parseSupplementalWorldState(primaryWorldState, primaryFreshnessMs))
+                      .catch(() => fetchSupplementalWorldState(controller.signal))
+                : fetchSupplementalWorldState(controller.signal),
             fetchBrowseActivity(controller.signal)
         ]);
         return { ...supplemental, ...activity };
@@ -836,17 +850,40 @@ const fetchSupplementalAndActivity = async (): Promise<
     }
 };
 
+export const fetchCurrentLiveWorldState = async (): Promise<{
+    worldState: ILiveWorldState;
+    source: (typeof LIVE_WORLD_STATE_SOURCES)[number];
+    freshnessMs: number;
+}> => {
+    const errors: string[] = [];
+    const now = Date.now();
+    const availableSources = LIVE_WORLD_STATE_SOURCES.filter(source => (sourceRetryAfter.get(source.url) ?? 0) <= now);
+    const sources = availableSources.length > 0 ? availableSources : LIVE_WORLD_STATE_SOURCES;
+    for (const source of sources) {
+        try {
+            const response = await fetch(source.url, { signal: AbortSignal.timeout(SOURCE_TIMEOUT_MS) });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const worldState = parseLiveWorldState(await response.json());
+            const bodyTime = typeof worldState.Time == "number" ? worldState.Time * 1000 : 0;
+            const headerTime = Date.parse(response.headers.get("last-modified") ?? "") || 0;
+            sourceRetryAfter.delete(source.url);
+            return { worldState, source, freshnessMs: bodyTime || headerTime || Date.now() };
+        } catch (e) {
+            sourceRetryAfter.set(source.url, Date.now() + SOURCE_RETRY_INTERVAL_MS);
+            errors.push(`${source.name}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+    }
+    throw new Error(errors.join("; "));
+};
+
 const fetchLiveWorldState = async (): Promise<void> => {
     try {
-        const response = await fetch(LIVE_WORLD_STATE_URL, { signal: AbortSignal.timeout(10_000) });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const liveWorldState = parseLiveWorldState(await response.json());
+        const { worldState: liveWorldState, source, freshnessMs } = await fetchCurrentLiveWorldState();
         await updateLiveGoals(liveWorldState.Goals);
         try {
-            const supplementalWorldState = await fetchSupplementalAndActivity();
+            const supplementalWorldState = await fetchSupplementalAndActivity(liveWorldState, freshnessMs);
             const activityIds = supplementalWorldState.invasionIds;
             const matchedInvasions = supplementalWorldState.worldState.Invasions.filter(invasion =>
                 activityIds ? activityIds.has(invasion._id.$oid ?? "") : !invasion.Completed
@@ -855,24 +892,24 @@ const fetchLiveWorldState = async (): Promise<void> => {
                 activityIds?.size && matchedInvasions.length == 0
                     ? supplementalWorldState.worldState.Invasions.filter(invasion => !invasion.Completed)
                     : matchedInvasions;
-            liveWorldState.PrimeVaultTraders = supplementalWorldState.worldState.PrimeVaultTraders;
-            liveWorldState.Invasions = activeInvasions;
-            liveWorldState.SyndicateMissions = supplementalWorldState.worldState.SyndicateMissions;
-            liveWorldState.SeasonInfo = supplementalWorldState.worldState.SeasonInfo;
-            liveWorldState.KnownCalendarSeasons = supplementalWorldState.worldState.KnownCalendarSeasons;
-            liveWorldState.Descents = supplementalWorldState.worldState.Descents;
-            liveWorldState.EndlessXpSchedule = supplementalWorldState.worldState.EndlessXpSchedule;
+            liveWorldState.PrimeVaultTraders ??= supplementalWorldState.worldState.PrimeVaultTraders;
+            liveWorldState.Invasions ??= supplementalWorldState.worldState.Invasions;
+            liveWorldState.SyndicateMissions ??= supplementalWorldState.worldState.SyndicateMissions;
+            liveWorldState.SeasonInfo ??= supplementalWorldState.worldState.SeasonInfo;
+            liveWorldState.KnownCalendarSeasons ??= supplementalWorldState.worldState.KnownCalendarSeasons;
+            liveWorldState.Descents ??= supplementalWorldState.worldState.Descents;
+            liveWorldState.EndlessXpSchedule ??= supplementalWorldState.worldState.EndlessXpSchedule;
             await updateLiveInvasions(activeInvasions);
             updateLiveSyndicateMissions(supplementalWorldState.worldState.SyndicateMissions);
             updateLiveCalendarSeasons(supplementalWorldState.worldState.KnownCalendarSeasons);
             cachedBountyCycle = supplementalWorldState.bountyCycle;
             activeInvasionIds = new Set(activeInvasions.map(invasion => invasion._id.$oid ?? ""));
         } catch (e) {
-            logger.debug(`Could not supplement browse.wf world state with Prime Vault traders: ${String(e)}`);
+            logger.debug(`Could not supplement live world state: ${String(e)}`);
         }
         const nextJson = JSON.stringify({
             ...liveWorldState,
-            Goals: liveWorldState.Goals.map(getStaticGoalSnapshot)
+            Goals: (liveWorldState.Goals as IWorldState["Goals"][number][]).map(getStaticGoalSnapshot)
         });
         const changed = nextJson != cachedWorldStateJson;
         cachedWorldState = liveWorldState;
@@ -880,13 +917,13 @@ const fetchLiveWorldState = async (): Promise<void> => {
         lastError = undefined;
 
         if (changed) {
-            logger.info("Updated live world state from browse.wf.");
+            logger.info(`Updated live world state from ${source.name}.`);
             sendWsBroadcastToGame(undefined, { sync_world_state: true });
         }
     } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         if (message != lastError) {
-            logger.warn(`Could not update live world state from browse.wf: ${message}`);
+            logger.warn(`Could not update live world state: ${message}`);
             lastError = message;
         }
     }
@@ -930,7 +967,8 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
     }
 
     const buildVersion = buildVersionToInt(worldState.BuildLabel);
-    if (buildVersion < gameToBuildVersionInt["41.0.0"]) {
+    const filterByBuild = config.worldState.liveSyncVersionFilter == true;
+    if (filterByBuild && buildVersion < gameToBuildVersionInt["41.0.0"]) {
         return;
     }
 
@@ -941,7 +979,9 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
     if (!cachedWorldState) {
         if (localGoals.length > 0) {
             worldState.Goals =
-                buildVersion >= gameToBuildVersionInt["43.5.0"] ? localGoals : localGoals.filter(isUpdate41Goal);
+                !filterByBuild || buildVersion >= gameToBuildVersionInt["43.5.0"]
+                    ? localGoals
+                    : localGoals.filter(isUpdate41Goal);
         }
         if (localInvasions.length > 0) {
             worldState.Invasions = localInvasions;
@@ -951,10 +991,13 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
 
     const liveWorldState = structuredClone(cachedWorldState);
     const compatibleSeasonInfo = getCompatibleSeasonInfo(liveWorldState.SeasonInfo, buildVersion);
-    if (buildVersion >= gameToBuildVersionInt["44.0.0"]) {
-        Object.assign(worldState, liveWorldState);
-        worldState.Goals = localGoals;
-        worldState.Invasions = localInvasions;
+    if (!filterByBuild || buildVersion >= gameToBuildVersionInt["44.0.0"]) {
+        const mergedLiveWorldState = mergeLiveWorldStateProgress(
+            liveWorldState,
+            new Map([...liveGoals].map(([id, entry]) => [id, entry.goal])),
+            new Map([...liveInvasions].map(([id, entry]) => [id, entry.invasion]))
+        );
+        Object.assign(worldState, mergedLiveWorldState);
         return;
     }
 
@@ -1114,11 +1157,12 @@ export const getLiveGoalByOid = (oid: string, buildLabel: string): IWorldState["
         return undefined;
     }
     const buildVersion = buildVersionToInt(buildLabel);
-    if (buildVersion < gameToBuildVersionInt["41.0.0"]) {
+    const filterByBuild = config.worldState.liveSyncVersionFilter == true;
+    if (filterByBuild && buildVersion < gameToBuildVersionInt["41.0.0"]) {
         return undefined;
     }
     const goal = liveGoals.get(oid)?.goal;
-    if (!goal || (buildVersion < gameToBuildVersionInt["43.5.0"] && !isUpdate41Goal(goal))) {
+    if (!goal || (filterByBuild && buildVersion < gameToBuildVersionInt["43.5.0"] && !isUpdate41Goal(goal))) {
         return undefined;
     }
     return structuredClone(goal);
@@ -1180,10 +1224,13 @@ export const getLiveDailyDealForPurchase = (
     }
 
     const buildVersion = buildVersionToInt(buildLabel);
-    if (buildVersion < gameToBuildVersionInt["41.0.0"]) {
+    const filterByBuild = config.worldState.liveSyncVersionFilter == true;
+    if (filterByBuild && buildVersion < gameToBuildVersionInt["41.0.0"]) {
         return undefined;
     }
-    return getCompatibleDailyDeals(cachedWorldState.DailyDeals, buildVersion).find(deal => deal.StoreItem == storeItem);
+    return (filterByBuild ? getCompatibleDailyDeals(cachedWorldState.DailyDeals, buildVersion) : cachedWorldState.DailyDeals).find(
+        deal => deal.StoreItem == storeItem
+    );
 };
 
 export const selfTestLiveWorldState = (): boolean => {
