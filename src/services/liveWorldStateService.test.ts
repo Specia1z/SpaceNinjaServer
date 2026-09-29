@@ -30,7 +30,7 @@ void test("live world state preserves unknown future top-level fields", () => {
     assert.deepEqual(parsed.FutureRotation, { Version: 1, Entries: ["new-content"] });
 });
 
-void test("progress overlays keep unknown live goals and invasions", () => {
+void test("progress overlays keep unknown official goals and invasions", () => {
     const knownGoal = { _id: { $oid: "000000000000000000000001" }, Count: 1 } as unknown as IWorldState["Goals"][number];
     const futureGoal = { _id: { $oid: "000000000000000000000002" }, FutureProgress: true } as unknown as IWorldState["Goals"][number];
     const knownInvasion = { _id: { $oid: "000000000000000000000003" }, Count: 1 } as unknown as IWorldState["Invasions"][number];
@@ -62,13 +62,16 @@ void test("progress overlays keep unknown live goals and invasions", () => {
     assert.deepEqual(merged.FutureRotation, { Enabled: true });
 });
 
-void test("live world state is fetched only from browse.wf", async () => {
+void test("official world state is preferred and browse.wf is a fallback", async () => {
     const originalFetch = globalThis.fetch;
     const calls: string[] = [];
     try {
         globalThis.fetch = (input): Promise<Response> => {
             const url = String(input);
             calls.push(url);
+            if (url.includes("api.warframe.com")) {
+                return Promise.reject(new Error("official unavailable"));
+            }
             return Promise.resolve(
                 new Response(JSON.stringify({ ...emptyLiveWorldState, FutureRotation: { Enabled: true } }), {
                     status: 200
@@ -77,7 +80,10 @@ void test("live world state is fetched only from browse.wf", async () => {
         };
 
         const result = await fetchCurrentLiveWorldState();
-        assert.deepEqual(calls, ["https://oracle.browse.wf/worldState.min.json"]);
+        assert.deepEqual(calls, [
+            "https://api.warframe.com/cdn/worldState.php",
+            "https://oracle.browse.wf/worldState.min.json"
+        ]);
         assert.equal(result.source.name, "browse.wf");
         assert.deepEqual(result.worldState.FutureRotation, { Enabled: true });
 

@@ -20,10 +20,12 @@ import syndicateMissionNodes from "../../static/fixed_responses/worldState/syndi
 import { LiveGoalState, LiveWorldActivityState } from "../models/worldStateModel.ts";
 
 const LIVE_WORLD_STATE_SOURCES = [
+    { name: "official Warframe world state", url: "https://api.warframe.com/cdn/worldState.php" },
     { name: "browse.wf", url: "https://oracle.browse.wf/worldState.min.json" }
 ] as const;
 const SUPPLEMENTAL_WORLD_STATE_URLS = [
-    "https://cdn.jsdelivr.net/gh/calamity-inc/warframe-worldstate-history@senpai/worldState.json?source=browse.wf"
+    "https://cdn.jsdelivr.net/gh/calamity-inc/warframe-worldstate-history@senpai/worldState.json?source=browse.wf",
+    "https://api.warframe.com/cdn/worldState.php"
 ];
 const BOUNTY_CYCLE_URL = "https://oracle.browse.wf/bounty-cycle";
 const INVASIONS_URL = "https://oracle.browse.wf/invasions";
