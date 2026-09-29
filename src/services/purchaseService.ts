@@ -24,7 +24,6 @@ import { logger } from "../utils/logger.ts";
 import { getWorldState } from "./worldStateService.ts";
 import {
     ExportBoosters,
-    ExportBundles,
     ExportCreditBundles,
     ExportGear,
     ExportResources,
@@ -37,6 +36,7 @@ import {
     getBundle,
     getPrice,
     getSyndicate,
+    isBundle,
     getVendor,
     slotPurchaseData,
     supplementalResources,
@@ -98,7 +98,7 @@ const getInventoryAwarePrice = (
     inventory: TInventoryDatabaseDocument
 ): number => {
     const fullPrice = getPrice(storeItemName, quantity, durability, usePremium, buildLabel);
-    if (!usePremium || !(storeItemName in ExportBundles)) {
+    if (!usePremium || !isBundle(storeItemName)) {
         return fullPrice;
     }
 
@@ -661,7 +661,7 @@ export const handleStoreItemAcquisition = async (
         InventoryChanges: {}
     };
     logger.debug(`handling acquisition of ${storeItemName}`);
-    if (storeItemName in ExportBundles) {
+    if (isBundle(storeItemName)) {
         await handleBundleAcquisition(
             storeItemName,
             inventory,
@@ -678,7 +678,9 @@ export const handleStoreItemAcquisition = async (
                 logger.debug(`factored quantity is ${quantity}`);
             } else if (internalName in ExportResources || internalName in supplementalResources) {
                 const resource =
-                    internalName in ExportResources ? ExportResources[internalName] : supplementalResources[internalName];
+                    internalName in ExportResources
+                        ? ExportResources[internalName]
+                        : supplementalResources[internalName];
                 quantity *= resource.purchaseQuantity || 1;
                 logger.debug(`factored quantity is ${quantity}`);
             }

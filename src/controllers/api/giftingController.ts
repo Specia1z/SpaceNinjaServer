@@ -15,9 +15,9 @@ import type { IOid } from "../../types/commonTypes.ts";
 import type { IPurchaseParams, IPurchaseResponse } from "../../types/purchaseTypes.ts";
 import { ePurchaseSource } from "../../types/purchaseTypes.ts";
 import type { RequestHandler } from "express";
-import { ExportBundles, ExportFlavour } from "warframe-public-export-plus";
+import { ExportFlavour } from "warframe-public-export-plus";
 import { logger } from "../../utils/logger.ts";
-import { getBundle, getPrice } from "../../services/itemDataService.ts";
+import { getBundle, getPrice, isBundle } from "../../services/itemDataService.ts";
 
 const checkPurchaseParams = (params: IPurchaseParams): boolean => {
     switch (params.Source) {
@@ -109,7 +109,7 @@ export const giftingController: RequestHandler = async (req, res) => {
             response.InventoryChanges
         );
     }
-    if (data.PurchaseParams.StoreItem in ExportBundles) {
+    if (isBundle(data.PurchaseParams.StoreItem)) {
         const bundle = getBundle(data.PurchaseParams.StoreItem, senderBuildLabel)!;
         if (bundle.giftingBonus) {
             combineInventoryChanges(

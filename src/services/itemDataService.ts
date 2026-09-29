@@ -157,11 +157,7 @@ export const supplementalResources: Record<string, IResource> = {
     )
 };
 
-const supplementalWeapon = (
-    name: string,
-    productCategory: IWeapon["productCategory"],
-    icon: string
-): IWeapon => ({
+const supplementalWeapon = (name: string, productCategory: IWeapon["productCategory"], icon: string): IWeapon => ({
     name,
     parentName: "",
     icon,
@@ -187,6 +183,36 @@ export const supplementalWeapons: Record<string, IWeapon> = {
         "Pistols",
         "/Lotus/Interface/Icons/StoreIcons/Weapons/DuelistPistols.png"
     )
+};
+
+export const supplementalBundles: Record<string, IBundle> = {
+    "/Lotus/Types/StoreItems/Packages/WarframeBundles/NarinItemsBundle": {
+        name: "/Lotus/Language/Bundles/NarinItemsBundleName",
+        description: "/Lotus/Language/Bundles/NarinItemsBundleDesc",
+        icon: "/Lotus/Interface/Icons/StoreIcons/MarketBundles/WarframeBundles/NarinItemsBundle.png",
+        components: [
+            { typeName: "/Lotus/StoreItems/Powersuits/Duelist/Duelist", purchaseQuantity: 1 },
+            { typeName: "/Lotus/StoreItems/Upgrades/Skins/Duelist/DuelistAltHelmet", purchaseQuantity: 1 },
+            { typeName: "/Lotus/StoreItems/Weapons/Tenno/Bows/DuelistBow/DuelistBow", purchaseQuantity: 1 },
+            { typeName: "/Lotus/StoreItems/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols", purchaseQuantity: 1 },
+            { typeName: "/Lotus/StoreItems/Upgrades/Skins/Scarves/DuelistSyandana", purchaseQuantity: 1 },
+            { typeName: "/Lotus/StoreItems/Types/Items/Emotes/DuelistEmote", purchaseQuantity: 1 },
+            { typeName: "/Lotus/StoreItems/Upgrades/Skins/Effects/DuelistEphemera", purchaseQuantity: 1 },
+            { typeName: "/Lotus/StoreItems/Upgrades/Skins/Crowns/DuelistCrown", purchaseQuantity: 1 },
+            { typeName: "/Lotus/StoreItems/Types/Items/ShipDecos/Props/LisetPropIceblade", purchaseQuantity: 1 }
+        ],
+        giftingBonus: "/Lotus/StoreItems/Types/Items/ShipDecos/Props/LisetPropIceblade",
+        platinumCost: 990
+    }
+};
+
+export const supplementalMarketPrices: Record<string, number> = {
+    "/Lotus/Upgrades/Skins/Duelist/DuelistAltHelmet": 75,
+    "/Lotus/Upgrades/Skins/Scarves/DuelistSyandana": 100,
+    "/Lotus/Types/Items/Emotes/DuelistEmote": 25,
+    "/Lotus/Upgrades/Skins/Effects/DuelistEphemera": 75,
+    "/Lotus/Upgrades/Skins/Crowns/DuelistCrown": 65,
+    "/Lotus/Types/Items/ShipDecos/Props/LisetPropIceblade": 35
 };
 
 export const supplementalRecipes: Record<string, IRecipe> = {
@@ -5226,6 +5252,9 @@ export const getItemName = (uniqueName: string): string | undefined => {
     if (uniqueName in ExportBundles) {
         return ExportBundles[uniqueName].name;
     }
+    if (uniqueName in supplementalBundles) {
+        return supplementalBundles[uniqueName].name;
+    }
     if (uniqueName in ExportCustoms) {
         return ExportCustoms[uniqueName].name;
     }
@@ -5508,8 +5537,14 @@ export const getBundle = (uniqueName: string, buildLabel: string): IBundle | und
         };
     }
 
-    return getSyncedBundle(uniqueName) ?? ExportBundles[uniqueName];
+    return (
+        getSyncedBundle(uniqueName) ??
+        (Object.hasOwn(ExportBundles, uniqueName) ? ExportBundles[uniqueName] : supplementalBundles[uniqueName])
+    );
 };
+
+export const isBundle = (uniqueName: string): boolean =>
+    uniqueName in ExportBundles || uniqueName in supplementalBundles;
 
 export const getBoosterPack = async (
     uniqueName: string,
@@ -5823,8 +5858,8 @@ export const getPrice = (
     usePremium: boolean,
     buildLabel: string
 ): number => {
-    const isBundle = storeItemName in ExportBundles;
-    const internalName = isBundle ? storeItemName : fromStoreItem(storeItemName);
+    const bundle = isBundle(storeItemName);
+    const internalName = bundle ? storeItemName : fromStoreItem(storeItemName);
 
     // A store override either states an absolute price (discount already applied) or a discount percentage
     // to apply to the regular price. Both are honored here so that admins can configure only a percentage.
@@ -5887,8 +5922,8 @@ const getUndiscountedPrice = (
     usePremium: boolean,
     buildLabel: string
 ): number => {
-    const isBundle = storeItemName in ExportBundles;
-    let internalName = isBundle ? storeItemName : fromStoreItem(storeItemName);
+    const bundle = isBundle(storeItemName);
+    let internalName = bundle ? storeItemName : fromStoreItem(storeItemName);
 
     if (storeItemName in ExportBoosters) {
         return 40 * (durability + 1);
@@ -5915,7 +5950,7 @@ const getUndiscountedPrice = (
     }
 
     let price: number | undefined;
-    if (isBundle) {
+    if (bundle) {
         const bundle = getBundle(storeItemName, buildLabel)!;
         // A bundle that states its own aggregate price already reflects the package discount, so it must not be
         // discounted again by a store override or flash sale. Bundles priced by summing their components can be.
@@ -5943,6 +5978,10 @@ const getUndiscountedPrice = (
         // https://onlyg.it/OpenWF/SpaceNinjaServer/issues/3941
         if (internalName.endsWith("LeftArmor")) {
             internalName = internalName.substring(0, internalName.length - "LeftArmor".length) + "Armor";
+        }
+
+        if (usePremium && Object.hasOwn(supplementalMarketPrices, internalName)) {
+            return supplementalMarketPrices[internalName] * quantity;
         }
 
         const categories = [

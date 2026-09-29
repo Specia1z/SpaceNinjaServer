@@ -5,8 +5,7 @@ import type { IPurchaseRequest, IPurchaseRequestU16 } from "../../types/purchase
 import { handlePurchase } from "../../services/purchaseService.ts";
 import { getInventory } from "../../services/inventoryService.ts";
 import { sendWsBroadcastTo } from "../../services/wsService.ts";
-import { toStoreItem } from "../../services/itemDataService.ts";
-import { ExportBundles } from "warframe-public-export-plus";
+import { isBundle, toStoreItem } from "../../services/itemDataService.ts";
 import { version_compare } from "../../helpers/inventoryHelpers.ts";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { logger } from "../../utils/logger.ts";
@@ -42,7 +41,7 @@ export const purchaseGetController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     const accountId = account._id.toString();
     let internalName = String(req.query.productName);
-    if (!(internalName in ExportBundles)) internalName = toStoreItem(internalName);
+    if (!isBundle(internalName)) internalName = toStoreItem(internalName);
     const purchaseRequest: IPurchaseRequest = {
         PurchaseParams: {
             Source: ePurchaseSource.Market,

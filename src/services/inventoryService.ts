@@ -42,14 +42,14 @@ import {
     supplementalWeapons,
     U5ModsWeights,
     U5Modules,
-    getDefaultUpgrades
+    getDefaultUpgrades,
+    isBundle
 } from "./itemDataService.ts";
 import type { IFlavourItem, IItemConfig, IItemConfigDatabase } from "../types/inventoryTypes/commonInventoryTypes.ts";
 import type { IDefaultUpgrade, IRegion, ISentinel } from "warframe-public-export-plus";
 import {
     ExportArcanes,
     ExportBoosters,
-    ExportBundles,
     ExportCreditBundles,
     ExportCustoms,
     ExportDrones,
@@ -584,7 +584,7 @@ export const addItem = async (
     }
 
     // Bundles are technically StoreItems but a) they don't have a normal counterpart, and b) they are used in non-StoreItem contexts, e.g. email attachments.
-    if (typeName in ExportBundles) {
+    if (isBundle(typeName)) {
         return await handleBundleAcquisition(typeName, inventory, quantity, {}, buildLabel);
     }
 
