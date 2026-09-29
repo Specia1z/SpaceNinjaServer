@@ -170,6 +170,7 @@ const supplementalWeapon = (
     totalDamage: 1,
     omegaAttenuation: 1,
     masteryReq: 0,
+    platinumCost: 230,
     productCategory,
     variantType: "VT_NORMAL",
     tradable: false
@@ -1468,6 +1469,7 @@ export const supplementalSuits: Record<string, IPowersuit> = {
         ],
         productCategory: "Suits",
         variantType: "VT_NORMAL",
+        platinumCost: 370,
         introducedAt: 1758585600
     },
     "/Lotus/Powersuits/Excalibur/DarkExcalibur": {
@@ -5954,6 +5956,7 @@ const getUndiscountedPrice = (
             supplementalResources,
             ExportSentinels,
             ExportWarframes,
+            supplementalSuits,
             supplementalWeapons,
             ExportWeapons
         ];
