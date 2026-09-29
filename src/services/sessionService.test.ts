@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { Types } from "mongoose";
 import { Session } from "../models/sessionModel.ts";
 import type { IMatchmakingSessionRequest, ISessionDatabase } from "../types/sessionTypes.ts";
-import { buildMatchmakingQuery, rankSessionCandidates, reserveSessionSlot, updateSession } from "./sessionService.ts";
+import { buildMatchmakingQuery, getSession, rankSessionCandidates, reserveSessionSlot, updateSession } from "./sessionService.ts";
 
 const request: IMatchmakingSessionRequest = {
     buildId: 202609241329n,
@@ -60,6 +60,19 @@ void test("matchmaking ranks ELO first, then populated and fresh sessions", () =
         lessPopulated,
         fartherElo
     ]);
+});
+
+void test("original session lookup uses the session id", async t => {
+    const sessionId = new Types.ObjectId();
+    const creatorId = new Types.ObjectId();
+    const find = t.mock.method(Session, "find", () =>
+        Promise.resolve([{ _id: sessionId, creatorId }] as ISessionDatabase[])
+    );
+
+    assert.deepEqual(await getSession({ queryId: 1, originalSessionId: sessionId.toString() }), [
+        { createdBy: creatorId.toString(), id: sessionId.toString() }
+    ]);
+    assert.deepEqual(find.mock.calls[0].arguments[0], { _id: sessionId.toString() });
 });
 
 void test("slot reservation is idempotent for an existing member", async t => {

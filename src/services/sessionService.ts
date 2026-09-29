@@ -130,7 +130,7 @@ export const getSession = async (request: IFindSessionRequest): Promise<IFindSes
     if ("id" in request) {
         query._id = request.id;
     } else if ("originalSessionId" in request) {
-        query.originalSessionId = request.originalSessionId;
+        query._id = request.originalSessionId;
     } else {
         Object.assign(query, buildMatchmakingQuery(request));
     }
