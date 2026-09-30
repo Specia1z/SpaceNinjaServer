@@ -622,6 +622,8 @@ dict = {
     metadataPatches_save: `[UNTRANSLATED] Save all`,
     metadataPatches_enabled: `[UNTRANSLATED] Enabled`,
     metadataPatches_name: `[UNTRANSLATED] Name`,
+    metadataPatches_textLabel: `[UNTRANSLATED] Complete Metadata Patch DSL`,
+    metadataPatches_textHint: `[UNTRANSLATED] Paste the complete patch block in load order. The text is saved and delivered without restructuring it.`,
     metadataPatches_targets: `[UNTRANSLATED] Metadata targets`,
     metadataPatches_targetsHint: `[UNTRANSLATED] One absolute /Lotus/... path per line.`,
     metadataPatches_operations: `[UNTRANSLATED] Patch operations`,
@@ -634,6 +636,7 @@ dict = {
     metadataPatches_emptyPreview: `[UNTRANSLATED] No enabled patch output.`,
     metadataPatches_revision: `[UNTRANSLATED] Revision`,
     metadataPatches_invalidTarget: `[UNTRANSLATED] Patch |INDEX| needs at least one absolute metadata target beginning with /.`,
+    metadataPatches_invalidText: `[UNTRANSLATED] Patch |INDEX| needs a non-empty Metadata Patch DSL block.`,
     metadataPatches_saved: `[UNTRANSLATED] Metadata Patches saved and sent to connected clients.`,
 
     AVATAR_ABILITY_DURATION: `Длительность`,

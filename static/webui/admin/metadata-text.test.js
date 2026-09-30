@@ -24,3 +24,14 @@ test("metadata patch preview omits disabled and empty patches", () => {
         "# Server patch: active\n/A & /B\nSet(1)"
     );
 });
+
+test("metadata patch preview preserves full text blocks and converts legacy structured patches", () => {
+    assert.equal(
+        metadataPatchText.preview([
+            { name: "full", enabled: true, text: "# comment\n/Full\nSet(1)" },
+            { name: "legacy", targets: ["/A", "/B"], operations: ["Set(2)"] }
+        ]),
+        "# Server patch: full\n# comment\n/Full\nSet(1)\n\n# Server patch: legacy\n/A & /B\nSet(2)"
+    );
+    assert.equal(metadataPatchText.toText({ targets: ["/Legacy"], operations: ["Set(3)"] }), "/Legacy\nSet(3)");
+});

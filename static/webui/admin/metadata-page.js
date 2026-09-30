@@ -16,8 +16,7 @@
     const normalize = patch => ({
         name: patch.name ?? "",
         enabled: patch.enabled !== false,
-        targets: [...(patch.targets ?? [])],
-        operations: [...(patch.operations ?? [])]
+        text: metadataPatchText.toText(patch)
     });
 
     function selectedAccount() {
@@ -56,7 +55,7 @@
                         : `${loc("metadataPatches_accountSource")} ${state.selectedId ?? ""}`,
                 name: patch.name,
                 enabled: patch.enabled !== false,
-                targets: patch.targets
+                targets: patch.targets ?? []
             }))
         );
     }
@@ -183,31 +182,20 @@
         name.addEventListener("input", () => update(list, index, "name", name.value.trim()));
         section.append(nameLabel, name);
 
-        const row = document.createElement("div");
-        row.className = "row g-3";
-        [
-            ["targets", "metadataPatches_targets", "metadataPatches_targetsHint"],
-            ["operations", "metadataPatches_operations", "metadataPatches_operationsHint"]
-        ].forEach(([field, labelKey, hintKey]) => {
-            const column = document.createElement("div");
-            column.className = "col-lg-6";
-            const label = document.createElement("label");
-            label.className = "form-label";
-            label.textContent = loc(labelKey);
-            const textarea = document.createElement("textarea");
-            textarea.className = "form-control";
-            textarea.value = patch[field].join("\n");
-            textarea.disabled = state.busy;
-            textarea.addEventListener("input", () =>
-                update(list, index, field, metadataPatchText.splitLines(textarea.value))
-            );
-            const hint = document.createElement("div");
-            hint.className = "form-text";
-            hint.textContent = loc(hintKey);
-            column.append(label, textarea, hint);
-            row.append(column);
-        });
-        section.append(row);
+        const textLabel = document.createElement("label");
+        textLabel.className = "form-label";
+        textLabel.textContent = loc("metadataPatches_textLabel");
+        const text = document.createElement("textarea");
+        text.className = "form-control";
+        text.rows = 12;
+        text.value = patch.text;
+        text.placeholder = loc("metadataPatches_importPlaceholder");
+        text.disabled = state.busy;
+        text.addEventListener("input", () => update(list, index, "text", text.value));
+        const textHint = document.createElement("div");
+        textHint.className = "form-text";
+        textHint.textContent = loc("metadataPatches_textHint");
+        section.append(textLabel, text, textHint);
         return section;
     }
 
@@ -298,11 +286,9 @@
     }
 
     function validate(list) {
-        const invalidIndex = list.findIndex(
-            patch => !patch.targets.length || patch.targets.some(target => !target.startsWith("/"))
-        );
+        const invalidIndex = list.findIndex(patch => !patch.text.trim());
         if (invalidIndex != -1) {
-            toast(loc("metadataPatches_invalidTarget").replace("|INDEX|", String(invalidIndex + 1)), "danger");
+            toast(loc("metadataPatches_invalidText").replace("|INDEX|", String(invalidIndex + 1)), "danger");
             return false;
         }
         return true;
@@ -325,7 +311,7 @@
     }
 
     function addGlobalPatch() {
-        state.globalPatches.push({ name: "", enabled: true, targets: [], operations: [] });
+        state.globalPatches.push({ name: "", enabled: true, text: "" });
         markDirty();
         render();
     }
@@ -334,7 +320,7 @@
     find("#metadata-patches-account-add").addEventListener("click", () => {
         if (!state.selectedId) return;
         state.accountPatches[state.selectedId] ??= [];
-        state.accountPatches[state.selectedId].push({ name: "", enabled: true, targets: [], operations: [] });
+        state.accountPatches[state.selectedId].push({ name: "", enabled: true, text: "" });
         markDirty();
         render();
     });

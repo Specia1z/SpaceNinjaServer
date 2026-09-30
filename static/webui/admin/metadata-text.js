@@ -10,13 +10,20 @@
     function preview(patches) {
         const lines = [];
         patches.forEach(patch => {
-            if (patch.enabled === false || !patch.targets.length) return;
+            const text = toText(patch).trim();
+            if (patch.enabled === false || !text) return;
             if (patch.name) lines.push(`# Server patch: ${patch.name.replaceAll(/[\r\n]/g, " ")}`);
-            lines.push(patch.targets.join(" & "));
-            lines.push(...patch.operations);
+            lines.push(text);
             lines.push("");
         });
         return lines.join("\n").trimEnd();
+    }
+
+    function toText(patch) {
+        if (typeof patch.text === "string") return patch.text.replaceAll("\r", "");
+        const targets = patch.targets ?? [];
+        if (!targets.length) return "";
+        return [targets.join(" & "), ...(patch.operations ?? [])].join("\n");
     }
 
     function parse(value, translate) {
@@ -63,5 +70,5 @@
         return patches;
     }
 
-    root.metadataPatchText = { splitLines, preview, parse };
+    root.metadataPatchText = { splitLines, preview, parse, toText };
 })(globalThis);

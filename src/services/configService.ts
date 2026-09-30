@@ -25,7 +25,10 @@ export interface IWebuiConfig {
 export interface IMetadataPatchConfig {
     name?: string;
     enabled?: boolean;
-    targets: string[];
+    /** Complete Metadata Patch DSL block. */
+    text?: string;
+    /** Legacy structured fields retained for automatic migration. */
+    targets?: string[];
     operations?: string[];
 }
 
@@ -277,7 +280,7 @@ export interface IConfig {
         rawMetadataPatches?: string;
         metadataPatches?: IMetadataPatchConfig[];
         /** Metadata patches appended after the global patches for a matching account ID. */
-        accountMetadataPatches?: Record<string, IMetadataPatchConfig[]>;
+        accountMetadataPatches?: Partial<Record<string, IMetadataPatchConfig[]>>;
     };
     dev?: {
         keepVendorsExpired?: boolean;

@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { args } from "../helpers/commandLineArguments.ts";
 import type { ITunables } from "../types/bootstrapperTypes.ts";
 import { config, type IMetadataPatchConfig } from "./configService.ts";
+import { getMetadataPatchState } from "./metadataPatchService.ts";
 
 let secret;
 if (args.secret) {
@@ -21,6 +22,16 @@ export const compileMetadataPatches = (patches: IMetadataPatchConfig[] = []): st
     const lines: string[] = [];
     for (const patch of patches) {
         if (patch.enabled === false) {
+            continue;
+        }
+
+        if (typeof patch.text == "string") {
+            const text = patch.text.replaceAll("\r", "").trim();
+            if (!text) continue;
+            if (typeof patch.name == "string" && patch.name) {
+                lines.push(`# Server patch: ${patch.name.replaceAll(/[\r\n]/g, " ")}`);
+            }
+            lines.push(text, "");
             continue;
         }
 
@@ -57,8 +68,9 @@ export interface IMetadataPatchSource {
 }
 
 export const getMetadataPatchesForAccount = (accountId?: string): IMetadataPatchSource[] => {
-    const globalPatches = config.tunables?.metadataPatches ?? [];
-    const accountPatches = accountId ? (config.tunables?.accountMetadataPatches?.[accountId] ?? []) : [];
+    const metadata = getMetadataPatchState();
+    const globalPatches = metadata.patches;
+    const accountPatches = accountId ? (metadata.accountPatches[accountId] ?? []) : [];
     return [
         ...globalPatches.map((patch, order) => ({ patch, source: "global" as const, order })),
         ...accountPatches.map((patch, index) => ({
@@ -71,7 +83,7 @@ export const getMetadataPatchesForAccount = (accountId?: string): IMetadataPatch
 };
 
 export const compileMetadataPatchesForAccount = (accountId?: string): string => {
-    const raw = config.tunables?.rawMetadataPatches ?? "";
+    const raw = getMetadataPatchState().rawPatches;
     const structured = compileMetadataPatches(getMetadataPatchesForAccount(accountId).map(entry => entry.patch));
     if (!raw) return structured;
     if (!structured) return raw;

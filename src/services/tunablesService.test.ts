@@ -15,12 +15,12 @@ before(() => {
         rawMetadataPatches: "# raw global\n/RawResource\nRawValue = true",
         metadataPatches: [
             { name: "global base", targets: ["/Resource"], operations: ["Credits = 100"] },
-            { name: "global second", targets: ["/Resource"], operations: ["Other = true"] }
+            { name: "global second", text: "/Resource\nOther = true" }
         ],
         accountMetadataPatches: {
             [accountId]: [
-                { name: "account override", targets: ["/Resource"], operations: ["Credits = 1000"] },
-                { name: "account disabled", enabled: false, targets: ["/Resource"], operations: ["Ignored = true"] }
+                { name: "account override", text: "/Resource\nCredits = 1000" },
+                { name: "account disabled", enabled: false, text: "/Resource\nIgnored = true" }
             ]
         }
     };
