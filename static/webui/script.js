@@ -4025,6 +4025,12 @@ function formatDatetime(fmt, date) {
     });
 }
 
+function formatAdminDate(value) {
+    if (!value) return loc("admin_never");
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+}
+
 const calls_in_flight = new Set();
 
 async function debounce(func, ...args) {
