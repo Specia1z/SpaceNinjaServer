@@ -28,6 +28,9 @@ const localizePresence = <T extends { NodeName?: string; Planet?: string; Missio
     MissionType: localize(presence.MissionType, dict)
 });
 
+const getPresenceDictionary = (req: Parameters<RequestHandler>[0], account: TAccountDocument): Record<string, string> =>
+    getDict(typeof req.query.lang == "string" ? req.query.lang : (account.Language ?? "en"));
+
 const sessionState = (
     session: {
         _id: Types.ObjectId;
@@ -56,7 +59,7 @@ const sessionState = (
 
 export const listPlayerPresenceController: RequestHandler = async (req, res) => {
     const administrator = await requireAdministrator(req);
-    const dict = getDict(administrator.Language ?? "en");
+    const dict = getPresenceDictionary(req, administrator);
     const search = typeof req.query.search == "string" ? req.query.search.trim() : "";
     const limit = Math.min(MAX_PLAYERS, Math.max(1, parseInt(String(req.query.limit ?? "500")) || 500));
     const accountFilter = search
@@ -153,7 +156,7 @@ export const listPlayerPresenceController: RequestHandler = async (req, res) => 
 
 export const getPlayerPresenceHistoryController: RequestHandler = async (req, res) => {
     const administrator = await requireAdministrator(req);
-    const dict = getDict(administrator.Language ?? "en");
+    const dict = getPresenceDictionary(req, administrator);
     const accountId = String(req.query.accountId ?? "");
     if (!Types.ObjectId.isValid(accountId)) throw new Error("Valid accountId is required");
     const limit = Math.min(MAX_EVENTS, Math.max(1, parseInt(String(req.query.limit ?? "50")) || 50));
@@ -182,7 +185,7 @@ export const getPlayerPresenceHistoryController: RequestHandler = async (req, re
 
 export const resolvePresenceNodesController: RequestHandler = async (req, res) => {
     const administrator = await requireAdministrator(req);
-    const dict = getDict(administrator.Language ?? "en");
+    const dict = getPresenceDictionary(req, administrator);
     const buildLabel = String(req.query.buildLabel ?? "");
     if (!buildLabel) {
         res.json({});
