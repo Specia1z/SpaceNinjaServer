@@ -83,11 +83,7 @@ export const getMetadataPatchesForAccount = (accountId?: string): IMetadataPatch
 };
 
 export const compileMetadataPatchesForAccount = (accountId?: string): string => {
-    const raw = getMetadataPatchState().rawPatches;
-    const structured = compileMetadataPatches(getMetadataPatchesForAccount(accountId).map(entry => entry.patch));
-    if (!raw) return structured;
-    if (!structured) return raw;
-    return `${raw}${raw.endsWith("\n") ? "\n" : "\n\n"}${structured}`;
+    return compileMetadataPatches(getMetadataPatchesForAccount(accountId).map(entry => entry.patch));
 };
 
 export const getTunablesForClient = (

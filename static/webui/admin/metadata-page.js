@@ -2,7 +2,6 @@
     const root = document.querySelector("[data-route='/webui/metadata-patches']");
     const find = selector => root.querySelector(selector);
     const state = {
-        rawPatches: "",
         globalPatches: [],
         accountPatches: {},
         accounts: [],
@@ -32,22 +31,8 @@
     }
 
     function getSources() {
-        const rawOffset = state.rawPatches ? 1 : 0;
-        const sources = state.rawPatches
-            ? [
-                  {
-                      order: 1,
-                      source: "global",
-                      sourceLabel: loc("metadataPatches_globalSource"),
-                      name: loc("metadataPatches_rawSource"),
-                      enabled: true,
-                      targets: []
-                  }
-              ]
-            : [];
-        return sources.concat(
-            effectivePatches().map((patch, index) => ({
-                order: index + 1 + rawOffset,
+        return effectivePatches().map((patch, index) => ({
+                order: index + 1,
                 source: index < state.globalPatches.length ? "global" : "account",
                 sourceLabel:
                     index < state.globalPatches.length
@@ -56,15 +41,11 @@
                 name: patch.name,
                 enabled: patch.enabled !== false,
                 targets: patch.targets ?? []
-            }))
-        );
+            }));
     }
 
     function compiledPreview() {
-        const structured = metadataPatchText.preview(effectivePatches());
-        if (!state.rawPatches) return structured;
-        if (!structured) return state.rawPatches;
-        return `${state.rawPatches}${state.rawPatches.endsWith("\n") ? "\n" : "\n\n"}${structured}`;
+        return metadataPatchText.preview(effectivePatches());
     }
 
     function renderPreview() {
@@ -245,9 +226,6 @@
     }
 
     function render() {
-        const rawEditor = find("#metadata-patches-raw");
-        if (document.activeElement !== rawEditor) rawEditor.value = state.rawPatches;
-        rawEditor.disabled = state.busy;
         renderPatchList("#metadata-patches-list", state.globalPatches, "metadataPatches_empty");
         renderAccounts();
         const account = selectedAccount();
@@ -296,7 +274,6 @@
 
     async function load() {
         const data = await window.metadataPatchApi.list();
-        state.rawPatches = data.rawPatches ?? "";
         state.globalPatches = (data.patches ?? []).map(normalize);
         state.accountPatches = Object.fromEntries(
             Object.entries(data.accountMetadataPatches ?? {}).map(([id, patches]) => [id, patches.map(normalize)])
@@ -323,10 +300,6 @@
         state.accountPatches[state.selectedId].push({ name: "", enabled: true, text: "" });
         markDirty();
         render();
-    });
-    find("#metadata-patches-raw").addEventListener("input", event => {
-        state.rawPatches = event.target.value;
-        markDirty();
     });
     find("#metadata-patches-account-search").addEventListener("input", renderAccounts);
     find("[data-loc='metadataPatches_copy']").addEventListener("click", async () => {
@@ -363,13 +336,7 @@
             const accountMetadataPatches = Object.fromEntries(
                 Object.entries(state.accountPatches).filter(([, patches]) => patches.length)
             );
-            const data = await window.metadataPatchApi.save(
-                state.rawPatches,
-                state.globalPatches,
-                accountMetadataPatches,
-                state.selectedId
-            );
-            state.rawPatches = data.rawPatches ?? "";
+            const data = await window.metadataPatchApi.save(state.globalPatches, accountMetadataPatches, state.selectedId);
             state.globalPatches = (data.patches ?? []).map(normalize);
             state.accountPatches = Object.fromEntries(
                 Object.entries(data.accountMetadataPatches ?? {}).map(([id, patches]) => [id, patches.map(normalize)])

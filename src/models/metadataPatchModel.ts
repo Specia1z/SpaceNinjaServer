@@ -5,7 +5,6 @@ export const METADATA_PATCH_SETTINGS_KEY = "server";
 
 export interface IMetadataPatchSettings {
     Key: string;
-    RawPatches: string;
     Patches: IMetadataPatchConfig[];
     AccountPatches: Partial<Record<string, IMetadataPatchConfig[]>>;
 }
@@ -24,7 +23,6 @@ const metadataPatchSchema = new Schema<IMetadataPatchConfig>(
 const metadataPatchSettingsSchema = new Schema<IMetadataPatchSettings>(
     {
         Key: { type: String, required: true, unique: true },
-        RawPatches: { type: String, required: true, default: "" },
         Patches: { type: [metadataPatchSchema], required: true, default: [] },
         AccountPatches: { type: Schema.Types.Mixed, required: true, default: {} }
     },

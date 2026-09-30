@@ -324,8 +324,6 @@ export interface IConfig {
         motd?: string;
         udpProxyUpstream?: string;
         forceNativeProxy?: boolean;
-        /** Raw global Metadata Patches.txt content delivered before structured patches without parsing. */
-        rawMetadataPatches?: string;
         metadataPatches?: IMetadataPatchConfig[];
         /** Metadata patches appended after the global patches for a matching account ID. */
         accountMetadataPatches?: Partial<Record<string, IMetadataPatchConfig[]>>;

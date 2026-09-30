@@ -6,7 +6,6 @@ import {
 import { config, type IMetadataPatchConfig } from "./configService.ts";
 
 export interface IMetadataPatchState {
-    rawPatches: string;
     patches: IMetadataPatchConfig[];
     accountPatches: Partial<Record<string, IMetadataPatchConfig[]>>;
 }
@@ -14,24 +13,22 @@ export interface IMetadataPatchState {
 let state: IMetadataPatchState | undefined;
 
 const fromConfig = (): IMetadataPatchState => ({
-    rawPatches: config.tunables?.rawMetadataPatches ?? "",
     patches: config.tunables?.metadataPatches ?? [],
     accountPatches: config.tunables?.accountMetadataPatches ?? {}
 });
 
 const fromDocument = (document: IMetadataPatchSettings): IMetadataPatchState => ({
-    rawPatches: document.RawPatches,
     patches: document.Patches,
     accountPatches: document.AccountPatches
 });
 
 export const initializeMetadataPatches = async (): Promise<void> => {
     const initial = fromConfig();
+    await MetadataPatchSettings.collection.updateMany({}, { $unset: { RawPatches: "" } });
     const document = await MetadataPatchSettings.findOneAndUpdate(
         { Key: METADATA_PATCH_SETTINGS_KEY },
         {
             $setOnInsert: {
-                RawPatches: initial.rawPatches,
                 Patches: initial.patches,
                 AccountPatches: initial.accountPatches
             }
@@ -48,7 +45,6 @@ export const saveMetadataPatchState = async (next: IMetadataPatchState): Promise
         { Key: METADATA_PATCH_SETTINGS_KEY },
         {
             $set: {
-                RawPatches: next.rawPatches,
                 Patches: next.patches,
                 AccountPatches: next.accountPatches
             }

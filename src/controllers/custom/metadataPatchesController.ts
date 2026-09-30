@@ -18,14 +18,12 @@ const MAX_TARGET_LENGTH = 1000;
 const MAX_OPERATION_LENGTH = 10000;
 const MAX_PATCH_TEXT_LENGTH = 12 * 1024 * 1024;
 const MAX_ACCOUNT_PATCH_ENTRIES = 5000;
-const MAX_RAW_PATCH_LENGTH = 12 * 1024 * 1024;
 const MAX_METADATA_SETTINGS_BYTES = 14 * 1024 * 1024;
 
 const sourceLabel = (entry: IMetadataPatchSource): string =>
     entry.source == "global" ? "Global" : `Account ${entry.sourceId ?? ""}`;
 
 interface IMetadataPatchesResponse {
-    rawPatches: string;
     patches: IMetadataPatchConfig[];
     accountMetadataPatches: Partial<Record<string, IMetadataPatchConfig[]>>;
     selectedAccountId: string;
@@ -48,7 +46,6 @@ const getResponse = (accountId?: string): IMetadataPatchesResponse => {
     const entries = getMetadataPatchesForAccount(accountId);
     const compiled = compileMetadataPatchesForAccount(accountId);
     return {
-        rawPatches: metadata.rawPatches,
         patches,
         accountMetadataPatches,
         selectedAccountId: accountId ?? "",
@@ -63,16 +60,6 @@ const getResponse = (accountId?: string): IMetadataPatchesResponse => {
         })),
         revision: compiled ? crypto.createHash("sha256").update(compiled).digest("hex") : ""
     };
-};
-
-const parseRawMetadataPatches = (value: unknown): string => {
-    if (typeof value != "string") {
-        throw new Error("rawPatches must be a string");
-    }
-    if (value.length > MAX_RAW_PATCH_LENGTH) {
-        throw new Error(`rawPatches must be at most ${MAX_RAW_PATCH_LENGTH} characters`);
-    }
-    return value;
 };
 
 export const parseMetadataPatches = (value: unknown): IMetadataPatchConfig[] => {
@@ -193,20 +180,16 @@ export const saveMetadataPatchesController: RequestHandler = async (req, res) =>
 
     try {
         const body = req.body as Record<string, unknown>;
-        const rawPatches =
-            body.rawPatches === undefined
-                ? getMetadataPatchState().rawPatches
-                : parseRawMetadataPatches(body.rawPatches);
         const patches = parseMetadataPatches(body.patches);
         const accountMetadataPatches =
             body.accountMetadataPatches === undefined
                 ? getMetadataPatchState().accountPatches
                 : parseAccountMetadataPatches(body.accountMetadataPatches);
-        const settingsSize = Buffer.byteLength(JSON.stringify({ rawPatches, patches, accountMetadataPatches }), "utf8");
+        const settingsSize = Buffer.byteLength(JSON.stringify({ patches, accountMetadataPatches }), "utf8");
         if (settingsSize > MAX_METADATA_SETTINGS_BYTES) {
             throw new Error(`Metadata patch settings must be at most ${MAX_METADATA_SETTINGS_BYTES} bytes`);
         }
-        await saveMetadataPatchState({ rawPatches, patches, accountPatches: accountMetadataPatches });
+        await saveMetadataPatchState({ patches, accountPatches: accountMetadataPatches });
 
         forEachWsClient(client => {
             if (client.isGame) {

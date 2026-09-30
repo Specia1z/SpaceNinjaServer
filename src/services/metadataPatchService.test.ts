@@ -24,32 +24,26 @@ after(async () => {
 
 void test("metadata patches import config once and then use MongoDB as source of truth", async () => {
     config.tunables = {
-        rawMetadataPatches: "# initial raw",
         metadataPatches: [{ name: "initial", targets: ["/Initial"], operations: ["Set(1)"] }],
         accountMetadataPatches: { account: [{ name: "account", text: "/Account\nSet(2)" }] }
     };
 
     await initializeMetadataPatches();
     assert.deepEqual(getMetadataPatchState(), {
-        rawPatches: "# initial raw",
         patches: [{ name: "initial", targets: ["/Initial"], operations: ["Set(1)"] }],
         accountPatches: { account: [{ name: "account", text: "/Account\nSet(2)" }] }
     });
 
-    config.tunables.rawMetadataPatches = "# changed config";
     config.tunables.metadataPatches = [{ name: "changed", text: "/Changed" }];
     await initializeMetadataPatches();
-    assert.equal(getMetadataPatchState().rawPatches, "# initial raw");
     assert.equal(getMetadataPatchState().patches[0].name, "initial");
 
     await saveMetadataPatchState({
-        rawPatches: "# database raw",
         patches: [{ name: "global text", text: "/Global\nSet(3)" }],
         accountPatches: { account: [{ name: "account text", text: "/Account\nSet(4)" }] }
     });
     const persisted = await MetadataPatchSettings.findOne().lean();
     assert.ok(persisted);
-    assert.equal(persisted.RawPatches, "# database raw");
     assert.equal(persisted.Patches[0].text, "/Global\nSet(3)");
     assert.equal(persisted.AccountPatches.account![0].text, "/Account\nSet(4)");
 });
