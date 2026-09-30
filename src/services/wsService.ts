@@ -20,9 +20,13 @@ import type { Request } from "express";
 import type { ITunables } from "../types/bootstrapperTypes.ts";
 import type { AddressInfo } from "node:net";
 import { config } from "./configService.ts";
-import { getRegistrationAddress, reserveRegistration } from "./registrationRateLimitService.ts";
+import {
+    getRegistrationAddress,
+    getRegistrationFingerprint,
+    reserveRegistration
+} from "./registrationRateLimitService.ts";
 import { markPresenceOffline, markPresenceOnline } from "./presenceService.ts";
-import { settleReferral } from "./playerReferralService.ts";
+import { markReferralOnlineEnd, markReferralOnlineStart, settleReferral } from "./playerReferralService.ts";
 
 let wsServer: WebSocketServer | undefined;
 let wssServer: WebSocketServer | undefined;
@@ -181,6 +185,10 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                                 password: data.auth.password,
                                 ClientType: "webui",
                                 BuildLabel: undefined,
+                                RegistrationIpHash: getRegistrationFingerprint(
+                                    req.socket.remoteAddress,
+                                    req.headers["x-forwarded-for"]
+                                ).ipHash,
                                 LastLogin: new Date(),
                                 DisplayName: name,
                                 Nonce: createNonce()
@@ -194,12 +202,6 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                     accessedAccount = account;
                 }
                 if (account && accessedAccount) {
-                    try {
-                        const referralAccount = await Account.findById(account.id);
-                        if (referralAccount) await settleReferral(referralAccount);
-                    } catch (error) {
-                        logger.warn(`could not settle referral for ${account.id}: ${(error as Error).message}`);
-                    }
                     (ws as IWsCustomData).accountId = accessedAccount.id;
                     (ws as IWsCustomData).realAccountId = account.id;
                     if (!config.webui?.adminOnly || isAdministrator(account)) {
@@ -237,6 +239,15 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                     (ws as IWsCustomData).accountId = accountId;
                     (ws as IWsCustomData).realAccountId = accountId;
                     logger.debug(`got bootstrapper connection for ${accountId}`);
+                    if (!haveOtherGameWs(accountId, ws)) await markReferralOnlineStart(account._id);
+                    const referralAccount = await Account.findById(account._id);
+                    if (referralAccount) {
+                        try {
+                            await settleReferral(referralAccount);
+                        } catch (error) {
+                            logger.warn(`could not settle referral for ${accountId}: ${(error as Error).message}`);
+                        }
+                    }
                     await markPresenceOnline(account._id, account.DisplayName);
                     sendWsBroadcastToWebui({ have_game_ws: true }, accountId);
                 } catch (e) {
@@ -295,7 +306,17 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
             sendWsBroadcastToWebui({ have_game_ws: false }, accountId);
             if (!haveOtherGameWs(accountId, ws)) {
                 const account = await Account.findById(accountId, "DisplayName");
-                if (account) await markPresenceOffline(account._id, account.DisplayName, "game_disconnected");
+                if (account) {
+                    await markPresenceOffline(account._id, account.DisplayName, "game_disconnected");
+                    try {
+                        const referralAccount = await markReferralOnlineEnd(account._id);
+                        if (referralAccount) await settleReferral(referralAccount);
+                    } catch (error) {
+                        logger.warn(
+                            `could not update referral online time for ${accountId}: ${(error as Error).message}`
+                        );
+                    }
+                }
             }
             await Account.updateOne(
                 {

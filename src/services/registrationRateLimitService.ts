@@ -1,5 +1,10 @@
 import { isIP } from "node:net";
+import { createHmac } from "node:crypto";
 import { config } from "./configService.ts";
+
+export interface IRegistrationFingerprint {
+    ipHash?: string;
+}
 
 interface IRegistrationAttempt {
     time: number;
@@ -29,6 +34,16 @@ export const getRegistrationAddress = (
         if (!trusted.has(address)) break;
     }
     return address;
+};
+
+export const getRegistrationFingerprint = (
+    remoteAddress: string | undefined,
+    forwardedFor: string | string[] | undefined
+): IRegistrationFingerprint => {
+    const address = getRegistrationAddress(remoteAddress, forwardedFor);
+    if (address == "unknown" || !isIP(address)) return {};
+    const salt = config.myAddress || "spaceninja-registration";
+    return { ipHash: createHmac("sha256", salt).update(address).digest("hex") };
 };
 
 const positiveInteger = (value: number | undefined, fallback: number): number =>

@@ -4,8 +4,14 @@ import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
 import { Account } from "../models/loginModel.ts";
-import { playerPolicy, validatePlayerPolicy, validatePlayerPolicyField } from "./playerPortalService.ts";
-import { changePlayerName } from "./playerPortalService.ts";
+import {
+    changePlayerName,
+    getPlayerRenameStatus,
+    playerPolicy,
+    resetPlayerRenameCooldown,
+    validatePlayerPolicy,
+    validatePlayerPolicyField
+} from "./playerPortalService.ts";
 import { config } from "./configService.ts";
 
 let mongod: MongoMemoryServer;
@@ -18,12 +24,14 @@ before(async () => {
         enabled: true,
         registrationEnabled: true,
         renameEnabled: true,
+        firstRenameEnabled: false,
         renameCost: 50,
         renameCooldownDays: 30,
         referralsEnabled: true,
         inviterReward: 25,
         inviteeReward: 25,
         maxReferralsPerAccount: 25,
+        referralRequiredOnlineMinutes: 30,
         milestoneEvery: 5,
         milestoneBonus: 50
     };
@@ -62,4 +70,34 @@ void test("player name changes charge Platinum once and enforce the cooldown", a
     const renamed = await Account.findById(account._id);
     assert.equal(renamed?.DisplayName, "忍者一号");
     assert.equal(await changePlayerName(renamed!, "另一个昵称", true), "cooldown");
+});
+
+void test("player name changes can use one free first rename", async () => {
+    config.playerPortal = {
+        ...config.playerPortal!,
+        firstRenameEnabled: true,
+        renameCost: 50,
+        renameCooldownDays: 30
+    };
+    const account = await new Account({
+        email: "first-rename@example.com",
+        password: "password",
+        DisplayName: "FirstRename",
+        Nonce: 1,
+        LastLogin: new Date()
+    }).save();
+
+    assert.equal(await changePlayerName(account, "FirstFree", true), "ok");
+    assert.equal(await Inventory.findOne({ accountOwnerId: account._id }), null);
+    const renamed = await Account.findById(account._id);
+    assert.ok(renamed?.LastPlayerRenameAt);
+    const renamedAccount = renamed!;
+    assert.equal(renamedAccount.PlayerFirstRenameUsed, true);
+    assert.equal(await changePlayerName(renamedAccount, "SecondRename", true), "cooldown");
+    assert.equal(await resetPlayerRenameCooldown(renamedAccount), true);
+    const reset = await Account.findById(account._id);
+    assert.equal(reset?.LastPlayerRenameAt, undefined);
+    assert.equal(reset?.PlayerFirstRenameUsed, true);
+    assert.equal(getPlayerRenameStatus(reset!).status, "ready");
+    assert.equal(await changePlayerName(reset!, "SecondRename", true), "funds");
 });

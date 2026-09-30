@@ -3,42 +3,62 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SpaceNinja 玩家中心</title>
+    <title>我的 SpaceNinja 账号</title>
     <link rel="stylesheet" href="/player/assets/player.css">
     <script defer src="/player/assets/player.js"></script>
 </head>
 <body>
     <header class="topbar">
-        <a class="brand" href="/player/">SPACE<span>NINJA</span><small>PLAYER CENTER</small></a>
+        <a class="brand" href="/player/" aria-label="SpaceNinja 玩家中心">
+            <span class="brand-mark">SN</span>
+            <span class="brand-copy">SPACE<span>NINJA</span><small>我的账号</small></span>
+        </a>
         <div id="session-tools" class="session-tools hidden">
-            <span id="header-name"></span>
+            <div class="player-chip">
+                <span class="player-chip-dot"></span>
+                <span id="header-name"></span>
+            </div>
             <button id="logout-button" class="button button-quiet" type="button">退出</button>
         </div>
     </header>
 
+    <div class="community-banner" role="note">
+        <span>需要帮助或交流？</span>
+        <strong>沃肥交流群 QQ：1124440468</strong>
+    </div>
+
     <main class="shell">
         <section id="auth-view" class="auth-layout">
-            <div class="intro-band">
-                <p class="eyebrow">玩家自助中心</p>
-                <h1>掌握你的账号，<br><span>把每次邀请变成奖励。</span></h1>
-                <p class="intro-copy">安全登录、查看白金、管理密码和昵称。分享你的专属邀请码，新玩家注册后双方都能获得白金。</p>
-                <div class="signal-row"><span></span>账号服务在线</div>
+            <div class="auth-story">
+                <p class="eyebrow">你的 SpaceNinja 账号</p>
+                <h1>从这里，<br><span>继续你的旅程。</span></h1>
+                <p class="intro-copy">查看白金、换一个喜欢的昵称，也可以把朋友带进来一起领取奖励。</p>
+                <div class="story-list" aria-label="你可以在这里做什么">
+                    <div class="story-item"><b>01</b><span>看看你的白金还剩多少</span></div>
+                    <div class="story-item"><b>02</b><span>换个更像自己的昵称</span></div>
+                    <div class="story-item"><b>03</b><span>邀请朋友一起开始游戏</span></div>
+                </div>
             </div>
             <div class="auth-panel">
-                <div class="auth-tabs" role="tablist">
+                <div class="auth-heading">
+                    <p class="eyebrow">欢迎回来</p>
+                    <h2>进入你的账号</h2>
+                    <p>用注册时的邮箱和密码登录。</p>
+                </div>
+                <div class="auth-tabs" role="tablist" aria-label="登录或注册">
                     <button class="tab active" data-auth-tab="login" type="button">登录</button>
                     <button class="tab" data-auth-tab="register" type="button">创建账号</button>
                 </div>
                 <form id="login-form" class="form-stack">
                     <label>邮箱<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
-                    <label>密码<input name="password" type="password" autocomplete="current-password" required placeholder="输入密码"></label>
-                    <button class="button button-primary" type="submit">登录玩家中心</button>
+                    <label>密码<input name="password" type="password" autocomplete="current-password" required placeholder="输入你的密码"></label>
+                    <button class="button button-primary" type="submit">登录</button>
                 </form>
                 <form id="register-form" class="form-stack hidden">
                     <label>邮箱<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
                     <label>密码<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="至少 8 位"></label>
-                    <label>邀请码 <span class="optional">可选</span><input name="referralCode" maxlength="32" placeholder="输入朋友的邀请码"></label>
-                    <button class="button button-primary" type="submit">创建账号并开始</button>
+                    <label>朋友的邀请码 <span class="optional">没有也可以</span><input name="referralCode" maxlength="32" placeholder="有的话填在这里"></label>
+                    <button class="button button-primary" type="submit">创建账号</button>
                 </form>
                 <p id="auth-notice" class="notice" role="status"></p>
             </div>
@@ -46,61 +66,134 @@
 
         <section id="dashboard-view" class="hidden">
             <div class="dashboard-heading">
-                <div><p class="eyebrow">账号概览</p><h1>欢迎回来，<span id="welcome-name"></span></h1></div>
-                <span class="account-state">已验证</span>
+                <div>
+                    <p class="eyebrow">你的账号</p>
+                    <h1>欢迎回来，<span id="welcome-name"></span></h1>
+                    <p id="welcome-email" class="dashboard-email"></p>
+                </div>
+                <span class="account-state"><i></i>账号正常</span>
             </div>
+
             <div class="stats-grid">
-                <article class="stat-panel stat-highlight"><span>当前白金</span><strong id="platinum-value">0</strong><small>可用于游戏内消费和改名</small></article>
-                <article class="stat-panel"><span>免费白金</span><strong id="free-platinum-value">0</strong><small>余额中的免费部分</small></article>
-                <article class="stat-panel"><span>已邀请玩家</span><strong id="referral-count">0</strong><small id="referral-limit"></small></article>
+                <article class="stat-panel stat-highlight">
+                    <div class="stat-label"><span class="stat-symbol">P</span><span>可用白金</span></div>
+                    <strong id="platinum-value">0</strong>
+                    <small>可以用来消费，也可以用来换昵称</small>
+                </article>
+                <article class="stat-panel">
+                    <div class="stat-label"><span class="stat-symbol free">+</span><span>免费白金</span></div>
+                    <strong id="free-platinum-value">0</strong>
+                    <small>余额里不需要购买的部分</small>
+                </article>
+                <article class="stat-panel invite-stat">
+                    <div class="stat-label"><span class="stat-symbol invite">↗</span><span>邀请进度</span></div>
+                    <strong id="referral-count">0</strong>
+                    <small id="referral-limit">已邀请 0 位朋友</small>
+                </article>
             </div>
 
             <div class="content-grid">
-                <section class="panel referral-panel">
-                    <div class="panel-heading"><div><p class="eyebrow">邀请计划</p><h2>邀请朋友，一起领取白金</h2></div><span class="panel-mark">01</span></div>
-                    <p class="muted">朋友注册时填写你的邀请码。奖励由服务器管理员实时控制，达到里程碑还会获得额外奖励。</p>
-                    <div class="code-display"><span id="referral-code">读取中</span><button id="copy-code" class="button button-secondary" type="button">复制邀请码</button></div>
-                    <div class="reward-strip"><div><span>你邀请成功</span><strong id="inviter-reward">0 白金</strong></div><div><span>朋友注册成功</span><strong id="invitee-reward">0 白金</strong></div><div><span>里程碑奖励</span><strong id="milestone-reward">0 白金</strong></div></div>
+                <section class="panel invite-panel referral-panel">
+                    <div class="panel-heading">
+                        <div><p class="eyebrow">和朋友一起玩</p><h2>邀请一位朋友来玩</h2></div>
+                        <span class="panel-mark">邀请</span>
+                    </div>
+                    <p class="muted">把你的邀请码发给朋友。朋友注册并达到游戏在线时长后，你们都会收到白金。</p>
+                    <div id="referral-qualification" class="qualification hidden">
+                        <span>我的邀请奖励</span>
+                        <strong id="referral-qualification-text"></strong>
+                    </div>
+                    <div class="invite-code-row">
+                        <div class="code-display"><span id="referral-code">读取中</span></div>
+                        <button id="copy-code" class="button button-secondary" type="button">复制邀请码</button>
+                    </div>
+                    <div class="invite-progress">
+                        <div class="progress-heading"><span>邀请进度</span><strong id="invite-progress-label">0 / 0</strong></div>
+                        <div class="progress-track"><span id="invite-progress-bar"></span></div>
+                    </div>
+                    <div class="reward-strip">
+                        <div><span>你会得到</span><strong id="inviter-reward">0 白金</strong></div>
+                        <div><span>朋友会得到</span><strong id="invitee-reward">0 白金</strong></div>
+                        <div><span>再邀请几位有额外奖励</span><strong id="milestone-reward">未开启</strong></div>
+                    </div>
+                    <p id="invite-notice" class="notice" role="status"></p>
                 </section>
+
                 <section class="panel account-panel">
-                    <div class="panel-heading"><div><p class="eyebrow">账号设置</p><h2>保持账号可控</h2></div><span class="panel-mark">02</span></div>
+                    <div class="panel-heading">
+                        <div><p class="eyebrow">我的设置</p><h2>让账号更像你</h2></div>
+                        <span class="panel-mark">设置</span>
+                    </div>
                     <form id="rename-form" class="form-stack compact-form">
-                        <label>新昵称<input name="newName" maxlength="24" required placeholder="1-24 个字符，不含控制字符"></label>
-                        <label>当前密码<input name="currentPassword" type="password" required></label>
-                        <button class="button button-secondary" type="submit">使用白金改名</button>
+                        <div id="rename-controls" class="rename-controls">
+                            <label>新昵称<input name="newName" maxlength="24" required placeholder="输入你想用的昵称"></label>
+                            <label>当前密码<input name="currentPassword" type="password" required placeholder="确认是你本人"></label>
+                            <button class="button button-secondary" type="submit">花白金换昵称</button>
+                        </div>
                         <p id="rename-hint" class="field-hint"></p>
                     </form>
                     <hr>
                     <form id="password-form" class="form-stack compact-form">
+                        <p class="form-title">想换一个新密码？</p>
                         <label>当前密码<input name="currentPassword" type="password" required></label>
-                        <label>新密码<input name="newPassword" type="password" minlength="8" required></label>
-                        <button class="button button-secondary" type="submit">更新密码</button>
+                        <label>新密码<input name="newPassword" type="password" minlength="8" required placeholder="至少 8 位"></label>
+                        <button class="button button-quiet" type="submit">更新密码</button>
                     </form>
                     <p id="settings-notice" class="notice" role="status"></p>
                 </section>
             </div>
 
             <section id="admin-panel" class="panel admin-panel hidden">
-                <div class="panel-heading"><div><p class="eyebrow">管理员控制台</p><h2>玩家中心策略</h2></div><span class="panel-mark">ADMIN</span></div>
-                <p class="muted">所有数值由服务端校验并持久化。调整后新注册、改名和邀请码奖励立即使用新策略。</p>
+                <div class="panel-heading">
+                    <div><p class="eyebrow">仅管理员可见</p><h2>玩家服务设置</h2></div>
+                    <span class="panel-mark">ADMIN</span>
+                </div>
+                <p class="muted">这里控制玩家能使用哪些功能，以及每项奖励的数量。</p>
                 <form id="policy-form" class="policy-grid">
-                    <label><input name="enabled" type="checkbox"> 启用玩家中心</label>
-                    <label><input name="registrationEnabled" type="checkbox"> 允许门户注册</label>
-                    <label><input name="renameEnabled" type="checkbox"> 允许玩家改名</label>
-                    <label><input name="referralsEnabled" type="checkbox"> 启用邀请奖励</label>
-                    <label>改名消耗<input name="renameCost" type="number" min="0"></label>
-                    <label>改名冷却天数<input name="renameCooldownDays" type="number" min="0"></label>
-                    <label>邀请人奖励<input name="inviterReward" type="number" min="0"></label>
-                    <label>新玩家奖励<input name="inviteeReward" type="number" min="0"></label>
-                    <label>每账号最多邀请<input name="maxReferralsPerAccount" type="number" min="0"></label>
-                    <label>里程碑间隔<input name="milestoneEvery" type="number" min="0"></label>
-                    <label>里程碑额外奖励<input name="milestoneBonus" type="number" min="0"></label>
-                    <button class="button button-primary" type="submit">保存策略</button>
+                        <label><input name="enabled" type="checkbox"> 开放玩家页面</label>
+                        <label><input name="registrationEnabled" type="checkbox"> 允许新玩家注册</label>
+                        <label><input name="renameEnabled" type="checkbox"> 允许玩家换昵称</label>
+                        <label><input name="firstRenameEnabled" type="checkbox"> 允许首次免费换昵称</label>
+                        <label><input name="referralsEnabled" type="checkbox"> 开放邀请奖励</label>
+                    <label>换昵称需要的白金<input name="renameCost" type="number" min="0"></label>
+                    <label>换昵称后的等待天数<input name="renameCooldownDays" type="number" min="0"></label>
+                    <label>邀请人的奖励<input name="inviterReward" type="number" min="0"></label>
+                    <label>新玩家的奖励<input name="inviteeReward" type="number" min="0"></label>
+                    <label>每个账号最多邀请<input name="maxReferralsPerAccount" type="number" min="0"></label>
+                    <label>发奖所需在线分钟<input name="referralRequiredOnlineMinutes" type="number" min="0" max="10080"></label>
+                    <label>额外奖励的邀请间隔<input name="milestoneEvery" type="number" min="0"></label>
+                    <label>额外奖励数量<input name="milestoneBonus" type="number" min="0"></label>
+                    <button class="button button-primary" type="submit">保存设置</button>
                 </form>
                 <p id="admin-notice" class="notice" role="status"></p>
+                <div class="admin-action">
+                    <div>
+                        <p class="eyebrow">玩家操作</p>
+                        <h3>重置改名等待</h3>
+                        <p class="muted">清除这名玩家当前的改名等待时间，不会恢复首次免费机会。</p>
+                    </div>
+                    <form id="reset-rename-form" class="admin-action-form">
+                        <label>玩家邮箱<input name="email" type="email" required placeholder="player@example.com"></label>
+                        <button class="button button-secondary" type="submit">重置冷却</button>
+                    </form>
+                    <p id="reset-rename-notice" class="notice" role="status"></p>
+                </div>
+                <div class="admin-action">
+                    <div>
+                        <p class="eyebrow">邀请审核</p>
+                        <h3>通过风险邀请</h3>
+                        <p class="muted">确认邀请关系正常后解除风险标记。在线时长达标时会立即发放奖励。</p>
+                    </div>
+                    <form id="approve-referral-form" class="admin-action-form">
+                        <label>玩家邮箱<input name="email" type="email" required placeholder="player@example.com"></label>
+                        <button class="button button-secondary" type="submit">通过邀请审核</button>
+                    </form>
+                    <p id="approve-referral-notice" class="notice" role="status"></p>
+                </div>
             </section>
         </section>
     </main>
-    <footer>SpaceNinja Server <span>·</span> 玩家服务</footer>
+
+    <footer>SpaceNinja <span>·</span> 你的账号，你的旅程</footer>
 </body>
 </html>

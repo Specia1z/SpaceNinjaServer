@@ -25,13 +25,16 @@ import { getInventory } from "../../services/inventoryService.ts";
 import { createMessage } from "../../services/inboxService.ts";
 import { fromStoreItem } from "../../services/itemDataService.ts";
 import { getTokenForClient, getTunablesForClient } from "../../services/tunablesService.ts";
-import { getRegistrationAddress, reserveRegistration } from "../../services/registrationRateLimitService.ts";
+import {
+    getRegistrationAddress,
+    getRegistrationFingerprint,
+    reserveRegistration
+} from "../../services/registrationRateLimitService.ts";
 import type { AddressInfo } from "node:net";
 import { buildLabelToVersionInt } from "../../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
 import { markPresenceLogin } from "../../services/presenceService.ts";
-import { settleReferral } from "../../services/playerReferralService.ts";
 
 export const loginController: RequestHandler = async (request, response) => {
     const loginRequest = JSON.parse(String(request.body)) as ILoginRequest; // parse octet stream of json data to json object
@@ -96,6 +99,10 @@ export const loginController: RequestHandler = async (request, response) => {
                     GoogleTokenId: loginRequest.GoogleTokenId,
                     Nonce: createNonce(),
                     BuildLabel: buildLabel,
+                    RegistrationIpHash: getRegistrationFingerprint(
+                        request.socket.remoteAddress,
+                        request.headers["x-forwarded-for"]
+                    ).ipHash,
                     LastLogin: new Date()
                 },
                 loginRequest.referralCode
@@ -157,12 +164,6 @@ export const loginController: RequestHandler = async (request, response) => {
 
     await account.save();
     await markPresenceLogin(account._id, account.DisplayName, buildLabel, account.LastPlatform);
-    try {
-        await settleReferral(account);
-    } catch (error) {
-        logger.warn(`could not settle referral for ${account._id.toString()}: ${(error as Error).message}`);
-    }
-
     handleNonceInvalidation(account._id.toString());
 
     // If the client crashed during an endless fissure mission, discharge rewards to an inbox message. (https://www.reddit.com/r/Warframe/comments/5uwwjm/til_if_you_crash_during_a_fissure_you_keep_any/)

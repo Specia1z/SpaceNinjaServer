@@ -19,12 +19,14 @@ export const playerPolicy = (): Required<IPlayerPortalConfig> => ({
     enabled: booleanSetting(config.playerPortal?.enabled, true),
     registrationEnabled: booleanSetting(config.playerPortal?.registrationEnabled, true),
     renameEnabled: booleanSetting(config.playerPortal?.renameEnabled, true),
+    firstRenameEnabled: booleanSetting(config.playerPortal?.firstRenameEnabled, true),
     renameCost: integerSetting(config.playerPortal?.renameCost, 50, 1_000_000),
     renameCooldownDays: integerSetting(config.playerPortal?.renameCooldownDays, 30, 3650),
     referralsEnabled: booleanSetting(config.playerPortal?.referralsEnabled, true),
     inviterReward: integerSetting(config.playerPortal?.inviterReward, 25, 100_000),
     inviteeReward: integerSetting(config.playerPortal?.inviteeReward, 25, 100_000),
     maxReferralsPerAccount: integerSetting(config.playerPortal?.maxReferralsPerAccount, 25, 100_000),
+    referralRequiredOnlineMinutes: integerSetting(config.playerPortal?.referralRequiredOnlineMinutes, 30, 10_080),
     milestoneEvery: integerSetting(config.playerPortal?.milestoneEvery, 5, 100_000),
     milestoneBonus: integerSetting(config.playerPortal?.milestoneBonus, 50, 100_000)
 });
@@ -33,12 +35,14 @@ const policyLimits: Record<keyof Required<IPlayerPortalConfig>, number | null> =
     enabled: null,
     registrationEnabled: null,
     renameEnabled: null,
+    firstRenameEnabled: null,
     renameCost: 1_000_000,
     renameCooldownDays: 3650,
     referralsEnabled: null,
     inviterReward: 100_000,
     inviteeReward: 100_000,
     maxReferralsPerAccount: 100_000,
+    referralRequiredOnlineMinutes: 10_080,
     milestoneEvery: 100_000,
     milestoneBonus: 100_000
 };
@@ -67,6 +71,27 @@ export const validatePlayerPolicyField = (id: string, value: unknown): string | 
             ? typeof value == "boolean"
             : typeof value == "number" && Number.isSafeInteger(value) && value >= 0 && value <= max;
     return valid ? undefined : `${id} has an invalid value`;
+};
+
+type TPlayerRenameStatus = "disabled" | "first" | "cooldown" | "ready";
+
+export const getPlayerRenameStatus = (
+    account: Pick<TAccountDocument, "LastPlayerRenameAt" | "PlayerFirstRenameUsed">
+): { status: TPlayerRenameStatus; firstRenameAvailable: boolean; cooldownUntil: Date | null } => {
+    const policy = playerPolicy();
+    if (!policy.renameEnabled) return { status: "disabled", firstRenameAvailable: false, cooldownUntil: null };
+    const firstRenameAvailable =
+        policy.firstRenameEnabled && !account.PlayerFirstRenameUsed && !account.LastPlayerRenameAt;
+    if (!account.LastPlayerRenameAt || policy.renameCooldownDays == 0) {
+        return {
+            status: firstRenameAvailable ? "first" : "ready",
+            firstRenameAvailable,
+            cooldownUntil: null
+        };
+    }
+    const cooldownUntil = new Date(account.LastPlayerRenameAt.getTime() + policy.renameCooldownDays * 86_400_000);
+    if (cooldownUntil > new Date()) return { status: "cooldown", firstRenameAvailable, cooldownUntil };
+    return { status: firstRenameAvailable ? "first" : "ready", firstRenameAvailable, cooldownUntil: null };
 };
 
 const cookieOptions = (req: Request): string =>
@@ -130,16 +155,23 @@ export const changePlayerName = async (
     if ((config.administratorNames ?? []).some(name => name.toLowerCase() == newName.toLowerCase())) return "taken";
     if (await Account.exists({ DisplayName: { $regex: `^${newName}$`, $options: "i" } })) return "taken";
     const cutoff = new Date(Date.now() - policy.renameCooldownDays * 86_400_000);
-    if (account.LastPlayerRenameAt && account.LastPlayerRenameAt > cutoff) return "cooldown";
+    if (policy.renameCooldownDays > 0 && account.LastPlayerRenameAt && account.LastPlayerRenameAt > cutoff)
+        return "cooldown";
 
-    const inventory = await Inventory.findOne({ accountOwnerId: account._id }, "PremiumCredits PremiumCreditsFree");
-    if (!inventory || inventory.PremiumCredits < policy.renameCost) return "funds";
-    const freeSpent = Math.min(inventory.PremiumCreditsFree, policy.renameCost);
-    const charged = await Inventory.updateOne(
-        { _id: inventory._id, PremiumCredits: { $gte: policy.renameCost } },
-        { $inc: { PremiumCredits: -policy.renameCost, PremiumCreditsFree: -freeSpent } }
-    );
-    if (!charged.modifiedCount && policy.renameCost) return "funds";
+    const isFirstRename = policy.firstRenameEnabled && !account.PlayerFirstRenameUsed && !account.LastPlayerRenameAt;
+    const renameCost = isFirstRename ? 0 : policy.renameCost;
+    const inventory = renameCost
+        ? await Inventory.findOne({ accountOwnerId: account._id }, "PremiumCredits PremiumCreditsFree")
+        : null;
+    if (renameCost && (!inventory || inventory.PremiumCredits < renameCost)) return "funds";
+    const freeSpent = inventory ? Math.min(inventory.PremiumCreditsFree, renameCost) : 0;
+    const charged = renameCost
+        ? await Inventory.updateOne(
+              { _id: inventory!._id, PremiumCredits: { $gte: renameCost } },
+              { $inc: { PremiumCredits: -renameCost, PremiumCreditsFree: -freeSpent } }
+          )
+        : { modifiedCount: 1 };
+    if (!charged.modifiedCount && renameCost) return "funds";
 
     try {
         const changed = await Account.updateOne(
@@ -148,21 +180,21 @@ export const changePlayerName = async (
                 DisplayName: account.DisplayName,
                 $or: [{ LastPlayerRenameAt: { $exists: false } }, { LastPlayerRenameAt: { $lte: cutoff } }]
             },
-            { $set: { DisplayName: newName, LastPlayerRenameAt: new Date() } }
+            { $set: { DisplayName: newName, LastPlayerRenameAt: new Date(), PlayerFirstRenameUsed: true } }
         );
         if (!changed.modifiedCount) {
-            if (policy.renameCost)
+            if (renameCost)
                 await Inventory.updateOne(
-                    { _id: inventory._id },
-                    { $inc: { PremiumCredits: policy.renameCost, PremiumCreditsFree: freeSpent } }
+                    { _id: inventory!._id },
+                    { $inc: { PremiumCredits: renameCost, PremiumCreditsFree: freeSpent } }
                 );
             return "cooldown";
         }
     } catch (error) {
-        if (policy.renameCost)
+        if (renameCost)
             await Inventory.updateOne(
-                { _id: inventory._id },
-                { $inc: { PremiumCredits: policy.renameCost, PremiumCreditsFree: freeSpent } }
+                { _id: inventory!._id },
+                { $inc: { PremiumCredits: renameCost, PremiumCreditsFree: freeSpent } }
             );
         if ((error as { code?: number }).code == 11000) return "taken";
         throw error;
@@ -175,4 +207,12 @@ export const changePlayerName = async (
         }
     }
     return "ok";
+};
+
+export const resetPlayerRenameCooldown = async (account: Pick<TAccountDocument, "_id">): Promise<boolean> => {
+    const result = await Account.updateOne(
+        { _id: account._id },
+        { $unset: { LastPlayerRenameAt: 1 }, $set: { PlayerFirstRenameUsed: true } }
+    );
+    return result.matchedCount > 0;
 };

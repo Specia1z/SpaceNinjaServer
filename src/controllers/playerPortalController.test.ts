@@ -21,12 +21,14 @@ before(async () => {
         enabled: true,
         registrationEnabled: true,
         renameEnabled: true,
+        firstRenameEnabled: true,
         renameCost: 50,
         renameCooldownDays: 30,
         referralsEnabled: true,
         inviterReward: 25,
         inviteeReward: 25,
         maxReferralsPerAccount: 25,
+        referralRequiredOnlineMinutes: 30,
         milestoneEvery: 5,
         milestoneBonus: 50
     };
@@ -122,7 +124,7 @@ void test("player login upgrades raw-password accounts without breaking WebUI lo
             output.body = body;
         },
         status() {
-            return { json() {} };
+            return { json(): void {} };
         }
     } as never;
 

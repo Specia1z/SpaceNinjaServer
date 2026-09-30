@@ -4,6 +4,7 @@ import { args } from "../helpers/commandLineArguments.ts";
 import { repoDir, rootDir } from "../helpers/pathHelper.ts";
 import {
     getPlayerAdminPolicyController,
+    approvePlayerReferralController,
     getPlayerPolicyController,
     playerMeController,
     playerLoginController,
@@ -11,6 +12,7 @@ import {
     playerPasswordController,
     playerRegisterController,
     playerRenameController,
+    resetPlayerRenameCooldownController,
     setPlayerAdminPolicyController
 } from "../controllers/playerPortalController.ts";
 
@@ -30,5 +32,7 @@ playerRouter.post("/api/rename", playerRenameController);
 playerRouter.post("/api/password", playerPasswordController);
 playerRouter.get("/api/admin/policy", getPlayerAdminPolicyController);
 playerRouter.post("/api/admin/policy", setPlayerAdminPolicyController);
+playerRouter.post("/api/admin/reset-rename-cooldown", resetPlayerRenameCooldownController);
+playerRouter.post("/api/admin/approve-referral", approvePlayerReferralController);
 
 export { playerRouter };

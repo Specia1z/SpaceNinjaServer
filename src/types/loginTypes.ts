@@ -25,6 +25,7 @@ interface IAccountAndLoginResponseCommons {
 export interface IAccountCreationData extends IAccountAndLoginResponseCommons {
     email: string;
     password: string;
+    RegistrationIpHash?: string;
     Language?: string;
     BuildLabel: string | undefined;
     LastLogin: Date;
@@ -37,7 +38,14 @@ interface IDatabaseAccount extends IAccountCreationData {
     ReferralInviterReward?: number;
     ReferralInviteeReward?: number;
     ReferralMilestoneBonus?: number;
+    ReferralOnlineSeconds?: number;
+    ReferralOnlineStartedAt?: Date;
+    ReferralQualifiedAt?: Date;
+    ReferralRisk?: "same_registration_source";
+    RegistrationIpHash?: string;
+    LastKnownIpHash?: string;
     LastPlayerRenameAt?: Date;
+    PlayerFirstRenameUsed?: boolean;
     PlayerPasswordVersion?: number;
     LastPlatform?: TPlatform;
     Dropped?: true;

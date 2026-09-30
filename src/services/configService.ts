@@ -27,12 +27,14 @@ export interface IPlayerPortalConfig {
     enabled?: boolean;
     registrationEnabled?: boolean;
     renameEnabled?: boolean;
+    firstRenameEnabled?: boolean;
     renameCost?: number;
     renameCooldownDays?: number;
     referralsEnabled?: boolean;
     inviterReward?: number;
     inviteeReward?: number;
     maxReferralsPerAccount?: number;
+    referralRequiredOnlineMinutes?: number;
     milestoneEvery?: number;
     milestoneBonus?: number;
 }

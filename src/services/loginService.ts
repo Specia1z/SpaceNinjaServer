@@ -23,7 +23,7 @@ import { BL_LATEST, BV_LATEST } from "../constants/gameVersions.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import { giveNewAccountStarterPack, initializeNewAccount } from "./accountInitializationService.ts";
 import { hashAccountPassword, verifyAccountPassword } from "./passwordService.ts";
-import { releaseReferral, reserveReferral, settleReferral } from "./playerReferralService.ts";
+import { releaseReferral, reserveReferral } from "./playerReferralService.ts";
 
 export const isCorrectPassword = verifyAccountPassword;
 
@@ -72,7 +72,11 @@ export const createAccount = async (
         throw new Error(`"${accountData.DisplayName}" is reserved and may not be used as a username`);
     }
 
-    const referral = referralCode ? await reserveReferral(referralCode.trim().toUpperCase()) : null;
+    const referral = referralCode
+        ? await reserveReferral(referralCode.trim().toUpperCase(), {
+              ipHash: accountData.RegistrationIpHash
+          })
+        : null;
     if (referralCode && !referral) throw new Error("Invalid or exhausted invite code");
     const account = new Account({
         ...accountData,
@@ -82,7 +86,8 @@ export const createAccount = async (
             ReferredBy: referral.inviterId,
             ReferralInviterReward: referral.inviterReward,
             ReferralInviteeReward: referral.inviteeReward,
-            ReferralMilestoneBonus: referral.milestoneBonus
+            ReferralMilestoneBonus: referral.milestoneBonus,
+            ...(referral.risk ? { ReferralRisk: referral.risk } : {})
         })
     });
     let accountCreated = false;
@@ -102,11 +107,10 @@ export const createAccount = async (
         if (config.newAccountStarterPack) {
             await giveNewAccountStarterPack(inventory);
         }
-        if (referral) await settleReferral(account);
         await createStats(account._id.toString());
         return account.toJSON();
     } catch (error) {
-        if (referral && !accountCreated) await releaseReferral(referral.inviterId);
+        if (referral?.reservedCount && !accountCreated) await releaseReferral(referral.inviterId);
         if (error instanceof Error) {
             throw new Error(error.message);
         }

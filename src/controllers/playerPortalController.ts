@@ -5,8 +5,10 @@ import { config, type IPlayerPortalConfig } from "../services/configService.ts";
 import {
     changePlayerName,
     createPlayerSession,
+    getPlayerRenameStatus,
     getPlayerAccount,
     playerPolicy,
+    resetPlayerRenameCooldown,
     revokePlayerSession,
     validatePlayerPolicy
 } from "../services/playerPortalService.ts";
@@ -19,8 +21,12 @@ import {
     isAdministrator,
     isCorrectPassword
 } from "../services/loginService.ts";
-import { generateReferralCode, settleReferral } from "../services/playerReferralService.ts";
-import { getRegistrationAddress, reserveRegistration } from "../services/registrationRateLimitService.ts";
+import { approveReferralRisk, generateReferralCode, settleReferral } from "../services/playerReferralService.ts";
+import {
+    getRegistrationAddress,
+    getRegistrationFingerprint,
+    reserveRegistration
+} from "../services/registrationRateLimitService.ts";
 import { hashAccountPassword, identifyAccountPassword } from "../services/passwordService.ts";
 import { whirlpoolHash } from "../services/whirlpoolService.ts";
 import { PlayerSession } from "../models/playerSessionModel.ts";
@@ -52,6 +58,7 @@ const accountSummary = async (
     account: Awaited<ReturnType<typeof getPlayerAccount>>
 ): Promise<Record<string, unknown> | null> => {
     if (!account) return null;
+    const policy = playerPolicy();
     const inventory = await Inventory.findOne(
         { accountOwnerId: account._id },
         "PremiumCredits PremiumCreditsFree"
@@ -62,20 +69,31 @@ const accountSummary = async (
         displayName: account.DisplayName,
         platinum: inventory?.PremiumCredits ?? 0,
         freePlatinum: inventory?.PremiumCreditsFree ?? 0,
-        referralCode: playerPolicy().referralsEnabled ? await generateReferralCode(account._id) : null,
+        referralCode: policy.referralsEnabled ? await generateReferralCode(account._id) : null,
         referralCount: account.ReferralCount ?? 0,
+        referralQualification: account.ReferredBy
+            ? {
+                  qualified: Boolean(account.ReferralQualifiedAt),
+                  onlineSeconds: account.ReferralOnlineSeconds ?? 0,
+                  requiredOnlineSeconds: policy.referralRequiredOnlineMinutes * 60,
+                  risk: Boolean(account.ReferralRisk)
+              }
+            : null,
         isAdmin: isAdministrator(account),
         lastRenameAt: account.LastPlayerRenameAt?.toISOString() ?? null,
+        rename: getPlayerRenameStatus(account),
         policy: {
-            renameCost: playerPolicy().renameCost,
-            renameCooldownDays: playerPolicy().renameCooldownDays,
-            renameEnabled: playerPolicy().renameEnabled,
-            referralsEnabled: playerPolicy().referralsEnabled,
-            inviterReward: playerPolicy().inviterReward,
-            inviteeReward: playerPolicy().inviteeReward,
-            maxReferralsPerAccount: playerPolicy().maxReferralsPerAccount,
-            milestoneEvery: playerPolicy().milestoneEvery,
-            milestoneBonus: playerPolicy().milestoneBonus
+            renameCost: policy.renameCost,
+            renameCooldownDays: policy.renameCooldownDays,
+            renameEnabled: policy.renameEnabled,
+            firstRenameEnabled: policy.firstRenameEnabled,
+            referralsEnabled: policy.referralsEnabled,
+            inviterReward: policy.inviterReward,
+            inviteeReward: policy.inviteeReward,
+            maxReferralsPerAccount: policy.maxReferralsPerAccount,
+            referralRequiredOnlineMinutes: policy.referralRequiredOnlineMinutes,
+            milestoneEvery: policy.milestoneEvery,
+            milestoneBonus: policy.milestoneBonus
         }
     };
 };
@@ -89,17 +107,14 @@ export const playerLoginController: RequestHandler = async (req, res) => {
     if (!account || account.Banned || passwordProtocol == false) {
         return sendError(res, 401, "invalid_login");
     }
+    const loginIpHash = getRegistrationFingerprint(req.socket.remoteAddress, req.headers["x-forwarded-for"]).ipHash;
+    if (loginIpHash) account.LastKnownIpHash = loginIpHash;
     if (!account.PlayerPasswordVersion || passwordProtocol == "raw") {
         // Keep both the raw-player and WebUI-Whirlpool login paths valid after migrating a legacy account.
         account.password = await hashAccountPassword(whirlpoolHash(body.password));
         account.PlayerPasswordVersion = 1;
-        await account.save();
     }
-    try {
-        await settleReferral(account);
-    } catch {
-        // Retry the claim on the next successful login if the inventory is temporarily unavailable.
-    }
+    await account.save();
     await createPlayerSession(req, res, account);
     res.json(await accountSummary(account));
 };
@@ -125,6 +140,10 @@ export const playerRegisterController: RequestHandler = async (req, res) => {
         res.set("Retry-After", String(reservation.retryAfterSeconds));
         return sendError(res, 429, "registration_rate_limited");
     }
+    const registrationFingerprint = getRegistrationFingerprint(
+        req.socket.remoteAddress,
+        req.headers["x-forwarded-for"]
+    );
     try {
         const account = await createAccount(
             {
@@ -134,6 +153,7 @@ export const playerRegisterController: RequestHandler = async (req, res) => {
                 Language: typeof body.language == "string" ? body.language : undefined,
                 ClientType: "player-portal",
                 BuildLabel: getBuildLabelForUnauthenticatedRequest(req),
+                RegistrationIpHash: registrationFingerprint.ipHash,
                 LastLogin: new Date(),
                 Nonce: createNonce()
             },
@@ -152,7 +172,14 @@ export const playerRegisterController: RequestHandler = async (req, res) => {
 
 export const playerMeController: RequestHandler = async (req, res) => {
     const account = await requirePlayer(req, res);
-    if (account) res.json(await accountSummary(account));
+    if (account) {
+        const ipHash = getRegistrationFingerprint(req.socket.remoteAddress, req.headers["x-forwarded-for"]).ipHash;
+        if (ipHash && account.LastKnownIpHash != ipHash) {
+            account.LastKnownIpHash = ipHash;
+            await account.save();
+        }
+        res.json(await accountSummary(account));
+    }
 };
 
 export const playerLogoutController: RequestHandler = async (req, res) => {
@@ -197,7 +224,7 @@ export const getPlayerPolicyController: RequestHandler = (_req, res) => {
 
 export const getPlayerAdminPolicyController: RequestHandler = async (req, res) => {
     const account = await getAccountForAdmin(req, res);
-    if (account) res.json(config.playerPortal ?? playerPolicy());
+    if (account) res.json({ ...playerPolicy(), ...config.playerPortal });
 };
 
 export const setPlayerAdminPolicyController: RequestHandler = async (req, res) => {
@@ -209,6 +236,30 @@ export const setPlayerAdminPolicyController: RequestHandler = async (req, res) =
     config.playerPortal = merged;
     await saveConfig();
     res.json(merged);
+};
+
+export const resetPlayerRenameCooldownController: RequestHandler = async (req, res) => {
+    const account = await getAccountForAdmin(req, res);
+    if (!account) return;
+    const body = bodyOf(req);
+    if (typeof body.email != "string" || !body.email.trim()) return sendError(res, 400, "invalid_player");
+    const player = await findAccountByEmail(body.email.trim());
+    if (!player) return sendError(res, 404, "player_not_found");
+    await resetPlayerRenameCooldown(player);
+    res.json({ ok: true, displayName: player.DisplayName });
+};
+
+export const approvePlayerReferralController: RequestHandler = async (req, res) => {
+    const account = await getAccountForAdmin(req, res);
+    if (!account) return;
+    const body = bodyOf(req);
+    if (typeof body.email != "string" || !body.email.trim()) return sendError(res, 400, "invalid_player");
+    const player = await findAccountByEmail(body.email.trim());
+    if (!player) return sendError(res, 404, "player_not_found");
+    const approved = await approveReferralRisk(player._id);
+    if (!approved) return sendError(res, 409, "referral_not_flagged");
+    await settleReferral(approved);
+    res.json({ ok: true, displayName: approved.DisplayName });
 };
 
 const getAccountForAdmin = async (

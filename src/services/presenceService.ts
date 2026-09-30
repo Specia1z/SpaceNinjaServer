@@ -8,6 +8,7 @@ import {
 import { getRegion } from "./itemDataService.ts";
 import type { IMissionInventoryUpdateRequest } from "../types/requestTypes.ts";
 import { logger } from "../utils/logger.ts";
+import { Account } from "../models/loginModel.ts";
 
 type PresencePatch = Partial<Omit<IPlayerPresence, "AccountId" | "DisplayName" | "LastSeenAt" | "UpdatedAt">>;
 
@@ -69,6 +70,10 @@ const savePresence = async (
 export const initializePresence = (): Promise<void> =>
     ignorePresenceErrors("initialize", async () => {
         const now = new Date();
+        await Account.updateMany(
+            { ReferralOnlineStartedAt: { $exists: true } },
+            { $unset: { ReferralOnlineStartedAt: 1 } }
+        );
         const stale = await PlayerPresence.find({ Online: true }, "AccountId DisplayName State");
         if (!stale.length) return;
         await PlayerPresence.updateMany(
