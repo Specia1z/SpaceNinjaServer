@@ -14,13 +14,15 @@ import {
     createAccount,
     createNonce,
     getAccountForRequest,
+    findAccountByEmail,
     getUsernameFromEmail,
     isAdministrator,
     isCorrectPassword
 } from "../services/loginService.ts";
 import { generateReferralCode, settleReferral } from "../services/playerReferralService.ts";
 import { getRegistrationAddress, reserveRegistration } from "../services/registrationRateLimitService.ts";
-import { hashAccountPassword } from "../services/passwordService.ts";
+import { hashAccountPassword, identifyAccountPassword } from "../services/passwordService.ts";
+import { whirlpoolHash } from "../services/whirlpoolService.ts";
 import { PlayerSession } from "../models/playerSessionModel.ts";
 import { saveConfig } from "../services/configWriterService.ts";
 import { getBuildLabelForUnauthenticatedRequest } from "../services/loginService.ts";
@@ -82,12 +84,14 @@ export const playerLoginController: RequestHandler = async (req, res) => {
     if (!playerPolicy().enabled) return sendError(res, 404, "portal_disabled");
     const body = bodyOf(req);
     if (typeof body.email != "string" || typeof body.password != "string") return sendError(res, 400, "invalid_login");
-    const account = await Account.findOne({ email: body.email.trim().toLowerCase() });
-    if (!account || account.Banned || !(await isCorrectPassword(body.password, account.password))) {
+    const account = await findAccountByEmail(body.email);
+    const passwordProtocol = account ? await identifyAccountPassword(body.password, account.password) : false;
+    if (!account || account.Banned || passwordProtocol == false) {
         return sendError(res, 401, "invalid_login");
     }
-    if (!account.PlayerPasswordVersion) {
-        account.password = await hashAccountPassword(body.password);
+    if (!account.PlayerPasswordVersion || passwordProtocol == "raw") {
+        // Keep both the raw-player and WebUI-Whirlpool login paths valid after migrating a legacy account.
+        account.password = await hashAccountPassword(whirlpoolHash(body.password));
         account.PlayerPasswordVersion = 1;
         await account.save();
     }
@@ -113,7 +117,7 @@ export const playerRegisterController: RequestHandler = async (req, res) => {
         return sendError(res, 400, "invalid_registration");
     }
     const email = body.email.trim().toLowerCase();
-    if (await Account.exists({ email })) return sendError(res, 409, "email_taken");
+    if (await findAccountByEmail(email)) return sendError(res, 409, "email_taken");
     const reservation = reserveRegistration(
         getRegistrationAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"])
     );
@@ -125,7 +129,7 @@ export const playerRegisterController: RequestHandler = async (req, res) => {
         const account = await createAccount(
             {
                 email,
-                password: body.password,
+                password: whirlpoolHash(body.password),
                 DisplayName: await getUsernameFromEmail(email),
                 Language: typeof body.language == "string" ? body.language : undefined,
                 ClientType: "player-portal",
@@ -180,7 +184,7 @@ export const playerPasswordController: RequestHandler = async (req, res) => {
     }
     if (!(await isCorrectPassword(body.currentPassword, account.password)))
         return sendError(res, 403, "wrong_password");
-    account.password = await hashAccountPassword(body.newPassword);
+    account.password = await hashAccountPassword(whirlpoolHash(body.newPassword));
     account.PlayerPasswordVersion = (account.PlayerPasswordVersion ?? 0) + 1;
     await account.save();
     await PlayerSession.deleteMany({ accountId: account._id });

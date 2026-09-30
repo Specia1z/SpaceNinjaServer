@@ -2,12 +2,12 @@ import type { Request, RequestHandler } from "express";
 
 import { config, getReflexiveAddress } from "../../services/configService.ts";
 
-import { Account } from "../../models/loginModel.ts";
 import {
     createAccount,
     createNonce,
     getAccountWorldStateToken,
     getBuildLabelForUnauthenticatedRequest,
+    findAccountByEmail,
     getGoogleAccountData,
     getUsernameFromEmail,
     isCorrectPassword
@@ -61,7 +61,7 @@ export const loginController: RequestHandler = async (request, response) => {
         }
     }
 
-    const account = await Account.findOne({ email: loginRequest.email });
+    const account = await findAccountByEmail(loginRequest.email);
 
     const buildLabel = getBuildLabelForUnauthenticatedRequest(request);
 

@@ -6,6 +6,7 @@ import { Account } from "../models/loginModel.ts";
 import {
     createAccount,
     createNonce,
+    findAccountByEmail,
     getAccountForQuery,
     getUsernameFromEmail,
     hasPermission,
@@ -147,7 +148,7 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
             logger.trace(`incoming websocket message: ${String(msg)}`);
             const data = JSON.parse(String(msg)) as IWsMsgFromClient;
             if (data.auth) {
-                let account: IDatabaseAccountJson | null = await Account.findOne({ email: data.auth.email });
+                let account: IDatabaseAccountJson | null = await findAccountByEmail(data.auth.email);
                 let accessedAccount = account;
                 if (account) {
                     if (await isCorrectPassword(data.auth.password, account.password)) {

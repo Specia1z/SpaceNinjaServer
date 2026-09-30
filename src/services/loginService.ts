@@ -7,7 +7,7 @@ import {
     type IAccountCreationData
 } from "../types/loginTypes.ts";
 import { createShip } from "./shipService.ts";
-import type { Document, Types } from "mongoose";
+import type { Document, HydratedDocument, Types } from "mongoose";
 import { Loadout, type TLoadoutDatabaseDocument } from "../models/inventoryModels/loadoutModel.ts";
 import { PersonalRooms } from "../models/personalRoomsModel.ts";
 import type { Request } from "express";
@@ -26,6 +26,18 @@ import { hashAccountPassword, verifyAccountPassword } from "./passwordService.ts
 import { releaseReferral, reserveReferral, settleReferral } from "./playerReferralService.ts";
 
 export const isCorrectPassword = verifyAccountPassword;
+
+const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Prefer an exact match when legacy accounts differ only in email case. */
+export const findAccountByEmail = async (email: string): Promise<HydratedDocument<IDatabaseAccountJson> | null> => {
+    const trimmed = email.trim();
+    const exact = await Account.findOne({ email: trimmed });
+    if (exact) return exact;
+
+    const matches = await Account.find({ email: new RegExp(`^${escapeRegex(trimmed)}$`, "i") }).limit(2);
+    return matches.length == 1 ? matches[0] : null;
+};
 
 export const isNameTaken = async (name: string): Promise<boolean> => {
     return !!(await Account.findOne({ DisplayName: name }));
