@@ -3,16 +3,30 @@ import { Types } from "mongoose";
 import { Account } from "../../models/loginModel.ts";
 import { PlayerPresence, PlayerPresenceEvent } from "../../models/presenceModel.ts";
 import { Session } from "../../models/sessionModel.ts";
-import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
-import { getRegions } from "../../services/itemDataService.ts";
+import { getAccountForRequest, isAdministrator, type TAccountDocument } from "../../services/loginService.ts";
+import { getDict, getRegions, getString } from "../../services/itemDataService.ts";
 
 const MAX_PLAYERS = 2000;
 const MAX_EVENTS = 200;
 
-const requireAdministrator = async (req: Parameters<RequestHandler>[0]): Promise<void> => {
+const requireAdministrator = async (req: Parameters<RequestHandler>[0]): Promise<TAccountDocument> => {
     const account = await getAccountForRequest(req);
     if (!isAdministrator(account)) throw new Error("Administrator permission required");
+    return account;
 };
+
+const localize = (value: string | undefined, dict: Record<string, string>): string | undefined =>
+    value ? getString(value, dict) : undefined;
+
+const localizePresence = <T extends { NodeName?: string; Planet?: string; MissionType?: string }>(
+    presence: T,
+    dict: Record<string, string>
+): T => ({
+    ...presence,
+    NodeName: localize(presence.NodeName, dict),
+    Planet: localize(presence.Planet, dict),
+    MissionType: localize(presence.MissionType, dict)
+});
 
 const sessionState = (
     session: {
@@ -41,7 +55,8 @@ const sessionState = (
 });
 
 export const listPlayerPresenceController: RequestHandler = async (req, res) => {
-    await requireAdministrator(req);
+    const administrator = await requireAdministrator(req);
+    const dict = getDict(administrator.Language ?? "en");
     const search = typeof req.query.search == "string" ? req.query.search.trim() : "";
     const limit = Math.min(MAX_PLAYERS, Math.max(1, parseInt(String(req.query.limit ?? "500")) || 500));
     const accountFilter = search
@@ -62,6 +77,17 @@ export const listPlayerPresenceController: RequestHandler = async (req, res) => 
             .lean()
     ]);
     const presenceById = new Map(presences.map(presence => [presence.AccountId.toString(), presence]));
+    const legacyBuildLabels = new Set(
+        presences
+            .filter(presence => presence.MissionType?.startsWith("SolNode"))
+            .map(presence => presence.BuildLabel)
+            .filter((buildLabel): buildLabel is string => Boolean(buildLabel))
+    );
+    const regionsByBuild = new Map(
+        await Promise.all(
+            [...legacyBuildLabels].map(async buildLabel => [buildLabel, await getRegions(buildLabel)] as const)
+        )
+    );
     const sessionByAccount = new Map<string, ReturnType<typeof sessionState>>();
     for (const session of sessions) {
         for (const member of session.members) {
@@ -72,35 +98,41 @@ export const listPlayerPresenceController: RequestHandler = async (req, res) => 
         const id = account._id.toString();
         const presence = presenceById.get(id);
         const session = sessionByAccount.get(id);
-        return {
-            AccountId: id,
-            DisplayName: account.DisplayName,
-            Online: presence?.Online ?? false,
-            State: presence?.State ?? "offline",
-            ClientType: account.ClientType,
-            BuildLabel: presence?.BuildLabel ?? account.BuildLabel,
-            Platform: presence?.Platform ?? account.LastPlatform,
-            SessionId: session?.SessionId ?? presence?.SessionId,
-            SessionRole: session?.SessionRole ?? presence?.SessionRole,
-            SessionGameModeId: session?.SessionGameModeId ?? presence?.SessionGameModeId,
-            SessionRegionId: session?.SessionRegionId ?? presence?.SessionRegionId,
-            SessionMap: session?.SessionMap ?? presence?.SessionMap,
-            SessionMemberCount: session?.SessionMemberCount ?? presence?.SessionMemberCount,
-            Node: presence?.Node,
-            NodeName: presence?.NodeName,
-            Planet: presence?.Planet,
-            MissionStatus: presence?.MissionStatus,
-            MissionType: presence?.MissionType,
-            MissionTime: presence?.MissionTime,
-            AliveTime: presence?.AliveTime,
-            LastMissionAt: presence?.LastMissionAt,
-            LastLoginAt: presence?.LastLoginAt ?? account.LastLogin,
-            LastLogoutAt: presence?.LastLogoutAt,
-            LastSeenAt: presence?.LastSeenAt,
-            UpdatedAt: presence?.UpdatedAt,
-            Dropped: account.Dropped ?? false,
-            Banned: account.Banned ?? false
-        };
+        const legacyNode = presence?.Node ?? presence?.MissionType;
+        const legacyRegion =
+            presence?.BuildLabel && legacyNode ? regionsByBuild.get(presence.BuildLabel)?.[legacyNode] : undefined;
+        return localizePresence(
+            {
+                AccountId: id,
+                DisplayName: account.DisplayName,
+                Online: presence?.Online ?? false,
+                State: presence?.State ?? "offline",
+                ClientType: account.ClientType,
+                BuildLabel: presence?.BuildLabel ?? account.BuildLabel,
+                Platform: presence?.Platform ?? account.LastPlatform,
+                SessionId: session?.SessionId ?? presence?.SessionId,
+                SessionRole: session?.SessionRole ?? presence?.SessionRole,
+                SessionGameModeId: session?.SessionGameModeId ?? presence?.SessionGameModeId,
+                SessionRegionId: session?.SessionRegionId ?? presence?.SessionRegionId,
+                SessionMap: session?.SessionMap ?? presence?.SessionMap,
+                SessionMemberCount: session?.SessionMemberCount ?? presence?.SessionMemberCount,
+                Node: presence?.Node,
+                NodeName: presence?.NodeName ?? legacyRegion?.name,
+                Planet: presence?.Planet ?? legacyRegion?.systemName,
+                MissionStatus: presence?.MissionStatus,
+                MissionType: legacyRegion?.missionName ?? presence?.MissionType,
+                MissionTime: presence?.MissionTime,
+                AliveTime: presence?.AliveTime,
+                LastMissionAt: presence?.LastMissionAt,
+                LastLoginAt: presence?.LastLoginAt ?? account.LastLogin,
+                LastLogoutAt: presence?.LastLogoutAt,
+                LastSeenAt: presence?.LastSeenAt,
+                UpdatedAt: presence?.UpdatedAt,
+                Dropped: account.Dropped ?? false,
+                Banned: account.Banned ?? false
+            },
+            dict
+        );
     });
     players.sort(
         (left, right) =>
@@ -120,30 +152,37 @@ export const listPlayerPresenceController: RequestHandler = async (req, res) => 
 };
 
 export const getPlayerPresenceHistoryController: RequestHandler = async (req, res) => {
-    await requireAdministrator(req);
+    const administrator = await requireAdministrator(req);
+    const dict = getDict(administrator.Language ?? "en");
     const accountId = String(req.query.accountId ?? "");
     if (!Types.ObjectId.isValid(accountId)) throw new Error("Valid accountId is required");
     const limit = Math.min(MAX_EVENTS, Math.max(1, parseInt(String(req.query.limit ?? "50")) || 50));
     const events = await PlayerPresenceEvent.find({ AccountId: accountId }).sort({ CreatedAt: -1 }).limit(limit).lean();
     res.json({
         AccountId: accountId,
-        Events: events.map(event => ({
-            Type: event.Type,
-            State: event.State,
-            Online: event.Online,
-            Node: event.Node,
-            NodeName: event.NodeName,
-            Planet: event.Planet,
-            SessionId: event.SessionId,
-            MissionStatus: event.MissionStatus,
-            Details: event.Details,
-            CreatedAt: event.CreatedAt
-        }))
+        Events: events.map(event =>
+            localizePresence(
+                {
+                    Type: event.Type,
+                    State: event.State,
+                    Online: event.Online,
+                    Node: event.Node,
+                    NodeName: event.NodeName,
+                    Planet: event.Planet,
+                    SessionId: event.SessionId,
+                    MissionStatus: event.MissionStatus,
+                    Details: event.Details,
+                    CreatedAt: event.CreatedAt
+                },
+                dict
+            )
+        )
     });
 };
 
 export const resolvePresenceNodesController: RequestHandler = async (req, res) => {
-    await requireAdministrator(req);
+    const administrator = await requireAdministrator(req);
+    const dict = getDict(administrator.Language ?? "en");
     const buildLabel = String(req.query.buildLabel ?? "");
     if (!buildLabel) {
         res.json({});
@@ -155,8 +194,9 @@ export const resolvePresenceNodesController: RequestHandler = async (req, res) =
             Object.entries(regions).map(([key, region]) => [
                 key,
                 {
-                    Name: region.name,
-                    Planet: region.systemName,
+                    Name: getString(region.name, dict),
+                    Planet: getString(region.systemName, dict),
+                    MissionName: getString(region.missionName, dict),
                     SystemIndex: region.systemIndex,
                     NodeType: region.nodeType,
                     MinEnemyLevel: region.minEnemyLevel,

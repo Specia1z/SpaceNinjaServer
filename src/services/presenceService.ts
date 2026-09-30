@@ -190,7 +190,7 @@ export const markPresenceMission = async (
                 NodeName: region?.name,
                 Planet: region?.systemName,
                 MissionStatus: report.MissionStatus,
-                MissionType: report.Missions?.Tag,
+                MissionType: region?.missionName ?? report.Missions?.Tag,
                 MissionTime: report.MissionTime,
                 AliveTime: report.AliveTime,
                 LastMissionAt: new Date()

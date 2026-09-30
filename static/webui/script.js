@@ -4621,6 +4621,21 @@ single.getRoute("/webui/users").on("beforeload", function () {
                     }
                     {
                         const td = document.createElement("td");
+                        if (user.Banned) {
+                            const badge = document.createElement("span");
+                            badge.className = "badge text-bg-danger";
+                            badge.textContent = loc("admin_banned");
+                            td.appendChild(badge);
+                        } else if (user.IsAdministrator) {
+                            const badge = document.createElement("span");
+                            badge.className = "badge text-bg-secondary";
+                            badge.textContent = loc("admin_administrator");
+                            td.appendChild(badge);
+                        }
+                        tr.appendChild(td);
+                    }
+                    {
+                        const td = document.createElement("td");
                         if (window.accountId != user.id) {
                             const a = document.createElement("a");
                             a.textContent = loc("admin_possess");
@@ -4631,6 +4646,14 @@ single.getRoute("/webui/users").on("beforeload", function () {
                                 doAccountSwitch("/webui/inventory");
                             };
                             td.appendChild(a);
+                        }
+                        if (!user.IsAdministrator) {
+                            const button = document.createElement("button");
+                            button.type = "button";
+                            button.className = `btn btn-sm ms-2 ${user.Banned ? "btn-outline-success" : "btn-outline-danger"}`;
+                            button.textContent = loc(user.Banned ? "admin_unban" : "admin_ban");
+                            button.addEventListener("click", () => void toggleUserBan(user));
+                            td.appendChild(button);
                         }
                         tr.appendChild(td);
                     }
@@ -4660,6 +4683,19 @@ single.getRoute("/webui/users").on("beforeload", function () {
             });
     });
 });
+
+async function toggleUserBan(user) {
+    const banned = !user.Banned;
+    const prompt = loc(banned ? "admin_banConfirm" : "admin_unbanConfirm").replace("|TARGET|", user.DisplayName);
+    if (!window.confirm(prompt)) return;
+    try {
+        await window.suspicionApi.ban(user.id, banned);
+        toast(loc("admin_banDone").replace("|TARGET|", user.DisplayName), "success");
+        single.loadRoute("/webui/users");
+    } catch (error) {
+        toast(error.responseText || error.message || loc("settings_changeFailed"), "danger");
+    }
+}
 
 async function doAdminIrcAnnouncement(event) {
     event.preventDefault();

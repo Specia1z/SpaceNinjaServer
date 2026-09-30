@@ -19,6 +19,8 @@
             .join(" · ");
     };
 
+    const formatMissionStatus = status => (status ? loc("admin_playerPresenceMissionStatus_" + status) : "");
+
     const stateBadge = state => {
         const badge = document.createElement("span");
         badge.className = `badge ${state == "offline" ? "text-bg-secondary" : state == "mission" ? "text-bg-primary" : "text-bg-success"}`;
@@ -44,7 +46,9 @@
             row.insertCell().append(stateBadge(player.State));
             row.insertCell().textContent = formatLocation(player);
             row.insertCell().textContent = formatSession(player);
-            row.insertCell().textContent = [player.MissionType, player.MissionStatus].filter(Boolean).join(" · ");
+            row.insertCell().textContent = [player.MissionType, formatMissionStatus(player.MissionStatus)]
+                .filter(Boolean)
+                .join(" · ");
             row.insertCell().textContent = [player.BuildLabel, player.ClientType].filter(Boolean).join(" · ");
             row.insertCell().textContent = player.LastSeenAt ? formatAdminDate(player.LastSeenAt) : loc("admin_never");
         }
@@ -63,7 +67,7 @@
                 row.insertCell().textContent = formatAdminDate(event.CreatedAt);
                 row.insertCell().textContent = event.Type;
                 row.insertCell().textContent = [event.Planet, event.NodeName || event.Node].filter(Boolean).join(" / ");
-                row.insertCell().textContent = event.MissionStatus || event.State;
+                row.insertCell().textContent = formatMissionStatus(event.MissionStatus) || event.State;
             }
         } catch (error) {
             toast(error.responseText || error.message || loc("settings_changeFailed"), "danger");
