@@ -42,9 +42,13 @@ export const sendIrcAnnouncement = async (message: string): Promise<void> => {
             });
             response.on("end", () => {
                 if (body.includes("This service is available via loopback only.")) {
-                    finish(new Error("IRC management service is restricted to loopback; set mgmt_loopback_only to false"));
-                } else if (!response.statusCode || response.statusCode >= 400 || !body.includes("OK")) {
-                    finish(new Error(`IRC management service rejected announcement (HTTP ${response.statusCode ?? 0})`));
+                    finish(
+                        new Error("IRC management service is restricted to loopback; set mgmt_loopback_only to false")
+                    );
+                } else if (!response.statusCode || response.statusCode < 200 || response.statusCode >= 300) {
+                    finish(
+                        new Error(`IRC management service rejected announcement (HTTP ${response.statusCode ?? 0})`)
+                    );
                 } else {
                     finish();
                 }
@@ -54,15 +58,23 @@ export const sendIrcAnnouncement = async (message: string): Promise<void> => {
             finish(new Error("Could not connect to the IRC management service"));
             request.destroy();
         }, 5000);
+        let connected = false;
+        const markConnected = (): void => {
+            connected = true;
+        };
+        request.on("socket", socket => {
+            if (socket.connecting) socket.once("connect", markConnected);
+            else markConnected();
+        });
         request.on("finish", () => {
             flushed = true;
         });
         request.on("error", (error: NodeJS.ErrnoException) => {
-            if (flushed && error.code == "ECONNRESET") finish();
+            if (flushed && connected && error.code == "ECONNRESET") finish();
             else finish(error);
         });
         request.setTimeout(1500, () => {
-            finish(flushed ? undefined : new Error("IRC announcement was not submitted"));
+            finish(flushed && connected ? undefined : new Error("IRC announcement was not submitted"));
             request.destroy();
         });
     });

@@ -3,6 +3,8 @@ import path from "node:path";
 import tls from "node:tls";
 import { test } from "node:test";
 import { repoDir } from "../helpers/pathHelper.ts";
+import { config } from "./configService.ts";
+import { sendIrcAnnouncement } from "./ircAnnouncementService.ts";
 import { broadcastBuiltinIrcAnnouncement, WarframeIrcServer } from "./ircService.ts";
 
 class IrcTestClient {
@@ -79,6 +81,30 @@ const register = async (client: IrcTestClient, nick: string, accountId: string):
     client.send(`USER ${accountId}_0 0 * :token=test-token`);
     await client.waitFor(line => line.includes(` 001 ${nick} `));
 };
+
+void test("admin IRC announcements use the built-in IRC server", async t => {
+    const previousBuiltinIrcEnabled = config.builtinIrcEnabled;
+    config.builtinIrcEnabled = true;
+    t.after(() => {
+        config.builtinIrcEnabled = previousBuiltinIrcEnabled;
+    });
+
+    const server = new WarframeIrcServer({
+        address: "127.0.0.1",
+        ports: [0],
+        certFile: path.join(repoDir, "static/cert/cert.pem"),
+        keyFile: path.join(repoDir, "static/cert/key.pem")
+    });
+    const [port] = await server.start();
+    t.after(() => server.stop());
+
+    const client = await IrcTestClient.connect(port);
+    t.after(() => client.close());
+    await register(client, "Admin", "6ab9efe99abfe032aae9a6bb");
+
+    await sendIrcAnnouncement("Built-in announcement");
+    assert.equal(await client.waitFor(line => line.includes(" WALLOPS ")), ":Soup WALLOPS :Built-in announcement");
+});
 
 void test("TLS IRC supports U44 social commands and Unicode platform suffixes", async t => {
     const validatedAccountIds: string[] = [];

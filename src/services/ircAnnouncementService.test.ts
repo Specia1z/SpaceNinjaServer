@@ -17,10 +17,15 @@ void test("IRC relay submits URL-encoded redtext without a server reply", async 
     const paths: string[] = [];
     let allow = true;
     let rejectStatus = false;
+    let respondEmpty = false;
     const server = createServer((req, res) => {
         paths.push(req.url ?? "");
         if (rejectStatus) {
             res.writeHead(403).end("Forbidden");
+            return;
+        }
+        if (respondEmpty) {
+            res.writeHead(204).end();
             return;
         }
         if (!allow) res.end("This service is available via loopback only.");
@@ -39,9 +44,18 @@ void test("IRC relay submits URL-encoded redtext without a server reply", async 
 
     await sendIrcAnnouncement("Trading & events?");
     assert.deepEqual(paths, ["/redtext?Trading%20%26%20events%3F"]);
+    respondEmpty = true;
+    await sendIrcAnnouncement("Empty response is valid");
+    assert.deepEqual(paths, ["/redtext?Trading%20%26%20events%3F", "/redtext?Empty%20response%20is%20valid"]);
+    respondEmpty = false;
     allow = false;
     await assert.rejects(sendIrcAnnouncement("Blocked"), /restricted to loopback/);
     rejectStatus = true;
     await assert.rejects(sendIrcAnnouncement("Forbidden"), /HTTP 403/);
-    assert.deepEqual(paths, ["/redtext?Trading%20%26%20events%3F", "/redtext?Blocked", "/redtext?Forbidden"]);
+    assert.deepEqual(paths, [
+        "/redtext?Trading%20%26%20events%3F",
+        "/redtext?Empty%20response%20is%20valid",
+        "/redtext?Blocked",
+        "/redtext?Forbidden"
+    ]);
 });
