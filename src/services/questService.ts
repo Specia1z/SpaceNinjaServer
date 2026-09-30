@@ -34,6 +34,11 @@ export interface IUpdateQuestRequest {
     DoQuestReward: boolean;
 }
 
+const ARCHWING_QUEST = "/Lotus/Types/Keys/ArchwingQuest/ArchwingQuestKeyChain";
+const STANDARD_ARCHWING = "/Lotus/Powersuits/Archwing/StandardJetPack/StandardJetPack";
+const STANDARD_ARCHGUN = "/Lotus/Weapons/Tenno/Archwing/Primary/FoldingMachineGun/ArchMachineGun";
+const STANDARD_ARCHMELEE = "/Lotus/Weapons/Tenno/Archwing/Melee/Archsword/ArchSwordWeapon";
+
 export const updateQuestKey = async (
     inventory: TInventoryDatabaseDocument,
     questKeyUpdate: IUpdateQuestRequest["QuestKeys"]
@@ -175,15 +180,16 @@ export const completeQuest = async (
             unlock: true,
             Progress: Array.from({ length: chainStageTotal }, () => ({
                 c: 0,
-                i: true,
-                m: true,
+                i: false,
+                m: false,
                 b: []
             }))
         };
         addQuestKey(inventory, completedQuestKey);
         existingQuestKey = inventory.QuestKeys.find(qk => qk.ItemType === questKey)!;
     } else if (existingQuestKey.Completed) {
-        return;
+        await repairCompletedQuestRewards(inventory, questKey);
+        return existingQuestKey.toJSON<IQuestKeyClient>();
     }
 
     existingQuestKey.Progress = existingQuestKey.Progress ?? [];
@@ -227,6 +233,35 @@ export const completeQuest = async (
     }
 
     return existingQuestKey.toJSON<IQuestKeyClient>();
+};
+
+export const completeAllQuests = async (
+    inventory: TInventoryDatabaseDocument,
+    buildLabel: string,
+    sendMessages: boolean = false
+): Promise<void> => {
+    for (const [questKey, quest] of Object.entries(ExportKeys)) {
+        if (quest.chainStages) {
+            await completeQuest(inventory, questKey, buildLabel, sendMessages);
+        }
+    }
+    inventory.ActiveQuest = "";
+};
+
+const repairCompletedQuestRewards = async (inventory: TInventoryDatabaseDocument, questKey: string): Promise<void> => {
+    if (questKey != ARCHWING_QUEST) return;
+
+    if (!inventory.SpaceSuits.some(item => item.ItemType == STANDARD_ARCHWING)) {
+        await addItem(inventory, STANDARD_ARCHWING);
+    } else {
+        inventory.ArchwingEnabled = true;
+    }
+    if (!inventory.SpaceGuns.some(item => item.ItemType == STANDARD_ARCHGUN)) {
+        await addItem(inventory, STANDARD_ARCHGUN);
+    }
+    if (!inventory.SpaceMelee.some(item => item.ItemType == STANDARD_ARCHMELEE)) {
+        await addItem(inventory, STANDARD_ARCHMELEE);
+    }
 };
 
 const getQuestCompletionItems = (questKey: string): ITypeCount[] | undefined => {

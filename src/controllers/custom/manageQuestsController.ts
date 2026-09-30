@@ -1,6 +1,11 @@
 import { getInventory, getInventory2 } from "../../services/inventoryService.ts";
 import { getAccountIdForRequest } from "../../services/loginService.ts";
-import { completeQuest, giveKeyChainMissionReward, giveKeyChainStageTriggered } from "../../services/questService.ts";
+import {
+    completeAllQuests,
+    completeQuest,
+    giveKeyChainMissionReward,
+    giveKeyChainStageTriggered
+} from "../../services/questService.ts";
 import { logger } from "../../utils/logger.ts";
 import type { RequestHandler } from "express";
 import { ExportKeys } from "warframe-public-export-plus";
@@ -33,9 +38,7 @@ export const manageQuestsController: RequestHandler = async (req, res) => {
     switch (operation) {
         case "completeAll": {
             const inventory = await getInventory(accountId, undefined);
-            for (const questKey of inventory.QuestKeys) {
-                await completeQuest(inventory, questKey.ItemType, BL_LATEST);
-            }
+            await completeAllQuests(inventory, BL_LATEST);
             modified = await saveOnDemand(inventory);
             break;
         }

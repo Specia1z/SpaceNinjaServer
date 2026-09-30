@@ -1,10 +1,10 @@
-import { ExportKeys, ExportRegions } from "warframe-public-export-plus";
+import { ExportRegions } from "warframe-public-export-plus";
 import { BL_LATEST, BV_LATEST } from "../constants/gameVersions.ts";
 import { addString } from "../helpers/stringHelpers.ts";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import { addBooster, addChallenges, ensureUserHasSteelPathRewards, updateSlots } from "./inventoryService.ts";
 import { addFixedLevelRewards } from "./missionInventoryUpdateService.ts";
-import { completeQuest } from "./questService.ts";
+import { completeAllQuests } from "./questService.ts";
 import { handleStoreItemAcquisition } from "./purchaseService.ts";
 import type { IMissionReward } from "../types/missionTypes.ts";
 
@@ -29,12 +29,7 @@ export const initializeNewAccount = async (
     options: { completeQuests?: boolean; unlockAllMissions?: boolean }
 ): Promise<void> => {
     if (options.completeQuests) {
-        for (const [questKey, quest] of Object.entries(ExportKeys)) {
-            if ("chainStages" in quest) {
-                await completeQuest(inventory, questKey, BL_LATEST);
-            }
-        }
-        inventory.ActiveQuest = "";
+        await completeAllQuests(inventory, BL_LATEST);
     }
 
     if (options.unlockAllMissions) {
