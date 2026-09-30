@@ -66,3 +66,26 @@ void test("native proxy forcing is only emitted when explicitly enabled", () => 
     assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1").force_native_proxy, true);
     delete config.tunables!.forceNativeProxy;
 });
+
+void test("client buildlab must match the configured required build label", () => {
+    config.tunables!.requiredBuildLabel = "2026.01.02.03.04";
+    config.tunables!.versionMismatchTitle = "Version rejected";
+    config.tunables!.versionMismatchMessage = "Expected |EXPECTED_BUILDLAB|, got |FOUND_BUILDLAB|";
+
+    const allowed = getTunablesForClient("127.0.0.1", "127.0.0.1", undefined, "2026.01.02.03.04");
+    assert.equal(allowed.client_version_status, "allowed");
+    assert.equal(allowed.client_version_expected_buildlab, "2026.01.02.03.04");
+    assert.equal(allowed.client_version_popup_message, undefined);
+
+    const rejected = getTunablesForClient("127.0.0.1", "127.0.0.1", undefined, "2026.01.02.03.05");
+    assert.equal(rejected.client_version_status, "blocked");
+    assert.equal(rejected.client_version_expected_buildlab, "2026.01.02.03.04");
+    assert.equal(rejected.client_version_popup_title, "Version rejected");
+    assert.equal(rejected.client_version_popup_message, "Expected 2026.01.02.03.04, got 2026.01.02.03.05");
+
+    assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1").client_version_status, undefined);
+
+    delete config.tunables!.requiredBuildLabel;
+    delete config.tunables!.versionMismatchTitle;
+    delete config.tunables!.versionMismatchMessage;
+});

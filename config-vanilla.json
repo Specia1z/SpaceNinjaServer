@@ -284,6 +284,9 @@
     "prohibitLocalMetadataPatches": true,
     "motd": null,
     "forceNativeProxy": false,
+    "requiredBuildLabel": null,
+    "versionMismatchTitle": null,
+    "versionMismatchMessage": null,
     "metadataPatches": [],
     "accountMetadataPatches": {}
   },

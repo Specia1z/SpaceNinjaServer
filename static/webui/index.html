@@ -94,6 +94,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/webui/metadata-patches" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_metadataPatches"></a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/bootstrapper-version" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_bootstrapperVersion"></a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -2642,6 +2645,39 @@
                     </div>
                 </div>
             </div>
+            <div data-route="/webui/bootstrapper-version" data-title-tag="navbar_bootstrapperVersion">
+                <div class="d-none admin-hide">
+                    <p data-loc="cheats_administratorRequirement"></p>
+                </div>
+                <div class="d-none admin-show">
+                    <h3 class="mb-2" data-loc="bootstrapperVersion_title"></h3>
+                    <p class="text-body-secondary" data-loc="bootstrapperVersion_description"></p>
+                    <div class="alert alert-warning" data-loc="bootstrapperVersion_warning"></div>
+                    <section class="config-form">
+                        <form class="mb-4" onsubmit="doSaveConfigString('tunables.requiredBuildLabel'); return false;">
+                            <label class="form-label" for="tunables.requiredBuildLabel" data-loc="bootstrapperVersion_buildLabel"></label>
+                            <div class="input-group">
+                                <input class="form-control" id="tunables.requiredBuildLabel" type="text" maxlength="16" data-default="" />
+                                <button class="btn btn-primary" type="submit" data-loc="bootstrapperVersion_save"></button>
+                            </div>
+                            <div class="form-text" data-loc="bootstrapperVersion_buildLabelHint"></div>
+                        </form>
+                        <form class="mb-4" onsubmit="doSaveConfigString('tunables.versionMismatchTitle'); return false;">
+                            <label class="form-label" for="tunables.versionMismatchTitle" data-loc="bootstrapperVersion_popupTitle"></label>
+                            <div class="input-group">
+                                <input class="form-control" id="tunables.versionMismatchTitle" type="text" maxlength="200" data-default="" />
+                                <button class="btn btn-primary" type="submit" data-loc="bootstrapperVersion_save"></button>
+                            </div>
+                        </form>
+                        <form onsubmit="doSaveConfigString('tunables.versionMismatchMessage'); return false;">
+                            <label class="form-label" for="tunables.versionMismatchMessage" data-loc="bootstrapperVersion_popupMessage"></label>
+                            <textarea class="form-control" id="tunables.versionMismatchMessage" rows="5" maxlength="2000" data-default=""></textarea>
+                            <div class="form-text" data-loc="bootstrapperVersion_popupMessageHint"></div>
+                            <button class="btn btn-primary mt-2" type="submit" data-loc="bootstrapperVersion_save"></button>
+                        </form>
+                    </section>
+                </div>
+            </div>
         </div>
         <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     </div>
@@ -2719,6 +2755,7 @@
     <script src="/webui/admin/metadata-text.js"></script>
     <script src="/webui/admin/metadata-api.js"></script>
     <script src="/webui/admin/metadata-page.js"></script>
+    <script src="/webui/admin/bootstrapper-version-page.js"></script>
     <script src="/webui/admin/admin-data-api.js"></script>
     <script src="/webui/admin/admin-data-page.js"></script>
     <script src="/webui/admin/redeem-codes-api.js"></script>

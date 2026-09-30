@@ -89,7 +89,8 @@ export const compileMetadataPatchesForAccount = (accountId?: string): string => 
 export const getTunablesForClient = (
     clientAddress: string,
     reflexiveAddress: string,
-    accountId?: string
+    accountId?: string,
+    buildVersion?: string
 ): ITunables => {
     const tunables: ITunables = {
         // To successfully update the NRS address for pre-U15.14 clients, this needs to be set before login.
@@ -130,6 +131,23 @@ export const getTunablesForClient = (
     }
     if (config.tunables?.forceNativeProxy) {
         tunables.force_native_proxy = true;
+    }
+    const requiredBuildLabel = config.tunables?.requiredBuildLabel?.trim();
+    if (requiredBuildLabel && buildVersion !== undefined) {
+        const allowed = buildVersion === requiredBuildLabel;
+        tunables.client_version_status = allowed ? "allowed" : "blocked";
+        tunables.client_version_expected_buildlab = requiredBuildLabel;
+        if (!allowed) {
+            const title = config.tunables?.versionMismatchTitle?.trim();
+            const message = config.tunables?.versionMismatchMessage?.trim();
+            tunables.client_version_popup_title = title || "OpenWF Bootstrapper";
+            tunables.client_version_popup_message = (
+                message ||
+                "This client build is not supported by the server.\nExpected buildlab: |EXPECTED_BUILDLAB|\nFound buildlab: |FOUND_BUILDLAB|"
+            )
+                .replaceAll("|EXPECTED_BUILDLAB|", requiredBuildLabel)
+                .replaceAll("|FOUND_BUILDLAB|", buildVersion || "unknown");
+        }
     }
     const metadataPatches = compileMetadataPatchesForAccount(accountId);
     if (metadataPatches) {

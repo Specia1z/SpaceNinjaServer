@@ -324,6 +324,10 @@ export interface IConfig {
         motd?: string;
         udpProxyUpstream?: string;
         forceNativeProxy?: boolean;
+        /** Exact Warframe build label accepted by the bootstrapper. Undefined disables the check. */
+        requiredBuildLabel?: string | null;
+        versionMismatchTitle?: string | null;
+        versionMismatchMessage?: string | null;
         metadataPatches?: IMetadataPatchConfig[];
         /** Metadata patches appended after the global patches for a matching account ID. */
         accountMetadataPatches?: Partial<Record<string, IMetadataPatchConfig[]>>;

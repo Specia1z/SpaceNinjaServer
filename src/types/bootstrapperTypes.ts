@@ -16,4 +16,8 @@ export interface ITunables {
     force_native_proxy?: boolean;
     metadata_patches?: string;
     metadata_patches_revision?: string;
+    client_version_status?: string;
+    client_version_expected_buildlab?: string;
+    client_version_popup_title?: string;
+    client_version_popup_message?: string;
 }

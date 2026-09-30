@@ -193,7 +193,8 @@ function refreshServerConfig() {
         single.getCurrentPath() == "/webui/cheats" ||
         single.getCurrentPath() == "/webui/users" ||
         single.getCurrentPath() == "/webui/account-rates" ||
-        single.getCurrentPath() == "/webui/metadata-patches"
+        single.getCurrentPath() == "/webui/metadata-patches" ||
+        single.getCurrentPath() == "/webui/bootstrapper-version"
     ) {
         single.loadRoute(single.getCurrentPath());
     }
@@ -2966,7 +2967,7 @@ function doAcquireModMax() {
 
 // Cheats route
 
-const uiConfigElements = [...$(".config-form input[id], .config-form select[id]")];
+const uiConfigElements = [...$(".config-form input[id], .config-form select[id], .config-form textarea[id]")];
 const uiConfigs = uiConfigElements.map(x => x.dataset.configId || x.id);
 
 for (const [index, id] of uiConfigs.entries()) {
@@ -3034,6 +3035,19 @@ function doSaveConfigInt(id) {
 
 function doSaveConfigFloat(id) {
     const value = parseFloat(document.getElementById(id).value);
+    $.post({
+        url: "/custom/setConfig?" + window.authz,
+        contentType: "application/json",
+        data: JSON.stringify({
+            [id]: value
+        })
+    }).done(function () {
+        config_data[id] = value;
+    });
+}
+
+function doSaveConfigString(id) {
+    const value = document.getElementById(id).value.trim();
     $.post({
         url: "/custom/setConfig?" + window.authz,
         contentType: "application/json",

@@ -7,11 +7,13 @@ import { getReflexiveAddress } from "../../services/configService.ts";
 
 export const tunablesController: RequestHandler = (req, res) => {
     const accountId = typeof req.query.accountId == "string" ? req.query.accountId : undefined;
+    const buildVersion = typeof req.query.buildVersion == "string" ? req.query.buildVersion : undefined;
     res.json(
         getTunablesForClient(
             (req.socket.address() as AddressInfo).address,
             getReflexiveAddress(req).myAddress,
-            accountId
+            accountId,
+            buildVersion
         )
     );
 };
