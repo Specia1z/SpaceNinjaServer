@@ -66,6 +66,11 @@ import { setInvigorationController } from "../controllers/custom/setInvigoration
 import { setUmbraEchoesController } from "../controllers/custom/setUmbraEchoesController.ts";
 import { setAccountCheatController } from "../controllers/custom/setAccountCheatController.ts";
 import { setGuildCheatController } from "../controllers/custom/setGuildCheatController.ts";
+import {
+    getPlayerPresenceHistoryController,
+    listPlayerPresenceController,
+    resolvePresenceNodesController
+} from "../controllers/custom/playerPresenceController.ts";
 
 import {
     deleteRedeemCodeController,
@@ -176,6 +181,9 @@ customRouter.get("/admin/suspicion-events", listSuspicionEventsController);
 customRouter.get("/admin/suspicion-events/detail", getSuspicionEventsForAccountController);
 customRouter.get("/admin/metadata-patches", getMetadataPatchesController);
 customRouter.get("/admin/account-rates", getAccountRatesController);
+customRouter.get("/admin/player-presence", listPlayerPresenceController);
+customRouter.get("/admin/player-presence/history", getPlayerPresenceHistoryController);
+customRouter.get("/admin/player-presence/nodes", resolvePresenceNodesController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);

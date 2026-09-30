@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { Account } from "../../models/loginModel.ts";
 import { handleNonceInvalidation } from "../../services/wsService.ts";
+import { markPresenceOffline } from "../../services/presenceService.ts";
 
 export const logoutController: RequestHandler = async (req, res) => {
     if (!req.query.accountId) {
@@ -23,6 +24,8 @@ export const logoutController: RequestHandler = async (req, res) => {
     );
     if (stat.modifiedCount) {
         handleNonceInvalidation(req.query.accountId as string);
+        const account = await Account.findById(req.query.accountId, "DisplayName");
+        if (account) await markPresenceOffline(account._id, account.DisplayName, "logout");
     }
 
     res.writeHead(200, {

@@ -17,6 +17,7 @@ import { initializeAdminItemData } from "./services/adminItemDataService.ts";
 import { initializeCraftingConfigs } from "./services/craftingConfigService.ts";
 import { initializeRedeemCodes } from "./services/redeemCodeService.ts";
 import { WarframeIrcServer } from "./services/ircService.ts";
+import { initializePresence } from "./services/presenceService.ts";
 
 const validateIrcCredentials = async (accountId: string, token: string): Promise<boolean> => {
     const url = new URL("/custom/getAccountInfo", `http://127.0.0.1:${config.httpPort || 80}`);
@@ -120,6 +121,7 @@ if (args.test) {
         initializeCraftingConfigs(),
         initializeRedeemCodes()
     ]);
+    await initializePresence();
 
     try {
         await startWebServer();

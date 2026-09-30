@@ -89,6 +89,9 @@
                             <a class="nav-link" href="/webui/account-rates" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_accountRates"></a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/webui/player-presence" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_playerPresence"></a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/webui/metadata-patches" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_metadataPatches"></a>
                         </li>
                     </ul>
@@ -2492,6 +2495,76 @@
                     </div>
                 </div>
             </div>
+            <div data-route="/webui/player-presence" data-title-tag="navbar_playerPresence">
+                <div class="d-none admin-hide">
+                    <p class="card-text" data-loc="cheats_administratorRequirement"></p>
+                </div>
+                <div class="d-none admin-show admin-presence-page">
+                    <header class="admin-presence-header">
+                        <div>
+                            <h3 class="mb-1" data-loc="admin_playerPresence"></h3>
+                            <p class="text-body-secondary mb-0" data-loc="admin_playerPresenceDescription"></p>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="badge text-bg-secondary" id="admin-presence-summary"></span>
+                            <button class="btn btn-outline-secondary btn-sm" id="admin-presence-refresh" type="button" data-loc="admin_refreshStatus"></button>
+                        </div>
+                    </header>
+                    <section class="admin-presence-section">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="visually-hidden" for="admin-presence-search" data-loc="admin_playerPresenceSearch"></label>
+                                <input class="form-control" id="admin-presence-search" type="search" data-loc-placeholder="admin_playerPresenceSearch" autocomplete="off" />
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" id="admin-presence-state">
+                                    <option value="" data-loc="admin_playerPresenceAllStates"></option>
+                                    <option value="online" data-loc="admin_playerPresenceOnline"></option>
+                                    <option value="mission" data-loc="admin_playerPresenceMission"></option>
+                                    <option value="lobby" data-loc="admin_playerPresenceLobby"></option>
+                                    <option value="offline" data-loc="admin_playerPresenceOffline"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th data-loc="admin_account"></th>
+                                        <th data-loc="admin_playerPresenceState"></th>
+                                        <th data-loc="admin_playerPresenceLocation"></th>
+                                        <th data-loc="admin_playerPresenceSession"></th>
+                                        <th data-loc="admin_playerPresenceMission"></th>
+                                        <th data-loc="admin_playerPresenceClient"></th>
+                                        <th data-loc="admin_playerPresenceLastSeen"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-presence-players"></tbody>
+                            </table>
+                        </div>
+                        <p class="text-body-secondary mb-0 d-none" id="admin-presence-empty" data-loc="admin_playerPresenceEmpty"></p>
+                    </section>
+                    <section class="admin-presence-section">
+                        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2">
+                            <h5 class="mb-0" data-loc="admin_playerPresenceHistory"></h5>
+                            <span class="text-body-secondary small" id="admin-presence-history-name"></span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th data-loc="admin_playerPresenceTime"></th>
+                                        <th data-loc="admin_playerPresenceEvent"></th>
+                                        <th data-loc="admin_playerPresenceLocation"></th>
+                                        <th data-loc="admin_playerPresenceMission"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-presence-history"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
             <div data-route="/webui/metadata-patches" data-title-tag="navbar_metadataPatches">
                 <div class="d-none admin-hide">
                     <p data-loc="cheats_administratorRequirement"></p>
@@ -2651,6 +2724,8 @@
     <script src="/webui/account-rates/page.js"></script>
     <script src="/webui/admin/suspicion-api.js"></script>
     <script src="/webui/admin/suspicion-page.js"></script>
+    <script src="/webui/admin/player-presence-api.js"></script>
+    <script src="/webui/admin/player-presence-page.js"></script>
     <script src="/webui/script.importSamples.js" async defer></script>
     <script src="/webui/libs/bootstrap.bundle.min.js"></script>
     <script>

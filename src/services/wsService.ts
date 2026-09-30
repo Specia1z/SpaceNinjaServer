@@ -20,6 +20,7 @@ import type { ITunables } from "../types/bootstrapperTypes.ts";
 import type { AddressInfo } from "node:net";
 import { config } from "./configService.ts";
 import { getRegistrationAddress, reserveRegistration } from "./registrationRateLimitService.ts";
+import { markPresenceOffline, markPresenceOnline } from "./presenceService.ts";
 
 let wsServer: WebSocketServer | undefined;
 let wssServer: WebSocketServer | undefined;
@@ -224,6 +225,7 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                     (ws as IWsCustomData).accountId = accountId;
                     (ws as IWsCustomData).realAccountId = accountId;
                     logger.debug(`got bootstrapper connection for ${accountId}`);
+                    await markPresenceOnline(account._id, account.DisplayName);
                     sendWsBroadcastToWebui({ have_game_ws: true }, accountId);
                 } catch (e) {
                     /* empty */
@@ -276,11 +278,16 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     ws.on("close", async () => {
         if ((ws as IWsCustomData).isGame && (ws as IWsCustomData).accountId) {
-            logger.debug(`lost bootstrapper connection for ${(ws as IWsCustomData).accountId}`);
-            sendWsBroadcastToWebui({ have_game_ws: false }, (ws as IWsCustomData).accountId);
+            const accountId = (ws as IWsCustomData).accountId!;
+            logger.debug(`lost bootstrapper connection for ${accountId}`);
+            sendWsBroadcastToWebui({ have_game_ws: false }, accountId);
+            if (!haveOtherGameWs(accountId, ws)) {
+                const account = await Account.findById(accountId, "DisplayName");
+                if (account) await markPresenceOffline(account._id, account.DisplayName, "game_disconnected");
+            }
             await Account.updateOne(
                 {
-                    _id: (ws as IWsCustomData).accountId
+                    _id: accountId
                 },
                 {
                     Dropped: true
@@ -303,12 +310,20 @@ export const forEachWsClient = (cb: (client: IWsCustomData) => void): void => {
     }
 };
 
-const haveGameWs = (accountId: string): boolean => {
+export const haveGameWs = (accountId: string): boolean => {
     let ret = false;
     forEachWsClient(client => {
         if (client.isGame && client.accountId == accountId) {
             ret = true;
         }
+    });
+    return ret;
+};
+
+const haveOtherGameWs = (accountId: string, excluded: WebSocket): boolean => {
+    let ret = false;
+    forEachWsClient(client => {
+        if (client !== excluded && client.isGame && client.accountId == accountId) ret = true;
     });
     return ret;
 };

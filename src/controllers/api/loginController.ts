@@ -30,6 +30,7 @@ import type { AddressInfo } from "node:net";
 import { buildLabelToVersionInt } from "../../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
+import { markPresenceLogin } from "../../services/presenceService.ts";
 
 export const loginController: RequestHandler = async (request, response) => {
     const loginRequest = JSON.parse(String(request.body)) as ILoginRequest; // parse octet stream of json data to json object
@@ -151,6 +152,7 @@ export const loginController: RequestHandler = async (request, response) => {
     account.CrossPlatformAllowed = undefined;
 
     await account.save();
+    await markPresenceLogin(account._id, account.DisplayName, buildLabel, account.LastPlatform);
 
     handleNonceInvalidation(account._id.toString());
 

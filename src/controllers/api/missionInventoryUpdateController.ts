@@ -34,6 +34,7 @@ import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { filterInplace } from "../../helpers/general.ts";
 import crypto from "node:crypto";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
+import { markPresenceMission } from "../../services/presenceService.ts";
 
 /*
 **** INPUT ****
@@ -87,6 +88,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         remoteAddress: req.ip ?? req.socket?.remoteAddress
     };
     const missionReport = getJSONfromString<IMissionInventoryUpdateRequest>((req.body as string).toString());
+    await markPresenceMission(account._id, account.DisplayName, buildLabel, missionReport);
     logger.debug("mission report", {
         requestId,
         account: account._id.toString(),

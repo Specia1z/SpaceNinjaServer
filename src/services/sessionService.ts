@@ -12,6 +12,7 @@ import type {
 import { logger } from "../utils/logger.ts";
 import { JSONParse } from "json-with-bigint";
 import { Types, type QueryFilter } from "mongoose";
+import { clearPresenceSession, markPresenceSession } from "./presenceService.ts";
 
 //const sessions: ISession[] = [];
 
@@ -55,6 +56,13 @@ export const createNewSession = async (
     }
 
     await Session.create(newSession);
+    await markPresenceSession(Creator, newSession._id.toString(), {
+        role: "host",
+        gameModeId: newSession.gameModeId,
+        regionId: newSession.regionId,
+        map: newSession.maps.join(", "),
+        memberCount: newSession.members.length
+    });
     //sessions.push(newSession);
 
     return newSession;
@@ -200,21 +208,38 @@ export const reserveSessionSlot = async (
     sessionIds: readonly string[],
     accountId: Types.ObjectId
 ): Promise<ISessionDatabase | null> => {
+    const recordMembers = async (session: ISessionDatabase): Promise<void> => {
+        await Promise.all(
+            session.members.map(member =>
+                markPresenceSession(member.accountId, session._id.toString(), {
+                    role: member.accountId.equals(session.creatorId) ? "host" : member.slotType,
+                    gameModeId: session.gameModeId,
+                    regionId: session.regionId,
+                    map: session.maps.join(", "),
+                    memberCount: session.members.length
+                })
+            )
+        );
+    };
     for (const sessionId of sessionIds) {
         const existingMembership = await findExistingMembership(sessionId, accountId);
         if (existingMembership) {
+            await recordMembers(existingMembership);
             return existingMembership;
         }
         const publicSession = await reserveSlot(sessionId, accountId, "public");
         if (publicSession) {
+            await recordMembers(publicSession);
             return publicSession;
         }
         const privateSession = await reserveSlot(sessionId, accountId, "private");
         if (privateSession) {
+            await recordMembers(privateSession);
             return privateSession;
         }
         const concurrentMembership = await findExistingMembership(sessionId, accountId);
         if (concurrentMembership) {
+            await recordMembers(concurrentMembership);
             return concurrentMembership;
         }
     }
@@ -248,6 +273,9 @@ const releaseSessionSlot = async (
         },
         { returnDocument: "after" }
     );
+    if (updated) {
+        await clearPresenceSession(memberAccountId, String(sessionId));
+    }
     return updated != null;
 };
 
@@ -329,6 +357,17 @@ export const updateSession = async (
     session.lastUpdate = new Date();
     logger.trace(`session after update:`, session);
     await session.save();
+    await Promise.all(
+        session.members.map(member =>
+            markPresenceSession(member.accountId, session._id.toString(), {
+                role: member.accountId.equals(session.creatorId) ? "host" : member.slotType,
+                gameModeId: session.gameModeId,
+                regionId: session.regionId,
+                map: session.maps.join(", "),
+                memberCount: session.members.length
+            })
+        )
+    );
 
     return true;
 };
@@ -337,7 +376,11 @@ export const deleteSession = async (
     sessionId: string | Types.ObjectId,
     creatorId: Types.ObjectId
 ): Promise<boolean> => {
+    const session = await Session.findOne({ _id: sessionId, creatorId }, "members");
     const result = await Session.deleteOne({ _id: sessionId, creatorId });
+    if (result.deletedCount == 1 && session) {
+        await Promise.all(session.members.map(member => clearPresenceSession(member.accountId, sessionId.toString())));
+    }
     return result.deletedCount == 1;
 
     /*const index = sessions.findIndex(session => session._id.equals(sessionId));
