@@ -324,11 +324,13 @@
         await loadSelectedPreview();
     }
 
-    find("#metadata-patches-global-add").addEventListener("click", () => {
+    function addGlobalPatch() {
         state.globalPatches.push({ name: "", enabled: true, targets: [], operations: [] });
         markDirty();
         render();
-    });
+    }
+    find("#metadata-patches-add").addEventListener("click", addGlobalPatch);
+    find("#metadata-patches-global-add").addEventListener("click", addGlobalPatch);
     find("#metadata-patches-account-add").addEventListener("click", () => {
         if (!state.selectedId) return;
         state.accountPatches[state.selectedId] ??= [];
