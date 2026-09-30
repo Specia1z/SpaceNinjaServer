@@ -1651,6 +1651,7 @@ const miscAccountDataSchema = new Schema<IMiscAccountData>(
 const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
     {
         accountOwnerId: Schema.Types.ObjectId,
+        ReferralRewardClaims: { type: [String], default: [] },
 
         // SNS account cheats
         skipAllDialogue: Boolean,
@@ -2125,6 +2126,7 @@ inventorySchema.set("toJSON", {
         delete returnedObject._id;
         delete returnedObject.__v;
         delete returnedObject.accountOwnerId;
+        delete returnedObject.ReferralRewardClaims;
         delete returnedObject.MissionRelicRewards;
         delete returnedObject.HarvesterPoints;
         delete returnedObject.DeathSquadPoints;

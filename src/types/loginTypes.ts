@@ -31,6 +31,14 @@ export interface IAccountCreationData extends IAccountAndLoginResponseCommons {
 }
 
 interface IDatabaseAccount extends IAccountCreationData {
+    ReferralCode?: string;
+    ReferredBy?: Types.ObjectId;
+    ReferralCount?: number;
+    ReferralInviterReward?: number;
+    ReferralInviteeReward?: number;
+    ReferralMilestoneBonus?: number;
+    LastPlayerRenameAt?: Date;
+    PlayerPasswordVersion?: number;
     LastPlatform?: TPlatform;
     Dropped?: true;
     // Set by an administrator from the anti-cheat panel. Unlike Dropped, which is a transient
@@ -57,6 +65,7 @@ export interface IDatabaseAccountJson extends IDatabaseAccount {
 
 export interface ILoginRequest {
     email: string;
+    referralCode?: string;
     password: string;
     time: number;
     s?: string;

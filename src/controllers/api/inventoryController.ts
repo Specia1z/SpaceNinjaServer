@@ -77,6 +77,7 @@ import suitDefaultUpgrades from "../../constants/suitDefaultUpgrades.ts";
 import type { ITypeCount } from "../../types/commonTypes.ts";
 import { sendWsBroadcastToWebui } from "../../services/wsService.ts";
 import { wikiDateToBuildVersion } from "../../helpers/versionHelper.ts";
+import { applyGlobalAccountCheats } from "../../services/accountCheatService.ts";
 
 export const inventoryController: RequestHandler = async (request, response) => {
     const account = await getAccountForRequest(request);
@@ -390,6 +391,7 @@ export const getInventoryResponse = async (
     forWebui: boolean = false,
     forExport: boolean = false
 ): Promise<IInventoryClient> => {
+    applyGlobalAccountCheats(inventory);
     const [inventoryWithLoadOutPresets, ships, latestMessage, pendingTrades] = await Promise.all([
         inventory.populate<{ LoadOutPresets: ILoadoutDatabase }>("LoadOutPresets"),
         Ship.find({ ShipOwnerId: inventory.accountOwnerId }),

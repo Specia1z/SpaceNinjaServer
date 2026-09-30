@@ -103,6 +103,7 @@ import { addFusionPoints } from "./inventoryFinanceService.ts";
 import { addCrewShipWeaponSkin, addEquipment, addSkin } from "./inventoryEquipmentService.ts";
 import { addBooster, addLoreFragmentScans } from "./inventoryProgressService.ts";
 import { applyChallenges, applyKahlProgress } from "./inventoryChallengeService.ts";
+import { applyGlobalAccountCheats } from "./accountCheatService.ts";
 export { resetKahlWeeklyMission } from "./inventoryChallengeService.ts";
 export { addCalendarProgress, checkCalendarAutoAdvance, getCalendarProgress } from "./calendarProgressService.ts";
 export {
@@ -464,6 +465,7 @@ export const getInventory = async (
         throw new Error(`Didn't find an inventory for ${String(accountOwnerId)}`);
     }
 
+    applyGlobalAccountCheats(inventory);
     return inventory;
 };
 
@@ -482,6 +484,7 @@ export const getInventory2 = async <K extends keyof TInventoryDatabaseDocument>(
         throw new Error(`Didn't find an inventory for ${String(accountOwnerId)}`);
     }
 
+    applyGlobalAccountCheats(inventory);
     return inventory;
 };
 

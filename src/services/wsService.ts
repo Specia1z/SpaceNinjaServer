@@ -21,6 +21,7 @@ import type { AddressInfo } from "node:net";
 import { config } from "./configService.ts";
 import { getRegistrationAddress, reserveRegistration } from "./registrationRateLimitService.ts";
 import { markPresenceOffline, markPresenceOnline } from "./presenceService.ts";
+import { settleReferral } from "./playerReferralService.ts";
 
 let wsServer: WebSocketServer | undefined;
 let wssServer: WebSocketServer | undefined;
@@ -76,6 +77,7 @@ interface IWsMsgFromClient {
         password: string;
         possessing?: string;
         isRegister: boolean;
+        referralCode?: string;
         allPermissions: string[];
     };
     auth_game?:
@@ -148,7 +150,7 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                 let account: IDatabaseAccountJson | null = await Account.findOne({ email: data.auth.email });
                 let accessedAccount = account;
                 if (account) {
-                    if (isCorrectPassword(data.auth.password, account.password)) {
+                    if (await isCorrectPassword(data.auth.password, account.password)) {
                         if (!account.Nonce) {
                             account.ClientType = "webui";
                             account.Nonce = createNonce();
@@ -162,7 +164,7 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                     } else {
                         account = null;
                     }
-                } else if (data.auth.isRegister && data.auth.email.indexOf("@") != -1) {
+                } else if (config.autoCreateAccount && data.auth.isRegister && data.auth.email.indexOf("@") != -1) {
                     const reservation = reserveRegistration(
                         getRegistrationAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"])
                     );
@@ -172,15 +174,18 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                     }
                     try {
                         const name = await getUsernameFromEmail(data.auth.email);
-                        account = await createAccount({
-                            email: data.auth.email,
-                            password: data.auth.password,
-                            ClientType: "webui",
-                            BuildLabel: undefined,
-                            LastLogin: new Date(),
-                            DisplayName: name,
-                            Nonce: createNonce()
-                        });
+                        account = await createAccount(
+                            {
+                                email: data.auth.email,
+                                password: data.auth.password,
+                                ClientType: "webui",
+                                BuildLabel: undefined,
+                                LastLogin: new Date(),
+                                DisplayName: name,
+                                Nonce: createNonce()
+                            },
+                            data.auth.referralCode
+                        );
                     } catch (error) {
                         reservation.cancel();
                         throw error;
@@ -188,6 +193,12 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                     accessedAccount = account;
                 }
                 if (account && accessedAccount) {
+                    try {
+                        const referralAccount = await Account.findById(account.id);
+                        if (referralAccount) await settleReferral(referralAccount);
+                    } catch (error) {
+                        logger.warn(`could not settle referral for ${account.id}: ${(error as Error).message}`);
+                    }
                     (ws as IWsCustomData).accountId = accessedAccount.id;
                     (ws as IWsCustomData).realAccountId = account.id;
                     if (!config.webui?.adminOnly || isAdministrator(account)) {

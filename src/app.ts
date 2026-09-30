@@ -13,6 +13,7 @@ import { payRouter } from "./routes/pay.ts";
 import { publicExportRouter } from "./routes/publicExport.ts";
 import { statsRouter } from "./routes/stats.ts";
 import { webuiRouter } from "./routes/webui.ts";
+import { playerRouter } from "./routes/player.ts";
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use("/:id/dynamic", dynamicRouter);
 app.use("/pay", payRouter);
 app.use("/PublicExport/", publicExportRouter);
 app.use("/stats", statsRouter);
+app.use("/player", playerRouter);
 app.use("/", webuiRouter);
 app.use("/.well-known", express.static(".well-known"));
 

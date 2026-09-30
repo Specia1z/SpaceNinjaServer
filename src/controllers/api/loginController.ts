@@ -31,6 +31,7 @@ import { buildLabelToVersionInt } from "../../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
 import { markPresenceLogin } from "../../services/presenceService.ts";
+import { settleReferral } from "../../services/playerReferralService.ts";
 
 export const loginController: RequestHandler = async (request, response) => {
     const loginRequest = JSON.parse(String(request.body)) as ILoginRequest; // parse octet stream of json data to json object
@@ -85,17 +86,20 @@ export const loginController: RequestHandler = async (request, response) => {
         let newAccount: IDatabaseAccountJson;
         try {
             const name = await getUsernameFromEmail(loginRequest.email);
-            newAccount = await createAccount({
-                email: loginRequest.email,
-                password: loginRequest.password,
-                DisplayName: name,
-                Language: loginRequest.lang,
-                ClientType: loginRequest.ClientType,
-                GoogleTokenId: loginRequest.GoogleTokenId,
-                Nonce: createNonce(),
-                BuildLabel: buildLabel,
-                LastLogin: new Date()
-            });
+            newAccount = await createAccount(
+                {
+                    email: loginRequest.email,
+                    password: loginRequest.password,
+                    DisplayName: name,
+                    Language: loginRequest.lang,
+                    ClientType: loginRequest.ClientType,
+                    GoogleTokenId: loginRequest.GoogleTokenId,
+                    Nonce: createNonce(),
+                    BuildLabel: buildLabel,
+                    LastLogin: new Date()
+                },
+                loginRequest.referralCode
+            );
         } catch (error) {
             reservation.cancel();
             throw error;
@@ -120,7 +124,7 @@ export const loginController: RequestHandler = async (request, response) => {
             return;
         }
     } else {
-        if (!isCorrectPassword(loginRequest.password, account.password)) {
+        if (!(await isCorrectPassword(loginRequest.password, account.password))) {
             response.status(400).json({ error: "incorrect login data" });
             return;
         }
@@ -153,6 +157,11 @@ export const loginController: RequestHandler = async (request, response) => {
 
     await account.save();
     await markPresenceLogin(account._id, account.DisplayName, buildLabel, account.LastPlatform);
+    try {
+        await settleReferral(account);
+    } catch (error) {
+        logger.warn(`could not settle referral for ${account._id.toString()}: ${(error as Error).message}`);
+    }
 
     handleNonceInvalidation(account._id.toString());
 

@@ -2,10 +2,10 @@ import { fromOid, toLegacyOid, toMongoDate2, toOid2, version_compare } from "../
 import type { TGuildDatabaseDocument } from "../../models/guildModel.ts";
 import { Guild, GuildMember } from "../../models/guildModel.ts";
 import type { TInventoryDatabaseDocument } from "../../models/inventoryModels/inventoryModel.ts";
-import { Inventory } from "../../models/inventoryModels/inventoryModel.ts";
 import { Loadout } from "../../models/inventoryModels/loadoutModel.ts";
 import { Account } from "../../models/loginModel.ts";
 import { Stats } from "../../models/statsModel.ts";
+import { getInventory } from "../../services/inventoryService.ts";
 import { allDailyAffiliationKeys } from "../../services/inventoryService.ts";
 import type { IMongoDateWithLegacySupport, IOidWithLegacySupport } from "../../types/commonTypes.ts";
 import type {
@@ -93,7 +93,7 @@ const getProfileViewingDataByPlayerId = async (
     if (!account) {
         return;
     }
-    const inventory = (await Inventory.findOne({ accountOwnerId: account._id }))!;
+    const inventory = await getInventory(account._id, undefined);
 
     const result: IPlayerProfileViewingDataResult = {
         AccountId: toOid2(account._id, buildLabel),
@@ -155,8 +155,8 @@ export const getProfileViewingDataByGuildId = async (
         const member = members[i];
         const [account, inventory] = await Promise.all([
             Account.findById(member.accountId, "DisplayName"),
-            Inventory.findOne(
-                { accountOwnerId: member.accountId },
+            getInventory(
+                member.accountId,
                 "DisplayName PlayerLevel XPInfo LoadOutPresets CurrentLoadOutIds WeaponSkins Suits Pistols LongGuns Melee"
             )
         ]);

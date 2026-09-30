@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { getAccountForRequest, isCorrectPassword } from "../../services/loginService.ts";
+import { hashAccountPassword } from "../../services/passwordService.ts";
 
 interface IChangePasswordBody {
     currentPassword?: string;
@@ -17,7 +18,7 @@ export const changePasswordController: RequestHandler = async (req, res) => {
         res.status(400).send("New password is empty").end();
         return;
     }
-    if (!isCorrectPassword(body.currentPassword, account.password)) {
+    if (!(await isCorrectPassword(body.currentPassword, account.password))) {
         res.status(403).send("Wrong password").end();
         return;
     }
@@ -25,7 +26,8 @@ export const changePasswordController: RequestHandler = async (req, res) => {
         res.send("noop").end();
         return;
     }
-    account.password = body.newPassword;
+    account.password = await hashAccountPassword(body.newPassword);
+    account.PlayerPasswordVersion = (account.PlayerPasswordVersion ?? 0) + 1;
     await account.save();
     res.end();
 };

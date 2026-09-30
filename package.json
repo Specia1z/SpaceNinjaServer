@@ -6,8 +6,8 @@
   "scripts": {
     "prestart": "node scripts/publicExportUpdater.mjs --auto",
     "start": "node --enable-source-maps build/src/index.js",
-    "build": "tsgo --inlineSourceMap && ncp static/webui build/static/webui",
-    "build:tsc": "tsc --inlineSourceMap && ncp static/webui build/static/webui",
+    "build": "tsgo --inlineSourceMap && ncp static/webui build/static/webui && ncp static/player build/static/player",
+    "build:tsc": "tsc --inlineSourceMap && ncp static/webui build/static/webui && ncp static/player build/static/player",
     "build:dev": "tsgo --inlineSourceMap",
     "build:dev:tsc": "tsc --inlineSourceMap",
     "build-and-start": "npm run build && npm run start",

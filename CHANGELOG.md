@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- A standalone `/player/` portal for player login, registration, account overview, Platinum balance, password changes, Platinum-cost username changes with an administrator-controlled cooldown, and immutable player email addresses. It also provides per-account referral codes with idempotent inviter/invitee Platinum rewards, referral limits, milestone bonuses, and an administrator-controlled policy panel.
+- Account passwords are now stored with salted `scrypt` hashes while legacy plaintext accounts remain compatible and are upgraded when they use the player portal. Player sessions use expiring HttpOnly cookies and are invalidated after a password change.
 - Administrator item data synchronization now reloads every Public Export table, per-language dictionary, and supplemental JSON file from the verified self-contained `warframe-public-export-plus` package. The item picker uses one package version for Warframes, weapons, Mods, resources, recipes, relics, cosmetics, nodes, and every other exported category, while game-build filtering still prevents newer items from leaking into old clients.
 - Store overrides for per-item listing state, discount percentage, and sale prices, applied to the world state and validated server-side at purchase time so a modified client cannot buy delisted or repriced items.
 - Crafting policy configuration with a server-wide policy plus optional per-recipe overrides, covering stock/instant/custom build duration and an independent rush cost (stock, free, or a fixed Platinum price).

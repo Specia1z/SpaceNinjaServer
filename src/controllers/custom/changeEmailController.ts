@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import { Account } from "../../models/loginModel.ts";
-import { getAccountForRequest, isCorrectPassword } from "../../services/loginService.ts";
+import { getAccountForRequest, isAdministrator, isCorrectPassword } from "../../services/loginService.ts";
 
 interface IChangeEmailBody {
     currentPassword?: string;
@@ -9,6 +9,10 @@ interface IChangeEmailBody {
 
 export const changeEmailController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
+    if (!isAdministrator(account)) {
+        res.sendStatus(403);
+        return;
+    }
     const body = req.body as IChangeEmailBody;
     if (typeof body.currentPassword != "string" || typeof body.newEmail != "string") {
         res.status(400).send("Missing fields").end();
@@ -19,7 +23,7 @@ export const changeEmailController: RequestHandler = async (req, res) => {
         res.status(400).send("Invalid email").end();
         return;
     }
-    if (!isCorrectPassword(body.currentPassword, account.password)) {
+    if (!(await isCorrectPassword(body.currentPassword, account.password))) {
         res.status(403).send("Wrong password").end();
         return;
     }

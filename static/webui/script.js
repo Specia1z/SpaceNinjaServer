@@ -33,6 +33,7 @@ let auth_pending = false,
     ws_is_open = false,
     wsid = 0,
     ws_reconnect = false;
+let config_data;
 const sendAuth = isRegister => {
     if (ws_is_open && localStorage.getItem("email") && localStorage.getItem("password")) {
         auth_pending = true;
@@ -1218,7 +1219,15 @@ function fetchItemList() {
 }
 fetchItemList();
 
-const accountCheats = document.querySelectorAll("#account-cheats input[id]");
+const globalAccountCheats = document.getElementById("global-account-cheats");
+const serverCheatsConfig = document.getElementById("server-cheats-config");
+if (globalAccountCheats && serverCheatsConfig) {
+    serverCheatsConfig.prepend(globalAccountCheats);
+}
+const accountCheats = document.querySelectorAll("#global-account-cheats input[id]");
+accountCheats.forEach(elm => {
+    elm.dataset.configId = `accountCheats.${elm.id}`;
+});
 
 let inventory_data;
 // Assumes that caller revalidates authz
@@ -2957,10 +2966,11 @@ function doAcquireModMax() {
 
 // Cheats route
 
-const uiConfigs = [...$(".config-form input[id], .config-form select[id]")].map(x => x.id);
+const uiConfigElements = [...$(".config-form input[id], .config-form select[id]")];
+const uiConfigs = uiConfigElements.map(x => x.dataset.configId || x.id);
 
-for (const id of uiConfigs) {
-    const elm = document.getElementById(id);
+for (const [index, id] of uiConfigs.entries()) {
+    const elm = uiConfigElements[index];
     if (elm.tagName == "SELECT") {
         elm.onchange = function () {
             let value = this.value;
@@ -2996,8 +3006,9 @@ for (const id of uiConfigs) {
 }
 
 document.querySelectorAll(".config-form .input-group").forEach(grp => {
-    const input = grp.querySelector("input");
+    const input = grp.querySelector("input, select");
     const btn = grp.querySelector("button");
+    if (!input || !btn) return;
     input.oninput = input.onchange = function () {
         btn.classList.remove("btn-secondary");
         btn.classList.add("btn-primary");
@@ -3051,7 +3062,6 @@ function doSaveConfigStringArray(id) {
     });
 }
 
-let config_data;
 // Assumes that caller revalidates authz
 function getServerConfig() {
     return new Promise((resolve, reject) => {
@@ -3093,7 +3103,9 @@ function applyServerConfig(json) {
     $(".admin-show").removeClass("d-none");
     Object.entries(json).forEach(entry => {
         const [key, value] = entry;
-        const elm = document.getElementById(key);
+        const elm =
+            document.getElementById(key) ||
+            [...document.querySelectorAll("[data-config-id]")].find(candidate => candidate.dataset.configId == key);
         if (!elm) return;
         if (elm.type == "checkbox") {
             elm.checked = value;
@@ -3111,13 +3123,6 @@ single.getRoute("/webui/cheats").on("beforeload", function () {
     awaitAuthz().then(() => {
         getInventoryData().then(data => {
             document.getElementById("changeSyndicate").value = data.SupportedSyndicate ?? "";
-            for (const elm of accountCheats) {
-                if (elm.type === "checkbox") {
-                    elm.checked = !!data[elm.id];
-                } else if (elm.type === "number") {
-                    elm.value = data[elm.id] !== undefined ? data[elm.id] : elm.getAttribute("data-default") || "";
-                }
-            }
         });
         getServerConfig().then(applyServerConfig);
     });
@@ -3193,31 +3198,23 @@ function doIntrinsicsUnlockAll() {
     });
 }
 
-document.querySelectorAll("#account-cheats input[type=checkbox]").forEach(elm => {
+document.querySelectorAll("#global-account-cheats input[type=checkbox]").forEach(elm => {
     elm.onchange = function () {
         revalidateAuthz().then(() => {
             const value = elm.checked;
             $.post({
-                url: "/custom/setAccountCheat?" + window.authz,
+                url: "/custom/setConfig?" + window.authz,
                 contentType: "application/json",
-                data: JSON.stringify({
-                    key: elm.id,
-                    value: value
-                })
+                data: JSON.stringify({ [elm.dataset.configId]: value })
             }).done(res => {
                 elm.checked = value;
-                inventory_data[elm.id] = value;
-                if (res == "retroactivable") {
-                    if (window.confirm(loc("cheats_retroactivePrompt"))) {
-                        $.get("/custom/retroactivelyApplyCheat?" + window.authz + "&cheat=" + elm.id);
-                    }
-                }
+                if (config_data) config_data[elm.dataset.configId] = value;
             });
         });
     };
 });
 
-document.querySelectorAll("#account-cheats .input-group").forEach(grp => {
+document.querySelectorAll("#global-account-cheats .input-group").forEach(grp => {
     const input = grp.querySelector("input");
     const select = grp.querySelector("select");
     const btn = grp.querySelector("button");
@@ -3240,16 +3237,14 @@ document.querySelectorAll("#account-cheats .input-group").forEach(grp => {
         if (!input) return;
         revalidateAuthz().then(() => {
             const value = Math.min(Number(input.value), Number(input.max));
+            const configId = input.dataset.configId;
             $.post({
-                url: "/custom/setAccountCheat?" + window.authz,
+                url: "/custom/setConfig?" + window.authz,
                 contentType: "application/json",
-                data: JSON.stringify({
-                    key: input.id,
-                    value: value
-                })
+                data: JSON.stringify({ [configId]: value })
             }).done(() => {
                 input.value = value;
-                inventory_data[elm.id] = value;
+                if (config_data) config_data[configId] = value;
             });
         });
     };
@@ -4731,7 +4726,8 @@ async function doAdminIrcAnnouncement(event) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message })
         });
-        if (!response.ok) throw new Error(response.status === 502 ? loc("admin_ircUnavailable") : loc("admin_ircFailed"));
+        if (!response.ok)
+            throw new Error(response.status === 502 ? loc("admin_ircUnavailable") : loc("admin_ircFailed"));
         input.value = "";
         showNotice(loc("admin_ircSent"), "success");
     } catch (error) {

@@ -962,6 +962,7 @@
                         <div class="card">
                             <h5 class="card-header" data-loc="cheats_account"></h5>
                             <div class="card-body" id="account-cheats">
+                                <div id="global-account-cheats">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="skipAllDialogue" data-enabling-permission="toggleCheat.skipAllDialogue" />
                                     <label class="form-check-label" for="skipAllDialogue" data-loc="cheats_skipAllDialogue"></label>
@@ -1224,6 +1225,7 @@
                                         <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
                                     </div>
                                 </form>
+                                </div>
                                 <div class="mt-2 mb-2 d-flex flex-wrap gap-2">
                                     <button class="btn btn-primary" onclick="debounce(doUnlockAllShipFeatures);" data-loc="cheats_unlockAllShipFeatures"></button>
                                     <button class="btn btn-primary" onclick="debounce(unlockAllNormalMissions);" data-loc="cheats_unlockAllNormalMissions"></button>
@@ -1250,7 +1252,7 @@
                                 <div class="d-none admin-hide">
                                     <p class="card-text" data-loc="cheats_administratorRequirement"></p>
                                 </div>
-                                <div class="d-none admin-show config-form">
+                                <div id="server-cheats-config" class="d-none admin-show config-form">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="skipTutorial" />
                                         <label class="form-check-label" for="skipTutorial" data-loc="cheats_skipTutorial"></label>

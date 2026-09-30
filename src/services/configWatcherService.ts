@@ -28,6 +28,7 @@ import { Account } from "../models/loginModel.ts";
 import { Inbox } from "../models/inboxModel.ts";
 import { createMessage } from "./inboxService.ts";
 import gameToBuildVersionInt from "../constants/gameToBuildVersionInt.ts";
+import { accountCheatKeys, defaultAccountCheats, validateAccountCheatConfig } from "./accountCheatService.ts";
 
 chokidar.watch(configPath).on("change", () => {
     if (shouldReloadConfig()) {
@@ -147,6 +148,38 @@ export const validateConfig = (): void => {
         config.logger.consoleLevel = "debug";
         delete config.logger.level;
         modified = true;
+    }
+    const legacyConfig = config as IConfig & Record<string, unknown>;
+    if (!config.accountCheats) {
+        config.accountCheats = {};
+        modified = true;
+    }
+    for (const key of accountCheatKeys) {
+        const configuredValue = config.accountCheats[key as keyof typeof config.accountCheats];
+        const legacyValue = legacyConfig[key];
+        if (configuredValue === undefined && legacyValue !== undefined) {
+            config.accountCheats[key as keyof typeof config.accountCheats] = legacyValue as never;
+            modified = true;
+        }
+        if (config.accountCheats[key as keyof typeof config.accountCheats] === undefined) {
+            config.accountCheats[key as keyof typeof config.accountCheats] = defaultAccountCheats[
+                key as keyof typeof defaultAccountCheats
+            ] as never;
+            modified = true;
+        }
+        const value = config.accountCheats[key as keyof typeof config.accountCheats];
+        const error = validateAccountCheatConfig(`accountCheats.${key}`, value);
+        if (error) {
+            logger.warn(`${error}; restoring the default value.`);
+            config.accountCheats[key as keyof typeof config.accountCheats] = defaultAccountCheats[
+                key as keyof typeof defaultAccountCheats
+            ] as never;
+            modified = true;
+        }
+        if (legacyValue !== undefined) {
+            delete legacyConfig[key];
+            modified = true;
+        }
     }
     for (const key of configRemovedOptionsKeys) {
         if (config[key as keyof IConfig] !== undefined) {

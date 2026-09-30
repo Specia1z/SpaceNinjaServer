@@ -5,6 +5,7 @@ import { args } from "../helpers/commandLineArguments.ts";
 import type { Request } from "express";
 import { version_compare } from "../helpers/inventoryHelpers.ts";
 import configDefaults from "../../config-vanilla.json" with { type: "json" };
+import type { IAccountCheats } from "../types/inventoryTypes/inventoryTypes.ts";
 
 export type TRegionId = "ASIA" | "OCEANIA" | "EUROPE" | "RUSSIA" | "NORTH_AMERICA" | "SOUTH_AMERICA";
 
@@ -20,6 +21,20 @@ export interface IWebuiConfig {
     adminOnly?: boolean;
     defaultLanguage?: string;
     nonAdminPermissions?: Record<string, boolean | Record<string, boolean>>;
+}
+
+export interface IPlayerPortalConfig {
+    enabled?: boolean;
+    registrationEnabled?: boolean;
+    renameEnabled?: boolean;
+    renameCost?: number;
+    renameCooldownDays?: number;
+    referralsEnabled?: boolean;
+    inviterReward?: number;
+    inviteeReward?: number;
+    maxReferralsPerAccount?: number;
+    milestoneEvery?: number;
+    milestoneBonus?: number;
 }
 
 export interface IMetadataPatchConfig {
@@ -108,6 +123,9 @@ export interface IConfig {
     dtls?: number;
     administratorNames?: string[];
     autoCreateAccount?: boolean;
+    /** Server-wide values for the controls formerly stored per account in Inventory. */
+    accountCheats?: Partial<IAccountCheats>;
+    playerPortal?: IPlayerPortalConfig;
     registrationRateLimit?: {
         /** Rolling time window for new accounts, in minutes (default: 1440). */
         windowMinutes?: number;

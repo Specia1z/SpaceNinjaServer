@@ -22,10 +22,10 @@ import { OAuth2Client } from "google-auth-library";
 import { BL_LATEST, BV_LATEST } from "../constants/gameVersions.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import { giveNewAccountStarterPack, initializeNewAccount } from "./accountInitializationService.ts";
+import { hashAccountPassword, verifyAccountPassword } from "./passwordService.ts";
+import { releaseReferral, reserveReferral, settleReferral } from "./playerReferralService.ts";
 
-export const isCorrectPassword = (requestPassword: string, databasePassword: string): boolean => {
-    return requestPassword === databasePassword;
-};
+export const isCorrectPassword = verifyAccountPassword;
 
 export const isNameTaken = async (name: string): Promise<boolean> => {
     return !!(await Account.findOne({ DisplayName: name }));
@@ -52,14 +52,31 @@ export const getUsernameFromEmail = async (email: string): Promise<string> => {
     return name;
 };
 
-export const createAccount = async (accountData: IAccountCreationData): Promise<IDatabaseAccountJson> => {
+export const createAccount = async (
+    accountData: IAccountCreationData,
+    referralCode?: string
+): Promise<IDatabaseAccountJson> => {
     if (isNameReserved(accountData.DisplayName)) {
         throw new Error(`"${accountData.DisplayName}" is reserved and may not be used as a username`);
     }
 
-    const account = new Account(accountData);
+    const referral = referralCode ? await reserveReferral(referralCode.trim().toUpperCase()) : null;
+    if (referralCode && !referral) throw new Error("Invalid or exhausted invite code");
+    const account = new Account({
+        ...accountData,
+        password: await hashAccountPassword(accountData.password),
+        PlayerPasswordVersion: 1,
+        ...(referral && {
+            ReferredBy: referral.inviterId,
+            ReferralInviterReward: referral.inviterReward,
+            ReferralInviteeReward: referral.inviteeReward,
+            ReferralMilestoneBonus: referral.milestoneBonus
+        })
+    });
+    let accountCreated = false;
     try {
         await account.save();
+        accountCreated = true;
         const loadout = await createLoadout(account._id);
         const shipId = await createShip(account._id);
         await createPersonalRooms(account._id, shipId);
@@ -73,9 +90,11 @@ export const createAccount = async (accountData: IAccountCreationData): Promise<
         if (config.newAccountStarterPack) {
             await giveNewAccountStarterPack(inventory);
         }
+        if (referral) await settleReferral(account);
         await createStats(account._id.toString());
         return account.toJSON();
     } catch (error) {
+        if (referral && !accountCreated) await releaseReferral(referral.inviterId);
         if (error instanceof Error) {
             throw new Error(error.message);
         }
