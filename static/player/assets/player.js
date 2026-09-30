@@ -1,6 +1,6 @@
 (() => {
     const $ = selector => document.querySelector(selector);
-    const state = { account: null };
+    const state = { account: null, market: null, marketAdmin: null };
     const authView = $("#auth-view");
     const dashboardView = $("#dashboard-view");
     let renameCountdownTimer = null;
@@ -44,7 +44,14 @@
             account_already_exists: "这个账号已经存在了。",
             invalid_player: "请输入玩家的注册邮箱。",
             player_not_found: "没有找到这个玩家。",
-            referral_not_flagged: "这个玩家没有待审核的邀请风险。"
+            referral_not_flagged: "这个玩家没有待审核的邀请风险。",
+            market_account_too_new: "账号创建满 24 小时后才能使用资源市场。",
+            market_account_limit: "已达到账号今日市场额度。",
+            market_global_limit: "已达到全服今日市场额度。",
+            market_insufficient_funds: "白金不够。",
+            market_inventory_changed: "仓库数量刚刚发生变化，请刷新后重试。",
+            market_stock_changed: "系统库存刚刚发生变化，请刷新后重试。",
+            invalid_market_policy: "市场设置不符合允许范围。"
         };
         return texts[error.message] || error.message || "操作失败，请稍后再试。";
     }
@@ -180,7 +187,10 @@
         $("#copy-code").disabled = !account.referralCode;
         $(".referral-panel").classList.toggle("hidden", !account.policy.referralsEnabled);
         $("#admin-panel").classList.toggle("hidden", !account.isAdmin);
-        if (account.isAdmin) loadAdminPolicy();
+        if (account.isAdmin) {
+            loadAdminPolicy();
+            loadAdminMarketPolicy();
+        }
     }
 
     async function refresh() {
@@ -203,6 +213,22 @@
             });
         } catch (error) {
             showNotice($("#admin-notice"), errorText(error));
+        }
+    }
+
+    async function loadAdminMarketPolicy() {
+        try {
+            state.marketAdmin = await api("/admin/market");
+            const form = $("#market-policy-form");
+            Object.entries(state.marketAdmin).forEach(([key, value]) => {
+                const input = form.elements[key];
+                if (!input) return;
+                if (input.type === "checkbox") input.checked = value;
+                else if (key === "excludedItemPatterns") input.value = Array.isArray(value) ? value.join("\n") : "";
+                else if (typeof value !== "object") input.value = value;
+            });
+        } catch (error) {
+            showNotice($("#market-admin-notice"), errorText(error));
         }
     }
 
@@ -345,6 +371,39 @@
             if (state.account?.email?.toLowerCase() === email) await refresh();
         } catch (error) {
             showNotice($("#approve-referral-notice"), errorText(error));
+        } finally {
+            setButtonBusy(button, false);
+        }
+    });
+
+    $("#market-policy-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const form = event.target;
+        const values = formData(form);
+        ["enabled", "buyEnabled", "sellEnabled"].forEach(key => (values[key] = form.elements[key].checked));
+        [
+            "accountDailyPlatinumCap",
+            "accountDailyTransactionLimit",
+            "accountDailyQuantityCap",
+            "globalDailyMintCap",
+            "globalDailyTransactionLimit",
+            "globalDailyQuantityCap",
+            "priceSpreadPercent",
+            "priceChangeLimitPercent",
+            "minimumAccountAgeHours"
+        ].forEach(key => (values[key] = Number(values[key])));
+        values.excludedItemPatterns = values.excludedItemPatterns
+            .split("\n")
+            .map(value => value.trim())
+            .filter(Boolean);
+        values.itemOverrides = state.marketAdmin?.itemOverrides || {};
+        const button = form.querySelector("button[type=submit]");
+        setButtonBusy(button, true, "正在保存...");
+        try {
+            state.marketAdmin = await api("/admin/market", { method: "POST", body: JSON.stringify(values) });
+            showNotice($("#market-admin-notice"), "市场设置已保存。", true);
+        } catch (error) {
+            showNotice($("#market-admin-notice"), errorText(error));
         } finally {
             setButtonBusy(button, false);
         }

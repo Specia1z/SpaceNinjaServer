@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>资源回收市场 · SpaceNinja</title>
+    <link rel="stylesheet" href="/player/assets/player.css">
+    <link rel="stylesheet" href="/player/assets/market.css">
+    <script defer src="/player/assets/market.js"></script>
+</head>
+<body class="market-page">
+    <header class="market-topbar">
+        <a class="brand" href="/player/" aria-label="SpaceNinja 玩家中心">
+            <span class="brand-mark">SN</span>
+            <span class="brand-copy">SPACE<span>NINJA</span><small>玩家中心</small></span>
+        </a>
+        <nav class="top-nav" aria-label="主要导航">
+            <a href="/player/dashboard">账号概览</a>
+            <a class="active" href="/player/market">资源市场</a>
+        </nav>
+        <div id="market-session-tools" class="session-tools">
+            <div class="market-balance"><span>白金</span><strong id="market-platinum">0</strong></div>
+            <div class="player-chip"><span class="player-chip-dot"></span><span id="market-player-name">读取中</span></div>
+            <button id="market-logout" class="button button-quiet" type="button">退出</button>
+        </div>
+    </header>
+
+    <div class="community-banner" role="note">
+        <span>需要帮助或交流？</span>
+        <strong>沃肥交流群 QQ：1124440468</strong>
+    </div>
+
+    <main class="market-layout">
+        <aside class="market-sidebar">
+            <div class="sidebar-heading"><p class="eyebrow">资源回收市场</p><h1>市场目录</h1></div>
+            <nav id="market-categories" class="market-categories" aria-label="物资分类"></nav>
+            <div class="sidebar-note">
+                <span class="sidebar-note-mark">i</span>
+                <p>只会交易你仓库中已有的物资。市场价格会根据全服交易量动态变化。</p>
+            </div>
+        </aside>
+
+        <section class="market-main">
+            <div class="market-main-heading">
+                <div>
+                    <p class="eyebrow">PLAYER RESOURCE EXCHANGE</p>
+                    <h2>资源回收市场</h2>
+                    <p class="market-intro">把暂时用不到的材料换成白金，也可以按当前报价补充仓库。</p>
+                </div>
+                <a class="button button-quiet" href="/player/dashboard">返回账号概览</a>
+            </div>
+
+            <div class="market-controlbar">
+                <label class="market-search">搜索物资<input id="market-search" type="search" placeholder="搜索名称或资源路径"></label>
+                <div id="market-usage" class="market-usage"></div>
+            </div>
+
+            <section class="market-sell-panel">
+                <div class="market-sell-heading">
+                    <div><p class="eyebrow">我的仓库</p><h3>卖给系统</h3></div>
+                    <span>物资直接进入系统库存，其他玩家可以按系统报价购买</span>
+                </div>
+                <div class="market-inventory-table">
+                    <div class="market-inventory-head"><span>物资</span><span>可用库存</span><span>出售数量</span><span></span></div>
+                    <div id="market-sell-inventory"></div>
+                </div>
+            </section>
+
+            <div class="market-list-heading"><span id="market-result-label">全部物资</span><span id="market-result-count"></span></div>
+            <div id="market-listings" class="market-items"></div>
+            <div id="market-disabled" class="market-empty hidden"><strong>资源市场暂未开放</strong><span>管理员开放后，这里会显示可交易的仓库物资。</span></div>
+            <p id="market-notice" class="notice" role="status"></p>
+        </section>
+    </main>
+</body>
+</html>

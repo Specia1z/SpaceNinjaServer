@@ -165,7 +165,9 @@ export interface IInventoryDatabase
         IAccountCheats {
     // SNS-specific fields for server-side tracking
     accountOwnerId: Types.ObjectId;
+    MarketSystem?: boolean;
     ReferralRewardClaims?: string[];
+    MarketRequestIds?: string[];
     MissionRelicRewards?: (ITypeCount & { Rarity?: TRarity })[];
     HarvesterPoints?: number;
     DeathSquadPoints?: number;

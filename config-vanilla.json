@@ -108,6 +108,22 @@
     "milestoneEvery": 5,
     "milestoneBonus": 50
   },
+  "playerMarket": {
+    "enabled": true,
+    "buyEnabled": true,
+    "sellEnabled": true,
+    "accountDailyPlatinumCap": 200,
+    "accountDailyTransactionLimit": 30,
+    "accountDailyQuantityCap": 10000,
+    "globalDailyMintCap": 10000,
+    "globalDailyTransactionLimit": 5000,
+    "globalDailyQuantityCap": 1000000,
+    "priceSpreadPercent": 10,
+    "priceChangeLimitPercent": 5,
+    "minimumAccountAgeHours": 24,
+    "excludedItemPatterns": [],
+    "itemOverrides": {}
+  },
   "registrationRateLimit": {
     "windowMinutes": 1440,
     "perAddress": 3,

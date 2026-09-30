@@ -15,12 +15,22 @@ import {
     resetPlayerRenameCooldownController,
     setPlayerAdminPolicyController
 } from "../controllers/playerPortalController.ts";
+import {
+    getPlayerMarketAdminController,
+    getPlayerMarketController,
+    playerMarketBuyController,
+    playerMarketSellController,
+    setPlayerMarketAdminController
+} from "../controllers/playerMarketController.ts";
 
 const playerRouter = express.Router();
 const baseDir = args.dev ? repoDir : rootDir;
 
 playerRouter.get(["/", "/login", "/dashboard"], (_req, res) => {
     res.sendFile(path.join(baseDir, "static/player/index.html"));
+});
+playerRouter.get(["/market", "/market/"], (_req, res) => {
+    res.sendFile(path.join(baseDir, "static/player/market.html"));
 });
 playerRouter.use("/assets", express.static(path.join(baseDir, "static/player/assets")));
 playerRouter.post("/api/login", playerLoginController);
@@ -32,6 +42,11 @@ playerRouter.post("/api/rename", playerRenameController);
 playerRouter.post("/api/password", playerPasswordController);
 playerRouter.get("/api/admin/policy", getPlayerAdminPolicyController);
 playerRouter.post("/api/admin/policy", setPlayerAdminPolicyController);
+playerRouter.get("/api/market", getPlayerMarketController);
+playerRouter.post("/api/market/buy", playerMarketBuyController);
+playerRouter.post("/api/market/sell", playerMarketSellController);
+playerRouter.get("/api/admin/market", getPlayerMarketAdminController);
+playerRouter.post("/api/admin/market", setPlayerMarketAdminController);
 playerRouter.post("/api/admin/reset-rename-cooldown", resetPlayerRenameCooldownController);
 playerRouter.post("/api/admin/approve-referral", approvePlayerReferralController);
 

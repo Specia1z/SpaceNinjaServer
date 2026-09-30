@@ -23,8 +23,18 @@ import {
 
 const publicExportRouter = express.Router();
 
-publicExportRouter.get(/^\/Lotus\/Interface\/.+$/, (req, res) => {
-    res.sendFile(req.path.split("!")[0], { root: "./static/data/PublicExport" });
+publicExportRouter.get(/^\/Lotus\/Interface\/.+$/, async (req, res) => {
+    const requestPath = req.path.split("!")[0];
+    const exportRoot = path.join(repoDir, "static/data/PublicExport");
+    const relativePath = requestPath.replace(/^\/+/, "");
+    const localPath = path.join(exportRoot, relativePath);
+    if (!localPath.startsWith(`${exportRoot}${path.sep}`)) return res.status(404).end();
+    try {
+        await fs.access(localPath);
+        return res.sendFile(relativePath, { root: exportRoot });
+    } catch {
+        res.status(404).end();
+    }
 });
 
 publicExportRouter.get(/^\/index_[a-z]{2}\.txt\.lzma$/, async (req, res) => {

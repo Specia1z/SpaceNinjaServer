@@ -262,7 +262,7 @@ export const approvePlayerReferralController: RequestHandler = async (req, res) 
     res.json({ ok: true, displayName: approved.DisplayName });
 };
 
-const getAccountForAdmin = async (
+export const getAccountForAdmin = async (
     req: Parameters<RequestHandler>[0],
     res: Parameters<RequestHandler>[1]
 ): Promise<TAccountDocument | null> => {

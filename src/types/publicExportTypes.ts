@@ -176,6 +176,7 @@ export interface IExportSentinels {
 export interface ISentinel {
     uniqueName: string;
     name: string;
+    icon?: string;
     health: number;
     shield: number;
     armor: number;
@@ -348,6 +349,7 @@ export interface IAbility {
 export interface IWarframe {
     uniqueName: string;
     name: string;
+    icon?: string;
     parentName: string;
     description: string;
     health: number;
@@ -377,6 +379,7 @@ type TTrigger = "ACTIVE" | "AUTO" | "Auto Burst" | "BURST" | "CHARGE" | "DUPLEX"
 export interface IRailjackWeapon {
     name: string;
     uniqueName: string;
+    icon?: string;
     codexSecret: boolean;
     damagePerShot: readonly number[];
     totalDamage: number;
@@ -401,6 +404,7 @@ export interface IRailjackWeapon {
 export interface IWeapon {
     name: string;
     uniqueName: string;
+    icon?: string;
     codexSecret: boolean;
     damagePerShot: readonly number[];
     totalDamage: number;

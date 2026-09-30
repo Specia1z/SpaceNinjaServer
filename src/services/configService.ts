@@ -39,6 +39,33 @@ export interface IPlayerPortalConfig {
     milestoneBonus?: number;
 }
 
+export interface IPlayerMarketItemOverride {
+    displayName?: string;
+    unitSize?: number;
+    basePrice?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    initialStock?: number;
+    enabled?: boolean;
+}
+
+export interface IPlayerMarketConfig {
+    enabled?: boolean;
+    buyEnabled?: boolean;
+    sellEnabled?: boolean;
+    accountDailyPlatinumCap?: number;
+    accountDailyTransactionLimit?: number;
+    accountDailyQuantityCap?: number;
+    globalDailyMintCap?: number;
+    globalDailyTransactionLimit?: number;
+    globalDailyQuantityCap?: number;
+    priceSpreadPercent?: number;
+    priceChangeLimitPercent?: number;
+    minimumAccountAgeHours?: number;
+    excludedItemPatterns?: string[];
+    itemOverrides?: Record<string, IPlayerMarketItemOverride>;
+}
+
 export interface IMetadataPatchConfig {
     name?: string;
     enabled?: boolean;
@@ -128,6 +155,7 @@ export interface IConfig {
     /** Server-wide values for the controls formerly stored per account in Inventory. */
     accountCheats?: Partial<IAccountCheats>;
     playerPortal?: IPlayerPortalConfig;
+    playerMarket?: IPlayerMarketConfig;
     registrationRateLimit?: {
         /** Rolling time window for new accounts, in minutes (default: 1440). */
         windowMinutes?: number;

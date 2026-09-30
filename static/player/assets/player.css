@@ -109,6 +109,16 @@ button:disabled {
     gap: 16px;
 }
 
+.top-nav-link {
+    color: var(--accent-strong);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.top-nav-link:hover {
+    color: var(--accent);
+}
+
 .community-banner {
     position: relative;
     z-index: 1;
@@ -637,6 +647,27 @@ hr {
     gap: 12px;
     align-items: end;
     max-width: 650px;
+}
+
+.market-policy-grid textarea {
+    width: 100%;
+    resize: vertical;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    outline: none;
+    background: var(--surface-raised);
+    color: var(--text);
+    padding: 11px 12px;
+    font: inherit;
+}
+
+.market-policy-grid textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgb(145 226 185 / 12%);
+}
+
+.policy-wide {
+    grid-column: 1 / -1;
 }
 
 footer {

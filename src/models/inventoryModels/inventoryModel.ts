@@ -1651,7 +1651,9 @@ const miscAccountDataSchema = new Schema<IMiscAccountData>(
 const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
     {
         accountOwnerId: Schema.Types.ObjectId,
+        MarketSystem: { type: Boolean, index: true },
         ReferralRewardClaims: { type: [String], default: [] },
+        MarketRequestIds: { type: [String], default: [] },
 
         // SNS account cheats
         skipAllDialogue: Boolean,

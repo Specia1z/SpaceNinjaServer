@@ -258,6 +258,7 @@ export const getExportSentinels = (lang: string): IExportSentinels => {
             res.push({
                 uniqueName,
                 name: getString(data.name, dict),
+                icon: data.icon,
                 health: data.health,
                 shield: data.shield,
                 armor: data.armor,
@@ -768,6 +769,7 @@ const getWeapons = (dict: Record<string, string>): IWeapon[] => {
         ) {
             res.push({
                 name: getString(data.name, dict),
+                icon: data.icon,
                 uniqueName,
                 codexSecret: data.codexSecret,
                 damagePerShot: data.damagePerShot,
@@ -831,6 +833,7 @@ const getRailjackWeapons = (dict: Record<string, string>): IRailjackWeapon[] => 
         ) {
             res.push({
                 name: getString(data.name, dict),
+                icon: data.icon,
                 uniqueName,
                 codexSecret: data.codexSecret,
                 damagePerShot: data.damagePerShot,

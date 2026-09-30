@@ -14,6 +14,7 @@
             <span class="brand-copy">SPACE<span>NINJA</span><small>我的账号</small></span>
         </a>
         <div id="session-tools" class="session-tools hidden">
+            <a class="top-nav-link" href="/player/market">资源市场</a>
             <div class="player-chip">
                 <span class="player-chip-dot"></span>
                 <span id="header-name"></span>
@@ -189,6 +190,30 @@
                         <button class="button button-secondary" type="submit">通过邀请审核</button>
                     </form>
                     <p id="approve-referral-notice" class="notice" role="status"></p>
+                </div>
+                <div class="admin-action">
+                    <div>
+                        <p class="eyebrow">资源回收市场</p>
+                        <h3>市场平衡设置</h3>
+                        <p class="muted">商品目录来自游戏公开导出数据。这里控制白金产出、交易速度和自动排除规则。</p>
+                    </div>
+                    <form id="market-policy-form" class="policy-grid market-policy-grid">
+                        <label><input name="enabled" type="checkbox"> 开放资源市场</label>
+                        <label><input name="buyEnabled" type="checkbox"> 允许从系统买入</label>
+                        <label><input name="sellEnabled" type="checkbox"> 允许卖给系统</label>
+                        <label>每账号每日最多获得白金<input name="accountDailyPlatinumCap" type="number" min="0"></label>
+                        <label>每账号每日交易次数<input name="accountDailyTransactionLimit" type="number" min="0"></label>
+                        <label>每账号每日物资数量<input name="accountDailyQuantityCap" type="number" min="0"></label>
+                        <label>全服每日最多产生白金<input name="globalDailyMintCap" type="number" min="0"></label>
+                        <label>全服每日交易次数<input name="globalDailyTransactionLimit" type="number" min="0"></label>
+                        <label>全服每日物资数量<input name="globalDailyQuantityCap" type="number" min="0"></label>
+                        <label>买卖价差百分比<input name="priceSpreadPercent" type="number" min="0" max="50"></label>
+                        <label>单次价格变化上限百分比<input name="priceChangeLimitPercent" type="number" min="0" max="20"></label>
+                        <label>新账号等待小时数<input name="minimumAccountAgeHours" type="number" min="0"></label>
+                        <label class="policy-wide">排除规则（每行一个正则）<textarea name="excludedItemPatterns" rows="4" placeholder="例如：/Quest/"></textarea></label>
+                        <button class="button button-primary" type="submit">保存市场设置</button>
+                    </form>
+                    <p id="market-admin-notice" class="notice" role="status"></p>
                 </div>
             </section>
         </section>
