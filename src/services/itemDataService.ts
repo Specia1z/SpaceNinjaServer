@@ -207,6 +207,13 @@ export const supplementalBundles: Record<string, IBundle> = {
 };
 
 export const supplementalMarketPrices: Record<string, number> = {
+    "/Lotus/Upgrades/Skins/Sentinels/Skins/BansheeDlxSentSkin": 40,
+    "/Lotus/Upgrades/Mods/FusionBundles/MarketTier1FusionBundle": 5,
+    "/Lotus/Upgrades/Mods/FusionBundles/MarketTier2FusionBundle": 15,
+    "/Lotus/Upgrades/Mods/FusionBundles/MarketTier3FusionBundle": 50,
+    "/Lotus/Upgrades/Mods/FusionBundles/CrewShipFusionBundles/MarketTier1CrewShipFusionBundle": 5,
+    "/Lotus/Upgrades/Mods/FusionBundles/CrewShipFusionBundles/MarketTier2CrewShipFusionBundle": 15,
+    "/Lotus/Upgrades/Mods/FusionBundles/CrewShipFusionBundles/MarketTier3CrewShipFusionBundle": 50,
     "/Lotus/Upgrades/Skins/Duelist/DuelistAltHelmet": 75,
     "/Lotus/Upgrades/Skins/Scarves/DuelistSyandana": 100,
     "/Lotus/Types/Items/Emotes/DuelistEmote": 25,
@@ -5926,7 +5933,7 @@ const getUndiscountedPrice = (
     let internalName = bundle ? storeItemName : fromStoreItem(storeItemName);
 
     if (storeItemName in ExportBoosters) {
-        return 40 * (durability + 1);
+        return [40, 80, 200, 400][durability] ?? 40;
     }
 
     if (!usePremium && version_compare(buildLabel, gameToBuildVersion["8.0.0"]) < 0 && internalName in u7WeaponCosts) {
