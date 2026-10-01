@@ -123,14 +123,29 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
                 categories.find(item => item.CategoryName == "NEW");
             if (category) (category.Items ??= []).push(storeItem);
         }
+
+        const hasFlashSaleOverride =
+            !override.Listed ||
+            override.CategoryName == "SALE" ||
+            override.DiscountPercent !== undefined ||
+            override.PremiumPrice !== undefined ||
+            override.RegularPrice !== undefined ||
+            override.SupporterPack !== undefined ||
+            override.BogoBuy !== undefined ||
+            override.BogoGet !== undefined ||
+            override.Featured !== undefined ||
+            override.Popular !== undefined ||
+            override.BannerIndex !== undefined ||
+            override.StartDate !== undefined ||
+            override.EndDate !== undefined;
         worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != override.TypeName);
+        if (!hasFlashSaleOverride) continue;
+
         worldState.FlashSales.push({
             TypeName: override.TypeName,
             ShowInMarket: override.Listed,
             HideFromMarket: override.Listed ? undefined : true,
-            Discount:
-                override.DiscountPercent ??
-                (override.PremiumPrice === undefined && override.RegularPrice === undefined ? 0 : undefined),
+            Discount: override.DiscountPercent,
             // Absent unless the admin configured an absolute price, in which case it takes precedence over Discount.
             PremiumOverride: override.PremiumPrice,
             RegularOverride: override.RegularPrice,

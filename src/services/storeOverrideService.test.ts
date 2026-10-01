@@ -60,9 +60,7 @@ void test("visible Repala appears in TennoGen but purchase can be blocked indepe
 
     assert.deepEqual(state.InGameMarket.LandingPage.Categories[0].Items, []);
     assert.deepEqual(state.InGameMarket.LandingPage.Categories[1].Items, [storeItem]);
-    assert.equal(state.FlashSales[0].TypeName, typeName);
-    assert.equal(state.FlashSales[0].ShowInMarket, true);
-    assert.equal(state.FlashSales[0].Discount, 0);
+    assert.deepEqual(state.FlashSales, []);
     assert.equal(isStoreItemPurchasable(typeName), false);
 
     const inventory = new Inventory({ accountOwnerId: "000000000000000000000001", PremiumCredits: 200 });
@@ -134,6 +132,15 @@ void test("discounted Repala uses the client's truncated unit price when purchas
 
     await saveStoreOverride(override({ DiscountPercent: 10, Purchasable: true }));
     assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 94);
+});
+
+void test("category-only overrides do not mark items as limited-time sales", async () => {
+    await saveStoreOverride(override({ CategoryName: "POPULAR" }));
+    const state = worldState();
+    applyStoreOverrides(state, buildLabel);
+
+    assert.deepEqual(state.FlashSales, []);
+    await deleteStoreOverride(typeName);
 });
 
 void test("absolute prices do not emit a competing zero-percent discount", async () => {
