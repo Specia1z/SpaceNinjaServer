@@ -611,8 +611,8 @@ export interface IFlashSale {
     PremiumOverride?: number;
     RegularOverride?: number;
     ProductExpiryOverride?: IMongoDateWithLegacySupport;
-    StartDate: IMongoDateWithLegacySupport;
-    EndDate: IMongoDateWithLegacySupport;
+    StartDate?: IMongoDateWithLegacySupport;
+    EndDate?: IMongoDateWithLegacySupport;
 
     // Pre-U22.9 fields
     Featured?: boolean;

@@ -77,35 +77,43 @@ void test("visible Repala appears in TennoGen but purchase can be blocked indepe
     assert.equal(inventory.PremiumCredits, 200);
 });
 
-void test("hidden Repala can be purchased, and clearing category and price removes saved values", async () => {
+void test("hidden Repala is removed from every category and cannot be purchased", async () => {
     await saveStoreOverride(override({ Listed: false, Purchasable: true, CategoryName: "TENNOGEN", PremiumPrice: 75 }));
     const saved = await saveStoreOverride(override({ Listed: false, Purchasable: true }));
     assert.equal(saved.CategoryName, undefined);
     assert.equal(saved.PremiumPrice, undefined);
-    assert.equal(isStoreItemPurchasable(typeName), true);
+    assert.equal(isStoreItemPurchasable(typeName), false);
+    assert.equal(isStoreItemPurchasable(storeItem), false);
 
     const state = worldState();
-    state.InGameMarket.LandingPage.Categories[1].Items = [storeItem];
+    state.InGameMarket.LandingPage.Categories.forEach(category => {
+        category.Items = [storeItem];
+    });
     applyStoreOverrides(state, buildLabel);
-    assert.deepEqual(state.InGameMarket.LandingPage.Categories[1].Items, []);
+    assert.deepEqual(
+        state.InGameMarket.LandingPage.Categories.map(category => category.Items),
+        [[], [], []]
+    );
     assert.equal(state.FlashSales[0].HideFromMarket, true);
 
     const inventory = new Inventory({ accountOwnerId: "000000000000000000000001", PremiumCredits: 200 });
-    const response = await handlePurchase(
-        {
-            PurchaseParams: {
-                Source: ePurchaseSource.Market,
-                StoreItem: storeItem,
-                Quantity: 1,
-                UsePremium: true,
-                ExpectedPrice: 105
+    await assert.rejects(
+        handlePurchase(
+            {
+                PurchaseParams: {
+                    Source: ePurchaseSource.Market,
+                    StoreItem: storeItem,
+                    Quantity: 1,
+                    UsePremium: true,
+                    ExpectedPrice: 105
+                },
+                buildLabel
             },
-            buildLabel
-        },
-        inventory
+            inventory
+        ),
+        /not currently purchasable/
     );
-    assert.equal(response.InventoryChanges.PremiumCredits, -105);
-    assert.equal(inventory.PremiumCredits, 95);
+    assert.equal(inventory.PremiumCredits, 200);
 });
 
 void test("discounted Repala uses the client's truncated unit price when purchasing", async () => {
@@ -182,11 +190,11 @@ void test("store overrides expose all supported flash-sale labels and flags", as
         BogoGet: 1,
         Featured: true,
         Popular: false,
-        BannerIndex: 4,
-        StartDate: state.FlashSales[0].StartDate,
-        EndDate: state.FlashSales[0].EndDate,
-        ProductExpiryOverride: state.FlashSales[0].ProductExpiryOverride
+        BannerIndex: 4
     });
+    assert.equal("StartDate" in state.FlashSales[0], false);
+    assert.equal("EndDate" in state.FlashSales[0], false);
+    assert.equal("ProductExpiryOverride" in state.FlashSales[0], false);
     await deleteStoreOverride(typeName);
 });
 

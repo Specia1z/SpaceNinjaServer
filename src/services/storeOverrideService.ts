@@ -1,7 +1,7 @@
 import { StoreOverride, type IStoreOverride } from "../models/storeOverrideModel.ts";
 import type { IWorldState } from "../types/worldStateTypes.ts";
 import { toMongoDate2 } from "../helpers/inventoryHelpers.ts";
-import { toStoreItem } from "./itemDataService.ts";
+import { fromStoreItem, toStoreItem } from "./itemDataService.ts";
 import { sendWsBroadcastToGame } from "./wsService.ts";
 
 const storeOverrides = new Map<string, IStoreOverride>();
@@ -17,7 +17,7 @@ const isActive = (override: IStoreOverride, now: number = Date.now()): boolean =
 export const initializeStoreOverrides = async (): Promise<void> => {
     storeOverrides.clear();
     for (const override of await StoreOverride.find().lean()) {
-        storeOverrides.set(override.TypeName, override);
+        storeOverrides.set(overrideTypeName(override.TypeName), override);
     }
 };
 
@@ -55,17 +55,20 @@ export const saveStoreOverride = async (override: IStoreOverride): Promise<IStor
             runValidators: true
         }
     ).lean();
-    storeOverrides.set(saved!.TypeName, saved!);
+    storeOverrides.set(overrideTypeName(saved!.TypeName), saved!);
     broadcastStoreRules();
     return saved!;
 };
 
 export const deleteStoreOverride = async (typeName: string): Promise<boolean> => {
     const result = await StoreOverride.deleteOne({ TypeName: typeName });
-    storeOverrides.delete(typeName);
+    storeOverrides.delete(overrideTypeName(typeName));
     broadcastStoreRules();
     return result.deletedCount > 0;
 };
+
+const overrideTypeName = (typeName: string): string =>
+    typeName.startsWith("/Lotus/StoreItems/") ? fromStoreItem(typeName) : typeName;
 
 const storeItemName = (typeName: string): string =>
     typeName.startsWith("/Lotus/Types/StoreItems/") || typeName.startsWith("/Lotus/StoreItems/")
@@ -75,9 +78,11 @@ const storeItemName = (typeName: string): string =>
 export const getStoreItemRules = (): string => {
     const rules: Record<string, { giftable?: boolean; purchaseMode?: "platinum" | "steam" }> = {};
     for (const override of storeOverrides.values()) {
-        if (!isActive(override) || (override.Giftable === undefined && !override.PurchaseMode)) continue;
+        if (!isActive(override)) continue;
+        const giftable = override.Listed ? override.Giftable : false;
+        if (giftable === undefined && !override.PurchaseMode) continue;
         rules[storeItemName(override.TypeName)] = {
-            giftable: override.Giftable,
+            giftable,
             purchaseMode: override.PurchaseMode
         };
     }
@@ -92,18 +97,18 @@ const broadcastStoreRules = (): void => {
 };
 
 export const getActiveStoreOverride = (typeName: string): IStoreOverride | undefined => {
-    const override = storeOverrides.get(typeName);
+    const override = storeOverrides.get(overrideTypeName(typeName));
     return override && isActive(override) ? override : undefined;
 };
 
 export const isStoreItemPurchasable = (typeName: string): boolean => {
     const override = getActiveStoreOverride(typeName);
-    return override ? (override.Purchasable ?? override.Listed) : true;
+    return override ? override.Listed && (override.Purchasable ?? true) : true;
 };
 
 export const isStoreItemGiftable = (typeName: string): boolean => {
     const override = getActiveStoreOverride(typeName);
-    return override?.Giftable !== false;
+    return override ? override.Listed && override.Giftable !== false : true;
 };
 
 export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string): void => {
@@ -111,6 +116,7 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
     for (const override of storeOverrides.values()) {
         if (!isActive(override, now)) continue;
         const storeItem = storeItemName(override.TypeName);
+        const typeName = overrideTypeName(override.TypeName);
         const categories = worldState.InGameMarket.LandingPage.Categories;
         if (!override.Listed || override.CategoryName) {
             for (const category of categories) {
@@ -126,7 +132,6 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
 
         const hasFlashSaleOverride =
             !override.Listed ||
-            override.CategoryName == "SALE" ||
             override.DiscountPercent !== undefined ||
             override.PremiumPrice !== undefined ||
             override.RegularPrice !== undefined ||
@@ -138,11 +143,14 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             override.BannerIndex !== undefined ||
             override.StartDate !== undefined ||
             override.EndDate !== undefined;
-        worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != override.TypeName);
+        worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != typeName);
         if (!hasFlashSaleOverride) continue;
 
+        const startDate = override.StartDate ? toMongoDate2(override.StartDate, buildLabel) : undefined;
+        const endDate = override.EndDate ? toMongoDate2(override.EndDate, buildLabel) : undefined;
+
         worldState.FlashSales.push({
-            TypeName: override.TypeName,
+            TypeName: typeName,
             ShowInMarket: override.Listed,
             HideFromMarket: override.Listed ? undefined : true,
             Discount: override.DiscountPercent,
@@ -155,9 +163,8 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             Featured: override.Featured,
             Popular: override.Popular,
             BannerIndex: override.BannerIndex,
-            StartDate: toMongoDate2(override.StartDate ?? 0, buildLabel),
-            EndDate: toMongoDate2(override.EndDate ?? 4_102_444_800_000, buildLabel),
-            ProductExpiryOverride: toMongoDate2(override.EndDate ?? 4_102_444_800_000, buildLabel)
+            ...(startDate ? { StartDate: startDate } : {}),
+            ...(endDate ? { EndDate: endDate, ProductExpiryOverride: endDate } : {})
         });
     }
 };

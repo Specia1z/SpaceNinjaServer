@@ -26,6 +26,14 @@
         const value = document.getElementById(id).value;
         return value ? new Date(value).toISOString() : undefined;
     };
+    const formatDateTimeLocal = value => {
+        if (!value) return "";
+        const date = new Date(value);
+        const pad = number => String(number).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(
+            date.getMinutes()
+        )}`;
+    };
 
     function itemDisplayLabel(uniqueName) {
         if (!uniqueName) return "";
@@ -198,12 +206,8 @@
         document.getElementById("admin-store-discount").value = override.DiscountPercent ?? "";
         document.getElementById("admin-store-premium").value = override.PremiumPrice ?? "";
         document.getElementById("admin-store-regular").value = override.RegularPrice ?? "";
-        document.getElementById("admin-store-start").value = override.StartDate
-            ? new Date(override.StartDate).toISOString().slice(0, 16)
-            : "";
-        document.getElementById("admin-store-end").value = override.EndDate
-            ? new Date(override.EndDate).toISOString().slice(0, 16)
-            : "";
+        document.getElementById("admin-store-start").value = formatDateTimeLocal(override.StartDate);
+        document.getElementById("admin-store-end").value = formatDateTimeLocal(override.EndDate);
         document.getElementById("admin-store-type").scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
@@ -258,11 +262,12 @@
     }
 
     async function saveStoreOverride() {
+        const listed = document.getElementById("admin-store-listed").checked;
         const payload = {
             TypeName: document.getElementById("admin-store-type").value.trim(),
             Enabled: document.getElementById("admin-store-enabled").checked,
-            Listed: document.getElementById("admin-store-listed").checked,
-            Purchasable: document.getElementById("admin-store-purchasable").checked,
+            Listed: listed,
+            Purchasable: listed && document.getElementById("admin-store-purchasable").checked,
             Giftable:
                 document.getElementById("admin-store-giftable").value === ""
                     ? undefined

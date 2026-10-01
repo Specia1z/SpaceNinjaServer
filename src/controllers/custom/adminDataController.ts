@@ -83,6 +83,7 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
     const bogoBuy = optionalInteger(body.BogoBuy, "BogoBuy");
     const bogoGet = optionalInteger(body.BogoGet, "BogoGet");
     const bannerIndex = optionalInteger(body.BannerIndex, "BannerIndex");
+    const listed = body.Listed !== false;
     if (body.Purchasable !== undefined && typeof body.Purchasable != "boolean") {
         throw new Error("Invalid Purchasable");
     }
@@ -107,8 +108,8 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
     const override: IStoreOverride = {
         TypeName: body.TypeName,
         Enabled: body.Enabled !== false,
-        Listed: body.Listed !== false,
-        Purchasable: body.Purchasable ?? body.Listed !== false,
+        Listed: listed,
+        Purchasable: listed && (body.Purchasable ?? true),
         Giftable: body.Giftable,
         PurchaseMode: body.PurchaseMode,
         CategoryName: body.CategoryName,
