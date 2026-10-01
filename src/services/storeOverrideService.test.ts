@@ -217,7 +217,8 @@ void test("promotion and limited-sale schedules emit separate client dates", asy
     const limitedSaleState = worldState();
     applyStoreOverrides(limitedSaleState, buildLabel);
     assert.equal(limitedSaleState.FlashSales[0].Discount, undefined);
-    assert.equal("EndDate" in limitedSaleState.FlashSales[0], false);
+    assert.equal("EndDate" in limitedSaleState.FlashSales[0], true);
+    assert.deepEqual(limitedSaleState.FlashSales[0].EndDate, limitedSaleState.FlashSales[0].ProductExpiryOverride);
     assert.equal("ProductExpiryOverride" in limitedSaleState.FlashSales[0], true);
     assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 105);
     await deleteStoreOverride(typeName);
@@ -228,8 +229,11 @@ void test("absolute prices do not emit a competing zero-percent discount", async
     const state = worldState();
     applyStoreOverrides(state, buildLabel);
 
+    assert.deepEqual(state.InGameMarket.LandingPage.Categories[0].Items, [storeItem]);
     assert.equal(state.FlashSales[0].Discount, undefined);
     assert.equal(state.FlashSales[0].PremiumOverride, 75);
+    assert.equal("StartDate" in state.FlashSales[0], true);
+    assert.equal("EndDate" in state.FlashSales[0], true);
 });
 
 void test("store overrides expose all supported flash-sale labels and flags", async () => {
@@ -262,10 +266,12 @@ void test("store overrides expose all supported flash-sale labels and flags", as
         BogoGet: 1,
         Featured: true,
         Popular: false,
-        BannerIndex: 4
+        BannerIndex: 4,
+        StartDate: { $date: { $numberLong: "0" } },
+        EndDate: { $date: { $numberLong: "4102444800000" } }
     });
-    assert.equal("StartDate" in state.FlashSales[0], false);
-    assert.equal("EndDate" in state.FlashSales[0], false);
+    assert.equal("StartDate" in state.FlashSales[0], true);
+    assert.equal("EndDate" in state.FlashSales[0], true);
     assert.equal("ProductExpiryOverride" in state.FlashSales[0], false);
     await deleteStoreOverride(typeName);
 });

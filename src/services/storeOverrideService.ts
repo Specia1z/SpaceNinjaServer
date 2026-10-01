@@ -5,12 +5,15 @@ import { fromStoreItem, toStoreItem } from "./itemDataService.ts";
 import { sendWsBroadcastToGame } from "./wsService.ts";
 
 const storeOverrides = new Map<string, IStoreOverride>();
+const permanentOfferStart = new Date(0);
+const permanentOfferEnd = new Date("2100-01-01T00:00:00.000Z");
 
 const isPromotionActive = (override: IStoreOverride, now: number = Date.now()): boolean => {
     return (
         override.Enabled &&
         (!override.StartDate || override.StartDate.getTime() <= now) &&
-        (!override.EndDate || override.EndDate.getTime() > now)
+        (!override.EndDate || override.EndDate.getTime() > now) &&
+        (!override.ProductExpiryDate || override.ProductExpiryDate.getTime() > now)
     );
 };
 
@@ -175,11 +178,20 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
         worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != typeName);
         const promotionActive = isPromotionActive(override, now);
         const productWindowActive = override.ProductExpiryDate !== undefined && isProductWindowActive(override, now);
-        if (!hasFlashSaleOverride || (!promotionActive && !productWindowActive)) continue;
+        if (
+            !hasFlashSaleOverride ||
+            (!promotionActive && !productWindowActive) ||
+            (override.ProductExpiryDate !== undefined && !productWindowActive)
+        )
+            continue;
 
-        const startDate =
-            promotionActive && override.StartDate ? toMongoDate2(override.StartDate, buildLabel) : undefined;
-        const endDate = promotionActive && override.EndDate ? toMongoDate2(override.EndDate, buildLabel) : undefined;
+        const startDate = toMongoDate2(override.StartDate ?? permanentOfferStart, buildLabel);
+        const endDate = toMongoDate2(
+            promotionActive
+                ? (override.EndDate ?? override.ProductExpiryDate ?? permanentOfferEnd)
+                : (override.ProductExpiryDate ?? permanentOfferEnd),
+            buildLabel
+        );
         const productExpiryDate = override.ProductExpiryDate
             ? toMongoDate2(override.ProductExpiryDate, buildLabel)
             : undefined;
@@ -198,8 +210,8 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             Featured: promotionActive ? override.Featured : undefined,
             Popular: promotionActive ? override.Popular : undefined,
             BannerIndex: promotionActive ? override.BannerIndex : undefined,
-            ...(startDate ? { StartDate: startDate } : {}),
-            ...(endDate ? { EndDate: endDate } : {}),
+            StartDate: startDate,
+            EndDate: endDate,
             ...(productExpiryDate ? { ProductExpiryOverride: productExpiryDate } : {})
         });
     }
