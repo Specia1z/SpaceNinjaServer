@@ -11,6 +11,12 @@ export interface IStoreOverride {
     DiscountPercent?: number;
     PremiumPrice?: number;
     RegularPrice?: number;
+    SupporterPack?: boolean;
+    BogoBuy?: number;
+    BogoGet?: number;
+    Featured?: boolean;
+    Popular?: boolean;
+    BannerIndex?: number;
     StartDate?: Date;
     EndDate?: Date;
     UpdatedBy: string;
@@ -28,6 +34,12 @@ const storeOverrideSchema = new Schema<IStoreOverride>(
         DiscountPercent: { type: Number, min: 0, max: 100 },
         PremiumPrice: { type: Number, min: 0 },
         RegularPrice: { type: Number, min: 0 },
+        SupporterPack: Boolean,
+        BogoBuy: { type: Number, min: 0, validate: Number.isInteger },
+        BogoGet: { type: Number, min: 0, validate: Number.isInteger },
+        Featured: Boolean,
+        Popular: Boolean,
+        BannerIndex: { type: Number, min: 0, validate: Number.isInteger },
         StartDate: Date,
         EndDate: Date,
         UpdatedBy: { type: String, required: true }

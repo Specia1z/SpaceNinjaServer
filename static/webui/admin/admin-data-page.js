@@ -14,6 +14,14 @@
         const value = document.getElementById(id).value;
         return value === "" ? undefined : Number(value);
     };
+    const optionalInteger = id => {
+        const value = optionalNumber(id);
+        return value === undefined ? undefined : Math.trunc(value);
+    };
+    const optionalBoolean = id => {
+        const value = document.getElementById(id).value;
+        return value === "" ? undefined : value === "true";
+    };
     const optionalDate = id => {
         const value = document.getElementById(id).value;
         return value ? new Date(value).toISOString() : undefined;
@@ -159,6 +167,12 @@
         document.getElementById("admin-store-giftable").value = "";
         document.getElementById("admin-store-purchase-mode").value = "";
         document.getElementById("admin-store-category").value = "";
+        document.getElementById("admin-store-supporter").value = "";
+        document.getElementById("admin-store-featured").value = "";
+        document.getElementById("admin-store-popular").value = "";
+        document.getElementById("admin-store-bogo-buy").value = "";
+        document.getElementById("admin-store-bogo-get").value = "";
+        document.getElementById("admin-store-banner-index").value = "";
     }
 
     function editStoreOverride(index) {
@@ -172,6 +186,15 @@
             override.Giftable === undefined ? "" : String(override.Giftable);
         document.getElementById("admin-store-purchase-mode").value = override.PurchaseMode ?? "";
         document.getElementById("admin-store-category").value = override.CategoryName ?? "";
+        document.getElementById("admin-store-supporter").value =
+            override.SupporterPack === undefined ? "" : String(override.SupporterPack);
+        document.getElementById("admin-store-featured").value =
+            override.Featured === undefined ? "" : String(override.Featured);
+        document.getElementById("admin-store-popular").value =
+            override.Popular === undefined ? "" : String(override.Popular);
+        document.getElementById("admin-store-bogo-buy").value = override.BogoBuy ?? "";
+        document.getElementById("admin-store-bogo-get").value = override.BogoGet ?? "";
+        document.getElementById("admin-store-banner-index").value = override.BannerIndex ?? "";
         document.getElementById("admin-store-discount").value = override.DiscountPercent ?? "";
         document.getElementById("admin-store-premium").value = override.PremiumPrice ?? "";
         document.getElementById("admin-store-regular").value = override.RegularPrice ?? "";
@@ -249,6 +272,12 @@
             DiscountPercent: optionalNumber("admin-store-discount"),
             PremiumPrice: optionalNumber("admin-store-premium"),
             RegularPrice: optionalNumber("admin-store-regular"),
+            SupporterPack: optionalBoolean("admin-store-supporter"),
+            Featured: optionalBoolean("admin-store-featured"),
+            Popular: optionalBoolean("admin-store-popular"),
+            BogoBuy: optionalInteger("admin-store-bogo-buy"),
+            BogoGet: optionalInteger("admin-store-bogo-get"),
+            BannerIndex: optionalInteger("admin-store-banner-index"),
             StartDate: optionalDate("admin-store-start"),
             EndDate: optionalDate("admin-store-end")
         };

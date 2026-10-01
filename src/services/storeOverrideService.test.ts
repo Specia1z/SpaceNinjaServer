@@ -28,7 +28,8 @@ const worldState = (): IWorldState =>
             LandingPage: {
                 Categories: [
                     { CategoryName: "NEW", Name: "new", Icon: "new", Items: [] },
-                    { CategoryName: "TENNOGEN", Name: "tennogen", Icon: "tennogen", Items: [] }
+                    { CategoryName: "TENNOGEN", Name: "tennogen", Icon: "tennogen", Items: [] },
+                    { CategoryName: "SALE", Name: "sale", Icon: "sale", Items: [] }
                 ]
             }
         }
@@ -142,6 +143,44 @@ void test("absolute prices do not emit a competing zero-percent discount", async
 
     assert.equal(state.FlashSales[0].Discount, undefined);
     assert.equal(state.FlashSales[0].PremiumOverride, 75);
+});
+
+void test("store overrides expose all supported flash-sale labels and flags", async () => {
+    await saveStoreOverride(
+        override({
+            CategoryName: "SALE",
+            DiscountPercent: 25,
+            SupporterPack: true,
+            BogoBuy: 2,
+            BogoGet: 1,
+            Featured: true,
+            Popular: false,
+            BannerIndex: 4
+        })
+    );
+    const state = worldState();
+    applyStoreOverrides(state, buildLabel);
+
+    assert.deepEqual(state.InGameMarket.LandingPage.Categories[0].Items, []);
+    assert.deepEqual(state.InGameMarket.LandingPage.Categories[2].Items, [storeItem]);
+    assert.deepEqual(state.FlashSales[0], {
+        TypeName: typeName,
+        ShowInMarket: true,
+        HideFromMarket: undefined,
+        Discount: 25,
+        PremiumOverride: undefined,
+        RegularOverride: undefined,
+        SupporterPack: true,
+        BogoBuy: 2,
+        BogoGet: 1,
+        Featured: true,
+        Popular: false,
+        BannerIndex: 4,
+        StartDate: state.FlashSales[0].StartDate,
+        EndDate: state.FlashSales[0].EndDate,
+        ProductExpiryOverride: state.FlashSales[0].ProductExpiryOverride
+    });
+    await deleteStoreOverride(typeName);
 });
 
 void test("older overrides retain their purchase behavior and default newly listed items to New", async () => {

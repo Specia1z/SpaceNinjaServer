@@ -33,6 +33,12 @@ export const saveStoreOverride = async (override: IStoreOverride): Promise<IStor
         "DiscountPercent",
         "PremiumPrice",
         "RegularPrice",
+        "SupporterPack",
+        "BogoBuy",
+        "BogoGet",
+        "Featured",
+        "Popular",
+        "BannerIndex",
         "StartDate",
         "EndDate"
     ];
@@ -128,8 +134,15 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             // Absent unless the admin configured an absolute price, in which case it takes precedence over Discount.
             PremiumOverride: override.PremiumPrice,
             RegularOverride: override.RegularPrice,
+            SupporterPack: override.SupporterPack,
+            BogoBuy: override.BogoBuy,
+            BogoGet: override.BogoGet,
+            Featured: override.Featured,
+            Popular: override.Popular,
+            BannerIndex: override.BannerIndex,
             StartDate: toMongoDate2(override.StartDate ?? 0, buildLabel),
-            EndDate: toMongoDate2(override.EndDate ?? 4_102_444_800_000, buildLabel)
+            EndDate: toMongoDate2(override.EndDate ?? 4_102_444_800_000, buildLabel),
+            ProductExpiryOverride: toMongoDate2(override.EndDate ?? 4_102_444_800_000, buildLabel)
         });
     }
 };

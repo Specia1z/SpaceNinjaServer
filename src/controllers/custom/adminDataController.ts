@@ -26,7 +26,9 @@ const STORE_CATEGORIES: readonly string[] = [
     "COMMUNITY",
     "HEIRLOOM",
     "TENNOGEN",
-    "SALE"
+    "SALE",
+    "WISH_LIST",
+    "QUICK_BUY"
 ];
 
 export const getAdminItemDataStatusController: RequestHandler = async (req, res) => {
@@ -52,6 +54,12 @@ const optionalNumber = (value: unknown, name: string, max?: number): number | un
     return value;
 };
 
+const optionalInteger = (value: unknown, name: string, max?: number): number | undefined => {
+    const parsed = optionalNumber(value, name, max);
+    if (parsed !== undefined && !Number.isInteger(parsed)) throw new Error(`Invalid ${name}`);
+    return parsed;
+};
+
 const optionalDate = (value: unknown, name: string): Date | undefined => {
     if (value === undefined || value === null || value === "") return undefined;
     if (typeof value != "string") throw new Error(`Invalid ${name}`);
@@ -72,11 +80,23 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
     const discountPercent = optionalNumber(body.DiscountPercent, "DiscountPercent", 100);
     const premiumPrice = optionalNumber(body.PremiumPrice, "PremiumPrice");
     const regularPrice = optionalNumber(body.RegularPrice, "RegularPrice");
+    const bogoBuy = optionalInteger(body.BogoBuy, "BogoBuy");
+    const bogoGet = optionalInteger(body.BogoGet, "BogoGet");
+    const bannerIndex = optionalInteger(body.BannerIndex, "BannerIndex");
     if (body.Purchasable !== undefined && typeof body.Purchasable != "boolean") {
         throw new Error("Invalid Purchasable");
     }
     if (body.Giftable !== undefined && typeof body.Giftable != "boolean") {
         throw new Error("Invalid Giftable");
+    }
+    if (body.SupporterPack !== undefined && typeof body.SupporterPack != "boolean") {
+        throw new Error("Invalid SupporterPack");
+    }
+    if (body.Featured !== undefined && typeof body.Featured != "boolean") {
+        throw new Error("Invalid Featured");
+    }
+    if (body.Popular !== undefined && typeof body.Popular != "boolean") {
+        throw new Error("Invalid Popular");
     }
     if (body.PurchaseMode !== undefined && !["platinum", "steam"].includes(body.PurchaseMode)) {
         throw new Error("Invalid PurchaseMode");
@@ -95,6 +115,12 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
         DiscountPercent: discountPercent,
         PremiumPrice: premiumPrice,
         RegularPrice: regularPrice,
+        SupporterPack: body.SupporterPack,
+        BogoBuy: bogoBuy,
+        BogoGet: bogoGet,
+        Featured: body.Featured,
+        Popular: body.Popular,
+        BannerIndex: bannerIndex,
         StartDate: startDate,
         EndDate: endDate,
         UpdatedBy: account.DisplayName
