@@ -207,6 +207,7 @@ export interface IConfig {
     /** @deprecated Use the two independent new-account options below. */
     autoCompleteQuestsAndUnlockMissions?: boolean;
     autoCompleteQuestsForNewAccounts?: boolean;
+    /** Unlocks the star chart for new accounts and retroactively applies it to existing accounts when enabled. */
     unlockAllMissionsForNewAccounts?: boolean;
     newAccountStarterPack?: boolean;
     noMasteryRankUpCooldown?: boolean;

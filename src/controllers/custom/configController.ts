@@ -11,6 +11,7 @@ import { sendWsBroadcastEx, sendWsBroadcast } from "../../services/wsService.ts"
 import { validatePlayerPolicyField } from "../../services/playerPortalService.ts";
 import { applyGlobalAccountCheatSideEffects, validateAccountCheatConfig } from "../../services/accountCheatService.ts";
 import type { IAccountCheats } from "../../types/inventoryTypes/inventoryTypes.ts";
+import { unlockStarChartForExistingAccounts } from "../../services/accountInitializationService.ts";
 
 export const getConfigController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
@@ -31,6 +32,10 @@ export const setConfigController: RequestHandler = async (req, res) => {
     if (isAdministrator(account)) {
         const edits = req.body as Record<string, boolean | string | number>;
         for (const [id, value] of Object.entries(edits)) {
+            if (id === "unlockAllMissionsForNewAccounts" && typeof value !== "boolean") {
+                res.status(400).send(`${id} must be a boolean`);
+                return;
+            }
             const error = validateRegistrationRateLimitConfig(id, value);
             if (error) {
                 res.status(400).send(error);
@@ -66,10 +71,16 @@ export const setConfigController: RequestHandler = async (req, res) => {
             await applyGlobalAccountCheatSideEffects(edit.key as keyof IAccountCheats, edit.value);
         }
         await saveConfig();
-        sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
         if (isWorldStateUpdate) sendWsBroadcast({ sync_world_state: true });
         if (isInventoryUpdate) sendWsBroadcast({ sync_inventory: true });
         syncConfigWithDatabase();
+        try {
+            if (edits.unlockAllMissionsForNewAccounts === true) {
+                await unlockStarChartForExistingAccounts();
+            }
+        } finally {
+            sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
+        }
         res.end();
     } else {
         res.status(401).end();

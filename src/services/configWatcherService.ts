@@ -29,6 +29,7 @@ import { Inbox } from "../models/inboxModel.ts";
 import { createMessage } from "./inboxService.ts";
 import gameToBuildVersionInt from "../constants/gameToBuildVersionInt.ts";
 import { accountCheatKeys, defaultAccountCheats, validateAccountCheatConfig } from "./accountCheatService.ts";
+import { unlockStarChartForExistingAccounts } from "./accountInitializationService.ts";
 
 chokidar.watch(configPath).on("change", () => {
     if (shouldReloadConfig()) {
@@ -39,6 +40,7 @@ chokidar.watch(configPath).on("change", () => {
         const prevInventoryConfig = JSON.stringify(inventoryAffectingConfigKeys.map(key => config[key]));
         const prevWebParams = JSON.stringify(getWebServerParams());
         const prevUdpRelayParams = getUdpRelayParams();
+        const prevUnlockAllMissions = config.unlockAllMissionsForNewAccounts;
 
         logger.info("Detected a change to config file, reloading its contents.");
         try {
@@ -49,6 +51,11 @@ chokidar.watch(configPath).on("change", () => {
         }
         validateConfig();
         syncConfigWithDatabase();
+        if (!prevUnlockAllMissions && config.unlockAllMissionsForNewAccounts) {
+            void unlockStarChartForExistingAccounts().catch((error: Error) => {
+                logger.error(`Failed to apply global star chart unlock: ${error.message}`);
+            });
+        }
 
         if (`${config.logger.fileLevel}:${config.logger.consoleLevel}` != prevLogLevel) {
             logger.info("Reiniting logger to apply changes.");

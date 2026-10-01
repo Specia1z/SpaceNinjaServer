@@ -3,6 +3,7 @@ import { args } from "../helpers/commandLineArguments.ts";
 import type { ITunables } from "../types/bootstrapperTypes.ts";
 import { config, type IMetadataPatchConfig } from "./configService.ts";
 import { getMetadataPatchState } from "./metadataPatchService.ts";
+import { getStoreItemRules } from "./storeOverrideService.ts";
 
 let secret;
 if (args.secret) {
@@ -97,7 +98,8 @@ export const getTunablesForClient = (
         nrs: ((config.nrsAddresses ?? [])[0] || "%THIS_MACHINE%").replaceAll("%THIS_MACHINE%", reflexiveAddress),
 
         // if (version_compare(buildLabel, gameToBuildVersion["16.5.5"]) < 0) {
-        irc: (config.ircAddress || "%THIS_MACHINE%").replaceAll("%THIS_MACHINE%", reflexiveAddress)
+        irc: (config.ircAddress || "%THIS_MACHINE%").replaceAll("%THIS_MACHINE%", reflexiveAddress),
+        store_item_rules: getStoreItemRules()
     };
     if (config.tunables?.useLoginToken) {
         tunables.token = getTokenForClient(clientAddress);

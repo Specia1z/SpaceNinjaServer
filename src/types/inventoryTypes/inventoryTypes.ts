@@ -166,6 +166,7 @@ export interface IInventoryDatabase
     // SNS-specific fields for server-side tracking
     accountOwnerId: Types.ObjectId;
     MarketSystem?: boolean;
+    starChartUnlockVersion?: string;
     ReferralRewardClaims?: string[];
     MarketRequestIds?: string[];
     MissionRelicRewards?: (ITypeCount & { Rarity?: TRarity })[];

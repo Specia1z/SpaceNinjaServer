@@ -130,6 +130,7 @@ export interface IWsMsgToClientGame extends IWsMsgToClientCommon {
     sync_inventory?: boolean;
     sync_world_state?: boolean;
     tunables?: ITunables;
+    tunables_delta?: Partial<ITunables>;
 }
 
 export type IWsMsgToClient = IWsMsgToClientWebui | IWsMsgToClientGame;

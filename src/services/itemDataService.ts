@@ -5907,7 +5907,7 @@ export const getPrice = (
     return getUndiscountedPrice(storeItemName, quantity, durability, usePremium, buildLabel);
 };
 
-// Rounds a discounted price the way the game client does: the unit price is discounted first, then multiplied.
+// The client truncates the discounted unit price before multiplying by quantity.
 const applyDiscount = (
     undiscountedTotal: number,
     discountPercent: number,
@@ -5915,7 +5915,7 @@ const applyDiscount = (
     typeName: string
 ): number => {
     const undiscountedUnitPrice = undiscountedTotal / quantity;
-    const discountedUnitPrice = Math.round(undiscountedUnitPrice * (1 - discountPercent / 100));
+    const discountedUnitPrice = Math.floor(undiscountedUnitPrice * (1 - discountPercent / 100));
     if (discountedUnitPrice <= 0 && undiscountedUnitPrice > 0) {
         logger.warn(`discount of ${discountPercent}% results in a non-positive price for ${typeName}`);
     }

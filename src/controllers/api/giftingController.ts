@@ -16,8 +16,8 @@ import type { IPurchaseParams, IPurchaseResponse } from "../../types/purchaseTyp
 import { ePurchaseSource } from "../../types/purchaseTypes.ts";
 import type { RequestHandler } from "express";
 import { ExportFlavour } from "warframe-public-export-plus";
-import { logger } from "../../utils/logger.ts";
-import { getBundle, getPrice, isBundle } from "../../services/itemDataService.ts";
+import { fromStoreItem, getBundle, getPrice, isBundle } from "../../services/itemDataService.ts";
+import { isStoreItemGiftable } from "../../services/storeOverrideService.ts";
 
 const checkPurchaseParams = (params: IPurchaseParams): boolean => {
     switch (params.Source) {
@@ -63,7 +63,7 @@ export const giftingController: RequestHandler = async (req, res) => {
 
     // Cannot gift to players who have gifting disabled.
     const senderAccount = await getAccountForRequest(req);
-    const senderBuildLabel = getBuildLabel(req, account);
+    const senderBuildLabel = getBuildLabel(req, senderAccount);
     if (
         inventory.Settings?.GiftMode == "GIFT_MODE_NONE" ||
         (inventory.Settings?.GiftMode == "GIFT_MODE_FRIENDS" && !(await areFriends(account._id, senderAccount._id)))
@@ -92,22 +92,24 @@ export const giftingController: RequestHandler = async (req, res) => {
     if (data.PurchaseParams.Source == ePurchaseSource.DailyDeal) {
         await handleDailyDealPurchase(senderInventory, data.PurchaseParams, response);
     } else {
-        if (!data.PurchaseParams.ExpectedPrice) {
-            logger.debug(`client didn't provide ExpectedPrice, attempt to get it from PE+`);
-            data.PurchaseParams.ExpectedPrice = getPrice(
-                data.PurchaseParams.StoreItem,
-                data.PurchaseParams.Quantity,
-                data.PurchaseParams.Durability,
-                data.PurchaseParams.UsePremium,
-                data.buildLabel ?? senderBuildLabel
-            );
+        const typeName = isBundle(data.PurchaseParams.StoreItem)
+            ? data.PurchaseParams.StoreItem
+            : fromStoreItem(data.PurchaseParams.StoreItem);
+        if (!isStoreItemGiftable(typeName)) {
+            throw new Error("item is not currently giftable");
         }
-        updateCurrency(
-            senderInventory,
-            data.PurchaseParams.ExpectedPrice,
-            CurrencyType.PAID_PLATINUM,
-            response.InventoryChanges
+        const price = getPrice(
+            data.PurchaseParams.StoreItem,
+            data.PurchaseParams.Quantity,
+            data.PurchaseParams.Durability,
+            data.PurchaseParams.UsePremium,
+            senderBuildLabel
         );
+        if (data.PurchaseParams.ExpectedPrice !== undefined && data.PurchaseParams.ExpectedPrice !== price) {
+            throw new Error("market price changed; refresh the market and try again");
+        }
+        data.PurchaseParams.ExpectedPrice = price;
+        updateCurrency(senderInventory, price, CurrencyType.PAID_PLATINUM, response.InventoryChanges);
     }
     if (isBundle(data.PurchaseParams.StoreItem)) {
         const bundle = getBundle(data.PurchaseParams.StoreItem, senderBuildLabel)!;

@@ -1652,6 +1652,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
     {
         accountOwnerId: Schema.Types.ObjectId,
         MarketSystem: { type: Boolean, index: true },
+        starChartUnlockVersion: String,
         ReferralRewardClaims: { type: [String], default: [] },
         MarketRequestIds: { type: [String], default: [] },
 
@@ -2128,6 +2129,7 @@ inventorySchema.set("toJSON", {
         delete returnedObject._id;
         delete returnedObject.__v;
         delete returnedObject.accountOwnerId;
+        delete returnedObject.starChartUnlockVersion;
         delete returnedObject.ReferralRewardClaims;
         delete returnedObject.MissionRelicRewards;
         delete returnedObject.HarvesterPoints;

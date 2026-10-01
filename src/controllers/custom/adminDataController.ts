@@ -18,6 +18,16 @@ const getAdministrator = async (req: Parameters<RequestHandler>[0]): Promise<TAc
 };
 
 const RUSH_COST_MODES: readonly string[] = ["stock", "free", "custom"];
+const STORE_CATEGORIES: readonly string[] = [
+    "NEW_PLAYER",
+    "NEW",
+    "POPULAR",
+    "SEASONAL",
+    "COMMUNITY",
+    "HEIRLOOM",
+    "TENNOGEN",
+    "SALE"
+];
 
 export const getAdminItemDataStatusController: RequestHandler = async (req, res) => {
     await getAdministrator(req);
@@ -62,16 +72,26 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
     const discountPercent = optionalNumber(body.DiscountPercent, "DiscountPercent", 100);
     const premiumPrice = optionalNumber(body.PremiumPrice, "PremiumPrice");
     const regularPrice = optionalNumber(body.RegularPrice, "RegularPrice");
-    const hasAnyPrice = discountPercent !== undefined || premiumPrice !== undefined || regularPrice !== undefined;
-    // An override that only delists an item carries no pricing, which is a valid configuration.
-    const onlyDelists = body.Listed === false && body.Enabled !== false;
-    if (!hasAnyPrice && !onlyDelists) {
-        throw new Error("An override requires a discount percentage or a sale price");
+    if (body.Purchasable !== undefined && typeof body.Purchasable != "boolean") {
+        throw new Error("Invalid Purchasable");
+    }
+    if (body.Giftable !== undefined && typeof body.Giftable != "boolean") {
+        throw new Error("Invalid Giftable");
+    }
+    if (body.PurchaseMode !== undefined && !["platinum", "steam"].includes(body.PurchaseMode)) {
+        throw new Error("Invalid PurchaseMode");
+    }
+    if (body.CategoryName !== undefined && !STORE_CATEGORIES.includes(body.CategoryName)) {
+        throw new Error("Invalid CategoryName");
     }
     const override: IStoreOverride = {
         TypeName: body.TypeName,
         Enabled: body.Enabled !== false,
         Listed: body.Listed !== false,
+        Purchasable: body.Purchasable ?? body.Listed !== false,
+        Giftable: body.Giftable,
+        PurchaseMode: body.PurchaseMode,
+        CategoryName: body.CategoryName,
         DiscountPercent: discountPercent,
         PremiumPrice: premiumPrice,
         RegularPrice: regularPrice,

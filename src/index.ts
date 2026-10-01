@@ -19,6 +19,7 @@ import { initializeRedeemCodes } from "./services/redeemCodeService.ts";
 import { WarframeIrcServer } from "./services/ircService.ts";
 import { initializePresence } from "./services/presenceService.ts";
 import { initializeMetadataPatches } from "./services/metadataPatchService.ts";
+import { unlockStarChartForExistingAccounts } from "./services/accountInitializationService.ts";
 
 const validateIrcCredentials = async (accountId: string, token: string): Promise<boolean> => {
     const url = new URL("/custom/getAccountInfo", `http://127.0.0.1:${config.httpPort || 80}`);
@@ -116,6 +117,11 @@ if (args.test) {
         logger.info("Connected to MongoDB (version unknown)");
     }
     syncConfigWithDatabase();
+    if (config.unlockAllMissionsForNewAccounts) {
+        void unlockStarChartForExistingAccounts().catch((error: Error) => {
+            logger.error(`Failed to apply global star chart unlock: ${error.message}`);
+        });
+    }
     await Promise.all([
         initializeStoreOverrides(),
         initializeAdminItemData(),

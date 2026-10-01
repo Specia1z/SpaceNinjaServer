@@ -155,6 +155,10 @@
         document.getElementById("admin-store-form").reset();
         document.getElementById("admin-store-enabled").checked = true;
         document.getElementById("admin-store-listed").checked = true;
+        document.getElementById("admin-store-purchasable").checked = true;
+        document.getElementById("admin-store-giftable").value = "";
+        document.getElementById("admin-store-purchase-mode").value = "";
+        document.getElementById("admin-store-category").value = "";
     }
 
     function editStoreOverride(index) {
@@ -163,6 +167,11 @@
         document.getElementById("admin-store-type").dispatchEvent(new Event("input"));
         document.getElementById("admin-store-enabled").checked = override.Enabled;
         document.getElementById("admin-store-listed").checked = override.Listed;
+        document.getElementById("admin-store-purchasable").checked = override.Purchasable ?? override.Listed;
+        document.getElementById("admin-store-giftable").value =
+            override.Giftable === undefined ? "" : String(override.Giftable);
+        document.getElementById("admin-store-purchase-mode").value = override.PurchaseMode ?? "";
+        document.getElementById("admin-store-category").value = override.CategoryName ?? "";
         document.getElementById("admin-store-discount").value = override.DiscountPercent ?? "";
         document.getElementById("admin-store-premium").value = override.PremiumPrice ?? "";
         document.getElementById("admin-store-regular").value = override.RegularPrice ?? "";
@@ -188,7 +197,19 @@
             itemCell.append(path);
             row.insertCell().textContent = [
                 override.Enabled ? loc("admin_enabled") : loc("admin_disabled"),
-                override.Listed ? loc("admin_listed") : loc("admin_unlisted")
+                override.Listed ? loc("admin_listed") : loc("admin_unlisted"),
+                (override.Purchasable ?? override.Listed) ? loc("admin_purchasable") : loc("admin_notPurchasable"),
+                override.Giftable === undefined
+                    ? loc("admin_storeGameDefault")
+                    : loc(override.Giftable ? "admin_storeGiftAllowed" : "admin_storeGiftDenied"),
+                loc(
+                    override.PurchaseMode === "platinum"
+                        ? "admin_storePlatinum"
+                        : override.PurchaseMode === "steam"
+                          ? "admin_storeSteam"
+                          : "admin_storeGameDefault"
+                ),
+                override.CategoryName || loc("admin_storeCategoryAuto")
             ].join(" / ");
             row.insertCell().textContent = loc("admin_pricingSummary")
                 .replace("|DISCOUNT|", override.DiscountPercent ?? 0)
@@ -218,6 +239,13 @@
             TypeName: document.getElementById("admin-store-type").value.trim(),
             Enabled: document.getElementById("admin-store-enabled").checked,
             Listed: document.getElementById("admin-store-listed").checked,
+            Purchasable: document.getElementById("admin-store-purchasable").checked,
+            Giftable:
+                document.getElementById("admin-store-giftable").value === ""
+                    ? undefined
+                    : document.getElementById("admin-store-giftable").value === "true",
+            PurchaseMode: document.getElementById("admin-store-purchase-mode").value || undefined,
+            CategoryName: document.getElementById("admin-store-category").value || undefined,
             DiscountPercent: optionalNumber("admin-store-discount"),
             PremiumPrice: optionalNumber("admin-store-premium"),
             RegularPrice: optionalNumber("admin-store-regular"),

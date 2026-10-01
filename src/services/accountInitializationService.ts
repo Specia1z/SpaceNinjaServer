@@ -1,12 +1,46 @@
 import { ExportRegions } from "warframe-public-export-plus";
+import { createHash } from "node:crypto";
 import { BL_LATEST, BV_LATEST } from "../constants/gameVersions.ts";
 import { addString } from "../helpers/stringHelpers.ts";
-import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
+import { Inventory, type TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import { addBooster, addChallenges, ensureUserHasSteelPathRewards, updateSlots } from "./inventoryService.ts";
 import { addFixedLevelRewards } from "./missionInventoryUpdateService.ts";
 import { completeAllQuests } from "./questService.ts";
 import { handleStoreItemAcquisition } from "./purchaseService.ts";
 import type { IMissionReward } from "../types/missionTypes.ts";
+import { sendWsBroadcastToGame } from "./wsService.ts";
+import { logger } from "../utils/logger.ts";
+
+const starChartUnlockVersion = createHash("sha256").update(Object.keys(ExportRegions).sort().join("\n")).digest("hex");
+let pendingStarChartUnlock: Promise<number> | undefined;
+
+export const unlockStarChartForExistingAccounts = async (): Promise<number> => {
+    if (pendingStarChartUnlock) return pendingStarChartUnlock;
+
+    const work = async (): Promise<number> => {
+        let updated = 0;
+        const cursor = Inventory.find({
+            accountOwnerId: { $exists: true },
+            MarketSystem: { $ne: true },
+            starChartUnlockVersion: { $ne: starChartUnlockVersion }
+        }).cursor();
+        for await (const inventory of cursor) {
+            await completeAllMissions(inventory);
+            await inventory.save();
+            sendWsBroadcastToGame(inventory.accountOwnerId.toString(), { sync_inventory: true });
+            updated++;
+        }
+        logger.info(`Applied global star chart unlock to ${updated} existing accounts.`);
+        return updated;
+    };
+
+    pendingStarChartUnlock = work();
+    try {
+        return await pendingStarChartUnlock;
+    } finally {
+        pendingStarChartUnlock = undefined;
+    }
+};
 
 export const giveNewAccountStarterPack = async (inventory: TInventoryDatabaseDocument): Promise<void> => {
     inventory.PremiumCredits += 200;
@@ -95,4 +129,5 @@ export const completeAllMissions = async (
         syndicate =
             inventory.Affiliations[inventory.Affiliations.push({ Tag: "CetusSyndicate", Standing: 250, Title: 0 })];
     }
+    if (includeSteelPath) inventory.starChartUnlockVersion = starChartUnlockVersion;
 };

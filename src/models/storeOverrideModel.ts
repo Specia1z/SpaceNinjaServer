@@ -4,6 +4,10 @@ export interface IStoreOverride {
     TypeName: string;
     Enabled: boolean;
     Listed: boolean;
+    Purchasable?: boolean;
+    Giftable?: boolean;
+    PurchaseMode?: "platinum" | "steam";
+    CategoryName?: string;
     DiscountPercent?: number;
     PremiumPrice?: number;
     RegularPrice?: number;
@@ -17,6 +21,10 @@ const storeOverrideSchema = new Schema<IStoreOverride>(
         TypeName: { type: String, required: true },
         Enabled: { type: Boolean, required: true, default: true },
         Listed: { type: Boolean, required: true, default: true },
+        Purchasable: Boolean,
+        Giftable: Boolean,
+        PurchaseMode: { type: String, enum: ["platinum", "steam"] },
+        CategoryName: String,
         DiscountPercent: { type: Number, min: 0, max: 100 },
         PremiumPrice: { type: Number, min: 0 },
         RegularPrice: { type: Number, min: 0 },

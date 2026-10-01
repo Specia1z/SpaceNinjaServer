@@ -1300,6 +1300,7 @@
                                         <input class="form-check-input" type="checkbox" id="unlockAllMissionsForNewAccounts" />
                                         <label class="form-check-label" for="unlockAllMissionsForNewAccounts" data-loc="cheats_unlockAllMissionsForNewAccounts"></label>
                                     </div>
+                                    <div class="form-text mb-2" data-loc="cheats_unlockAllMissionsForNewAccountsHint"></div>
                                     <div class="form-check mt-2">
                                         <input class="form-check-input" type="checkbox" id="newAccountStarterPack" />
                                         <label class="form-check-label" for="newAccountStarterPack" data-loc="cheats_newAccountStarterPack"></label>
@@ -2172,7 +2173,43 @@
                                         <input class="form-check-input" id="admin-store-listed" type="checkbox" checked />
                                         <label class="form-check-label" for="admin-store-listed" data-loc="admin_storeListed"></label>
                                     </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" id="admin-store-purchasable" type="checkbox" checked />
+                                        <label class="form-check-label" for="admin-store-purchasable" data-loc="admin_storePurchasable"></label>
+                                    </div>
                                 </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="admin-store-giftable" data-loc="admin_storeGiftable"></label>
+                                    <select class="form-select" id="admin-store-giftable">
+                                        <option value="" data-loc="admin_storeGameDefault"></option>
+                                        <option value="true" data-loc="admin_storeGiftAllowed"></option>
+                                        <option value="false" data-loc="admin_storeGiftDenied"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="admin-store-purchase-mode" data-loc="admin_storePurchaseMode"></label>
+                                    <select class="form-select" id="admin-store-purchase-mode">
+                                        <option value="" data-loc="admin_storeGameDefault"></option>
+                                        <option value="platinum" data-loc="admin_storePlatinum"></option>
+                                        <option value="steam" data-loc="admin_storeSteam"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-store-category" data-loc="admin_storeCategory"></label>
+                                <select class="form-select" id="admin-store-category">
+                                    <option value="" data-loc="admin_storeCategoryAuto"></option>
+                                    <option value="NEW_PLAYER" data-loc="admin_storeCategoryNewPlayer"></option>
+                                    <option value="NEW" data-loc="admin_storeCategoryNew"></option>
+                                    <option value="POPULAR" data-loc="admin_storeCategoryPopular"></option>
+                                    <option value="SEASONAL" data-loc="admin_storeCategorySeasonal"></option>
+                                    <option value="COMMUNITY" data-loc="admin_storeCategoryCommunity"></option>
+                                    <option value="HEIRLOOM" data-loc="admin_storeCategoryHeirloom"></option>
+                                    <option value="TENNOGEN" data-loc="admin_storeCategoryTennoGen"></option>
+                                    <option value="SALE" data-loc="admin_storeCategorySale"></option>
+                                </select>
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">

@@ -2995,13 +2995,26 @@ for (const [index, id] of uiConfigs.entries()) {
     } else if (elm.type == "checkbox") {
         elm.onchange = function () {
             const value = this.checked;
-            $.post({
+            const isGlobalStarChart = id == "unlockAllMissionsForNewAccounts";
+            if (isGlobalStarChart) this.disabled = true;
+            const request = $.post({
                 url: "/custom/setConfig?" + window.authz,
                 contentType: "application/json",
                 data: JSON.stringify({ [id]: value })
             }).done(function () {
                 config_data[id] = value;
             });
+            if (isGlobalStarChart) {
+                request
+                    .fail(() => {
+                        config_data = undefined;
+                        getServerConfig().then(applyServerConfig);
+                        toast(loc("settings_changeFailed"));
+                    })
+                    .always(() => {
+                        elm.disabled = false;
+                    });
+            }
         };
     }
 }

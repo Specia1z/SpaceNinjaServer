@@ -51,7 +51,7 @@ import { Types } from "mongoose";
 import { BL_LATEST } from "../constants/gameVersions.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import { applyLiveWorldState, getLiveDailyDealForPurchase } from "./liveWorldStateService.ts";
-import { isStoreItemListed } from "./storeOverrideService.ts";
+import { isStoreItemPurchasable } from "./storeOverrideService.ts";
 
 const getStoreItemCategory = (storeItem: string): string => {
     const storeItemString = getSubstringFromKeyword(storeItem, "StoreItems/");
@@ -217,8 +217,8 @@ export const handlePurchase = async (
         if (overrideTypeName.startsWith("/Lotus/StoreItems/") || overrideTypeName in ExportBoosters) {
             overrideTypeName = fromStoreItem(overrideTypeName);
         }
-        if (!isStoreItemListed(overrideTypeName)) {
-            throw new Error("item is not currently listed in the market");
+        if (!isStoreItemPurchasable(overrideTypeName)) {
+            throw new Error("item is not currently purchasable in the market");
         }
         const authoritativePrice = getInventoryAwarePrice(
             purchaseRequest.PurchaseParams.StoreItem,
