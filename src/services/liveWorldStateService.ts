@@ -15,6 +15,7 @@ import invasionNodes from "../../static/fixed_responses/worldState/invasionNodes
 import invasionRewards from "../../static/fixed_responses/worldState/invasionRewards.json" with { type: "json" };
 import syndicateMissionNodes from "../../static/fixed_responses/worldState/syndicateMissions.json" with { type: "json" };
 import { LiveWorldActivityState } from "../models/worldStateModel.ts";
+import { fromMongoDate } from "../helpers/inventoryHelpers.ts";
 
 const LIVE_WORLD_STATE_URL = "https://oracle.browse.wf/worldState.min.json";
 const SUPPLEMENTAL_WORLD_STATE_URLS = [
@@ -22,6 +23,10 @@ const SUPPLEMENTAL_WORLD_STATE_URLS = [
     "https://api.warframe.com/cdn/worldState.php"
 ];
 const REFRESH_INTERVAL_MS = 60_000;
+const MAX_SUPPLEMENTAL_AGE_SECONDS = 300;
+
+export const isFreshSupplementalWorldState = (time: unknown, nowMs: number): boolean =>
+    typeof time == "number" && Number.isFinite(time) && Math.abs(nowMs / 1000 - time) <= MAX_SUPPLEMENTAL_AGE_SECONDS;
 
 const liveWorldStateArrayKeys = [
     "Events",
@@ -375,6 +380,29 @@ const updateLiveSyndicateMissions = (missions: IWorldState["SyndicateMissions"])
     }
 };
 
+export const mergeCurrentSyndicateMissions = (
+    generated: IWorldState["SyndicateMissions"],
+    live: IWorldState["SyndicateMissions"] | undefined,
+    nowMs: number
+): IWorldState["SyndicateMissions"] => {
+    if (!live) {
+        return generated;
+    }
+    const current = live.filter(mission => fromMongoDate(mission.Expiry).getTime() > nowMs);
+    const activeTags = new Set(
+        current.filter(mission => fromMongoDate(mission.Activation).getTime() <= nowMs).map(mission => mission.Tag)
+    );
+    const liveTags = new Set(current.map(mission => mission.Tag));
+    return [
+        ...generated.filter(
+            mission =>
+                !activeTags.has(mission.Tag) &&
+                (!liveTags.has(mission.Tag) || fromMongoDate(mission.Activation).getTime() <= nowMs)
+        ),
+        ...current
+    ];
+};
+
 const getCalendarDateMs = (date: IWorldState["KnownCalendarSeasons"][number]["Activation"]): number =>
     Number(date.$date.$numberLong);
 
@@ -482,6 +510,9 @@ const fetchSupplementalWorldState = async (): Promise<
                 ) {
                     throw new Error(`${url}: supplemental world state fields are missing`);
                 }
+                if (!isFreshSupplementalWorldState(worldState.Time, Date.now())) {
+                    throw new Error(`${url}: supplemental world state is stale`);
+                }
                 const primeVaultTraders = worldState.PrimeVaultTraders.map(trader => {
                     const scheduleInfo = (
                         trader as Omit<typeof trader, "ScheduleInfo"> & {
@@ -535,7 +566,7 @@ const fetchLiveWorldState = async (): Promise<void> => {
             updateLiveSyndicateMissions(supplementalWorldState.SyndicateMissions);
             updateLiveCalendarSeasons(supplementalWorldState.KnownCalendarSeasons);
         } catch (e) {
-            logger.debug(`Could not supplement browse.wf world state with Prime Vault traders: ${String(e)}`);
+            logger.debug(`Could not supplement browse.wf world state: ${String(e)}`);
         }
         const nextJson = JSON.stringify(liveWorldState);
         const changed = nextJson != cachedWorldStateJson;
@@ -598,9 +629,15 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
     const liveWorldState = structuredClone(cachedWorldState);
     const compatibleSeasonInfo = getCompatibleSeasonInfo(liveWorldState.SeasonInfo, buildVersion);
     const localInvasions = [...liveInvasions.values()].map(entry => structuredClone(entry.invasion));
+    const syndicateMissions = mergeCurrentSyndicateMissions(
+        worldState.SyndicateMissions,
+        liveWorldState.SyndicateMissions,
+        Date.now()
+    );
     if (buildVersion >= gameToBuildVersionInt["43.5.0"]) {
         Object.assign(worldState, liveWorldState);
         worldState.Invasions = localInvasions;
+        worldState.SyndicateMissions = syndicateMissions;
         return;
     }
 
@@ -614,7 +651,7 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
         ),
         ActiveMissions: liveWorldState.ActiveMissions.filter(fissure => isKnownNode(fissure.Node)),
         ...(liveWorldState.Invasions ? { Invasions: localInvasions } : {}),
-        ...(liveWorldState.SyndicateMissions ? { SyndicateMissions: liveWorldState.SyndicateMissions } : {}),
+        SyndicateMissions: syndicateMissions,
         ...(liveWorldState.KnownCalendarSeasons
             ? {
                   KnownCalendarSeasons: liveWorldState.KnownCalendarSeasons.map(season =>
