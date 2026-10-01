@@ -245,7 +245,7 @@
                 override.CategoryName || loc("admin_storeCategoryAuto")
             ].join(" / ");
             row.insertCell().textContent = loc("admin_pricingSummary")
-                .replace("|DISCOUNT|", override.DiscountPercent ?? 0)
+                .replace("|DISCOUNT|", override.DiscountPercent === undefined ? "-" : `${override.DiscountPercent}%`)
                 .replace("|PREMIUM|", override.PremiumPrice ?? "-")
                 .replace("|REGULAR|", override.RegularPrice ?? "-");
             row.insertCell().textContent = [

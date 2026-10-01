@@ -236,6 +236,18 @@ void test("absolute prices do not emit a competing zero-percent discount", async
     assert.equal("EndDate" in state.FlashSales[0], true);
 });
 
+void test("limited-only overrides reuse the original store price", async () => {
+    await saveStoreOverride(override({ ProductExpiryDate: new Date(Date.now() + 60_000) }));
+    const state = worldState();
+    applyStoreOverrides(state, buildLabel);
+
+    assert.equal(state.FlashSales[0].Discount, undefined);
+    assert.equal(state.FlashSales[0].PremiumOverride, 105);
+    assert.equal(state.FlashSales[0].RegularOverride, undefined);
+    assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 105);
+    await deleteStoreOverride(typeName);
+});
+
 void test("store overrides expose all supported flash-sale labels and flags", async () => {
     await saveStoreOverride(
         override({

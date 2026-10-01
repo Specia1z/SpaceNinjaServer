@@ -524,7 +524,7 @@ dict = {
     admin_unlisted: `[UNTRANSLATED] Unlisted`,
     admin_purchasable: `[UNTRANSLATED] Purchasable`,
     admin_notPurchasable: `[UNTRANSLATED] Purchase blocked`,
-    admin_pricingSummary: `[UNTRANSLATED] Discount |DISCOUNT|% · Platinum |PREMIUM| · Credits |REGULAR|`,
+    admin_pricingSummary: `[UNTRANSLATED] Discount |DISCOUNT| · Platinum |PREMIUM| · Credits |REGULAR|`,
     admin_edit: `[UNTRANSLATED] Edit`,
     admin_delete: `[UNTRANSLATED] Delete`,
     admin_overrideSaved: `[UNTRANSLATED] Store override saved.`,

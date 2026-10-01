@@ -1,12 +1,20 @@
 import { StoreOverride, type IStoreOverride } from "../models/storeOverrideModel.ts";
 import type { IWorldState } from "../types/worldStateTypes.ts";
 import { toMongoDate2 } from "../helpers/inventoryHelpers.ts";
-import { fromStoreItem, toStoreItem } from "./itemDataService.ts";
+import { fromStoreItem, getUndiscountedPrice, toStoreItem } from "./itemDataService.ts";
 import { sendWsBroadcastToGame } from "./wsService.ts";
 
 const storeOverrides = new Map<string, IStoreOverride>();
 const permanentOfferStart = new Date(0);
 const permanentOfferEnd = new Date("2100-01-01T00:00:00.000Z");
+
+const getOriginalPrice = (storeItem: string, usePremium: boolean, buildLabel: string): number | undefined => {
+    try {
+        return getUndiscountedPrice(storeItem, 1, 0, usePremium, buildLabel);
+    } catch {
+        return undefined;
+    }
+};
 
 const isPromotionActive = (override: IStoreOverride, now: number = Date.now()): boolean => {
     return (
@@ -195,6 +203,18 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
         const productExpiryDate = override.ProductExpiryDate
             ? toMongoDate2(override.ProductExpiryDate, buildLabel)
             : undefined;
+        const hasPriceOverride =
+            override.DiscountPercent !== undefined ||
+            override.PremiumPrice !== undefined ||
+            override.RegularPrice !== undefined;
+        const originalPremiumPrice =
+            override.ProductExpiryDate !== undefined && !hasPriceOverride
+                ? getOriginalPrice(storeItem, true, buildLabel)
+                : undefined;
+        const originalRegularPrice =
+            override.ProductExpiryDate !== undefined && !hasPriceOverride
+                ? getOriginalPrice(storeItem, false, buildLabel)
+                : undefined;
 
         worldState.FlashSales.push({
             TypeName: typeName,
@@ -202,8 +222,8 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             HideFromMarket: override.Listed ? undefined : true,
             Discount: promotionActive ? override.DiscountPercent : undefined,
             // Absent unless the admin configured an absolute price, in which case it takes precedence over Discount.
-            PremiumOverride: promotionActive ? override.PremiumPrice : undefined,
-            RegularOverride: promotionActive ? override.RegularPrice : undefined,
+            PremiumOverride: promotionActive ? (override.PremiumPrice ?? originalPremiumPrice) : originalPremiumPrice,
+            RegularOverride: promotionActive ? (override.RegularPrice ?? originalRegularPrice) : originalRegularPrice,
             SupporterPack: promotionActive ? override.SupporterPack : undefined,
             BogoBuy: promotionActive ? override.BogoBuy : undefined,
             BogoGet: promotionActive ? override.BogoGet : undefined,

@@ -5922,7 +5922,7 @@ const applyDiscount = (
     return discountedUnitPrice * quantity;
 };
 
-const getUndiscountedPrice = (
+export const getUndiscountedPrice = (
     storeItemName: string,
     quantity: number,
     durability: number,

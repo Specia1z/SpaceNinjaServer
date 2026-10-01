@@ -574,7 +574,7 @@ dict = {
     admin_unlisted: `已下架`,
     admin_purchasable: `允许购买`,
     admin_notPurchasable: `禁止购买`,
-    admin_pricingSummary: `折扣 |DISCOUNT|% · 白金 |PREMIUM| · 现金 |REGULAR|`,
+    admin_pricingSummary: `折扣 |DISCOUNT| · 白金 |PREMIUM| · 现金 |REGULAR|`,
     admin_edit: `编辑`,
     admin_delete: `删除`,
     admin_overrideSaved: `商店设置已保存。`,
