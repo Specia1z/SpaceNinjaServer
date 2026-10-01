@@ -181,6 +181,8 @@
         document.getElementById("admin-store-bogo-buy").value = "";
         document.getElementById("admin-store-bogo-get").value = "";
         document.getElementById("admin-store-banner-index").value = "";
+        document.getElementById("admin-store-category-start").value = "";
+        document.getElementById("admin-store-category-end").value = "";
     }
 
     function editStoreOverride(index) {
@@ -203,6 +205,8 @@
         document.getElementById("admin-store-bogo-buy").value = override.BogoBuy ?? "";
         document.getElementById("admin-store-bogo-get").value = override.BogoGet ?? "";
         document.getElementById("admin-store-banner-index").value = override.BannerIndex ?? "";
+        document.getElementById("admin-store-category-start").value = formatDateTimeLocal(override.CategoryStartDate);
+        document.getElementById("admin-store-category-end").value = formatDateTimeLocal(override.CategoryEndDate);
         document.getElementById("admin-store-discount").value = override.DiscountPercent ?? "";
         document.getElementById("admin-store-premium").value = override.PremiumPrice ?? "";
         document.getElementById("admin-store-regular").value = override.RegularPrice ?? "";
@@ -242,7 +246,10 @@
                 .replace("|DISCOUNT|", override.DiscountPercent ?? 0)
                 .replace("|PREMIUM|", override.PremiumPrice ?? "-")
                 .replace("|REGULAR|", override.RegularPrice ?? "-");
-            row.insertCell().textContent = `${formatDate(override.StartDate)} - ${formatDate(override.EndDate)}`;
+            row.insertCell().textContent = [
+                `${loc("admin_storePromotionSchedule")}: ${formatDate(override.StartDate)} - ${formatDate(override.EndDate)}`,
+                `${loc("admin_storeCategorySchedule")}: ${formatDate(override.CategoryStartDate)} - ${formatDate(override.CategoryEndDate)}`
+            ].join(" / ");
             const actions = row.insertCell();
             const edit = document.createElement("button");
             edit.className = "btn btn-sm btn-outline-primary me-2";
@@ -283,6 +290,8 @@
             BogoBuy: optionalInteger("admin-store-bogo-buy"),
             BogoGet: optionalInteger("admin-store-bogo-get"),
             BannerIndex: optionalInteger("admin-store-banner-index"),
+            CategoryStartDate: optionalDate("admin-store-category-start"),
+            CategoryEndDate: optionalDate("admin-store-category-end"),
             StartDate: optionalDate("admin-store-start"),
             EndDate: optionalDate("admin-store-end")
         };

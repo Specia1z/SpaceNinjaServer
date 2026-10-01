@@ -6,11 +6,19 @@ import { sendWsBroadcastToGame } from "./wsService.ts";
 
 const storeOverrides = new Map<string, IStoreOverride>();
 
-const isActive = (override: IStoreOverride, now: number = Date.now()): boolean => {
+const isPromotionActive = (override: IStoreOverride, now: number = Date.now()): boolean => {
     return (
         override.Enabled &&
         (!override.StartDate || override.StartDate.getTime() <= now) &&
         (!override.EndDate || override.EndDate.getTime() > now)
+    );
+};
+
+const isCategoryActive = (override: IStoreOverride, now: number = Date.now()): boolean => {
+    return (
+        override.Enabled &&
+        (!override.CategoryStartDate || override.CategoryStartDate.getTime() <= now) &&
+        (!override.CategoryEndDate || override.CategoryEndDate.getTime() > now)
     );
 };
 
@@ -39,6 +47,8 @@ export const saveStoreOverride = async (override: IStoreOverride): Promise<IStor
         "Featured",
         "Popular",
         "BannerIndex",
+        "CategoryStartDate",
+        "CategoryEndDate",
         "StartDate",
         "EndDate"
     ];
@@ -78,7 +88,7 @@ const storeItemName = (typeName: string): string =>
 export const getStoreItemRules = (): string => {
     const rules: Record<string, { giftable?: boolean; purchaseMode?: "platinum" | "steam" }> = {};
     for (const override of storeOverrides.values()) {
-        if (!isActive(override)) continue;
+        if (!override.Enabled) continue;
         const giftable = override.Listed ? override.Giftable : false;
         if (giftable === undefined && !override.PurchaseMode) continue;
         rules[storeItemName(override.TypeName)] = {
@@ -98,7 +108,12 @@ const broadcastStoreRules = (): void => {
 
 export const getActiveStoreOverride = (typeName: string): IStoreOverride | undefined => {
     const override = storeOverrides.get(overrideTypeName(typeName));
-    return override && isActive(override) ? override : undefined;
+    return override?.Enabled ? override : undefined;
+};
+
+export const getActiveStorePromotion = (typeName: string): IStoreOverride | undefined => {
+    const override = getActiveStoreOverride(typeName);
+    return override && isPromotionActive(override) ? override : undefined;
 };
 
 export const isStoreItemPurchasable = (typeName: string): boolean => {
@@ -114,7 +129,7 @@ export const isStoreItemGiftable = (typeName: string): boolean => {
 export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string): void => {
     const now = Date.now();
     for (const override of storeOverrides.values()) {
-        if (!isActive(override, now)) continue;
+        if (!override.Enabled) continue;
         const storeItem = storeItemName(override.TypeName);
         const typeName = overrideTypeName(override.TypeName);
         const categories = worldState.InGameMarket.LandingPage.Categories;
@@ -123,7 +138,11 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
                 if (category.Items) category.Items = category.Items.filter(item => item != storeItem);
             }
         }
-        if (override.Listed && !categories.some(category => category.Items?.includes(storeItem))) {
+        if (
+            override.Listed &&
+            isCategoryActive(override, now) &&
+            !categories.some(category => category.Items?.includes(storeItem))
+        ) {
             const category =
                 categories.find(item => item.CategoryName == override.CategoryName) ??
                 categories.find(item => item.CategoryName == "NEW");
@@ -144,7 +163,7 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             override.StartDate !== undefined ||
             override.EndDate !== undefined;
         worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != typeName);
-        if (!hasFlashSaleOverride) continue;
+        if (!hasFlashSaleOverride || !isPromotionActive(override, now)) continue;
 
         const startDate = override.StartDate ? toMongoDate2(override.StartDate, buildLabel) : undefined;
         const endDate = override.EndDate ? toMongoDate2(override.EndDate, buildLabel) : undefined;

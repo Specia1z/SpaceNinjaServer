@@ -77,6 +77,11 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
     const startDate = optionalDate(body.StartDate, "StartDate");
     const endDate = optionalDate(body.EndDate, "EndDate");
     if (startDate && endDate && startDate >= endDate) throw new Error("EndDate must be after StartDate");
+    const categoryStartDate = optionalDate(body.CategoryStartDate, "CategoryStartDate");
+    const categoryEndDate = optionalDate(body.CategoryEndDate, "CategoryEndDate");
+    if (categoryStartDate && categoryEndDate && categoryStartDate >= categoryEndDate) {
+        throw new Error("CategoryEndDate must be after CategoryStartDate");
+    }
     const discountPercent = optionalNumber(body.DiscountPercent, "DiscountPercent", 100);
     const premiumPrice = optionalNumber(body.PremiumPrice, "PremiumPrice");
     const regularPrice = optionalNumber(body.RegularPrice, "RegularPrice");
@@ -105,6 +110,9 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
     if (body.CategoryName !== undefined && !STORE_CATEGORIES.includes(body.CategoryName)) {
         throw new Error("Invalid CategoryName");
     }
+    if ((categoryStartDate || categoryEndDate) && body.CategoryName === undefined) {
+        throw new Error("CategoryName is required when category timing is configured");
+    }
     const override: IStoreOverride = {
         TypeName: body.TypeName,
         Enabled: body.Enabled !== false,
@@ -122,6 +130,8 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
         Featured: body.Featured,
         Popular: body.Popular,
         BannerIndex: bannerIndex,
+        CategoryStartDate: categoryStartDate,
+        CategoryEndDate: categoryEndDate,
         StartDate: startDate,
         EndDate: endDate,
         UpdatedBy: account.DisplayName

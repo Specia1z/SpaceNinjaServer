@@ -91,7 +91,7 @@ import { buildLabelToVersionInt, wikiDateToBuildVersionInt } from "../helpers/ve
 import baro from "../constants/baro.ts";
 import type { Mutable } from "../utils/ts-utils.ts";
 import { getCraftingOverride } from "./craftingConfigService.ts";
-import { getActiveStoreOverride } from "./storeOverrideService.ts";
+import { getActiveStorePromotion } from "./storeOverrideService.ts";
 import { getSyncedBundle, getSyncedWarframe } from "./adminItemDataService.ts";
 
 export type WeaponTypeInternal =
@@ -5870,7 +5870,7 @@ export const getPrice = (
 
     // A store override either states an absolute price (discount already applied) or a discount percentage
     // to apply to the regular price. Both are honored here so that admins can configure only a percentage.
-    const storeOverride = getActiveStoreOverride(internalName);
+    const storeOverride = getActiveStorePromotion(internalName);
     if (storeOverride) {
         const overridePrice = usePremium ? storeOverride.PremiumPrice : storeOverride.RegularPrice;
         if (overridePrice !== undefined) return overridePrice * quantity;
