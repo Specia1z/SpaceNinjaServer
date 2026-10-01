@@ -466,6 +466,9 @@ export const getInventory = async (
     }
 
     applyGlobalAccountCheats(inventory);
+    if (projection === undefined && migrateMisclassifiedNarinSkins(inventory)) {
+        await inventory.save();
+    }
     return inventory;
 };
 
@@ -1961,9 +1964,39 @@ const FLAVOUR_ITEM_PATH_PREFIXES = [
     "/Lotus/Types/Items/VideoWallBackdrops/",
     "/Lotus/Types/Items/VideoWallSoundscapes/",
     "/Lotus/Types/StoreItems/AvatarImages/",
-    "/Lotus/Types/StoreItems/SuitCustomizations/",
-    "/Lotus/Upgrades/Skins/"
+    "/Lotus/Types/StoreItems/SuitCustomizations/"
 ] as const;
+
+// These cosmetics were temporarily classified as FlavourItems when their U44 export entries were missing. Keep the
+// repair list narrow because /Lotus/Upgrades/Skins/ also contains legitimate FlavourItems such as ship skins and
+// animation unlocks.
+const MISCLASSIFIED_NARIN_SKINS = new Set([
+    "/Lotus/Upgrades/Skins/Duelist/DuelistAltHelmet",
+    "/Lotus/Upgrades/Skins/Scarves/DuelistSyandana",
+    "/Lotus/Upgrades/Skins/Effects/DuelistEphemera",
+    "/Lotus/Upgrades/Skins/Crowns/DuelistCrown"
+]);
+
+const migrateMisclassifiedNarinSkins = (inventory: TInventoryDatabaseDocument): boolean => {
+    if (!Array.isArray(inventory.FlavourItems) || !Array.isArray(inventory.WeaponSkins)) {
+        return false;
+    }
+
+    let migrated = false;
+    for (let index = inventory.FlavourItems.length - 1; index >= 0; index--) {
+        const item = inventory.FlavourItems[index];
+        if (!MISCLASSIFIED_NARIN_SKINS.has(item.ItemType)) {
+            continue;
+        }
+
+        if (!inventory.WeaponSkins.some(x => x.ItemType == item.ItemType)) {
+            inventory.WeaponSkins.push({ ItemType: item.ItemType, IsNew: true });
+        }
+        inventory.FlavourItems.splice(index, 1);
+        migrated = true;
+    }
+    return migrated;
+};
 
 const addCustomization = (
     inventory: TInventoryDatabaseDocument,
