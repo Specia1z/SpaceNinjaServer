@@ -51,6 +51,7 @@ const messageSchema = new Schema<IMessageDatabase>(
         hasAccountAction: Boolean,
         RegularCredits: Number,
         PremiumCredits: Number,
+        PrimeTokens: Number,
         minBuildVersion: Number
     },
     { id: false }

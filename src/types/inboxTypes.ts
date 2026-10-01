@@ -56,6 +56,7 @@ export interface IMessage {
     hasAccountAction?: boolean;
     RegularCredits?: number;
     PremiumCredits?: number;
+    PrimeTokens?: number;
 }
 
 interface Arg {

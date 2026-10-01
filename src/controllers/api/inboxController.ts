@@ -69,7 +69,8 @@ export const inboxController: RequestHandler = async (req, res) => {
             attachmentCountedItems ||
             message.gifts ||
             message.RegularCredits ||
-            message.PremiumCredits
+            message.PremiumCredits ||
+            message.PrimeTokens
         ) {
             const inventory = await getInventory(account._id, undefined);
             const inventoryChanges: IInventoryChanges = {};
@@ -127,6 +128,10 @@ export const inboxController: RequestHandler = async (req, res) => {
             }
             if (message.PremiumCredits) {
                 updateCurrency(inventory, -message.PremiumCredits, CurrencyType.PLATINUM, inventoryChanges);
+            }
+            if (message.PrimeTokens) {
+                inventory.PrimeTokens += message.PrimeTokens;
+                inventoryChanges.PrimeTokens = (inventoryChanges.PrimeTokens ?? 0) + message.PrimeTokens;
             }
             await inventory.save();
             res.json({ InventoryChanges: inventoryChanges });

@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { Types } from "mongoose";
+import { Inbox } from "../models/inboxModel.ts";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import { config } from "./configService.ts";
-import { addMissionAyaReward, addMissionPlatinumReward } from "./missionPlatinumRewardService.ts";
+import { addMissionPlatinumReward, addMissionRegalAyaReward } from "./missionPlatinumRewardService.ts";
 
 void test("mission platinum honors chance, multiplier and inbox delivery", () => {
     const original = {
@@ -43,7 +45,12 @@ void test("mission platinum honors chance, multiplier and inbox delivery", () =>
     }
 });
 
-void test("mission Aya uses a daily cap and pity completion", () => {
+void test("mission Regal Aya uses a daily cap and pity completion and sends inbox currency", async t => {
+    let insertedMessages: unknown[] = [];
+    t.mock.method(Inbox, "insertMany", (documents: unknown) => {
+        insertedMessages = documents as unknown[];
+        return Promise.resolve([]);
+    });
     const original = {
         min: config.missionAyaRewardMin,
         max: config.missionAyaRewardMax,
@@ -57,14 +64,15 @@ void test("mission Aya uses a daily cap and pity completion", () => {
         config.missionAyaRewardChance = 0;
         config.missionAyaRewardDailyCap = 3;
         config.missionAyaRewardPityCompletions = 2;
-        const inventory = {} as TInventoryDatabaseDocument;
+        const inventory = { accountOwnerId: new Types.ObjectId() } as TInventoryDatabaseDocument;
 
-        assert.equal(addMissionAyaReward(inventory), 0);
+        assert.equal(await addMissionRegalAyaReward(inventory), 0);
         assert.equal(inventory.missionAyaRewardPity, 1);
         inventory.missionAyaRewardDate = new Date(Date.now() - 86_400_000);
-        assert.equal(addMissionAyaReward(inventory), 1);
+        assert.equal(await addMissionRegalAyaReward(inventory), 1);
         assert.equal(inventory.missionAyaRewardPity, 0);
-        assert.equal(addMissionAyaReward(inventory), 0);
+        assert.equal((insertedMessages[0] as { PrimeTokens?: number }).PrimeTokens, 1);
+        assert.equal(await addMissionRegalAyaReward(inventory), 0);
         assert.equal(inventory.missionAyaRewardPity, 1);
     } finally {
         config.missionAyaRewardMin = original.min;

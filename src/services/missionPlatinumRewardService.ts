@@ -2,6 +2,7 @@ import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inven
 import { logger } from "../utils/logger.ts";
 import { config } from "./configService.ts";
 import { getRandomInt } from "./rngService.ts";
+import { createMessage } from "./inboxService.ts";
 
 type MissionRewardState = {
     rewardDate?: Date;
@@ -92,10 +93,10 @@ const getMissionRewardAmount = ({
     return Math.max(0, reward);
 };
 
-export const addMissionAyaReward = (
+export const addMissionRegalAyaReward = async (
     inventory: TInventoryDatabaseDocument,
     missionAyaMultiplier = 1
-): number => {
+): Promise<number> => {
     const amount = getMissionRewardAmount({
         inventory,
         min: Math.max(0, Math.trunc(config.missionAyaRewardMin ?? 1)),
@@ -108,7 +109,19 @@ export const addMissionAyaReward = (
         todayKey: "missionAyaRewardToday",
         pityKey: "missionAyaRewardPity"
     });
-    if (amount > 0) logger.debug(`mission completion Aya reward: ${amount}`);
+    if (amount > 0) {
+        await createMessage(inventory.accountOwnerId, [
+            {
+                sndr: "/Lotus/Language/Bosses/Ordis",
+                msg: "/Lotus/Language/Inbox/FoundItemsBody",
+                sub: "/Lotus/Language/Inbox/FoundItemsTitle",
+                icon: "/Lotus/Interface/Icons/Npcs/Ordis.png",
+                PrimeTokens: amount,
+                highPriority: true
+            }
+        ]);
+        logger.debug(`mission completion Regal Aya reward: ${amount} (sent by inbox)`);
+    }
     return amount;
 };
 
