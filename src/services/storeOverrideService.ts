@@ -22,6 +22,14 @@ const isCategoryActive = (override: IStoreOverride, now: number = Date.now()): b
     );
 };
 
+const isProductWindowActive = (override: IStoreOverride, now: number = Date.now()): boolean => {
+    return (
+        override.Enabled &&
+        (!override.StartDate || override.StartDate.getTime() <= now) &&
+        (!override.ProductExpiryDate || override.ProductExpiryDate.getTime() > now)
+    );
+};
+
 export const initializeStoreOverrides = async (): Promise<void> => {
     storeOverrides.clear();
     for (const override of await StoreOverride.find().lean()) {
@@ -49,6 +57,7 @@ export const saveStoreOverride = async (override: IStoreOverride): Promise<IStor
         "BannerIndex",
         "CategoryStartDate",
         "CategoryEndDate",
+        "ProductExpiryDate",
         "StartDate",
         "EndDate"
     ];
@@ -160,30 +169,38 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             override.Featured !== undefined ||
             override.Popular !== undefined ||
             override.BannerIndex !== undefined ||
+            override.ProductExpiryDate !== undefined ||
             override.StartDate !== undefined ||
             override.EndDate !== undefined;
         worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != typeName);
-        if (!hasFlashSaleOverride || !isPromotionActive(override, now)) continue;
+        const promotionActive = isPromotionActive(override, now);
+        const productWindowActive = override.ProductExpiryDate !== undefined && isProductWindowActive(override, now);
+        if (!hasFlashSaleOverride || (!promotionActive && !productWindowActive)) continue;
 
-        const startDate = override.StartDate ? toMongoDate2(override.StartDate, buildLabel) : undefined;
-        const endDate = override.EndDate ? toMongoDate2(override.EndDate, buildLabel) : undefined;
+        const startDate =
+            promotionActive && override.StartDate ? toMongoDate2(override.StartDate, buildLabel) : undefined;
+        const endDate = promotionActive && override.EndDate ? toMongoDate2(override.EndDate, buildLabel) : undefined;
+        const productExpiryDate = override.ProductExpiryDate
+            ? toMongoDate2(override.ProductExpiryDate, buildLabel)
+            : undefined;
 
         worldState.FlashSales.push({
             TypeName: typeName,
             ShowInMarket: override.Listed,
             HideFromMarket: override.Listed ? undefined : true,
-            Discount: override.DiscountPercent,
+            Discount: promotionActive ? override.DiscountPercent : undefined,
             // Absent unless the admin configured an absolute price, in which case it takes precedence over Discount.
-            PremiumOverride: override.PremiumPrice,
-            RegularOverride: override.RegularPrice,
-            SupporterPack: override.SupporterPack,
-            BogoBuy: override.BogoBuy,
-            BogoGet: override.BogoGet,
-            Featured: override.Featured,
-            Popular: override.Popular,
-            BannerIndex: override.BannerIndex,
+            PremiumOverride: promotionActive ? override.PremiumPrice : undefined,
+            RegularOverride: promotionActive ? override.RegularPrice : undefined,
+            SupporterPack: promotionActive ? override.SupporterPack : undefined,
+            BogoBuy: promotionActive ? override.BogoBuy : undefined,
+            BogoGet: promotionActive ? override.BogoGet : undefined,
+            Featured: promotionActive ? override.Featured : undefined,
+            Popular: promotionActive ? override.Popular : undefined,
+            BannerIndex: promotionActive ? override.BannerIndex : undefined,
             ...(startDate ? { StartDate: startDate } : {}),
-            ...(endDate ? { EndDate: endDate, ProductExpiryOverride: endDate } : {})
+            ...(endDate ? { EndDate: endDate } : {}),
+            ...(productExpiryDate ? { ProductExpiryOverride: productExpiryDate } : {})
         });
     }
 };

@@ -19,6 +19,7 @@ export interface IStoreOverride {
     BannerIndex?: number;
     CategoryStartDate?: Date;
     CategoryEndDate?: Date;
+    ProductExpiryDate?: Date;
     StartDate?: Date;
     EndDate?: Date;
     UpdatedBy: string;
@@ -44,6 +45,7 @@ const storeOverrideSchema = new Schema<IStoreOverride>(
         BannerIndex: { type: Number, min: 0, validate: Number.isInteger },
         CategoryStartDate: Date,
         CategoryEndDate: Date,
+        ProductExpiryDate: Date,
         StartDate: Date,
         EndDate: Date,
         UpdatedBy: { type: String, required: true }

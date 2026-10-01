@@ -5975,7 +5975,7 @@ const pushFlashSales = (
             ...item,
             StartDate: toMongoDate2(startDate, buildVersion),
             EndDate: toMongoDate2(endDate, buildVersion),
-            ProductExpiryOverride: toMongoDate2(endDate, buildVersion),
+            ProductExpiryOverride: item.ProductExpiryOverride ?? toMongoDate2(endDate, buildVersion),
             // Defaulting all of this is probably not needed, but might be needed for Market 2.0 (pre-U25):
             ShowInMarket: item.ShowInMarket ?? true,
             HideFromMarket: item.HideFromMarket ?? false,

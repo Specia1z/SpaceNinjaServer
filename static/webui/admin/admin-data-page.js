@@ -183,6 +183,7 @@
         document.getElementById("admin-store-banner-index").value = "";
         document.getElementById("admin-store-category-start").value = "";
         document.getElementById("admin-store-category-end").value = "";
+        document.getElementById("admin-store-product-expiry").value = "";
     }
 
     function editStoreOverride(index) {
@@ -212,6 +213,7 @@
         document.getElementById("admin-store-regular").value = override.RegularPrice ?? "";
         document.getElementById("admin-store-start").value = formatDateTimeLocal(override.StartDate);
         document.getElementById("admin-store-end").value = formatDateTimeLocal(override.EndDate);
+        document.getElementById("admin-store-product-expiry").value = formatDateTimeLocal(override.ProductExpiryDate);
         document.getElementById("admin-store-type").scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
@@ -248,6 +250,7 @@
                 .replace("|REGULAR|", override.RegularPrice ?? "-");
             row.insertCell().textContent = [
                 `${loc("admin_storePromotionSchedule")}: ${formatDate(override.StartDate)} - ${formatDate(override.EndDate)}`,
+                `${loc("admin_storeProductExpirySchedule")}: ${formatDate(override.ProductExpiryDate)}`,
                 `${loc("admin_storeCategorySchedule")}: ${formatDate(override.CategoryStartDate)} - ${formatDate(override.CategoryEndDate)}`
             ].join(" / ");
             const actions = row.insertCell();
@@ -292,6 +295,7 @@
             BannerIndex: optionalInteger("admin-store-banner-index"),
             CategoryStartDate: optionalDate("admin-store-category-start"),
             CategoryEndDate: optionalDate("admin-store-category-end"),
+            ProductExpiryDate: optionalDate("admin-store-product-expiry"),
             StartDate: optionalDate("admin-store-start"),
             EndDate: optionalDate("admin-store-end")
         };

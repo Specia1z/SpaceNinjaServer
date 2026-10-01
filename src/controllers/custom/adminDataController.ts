@@ -82,6 +82,10 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
     if (categoryStartDate && categoryEndDate && categoryStartDate >= categoryEndDate) {
         throw new Error("CategoryEndDate must be after CategoryStartDate");
     }
+    const productExpiryDate = optionalDate(body.ProductExpiryDate, "ProductExpiryDate");
+    if (startDate && productExpiryDate && productExpiryDate <= startDate) {
+        throw new Error("ProductExpiryDate must be after StartDate");
+    }
     const discountPercent = optionalNumber(body.DiscountPercent, "DiscountPercent", 100);
     const premiumPrice = optionalNumber(body.PremiumPrice, "PremiumPrice");
     const regularPrice = optionalNumber(body.RegularPrice, "RegularPrice");
@@ -132,6 +136,7 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
         BannerIndex: bannerIndex,
         CategoryStartDate: categoryStartDate,
         CategoryEndDate: categoryEndDate,
+        ProductExpiryDate: productExpiryDate,
         StartDate: startDate,
         EndDate: endDate,
         UpdatedBy: account.DisplayName

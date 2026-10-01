@@ -188,6 +188,41 @@ void test("category and promotion schedules are independent", async () => {
     await deleteStoreOverride(typeName);
 });
 
+void test("promotion and limited-sale schedules emit separate client dates", async () => {
+    const now = Date.now();
+    const promotionEnd = new Date(now + 60_000);
+    const productExpiry = new Date(now + 30 * 24 * 60 * 60_000);
+    await saveStoreOverride(
+        override({
+            DiscountPercent: 10,
+            StartDate: new Date(now - 60_000),
+            EndDate: promotionEnd,
+            ProductExpiryDate: productExpiry
+        })
+    );
+
+    const activeState = worldState();
+    applyStoreOverrides(activeState, buildLabel);
+    assert.equal(activeState.FlashSales[0].Discount, 10);
+    assert.notDeepEqual(activeState.FlashSales[0].EndDate, activeState.FlashSales[0].ProductExpiryOverride);
+
+    await saveStoreOverride(
+        override({
+            DiscountPercent: 10,
+            StartDate: new Date(now - 120_000),
+            EndDate: new Date(now - 60_000),
+            ProductExpiryDate: productExpiry
+        })
+    );
+    const limitedSaleState = worldState();
+    applyStoreOverrides(limitedSaleState, buildLabel);
+    assert.equal(limitedSaleState.FlashSales[0].Discount, undefined);
+    assert.equal("EndDate" in limitedSaleState.FlashSales[0], false);
+    assert.equal("ProductExpiryOverride" in limitedSaleState.FlashSales[0], true);
+    assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 105);
+    await deleteStoreOverride(typeName);
+});
+
 void test("absolute prices do not emit a competing zero-percent discount", async () => {
     await saveStoreOverride(override({ PremiumPrice: 75, Purchasable: true }));
     const state = worldState();
