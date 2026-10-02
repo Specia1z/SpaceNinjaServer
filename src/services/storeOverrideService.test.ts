@@ -15,6 +15,7 @@ import {
     syncOfficialStorePrices
 } from "./officialStorePriceService.ts";
 import { handlePurchase } from "./purchaseService.ts";
+import { deleteStoreBundle, listStoreBundles, saveStoreBundle } from "./storeBundleService.ts";
 import {
     applyStoreOverrides,
     deleteStoreOverride,
@@ -336,6 +337,50 @@ void test("supplemental prices survive official sync and update the live cache",
     assert.equal(page.total, 1);
     assert.equal(page.items[0].TypeName, manualTypeName);
     assert.equal(await deleteSupplementalStorePrice(manualTypeName), true);
+});
+
+void test("custom bundle components support inventory-aware pricing and Types StoreItem paths", async () => {
+    const bundleTypeName = "/Lotus/Types/StoreItems/Packages/GenericInventoryAwareBundle";
+    const componentOne = "/Lotus/StoreItems/Upgrades/Skins/Sentinels/Skins/BansheeDlxSentSkin";
+    const componentTwo = "/Lotus/StoreItems/Upgrades/Skins/Decree/BansheeDeluxeBSkin";
+    await deleteStoreBundle(bundleTypeName);
+    await deleteSupplementalStorePrice(bundleTypeName);
+    await syncOfficialStorePrices();
+    await saveSupplementalStorePrice(bundleTypeName, 100, undefined);
+    await saveStoreBundle(bundleTypeName, [
+        { TypeName: componentOne, PurchaseQuantity: 1 },
+        { TypeName: componentTwo, PurchaseQuantity: 1 }
+    ]);
+    const listedBundle = (await listStoreBundles()).find(bundle => bundle.TypeName == bundleTypeName);
+    assert.ok(listedBundle);
+    assert.equal(listedBundle.Editable, true);
+    assert.equal(listedBundle.Components.length, 2);
+
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        PremiumCredits: 80,
+        PremiumCreditsFree: 0,
+        WeaponSkins: [{ ItemType: "/Lotus/Upgrades/Skins/Sentinels/Skins/BansheeDlxSentSkin" }]
+    });
+    const response = await handlePurchase(
+        {
+            PurchaseParams: {
+                Source: ePurchaseSource.Market,
+                StoreItem: bundleTypeName,
+                Quantity: 1,
+                UsePremium: true,
+                ExpectedPrice: 80
+            },
+            buildLabel
+        },
+        inventory
+    );
+
+    assert.equal(response.InventoryChanges.PremiumCredits, -80);
+    assert.equal(inventory.PremiumCredits, 0);
+    await deleteStoreBundle(bundleTypeName);
+    await deleteSupplementalStorePrice(bundleTypeName);
+    await syncOfficialStorePrices();
 });
 
 void test("store overrides expose all supported flash-sale labels and flags", async () => {

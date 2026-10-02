@@ -2321,6 +2321,26 @@
                 </div>
                 <div class="d-none admin-show">
                     <section class="mb-4">
+                        <h4 data-loc="admin_storeBundleManagement"></h4>
+                        <p class="text-body-secondary" data-loc="admin_storeBundleManagementDescription"></p>
+                        <form id="admin-store-bundle-form" onsubmit="saveAdminStoreBundle(); return false;">
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-store-bundle-type" data-loc="admin_storeBundle"></label>
+                                <input class="form-control font-monospace" id="admin-store-bundle-type" required autocomplete="off" placeholder="/Lotus/Types/StoreItems/..." data-loc-placeholder="admin_storeBundleTypePlaceholder" />
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label mb-0" data-loc="admin_storeBundleComponents"></label>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" onclick="addAdminStoreBundleComponent();" data-loc="admin_addComponent"></button>
+                            </div>
+                            <div id="admin-store-bundle-components" class="mb-3"></div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" type="submit" data-loc="admin_saveStoreBundle"></button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="resetAdminStoreBundleForm();" data-loc="admin_clearForm"></button>
+                            </div>
+                        </form>
+                    </section>
+                    <hr />
+                    <section class="mb-4">
                         <h4 data-loc="admin_storePriceManagement"></h4>
                         <p class="text-body-secondary" data-loc="admin_storePriceManagementDescription"></p>
                         <form id="admin-supplemental-price-form" onsubmit="saveAdminSupplementalPrice(); return false;">
@@ -2344,6 +2364,28 @@
                                 <button class="btn btn-outline-secondary" type="button" onclick="resetAdminSupplementalPriceForm();" data-loc="admin_clearForm"></button>
                             </div>
                         </form>
+                    </section>
+                    <hr />
+                    <section class="mb-4">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <div>
+                                <h4 class="mb-1" data-loc="admin_storeBundles"></h4>
+                                <p class="text-body-secondary mb-0" data-loc="admin_storeBundlesDescription"></p>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th data-loc="admin_storeBundle"></th>
+                                        <th data-loc="admin_storeBundleComponents"></th>
+                                        <th data-loc="admin_storePriceSource"></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-store-bundles"></tbody>
+                            </table>
+                        </div>
                     </section>
                     <hr />
                     <section>

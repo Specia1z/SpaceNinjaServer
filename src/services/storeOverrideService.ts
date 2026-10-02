@@ -175,7 +175,9 @@ export const deleteStoreOverride = async (typeName: string): Promise<boolean> =>
 };
 
 const overrideTypeName = (typeName: string): string =>
-    typeName.startsWith("/Lotus/StoreItems/") ? fromStoreItem(typeName) : typeName;
+    typeName.startsWith("/Lotus/StoreItems/") || typeName.startsWith("/Lotus/Types/StoreItems/")
+        ? fromStoreItem(typeName)
+        : typeName;
 
 const storeItemName = (typeName: string): string =>
     typeName.startsWith("/Lotus/Types/StoreItems/") || typeName.startsWith("/Lotus/StoreItems/")

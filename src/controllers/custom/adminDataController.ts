@@ -15,6 +15,7 @@ import {
     saveSupplementalStorePrice,
     syncOfficialStorePrices
 } from "../../services/officialStorePriceService.ts";
+import { deleteStoreBundle, listStoreBundles, saveStoreBundle } from "../../services/storeBundleService.ts";
 import {
     deleteCraftingConfig,
     getCraftingOverride,
@@ -99,6 +100,65 @@ export const syncOfficialStorePricesController: RequestHandler = async (req, res
     const official = await syncOfficialStorePrices();
     const overrides = await syncStoreOverridePrices(account.DisplayName, BL_LATEST);
     res.json({ official, overrides });
+};
+
+export const listStoreBundlesController: RequestHandler = async (req, res) => {
+    await getAdministrator(req);
+    res.json(await listStoreBundles());
+};
+
+export const saveStoreBundleController: RequestHandler = async (req, res) => {
+    await getAdministrator(req);
+    const body = req.body as Record<string, unknown>;
+    const typeName = body.TypeName;
+    if (
+        typeof typeName != "string" ||
+        (!typeName.startsWith("/Lotus/StoreItems/") && !typeName.startsWith("/Lotus/Types/StoreItems/")) ||
+        typeName.length > 300
+    ) {
+        throw new Error("Invalid bundle TypeName");
+    }
+    if (!Array.isArray(body.Components)) throw new Error("Bundle components are required");
+    const components = body.Components.map((value, index) => {
+        if (value === null || typeof value != "object" || Array.isArray(value)) {
+            throw new Error(`Invalid bundle component ${index + 1}`);
+        }
+        const component = value as Record<string, unknown>;
+        const componentTypeName = component.TypeName;
+        if (
+            typeof componentTypeName != "string" ||
+            !componentTypeName.startsWith("/Lotus/") ||
+            componentTypeName.length > 300
+        ) {
+            throw new Error(`Invalid bundle component ${index + 1} TypeName`);
+        }
+        const purchaseQuantity = component.PurchaseQuantity;
+        if (typeof purchaseQuantity != "number" || !Number.isInteger(purchaseQuantity)) {
+            throw new Error(`Invalid bundle component ${index + 1} quantity`);
+        }
+        const durabilityDays = component.DurabilityDays;
+        if (durabilityDays !== undefined && (typeof durabilityDays != "number" || !Number.isInteger(durabilityDays))) {
+            throw new Error(`Invalid bundle component ${index + 1} duration`);
+        }
+        return {
+            TypeName: componentTypeName,
+            PurchaseQuantity: purchaseQuantity,
+            ...(durabilityDays !== undefined ? { DurabilityDays: durabilityDays } : {})
+        };
+    });
+    res.json(await saveStoreBundle(typeName, components));
+};
+
+export const deleteStoreBundleController: RequestHandler = async (req, res) => {
+    await getAdministrator(req);
+    const typeName = (req.body as Record<string, unknown>).TypeName;
+    if (
+        typeof typeName != "string" ||
+        (!typeName.startsWith("/Lotus/StoreItems/") && !typeName.startsWith("/Lotus/Types/StoreItems/"))
+    ) {
+        throw new Error("Invalid bundle TypeName");
+    }
+    res.json({ deleted: await deleteStoreBundle(typeName) });
 };
 
 const optionalNumber = (value: unknown, name: string, max?: number): number | undefined => {

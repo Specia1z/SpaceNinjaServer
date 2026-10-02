@@ -22,5 +22,18 @@ window.adminStorePriceApi = {
             url: "/custom/admin/store-prices/manual/delete?" + window.authz,
             contentType: "application/json",
             data: JSON.stringify({ TypeName: typeName })
+        }),
+    listBundles: () => $.get("/custom/admin/store-bundles?" + window.authz),
+    saveBundle: payload =>
+        $.post({
+            url: "/custom/admin/store-bundles?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify(payload)
+        }),
+    deleteBundle: typeName =>
+        $.post({
+            url: "/custom/admin/store-bundles/delete?" + window.authz,
+            contentType: "application/json",
+            data: JSON.stringify({ TypeName: typeName })
         })
 };

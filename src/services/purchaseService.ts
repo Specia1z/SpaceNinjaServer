@@ -70,7 +70,7 @@ const getStoreItemTypesCategory = (typesItem: string): string => {
 
 const isInventoryItemOwned = (inventory: TInventoryDatabaseDocument, storeItemName: string): boolean => {
     let typeName = storeItemName;
-    if (typeName.startsWith("/Lotus/StoreItems/")) {
+    if (typeName.startsWith("/Lotus/StoreItems/") || typeName.startsWith("/Lotus/Types/StoreItems/")) {
         typeName = fromStoreItem(typeName);
     }
 
@@ -103,10 +103,11 @@ const getInventoryAwarePrice = (
     }
 
     const bundle = getBundle(storeItemName, buildLabel);
-    if (!bundle?.platinumCost) {
+    if (!bundle || bundle.components.length == 0) {
         return fullPrice;
     }
 
+    const bundlePrice = bundle.platinumCost ?? fullPrice / quantity;
     let totalComponentPrice = 0;
     let unownedComponentPrice = 0;
     for (const component of bundle.components) {
@@ -134,7 +135,7 @@ const getInventoryAwarePrice = (
     }
 
     // The client keeps the bundle discount proportional to the components that remain unowned.
-    return Math.floor((bundle.platinumCost * unownedComponentPrice) / totalComponentPrice) * quantity;
+    return Math.floor((bundlePrice * unownedComponentPrice) / totalComponentPrice) * quantity;
 };
 
 const tallyVendorPurchase = (
@@ -214,7 +215,11 @@ export const handlePurchase = async (
             throw new Error("invalid purchase quantity");
         }
         let overrideTypeName = purchaseRequest.PurchaseParams.StoreItem;
-        if (overrideTypeName.startsWith("/Lotus/StoreItems/") || overrideTypeName in ExportBoosters) {
+        if (
+            overrideTypeName.startsWith("/Lotus/StoreItems/") ||
+            overrideTypeName.startsWith("/Lotus/Types/StoreItems/") ||
+            overrideTypeName in ExportBoosters
+        ) {
             overrideTypeName = fromStoreItem(overrideTypeName);
         }
         if (!isStoreItemPurchasable(overrideTypeName)) {

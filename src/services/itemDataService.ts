@@ -93,7 +93,11 @@ import type { Mutable } from "../utils/ts-utils.ts";
 import { getCraftingOverride } from "./craftingConfigService.ts";
 import { getActiveStorePromotion } from "./storeOverrideService.ts";
 import { getSyncedBundle, getSyncedWarframe } from "./adminItemDataService.ts";
-import { getCachedOfficialStorePrice } from "./officialStorePriceCache.ts";
+import {
+    getCachedOfficialStorePrice,
+    getCachedStoreBundle,
+    getStoreItemLookupKeys
+} from "./officialStorePriceCache.ts";
 
 export type WeaponTypeInternal =
     | "LongGuns"
@@ -5458,7 +5462,9 @@ export const convertInboxMessage = (message: IInboxMessage): IMessage => {
 };
 
 export const isStoreItem = (type: string): boolean => {
-    return type.startsWith("/Lotus/StoreItems/") || type in ExportBoosters;
+    return (
+        type.startsWith("/Lotus/StoreItems/") || type.startsWith("/Lotus/Types/StoreItems/") || type in ExportBoosters
+    );
 };
 
 export const toStoreItem = (type: string): string => {
@@ -5469,12 +5475,20 @@ export const toStoreItem = (type: string): string => {
         }
         throw new Error(`could not convert ${type} to a store item`);
     }
+    if (type.startsWith("/Lotus/StoreItems/")) return type;
+    if (type.startsWith("/Lotus/Types/StoreItems/")) {
+        return "/Lotus/StoreItems/" + type.substring("/Lotus/Types/StoreItems/".length);
+    }
     return "/Lotus/StoreItems/" + type.substring("/Lotus/".length);
 };
 
 export const fromStoreItem = (type: string): string => {
     if (type.startsWith("/Lotus/StoreItems/")) {
         return "/Lotus/" + type.substring("/Lotus/StoreItems/".length);
+    }
+
+    if (type.startsWith("/Lotus/Types/StoreItems/")) {
+        return "/Lotus/" + type.substring("/Lotus/Types/StoreItems/".length);
     }
 
     if (type in ExportBoosters) {
@@ -5550,14 +5564,39 @@ export const getBundle = (uniqueName: string, buildLabel: string): IBundle | und
         };
     }
 
-    return (
-        getSyncedBundle(uniqueName) ??
-        (Object.hasOwn(ExportBundles, uniqueName) ? ExportBundles[uniqueName] : supplementalBundles[uniqueName])
-    );
+    const customBundle = getCachedStoreBundle(uniqueName);
+    if (customBundle) {
+        const platinumCost = getCachedOfficialStorePrice(uniqueName, true);
+        const creditsCost = getCachedOfficialStorePrice(uniqueName, false);
+        return {
+            components: customBundle.Components.map(component => ({
+                typeName: component.TypeName,
+                purchaseQuantity: component.PurchaseQuantity,
+                ...(component.DurabilityDays !== undefined ? { durabilityDays: component.DurabilityDays } : {})
+            })),
+            ...(platinumCost !== undefined ? { platinumCost } : {}),
+            ...(creditsCost !== undefined ? { creditsCost } : {})
+        };
+    }
+
+    for (const key of getStoreItemLookupKeys(uniqueName)) {
+        const syncedBundle = getSyncedBundle(key);
+        if (syncedBundle) return syncedBundle;
+        if (Object.hasOwn(ExportBundles, key)) return ExportBundles[key];
+        if (Object.hasOwn(supplementalBundles, key)) return supplementalBundles[key];
+    }
+    return undefined;
 };
 
-export const isBundle = (uniqueName: string): boolean =>
-    uniqueName in ExportBundles || uniqueName in supplementalBundles;
+export const isBundle = (uniqueName: string): boolean => {
+    if (getCachedStoreBundle(uniqueName)) return true;
+    return getStoreItemLookupKeys(uniqueName).some(
+        key =>
+            getSyncedBundle(key) !== undefined ||
+            Object.hasOwn(ExportBundles, key) ||
+            Object.hasOwn(supplementalBundles, key)
+    );
+};
 
 export const getBoosterPack = async (
     uniqueName: string,

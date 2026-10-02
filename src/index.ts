@@ -15,6 +15,7 @@ import { runSelfTests } from "./services/selfTestService.ts";
 import { initializeStoreOverrides } from "./services/storeOverrideService.ts";
 import { initializeAdminItemData } from "./services/adminItemDataService.ts";
 import { initializeOfficialStorePrices } from "./services/officialStorePriceService.ts";
+import { initializeStoreBundles } from "./services/storeBundleService.ts";
 import { initializeCraftingConfigs } from "./services/craftingConfigService.ts";
 import { initializeRedeemCodes } from "./services/redeemCodeService.ts";
 import { WarframeIrcServer } from "./services/ircService.ts";
@@ -127,6 +128,7 @@ if (args.test) {
         initializeStoreOverrides(),
         initializeAdminItemData(),
         initializeOfficialStorePrices(),
+        initializeStoreBundles(),
         initializeCraftingConfigs(),
         initializeRedeemCodes(),
         initializeMetadataPatches()
