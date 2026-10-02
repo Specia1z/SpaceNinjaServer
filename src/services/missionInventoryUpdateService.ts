@@ -126,6 +126,7 @@ import {
     toOid2,
     version_compare
 } from "../helpers/inventoryHelpers.ts";
+import { isVeiledRivenFingerprint } from "../helpers/rivenHelper.ts";
 import type { TAccountDocument } from "./loginService.ts";
 import type { ITypeCount } from "../types/commonTypes.ts";
 import type { IEquipmentClient } from "../types/equipmentTypes.ts";
@@ -594,7 +595,25 @@ export const addMissionInventoryUpdates = async (
                         }
                     } else {
                         const upgrade = inventory.Upgrades.id(id)!;
-                        upgrade.UpgradeFingerprint = clientUpgrade.UpgradeFingerprint; // primitive way to copy over the riven challenge progress
+                        let existingFingerprint: unknown;
+                        if (upgrade.UpgradeFingerprint) {
+                            try {
+                                existingFingerprint = JSON.parse(upgrade.UpgradeFingerprint);
+                            } catch {
+                                existingFingerprint = undefined;
+                            }
+                        }
+                        if (
+                            isVeiledRivenFingerprint(existingFingerprint) &&
+                            !isVeiledRivenFingerprint(parsedFingerprint)
+                        ) {
+                            logger.debug("preserving server-side Riven challenge fingerprint during mission sync", {
+                                itemId: id,
+                                itemType: upgrade.ItemType
+                            });
+                        } else {
+                            upgrade.UpgradeFingerprint = clientUpgrade.UpgradeFingerprint; // primitive way to copy over the riven challenge progress
+                        }
                     }
                 });
                 break;
