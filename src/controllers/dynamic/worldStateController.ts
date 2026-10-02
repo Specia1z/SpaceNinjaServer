@@ -15,6 +15,37 @@ import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/a
 import { applyAccountPickupBoost, applyAccountWorldStateBoost } from "../../services/accountPickupBoostService.ts";
 import { logger } from "../../utils/logger.ts";
 import { fromMongoDate } from "../../helpers/inventoryHelpers.ts";
+import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
+import { buildVersionToInt } from "../../helpers/versionHelper.ts";
+
+const normalizeWorldStateForClient = (worldState: ReturnType<typeof getWorldState>, buildLabel: string): void => {
+    const buildVersion = buildVersionToInt(buildLabel);
+
+    if (buildVersion >= gameToBuildVersionInt["22.10.1"]) {
+        for (const sale of worldState.FlashSales) {
+            delete sale.Featured;
+            delete sale.Popular;
+            delete sale.BannerIndex;
+        }
+    }
+
+    if (buildVersion >= gameToBuildVersionInt["44.0.0"]) {
+        const response = worldState as unknown as Record<string, unknown>;
+        delete response.PrimeVaultAvailabilities;
+        delete response.PrimeTokenAvailability;
+
+        for (const goal of worldState.Goals) {
+            const missionReward = goal.MissionInfo?.missionReward as { randomizedItems?: string } | undefined;
+            if (missionReward?.randomizedItems == "razorbackRewardManifest") {
+                delete goal.MissionInfo!.missionReward;
+            }
+        }
+
+        for (const challenge of worldState.SeasonInfo?.ActiveChallenges ?? []) {
+            delete (challenge as typeof challenge & { HasPrerequisites?: boolean }).HasPrerequisites;
+        }
+    }
+};
 
 export const worldStateController: RequestHandler = async (req, res) => {
     let buildLabel: string;
@@ -63,6 +94,8 @@ export const worldStateController: RequestHandler = async (req, res) => {
     ]);
     applyLiveWorldState(worldState);
     applyStoreOverrides(worldState, buildLabel);
+    language = typeof req.query.l == "string" ? req.query.l : language;
+    normalizeWorldStateForClient(worldState, buildLabel);
     if (req.params.accountId) {
         applyAccountPickupBoost(worldState, buildLabel, accountPickupMultiplier, accountRateExpiry);
         applyAccountWorldStateBoost(worldState, buildLabel, "credit", accountCreditMultiplier, accountRateExpiry);
@@ -107,16 +140,15 @@ export const worldStateController: RequestHandler = async (req, res) => {
         });
     }
 
-    language = typeof req.query.l == "string" ? req.query.l : language;
-    if (language) {
-        for (const event of worldState.Events) {
-            const msg =
-                event.Messages.find(x => x.LanguageCode == language)?.Message ??
-                event.Messages.find(x => x.LanguageCode == "en")?.Message ??
-                event.Msg;
-            if (msg) {
-                event.Messages = [{ Message: msg }];
-            }
+    const messageLanguage = language ?? "en";
+    for (const event of worldState.Events) {
+        const msg =
+            event.Messages.find(x => x.LanguageCode == messageLanguage)?.Message ??
+            event.Messages.find(x => x.LanguageCode == "en")?.Message ??
+            event.Msg ??
+            event.Messages[0]?.Message;
+        if (msg) {
+            event.Messages = [{ Message: msg }];
         }
     }
 
