@@ -4,7 +4,11 @@ import { addMiscItems, getInventory } from "../../services/inventoryService.ts";
 import { getJSONfromString } from "../../helpers/stringHelpers.ts";
 import {
     createUnveiledRivenFingerprint,
+    getLockedTraitValidationError,
+    getLockedTraitRequestValidationError,
     getRivenRerollCost,
+    isUnveiledRivenFingerprint,
+    isVeiledRivenFingerprint,
     randomiseRivenStats,
     type RivenFingerprint
 } from "../../helpers/rivenHelper.ts";
@@ -16,14 +20,55 @@ export const rerollRandomModController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     const request = getJSONfromString<RerollRandomModRequest>(String(req.body));
     if ("ItemIds" in request) {
+        const requestValidationError = getLockedTraitRequestValidationError(request.LockedTraits);
+        if (requestValidationError) {
+            res.status(400).json({ error: requestValidationError });
+            return;
+        }
+
         const buildLabel = getBuildLabel(req, account);
         const inventory = await getInventory(account._id, "Upgrades MiscItems dontSubtractKuvaForRivens");
+        const prepared = [] as {
+            itemId: string;
+            upgrade: NonNullable<ReturnType<typeof inventory.Upgrades.id>>;
+            fingerprint: RivenFingerprint;
+        }[];
+
+        for (const itemId of request.ItemIds) {
+            const upgrade = inventory.Upgrades.id(itemId);
+            if (!upgrade || !upgrade.UpgradeFingerprint) {
+                res.status(400).json({ error: "Random mod or fingerprint not found" });
+                return;
+            }
+
+            let fingerprint: unknown;
+            try {
+                fingerprint = JSON.parse(upgrade.UpgradeFingerprint);
+            } catch {
+                res.status(400).json({ error: "Random mod fingerprint is invalid" });
+                return;
+            }
+
+            if (!isVeiledRivenFingerprint(fingerprint) && !isUnveiledRivenFingerprint(fingerprint)) {
+                res.status(400).json({ error: "Random mod fingerprint is invalid" });
+                return;
+            }
+
+            if (isUnveiledRivenFingerprint(fingerprint)) {
+                const validationError = getLockedTraitValidationError(fingerprint, request.LockedTraits);
+                if (validationError) {
+                    res.status(400).json({ error: validationError });
+                    return;
+                }
+            }
+
+            prepared.push({ itemId, upgrade, fingerprint });
+        }
+
         const changes: IChange[] = [];
         let totalKuvaCost = 0;
-        request.ItemIds.forEach(itemId => {
-            const upgrade = inventory.Upgrades.id(itemId)!;
-            const fingerprint = JSON.parse(upgrade.UpgradeFingerprint!) as RivenFingerprint;
-            if ("challenge" in fingerprint) {
+        prepared.forEach(({ itemId, upgrade, fingerprint }) => {
+            if (isVeiledRivenFingerprint(fingerprint)) {
                 upgrade.UpgradeFingerprint = JSON.stringify(
                     createUnveiledRivenFingerprint(ExportUpgrades[upgrade.ItemType], fingerprint.IsSentinel)
                 );

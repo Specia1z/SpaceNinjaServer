@@ -32,6 +32,60 @@ export interface IFingerprintStat {
     Value: number;
 }
 
+export const isVeiledRivenFingerprint = (value: unknown): value is IVeiledRivenFingerprint => {
+    if (!value || typeof value != "object" || !("challenge" in value)) return false;
+    const challenge = (value as { challenge?: unknown }).challenge;
+    return (
+        !!challenge &&
+        typeof challenge == "object" &&
+        "Progress" in challenge &&
+        typeof challenge.Progress == "number" &&
+        "Required" in challenge &&
+        typeof challenge.Required == "number"
+    );
+};
+
+export const isUnveiledRivenFingerprint = (value: unknown): value is IUnveiledRivenFingerprint => {
+    if (!value || typeof value != "object") return false;
+    return (
+        "compat" in value &&
+        typeof value.compat == "string" &&
+        "buffs" in value &&
+        Array.isArray(value.buffs) &&
+        value.buffs.every(isFingerprintStat) &&
+        "curses" in value &&
+        Array.isArray(value.curses) &&
+        value.curses.every(isFingerprintStat)
+    );
+};
+
+const isFingerprintStat = (value: unknown): value is IFingerprintStat => {
+    if (!value || typeof value != "object") return false;
+    return "Tag" in value && typeof value.Tag == "string" && "Value" in value && typeof value.Value == "number";
+};
+
+export const getLockedTraitRequestValidationError = (lockedTraits: unknown): string | undefined => {
+    if (lockedTraits === undefined) return undefined;
+    if (!Array.isArray(lockedTraits) || lockedTraits.some(tag => typeof tag != "string")) {
+        return "LockedTraits must be an array of trait tags";
+    }
+    if (lockedTraits.length > 1) return "Only one Riven trait can be locked";
+    return undefined;
+};
+
+export const getLockedTraitValidationError = (
+    fingerprint: IUnveiledRivenFingerprint,
+    lockedTraits: unknown
+): string | undefined => {
+    const requestValidationError = getLockedTraitRequestValidationError(lockedTraits);
+    if (requestValidationError) return requestValidationError;
+    if (!Array.isArray(lockedTraits) || !lockedTraits.length) return undefined;
+
+    const tag = (lockedTraits as unknown[])[0];
+    const hasTrait = [...fingerprint.buffs, ...fingerprint.curses].some(stat => stat.Tag == tag);
+    return hasTrait ? undefined : "Locked Riven trait does not exist on this mod";
+};
+
 export const createVeiledRivenFingerprint = (meta: IUpgrade, IsSentinel: true | undefined): IVeiledRivenFingerprint => {
     const challenge = getRandomElement(meta.availableChallenges!)!;
     const fingerprintChallenge: IRivenChallenge = {

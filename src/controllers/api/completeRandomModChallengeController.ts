@@ -4,7 +4,7 @@ import { addMiscItems, getInventory2, updatePlatinum } from "../../services/inve
 import type { IInventoryChanges } from "../../types/purchaseTypes.ts";
 import type { IMiscItem } from "../../types/inventoryTypes/inventoryTypes.ts";
 import { getJSONfromString } from "../../helpers/stringHelpers.ts";
-import type { IVeiledRivenFingerprint } from "../../helpers/rivenHelper.ts";
+import { isVeiledRivenFingerprint } from "../../helpers/rivenHelper.ts";
 
 export const completeRandomModChallengeController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
@@ -17,6 +17,30 @@ export const completeRandomModChallengeController: RequestHandler = async (req, 
         "Upgrades"
     );
     const request = getJSONfromString<ICompleteRandomModChallengeRequest>(String(req.body));
+    const upgrade = inventory.Upgrades.id(request.ItemId);
+    if (!upgrade) {
+        res.status(400).json({ error: "Random mod not found" });
+        return;
+    }
+
+    if (!upgrade.UpgradeFingerprint) {
+        res.status(400).json({ error: "Random mod has no fingerprint" });
+        return;
+    }
+
+    let fingerprint: unknown;
+    try {
+        fingerprint = JSON.parse(upgrade.UpgradeFingerprint);
+    } catch {
+        res.status(400).json({ error: "Random mod fingerprint is invalid" });
+        return;
+    }
+
+    if (!isVeiledRivenFingerprint(fingerprint)) {
+        res.status(400).json({ error: "Random mod challenge is not active" });
+        return;
+    }
+
     let inventoryChanges: IInventoryChanges = {};
 
     // Remove 20 plat or riven cipher
@@ -34,10 +58,8 @@ export const completeRandomModChallengeController: RequestHandler = async (req, 
     }
 
     // Complete the riven challenge
-    const upgrade = inventory.Upgrades.id(request.ItemId)!;
-    const fp = JSON.parse(upgrade.UpgradeFingerprint!) as IVeiledRivenFingerprint;
-    fp.challenge.Progress = fp.challenge.Required;
-    upgrade.UpgradeFingerprint = JSON.stringify(fp);
+    fingerprint.challenge.Progress = fingerprint.challenge.Required;
+    upgrade.UpgradeFingerprint = JSON.stringify(fingerprint);
 
     await inventory.save();
 

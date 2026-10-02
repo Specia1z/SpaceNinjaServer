@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { IUpgrade } from "warframe-public-export-plus";
-import { getRivenRerollCost, type IUnveiledRivenFingerprint, randomiseRivenStats } from "./rivenHelper.ts";
+import {
+    getLockedTraitValidationError,
+    getLockedTraitRequestValidationError,
+    getRivenRerollCost,
+    type IUnveiledRivenFingerprint,
+    randomiseRivenStats
+} from "./rivenHelper.ts";
 
 const rivenMeta = {
     upgradeEntries: [
@@ -63,4 +69,27 @@ void test("locked Riven cycles double the normal Kuva cost", () => {
     assert.equal(getRivenRerollCost(8, true), 6300);
     assert.equal(getRivenRerollCost(9), 3500);
     assert.equal(getRivenRerollCost(99, true), 7000);
+});
+
+void test("U44 accepts only one trait that exists on the Riven", () => {
+    const fingerprint = createFingerprint();
+
+    assert.equal(getLockedTraitRequestValidationError(undefined), undefined);
+    assert.equal(getLockedTraitRequestValidationError(["BuffLocked"]), undefined);
+    assert.equal(
+        getLockedTraitRequestValidationError(["BuffLocked", "CurseLocked"]),
+        "Only one Riven trait can be locked"
+    );
+    assert.equal(getLockedTraitRequestValidationError([42]), "LockedTraits must be an array of trait tags");
+    assert.equal(getLockedTraitValidationError(fingerprint, ["BuffLocked"]), undefined);
+    assert.equal(getLockedTraitValidationError(fingerprint, undefined), undefined);
+    assert.equal(
+        getLockedTraitValidationError(fingerprint, ["MissingTrait"]),
+        "Locked Riven trait does not exist on this mod"
+    );
+    assert.equal(
+        getLockedTraitValidationError(fingerprint, ["BuffLocked", "CurseLocked"]),
+        "Only one Riven trait can be locked"
+    );
+    assert.equal(getLockedTraitValidationError(fingerprint, [42]), "LockedTraits must be an array of trait tags");
 });
