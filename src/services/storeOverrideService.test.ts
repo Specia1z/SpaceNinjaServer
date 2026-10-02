@@ -7,8 +7,13 @@ import { StorePrice } from "../models/storePriceModel.ts";
 import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
 import { ePurchaseSource } from "../types/purchaseTypes.ts";
 import type { IWorldState } from "../types/worldStateTypes.ts";
-import { getPrice } from "./itemDataService.ts";
-import { syncOfficialStorePrices } from "./officialStorePriceService.ts";
+import { getPrice, getUndiscountedPrice } from "./itemDataService.ts";
+import {
+    deleteSupplementalStorePrice,
+    listOfficialStorePricePage,
+    saveSupplementalStorePrice,
+    syncOfficialStorePrices
+} from "./officialStorePriceService.ts";
 import { handlePurchase } from "./purchaseService.ts";
 import {
     applyStoreOverrides,
@@ -312,6 +317,25 @@ void test("official price sync builds the complete catalogue instead of only cus
     assert.equal(result.total, await StorePrice.countDocuments());
     assert.ok(banshee);
     assert.equal(banshee.PremiumPrice, 245);
+});
+
+void test("supplemental prices survive official sync and update the live cache", async () => {
+    const manualTypeName = "/Lotus/Upgrades/Skins/Decree/ManualSupplementalPrice";
+    await deleteSupplementalStorePrice(manualTypeName);
+
+    await saveSupplementalStorePrice(manualTypeName, 123, 456);
+    assert.equal(getUndiscountedPrice(manualTypeName, 1, 0, true, buildLabel, true), 123);
+    assert.equal(getUndiscountedPrice(manualTypeName, 1, 0, false, buildLabel, true), 456);
+
+    await syncOfficialStorePrices();
+    const saved = await StorePrice.findOne({ TypeName: manualTypeName }).lean();
+    assert.ok(saved);
+    assert.equal(saved.Source, "supplemental");
+
+    const page = await listOfficialStorePricePage(1, 10, "ManualSupplementalPrice");
+    assert.equal(page.total, 1);
+    assert.equal(page.items[0].TypeName, manualTypeName);
+    assert.equal(await deleteSupplementalStorePrice(manualTypeName), true);
 });
 
 void test("store overrides expose all supported flash-sale labels and flags", async () => {

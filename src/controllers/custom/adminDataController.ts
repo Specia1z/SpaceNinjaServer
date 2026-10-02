@@ -8,7 +8,13 @@ import {
     saveStoreOverride,
     syncStoreOverridePrices
 } from "../../services/storeOverrideService.ts";
-import { listOfficialStorePrices, syncOfficialStorePrices } from "../../services/officialStorePriceService.ts";
+import {
+    deleteSupplementalStorePrice,
+    listOfficialStorePricePage,
+    listOfficialStorePrices,
+    saveSupplementalStorePrice,
+    syncOfficialStorePrices
+} from "../../services/officialStorePriceService.ts";
 import {
     deleteCraftingConfig,
     getCraftingOverride,
@@ -56,6 +62,36 @@ export const listStoreOverridesController: RequestHandler = async (req, res) => 
 export const listOfficialStorePricesController: RequestHandler = async (req, res) => {
     await getAdministrator(req);
     res.json(await listOfficialStorePrices());
+};
+
+export const listOfficialStorePricePageController: RequestHandler = async (req, res) => {
+    await getAdministrator(req);
+    const page = Number(req.query.page);
+    const pageSize = Number(req.query.pageSize);
+    const search = typeof req.query.search == "string" ? req.query.search : "";
+    res.json(await listOfficialStorePricePage(page, pageSize, search));
+};
+
+export const saveSupplementalStorePriceController: RequestHandler = async (req, res) => {
+    await getAdministrator(req);
+    const body = req.body as Record<string, unknown>;
+    const typeName = body.TypeName;
+    if (typeof typeName != "string" || !typeName.startsWith("/Lotus/") || typeName.length > 300) {
+        throw new Error("Invalid TypeName");
+    }
+    const premiumPrice = optionalInteger(body.PremiumPrice, "PremiumPrice");
+    const regularPrice = optionalInteger(body.RegularPrice, "RegularPrice");
+    if (premiumPrice === undefined && regularPrice === undefined) {
+        throw new Error("At least one price is required");
+    }
+    res.json(await saveSupplementalStorePrice(typeName, premiumPrice, regularPrice));
+};
+
+export const deleteSupplementalStorePriceController: RequestHandler = async (req, res) => {
+    await getAdministrator(req);
+    const typeName = (req.body as Record<string, unknown>).TypeName;
+    if (typeof typeName != "string") throw new Error("Invalid TypeName");
+    res.json({ deleted: await deleteSupplementalStorePrice(typeName) });
 };
 
 export const syncOfficialStorePricesController: RequestHandler = async (req, res) => {

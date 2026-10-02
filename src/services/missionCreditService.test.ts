@@ -33,6 +33,33 @@ void test("account rate scales the daily first win and global credit reward", as
     }
 });
 
+void test("expired global credit boosts are ignored at settlement", async () => {
+    const previousWorldState = config.worldState;
+    config.worldState = {
+        ...previousWorldState,
+        creditBoostMultiplier: 2,
+        boostExpiresAt: "2000-01-01T00:00:00.000Z"
+    };
+    try {
+        const today = Math.trunc(Date.now() / 86400000) * 86400;
+        const account = {
+            DailyFirstWinDate: today,
+            save: (): Promise<void> => Promise.resolve()
+        } as unknown as TAccountDocument;
+        const inventory = { RegularCredits: 0, Boosters: [] } as unknown as TInventoryDatabaseDocument;
+        const result = await addMissionCredits(
+            account,
+            inventory,
+            { missionDropCredits: 10, missionCompletionCredits: 20, rngRewardCredits: 5 },
+            1
+        );
+        assert.deepEqual(result.TotalCredits, [35, 35]);
+        assert.equal(inventory.RegularCredits, 0);
+    } finally {
+        config.worldState = previousWorldState;
+    }
+});
+
 void test("account rate compounds with an active inventory Credit Booster", async () => {
     const today = Math.trunc(Date.now() / 86400000) * 86400;
     const account = {

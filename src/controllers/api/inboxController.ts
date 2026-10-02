@@ -31,7 +31,7 @@ import { handleStoreItemAcquisition } from "../../services/purchaseService.ts";
 import { fromStoreItem, isStoreItem } from "../../services/itemDataService.ts";
 import type { IOid } from "../../types/commonTypes.ts";
 import { unixTimesInMs } from "../../constants/timeConstants.ts";
-import { config } from "../../services/configService.ts";
+import { config, getWorldStateBoostMultiplier, isValidIsoDateTime } from "../../services/configService.ts";
 import { Types } from "mongoose";
 import type { IInventoryChanges } from "../../types/purchaseTypes.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
@@ -158,6 +158,8 @@ export const inboxController: RequestHandler = async (req, res) => {
 
 const createNewEventMessages = async (account: TAccountDocument): Promise<void> => {
     const newEventMessages: IMessageCreationTemplate[] = [];
+    const globalBoostExpiresAt = config.worldState?.boostExpiresAt;
+    const globalBoostEndDate = isValidIsoDateTime(globalBoostExpiresAt) ? new Date(globalBoostExpiresAt) : undefined;
 
     // Baro
     const baroIndex = Math.trunc((Date.now() - 910800000) / (unixTimesInMs.day * 14));
@@ -221,7 +223,7 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
         });
     }
 
-    if (config.worldState?.creditBoostMultiplier && !account.receivedEventMessage_creditBoost) {
+    if (getWorldStateBoostMultiplier("creditBoostMultiplier") && !account.receivedEventMessage_creditBoost) {
         account.receivedEventMessage_creditBoost = true;
         newEventMessages.push({
             globaUpgradeId: new Types.ObjectId("5b23106f283a555109666672"),
@@ -230,10 +232,11 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
             msg: "/Lotus/Language/Items/EventDoubleCreditsDesc",
             icon: "/Lotus/Interface/Icons/Npcs/Lotus_d.png",
             startDate: new Date(),
+            endDate: globalBoostEndDate,
             CrossPlatform: true
         });
     }
-    if (config.worldState?.affinityBoostMultiplier && !account.receivedEventMessage_affinityBoost) {
+    if (getWorldStateBoostMultiplier("affinityBoostMultiplier") && !account.receivedEventMessage_affinityBoost) {
         account.receivedEventMessage_affinityBoost = true;
         newEventMessages.push({
             globaUpgradeId: new Types.ObjectId("5b23106f283a555109666673"),
@@ -242,10 +245,11 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
             msg: "/Lotus/Language/Items/EventDoubleAffinityDesc",
             icon: "/Lotus/Interface/Icons/Npcs/Lotus_d.png",
             startDate: new Date(),
+            endDate: globalBoostEndDate,
             CrossPlatform: true
         });
     }
-    if (config.worldState?.resourceBoostMultiplier && !account.receivedEventMessage_resourceBoost) {
+    if (getWorldStateBoostMultiplier("resourceBoostMultiplier") && !account.receivedEventMessage_resourceBoost) {
         account.receivedEventMessage_resourceBoost = true;
         newEventMessages.push({
             globaUpgradeId: new Types.ObjectId("5b23106f283a555109666674"),
@@ -254,6 +258,7 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
             msg: "/Lotus/Language/Items/EventDoubleResourceDesc",
             icon: "/Lotus/Interface/Icons/Npcs/Lotus_d.png",
             startDate: new Date(),
+            endDate: globalBoostEndDate,
             CrossPlatform: true
         });
     }

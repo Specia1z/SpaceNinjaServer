@@ -80,6 +80,9 @@
                             <a class="nav-link" href="/webui/admin-data" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_adminData"></a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/webui/store-prices" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_storePrices"></a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/webui/redeem-codes" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_redeemCodes"></a>
                         </li>
                         <li class="nav-item">
@@ -1623,6 +1626,15 @@
                                     </form>
                                 </div>
                                 <div class="form-group mt-2">
+                                    <form class="form-group" onsubmit="doSaveConfigDateTime('worldState.boostExpiresAt'); return false;">
+                                        <label class="form-label" for="worldState.boostExpiresAt" data-loc="worldState_boostExpiresAt"></label>
+                                        <div class="input-group">
+                                            <input id="worldState.boostExpiresAt" class="form-control" type="datetime-local" max="2038-01-19T03:14" data-default="" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="form-group mt-2">
                                     <label class="form-label" for="worldState.baroRelayOverride" data-loc="worldState_baroRelayOverride"></label>
                                     <select class="form-control" id="worldState.baroRelayOverride" data-default="0">
                                         <option value="0" data-loc="disabled"></option>
@@ -2144,7 +2156,6 @@
                     <section>
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                             <h4 class="mb-0" data-loc="admin_storeOverrides"></h4>
-                            <button class="btn btn-outline-primary" id="admin-store-price-sync" type="button" onclick="syncAdminStorePrices();" data-loc="admin_syncStorePrices"></button>
                         </div>
                         <p class="text-body-secondary" data-loc="admin_storeOverridesDescription"></p>
                         <form id="admin-store-form" onsubmit="saveAdminStoreOverride();return false;">
@@ -2301,8 +2312,60 @@
                                 <tbody id="admin-store-overrides"></tbody>
                             </table>
                         </div>
-                        <h5 class="mt-4" data-loc="admin_storeOfficialPrices"></h5>
-                        <p class="text-body-secondary" data-loc="admin_storeOfficialPricesDescription"></p>
+                    </section>
+                </div>
+            </div>
+            <div data-route="/webui/store-prices" data-title-tag="navbar_storePrices">
+                <div class="d-none admin-hide">
+                    <p data-loc="cheats_administratorRequirement"></p>
+                </div>
+                <div class="d-none admin-show">
+                    <section class="mb-4">
+                        <h4 data-loc="admin_storePriceManagement"></h4>
+                        <p class="text-body-secondary" data-loc="admin_storePriceManagementDescription"></p>
+                        <form id="admin-supplemental-price-form" onsubmit="saveAdminSupplementalPrice(); return false;">
+                            <div class="mb-3">
+                                <label class="form-label" for="admin-supplemental-price-type" data-loc="admin_storeItem"></label>
+                                <input class="form-control font-monospace" id="admin-supplemental-price-type" required autocomplete="off" placeholder="/Lotus/StoreItems/..." data-loc-placeholder="admin_supplementalPriceTypePlaceholder" />
+                                <div class="form-text" data-loc="admin_supplementalPriceTypeHint"></div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="admin-supplemental-price-premium" data-loc="admin_storeOfficialPremium"></label>
+                                    <input class="form-control" id="admin-supplemental-price-premium" type="number" min="0" step="1" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="admin-supplemental-price-regular" data-loc="admin_storeOfficialRegular"></label>
+                                    <input class="form-control" id="admin-supplemental-price-regular" type="number" min="0" step="1" />
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" type="submit" data-loc="admin_saveSupplementalPrice"></button>
+                                <button class="btn btn-outline-secondary" type="button" onclick="resetAdminSupplementalPriceForm();" data-loc="admin_clearForm"></button>
+                            </div>
+                        </form>
+                    </section>
+                    <hr />
+                    <section>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <div>
+                                <h4 class="mb-1" data-loc="admin_storeOfficialPrices"></h4>
+                                <p class="text-body-secondary mb-0" data-loc="admin_storeOfficialPricesDescription"></p>
+                            </div>
+                            <button class="btn btn-outline-primary" id="admin-store-price-sync" type="button" onclick="syncAdminStorePrices();" data-loc="admin_syncStorePrices"></button>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-8">
+                                <input class="form-control" id="admin-store-price-search" type="search" data-loc-placeholder="admin_storePriceSearchPlaceholder" />
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select" id="admin-store-price-page-size" aria-label="Page size">
+                                    <option value="25">25</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
                                 <thead>
@@ -2312,10 +2375,18 @@
                                         <th data-loc="admin_storeOfficialRegular"></th>
                                         <th data-loc="admin_storePriceSource"></th>
                                         <th data-loc="admin_storePriceSyncedAt"></th>
+                                        <th></th>
                                     </tr>
                                 </thead>
-                                <tbody id="admin-store-prices"></tbody>
+                                <tbody id="admin-store-price-catalog"></tbody>
                             </table>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                            <span class="text-body-secondary" id="admin-store-price-page-status"></span>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-secondary" id="admin-store-price-previous" type="button" onclick="changeAdminStorePricePage(-1);" data-loc="admin_previousPage"></button>
+                                <button class="btn btn-outline-secondary" id="admin-store-price-next" type="button" onclick="changeAdminStorePricePage(1);" data-loc="admin_nextPage"></button>
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -2872,6 +2943,8 @@
     <script src="/webui/admin/bootstrapper-version-page.js"></script>
     <script src="/webui/admin/admin-data-api.js"></script>
     <script src="/webui/admin/admin-data-page.js"></script>
+    <script src="/webui/admin/store-price-api.js"></script>
+    <script src="/webui/admin/store-price-page.js"></script>
     <script src="/webui/admin/redeem-codes-api.js"></script>
     <script src="/webui/admin/redeem-codes-page.js"></script>
     <script src="/webui/guild/api.js"></script>

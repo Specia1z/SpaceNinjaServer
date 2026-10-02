@@ -9,7 +9,7 @@ import invasionNodes from "../../static/fixed_responses/worldState/invasionNodes
 import invasionRewards from "../../static/fixed_responses/worldState/invasionRewards.json" with { type: "json" };
 import pvpChallenges from "../../static/fixed_responses/worldState/pvpChallenges.json" with { type: "json" };
 import { EPOCH, unixTimesInMs } from "../constants/timeConstants.ts";
-import { config } from "./configService.ts";
+import { config, getWorldStateBoostMultiplier, isValidIsoDateTime } from "./configService.ts";
 import { getRandomElement, getRandomInt, sequentiallyUniqueRandomElement, SRng } from "./rngService.ts";
 import type { IMissionReward, IRegion, ITilesetMission, TFaction, TMissionType } from "warframe-public-export-plus";
 import { ExportRegions, ExportSyndicates, ExportTilesets, ExportRecipes } from "warframe-public-export-plus";
@@ -4085,38 +4085,46 @@ export const getWorldState = (
         });
     }
 
-    if (config.worldState?.creditBoostMultiplier) {
+    const globalBoostExpiresAt = config.worldState?.boostExpiresAt;
+    const globalBoostExpiry = isValidIsoDateTime(globalBoostExpiresAt)
+        ? Date.parse(globalBoostExpiresAt)
+        : 2000000000000;
+    const creditBoostMultiplier = getWorldStateBoostMultiplier("creditBoostMultiplier");
+    const affinityBoostMultiplier = getWorldStateBoostMultiplier("affinityBoostMultiplier");
+    const resourceBoostMultiplier = getWorldStateBoostMultiplier("resourceBoostMultiplier");
+
+    if (creditBoostMultiplier) {
         worldState.GlobalUpgrades.push({
             _id: toOid2("5b23106f283a555109666672", buildVersion),
             Activation: toMongoDate2(1740164400000, buildVersion),
-            ExpiryDate: toMongoDate2(2000000000000, buildVersion),
+            ExpiryDate: toMongoDate2(globalBoostExpiry, buildVersion),
             UpgradeType: "GAMEPLAY_MONEY_REWARD_AMOUNT",
             OperationType: "MULTIPLY",
-            Value: config.worldState.creditBoostMultiplier,
+            Value: creditBoostMultiplier,
             LocalizeTag: "",
             LocalizeDescTag: ""
         });
     }
-    if (config.worldState?.affinityBoostMultiplier) {
+    if (affinityBoostMultiplier) {
         worldState.GlobalUpgrades.push({
             _id: toOid2("5b23106f283a555109666673", buildVersion),
             Activation: toMongoDate2(1740164400000, buildVersion),
-            ExpiryDate: toMongoDate2(2000000000000, buildVersion),
+            ExpiryDate: toMongoDate2(globalBoostExpiry, buildVersion),
             UpgradeType: "GAMEPLAY_KILL_XP_AMOUNT",
             OperationType: "MULTIPLY",
-            Value: config.worldState.affinityBoostMultiplier,
+            Value: affinityBoostMultiplier,
             LocalizeTag: "",
             LocalizeDescTag: ""
         });
     }
-    if (config.worldState?.resourceBoostMultiplier) {
+    if (resourceBoostMultiplier) {
         worldState.GlobalUpgrades.push({
             _id: toOid2("5b23106f283a555109666674", buildVersion),
             Activation: toMongoDate2(1740164400000, buildVersion),
-            ExpiryDate: toMongoDate2(2000000000000, buildVersion),
+            ExpiryDate: toMongoDate2(globalBoostExpiry, buildVersion),
             UpgradeType: "GAMEPLAY_PICKUP_AMOUNT",
             OperationType: "MULTIPLY",
-            Value: config.worldState.resourceBoostMultiplier,
+            Value: resourceBoostMultiplier,
             LocalizeTag: "",
             LocalizeDescTag: ""
         });

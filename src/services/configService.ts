@@ -101,6 +101,28 @@ export interface IAccountRateProfile {
     dailyTributeMultiplier?: number;
 }
 
+export type TWorldStateBoostMultiplierKey =
+    | "creditBoostMultiplier"
+    | "affinityBoostMultiplier"
+    | "resourceBoostMultiplier";
+
+const isoDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+export const isValidIsoDateTime = (value: unknown): value is string =>
+    typeof value == "string" && isoDateTimePattern.test(value) && Number.isFinite(Date.parse(value));
+
+export const isWorldStateBoostActive = (now = Date.now()): boolean => {
+    const expiresAt = config.worldState?.boostExpiresAt;
+    return expiresAt === undefined || expiresAt === null || expiresAt === ""
+        ? true
+        : isValidIsoDateTime(expiresAt) && now < Date.parse(expiresAt);
+};
+
+export const getWorldStateBoostMultiplier = (key: TWorldStateBoostMultiplierKey): number | undefined => {
+    const multiplier = config.worldState?.[key];
+    return isWorldStateBoostActive() && multiplier ? multiplier : undefined;
+};
+
 export type TLogLevel = "error" | "warn" | "info" | "http" | "debug" | "trace";
 
 type TQolConfigKey =
@@ -244,6 +266,8 @@ export interface IConfig {
         creditBoostMultiplier?: number;
         affinityBoostMultiplier?: number;
         resourceBoostMultiplier?: number;
+        /** Shared ISO 8601 expiry for the three global reward multipliers. */
+        boostExpiresAt?: string | null;
         tennoLiveRelay?: boolean;
         baroTennoConRelay?: boolean;
         baroAlwaysAvailable?: boolean;
@@ -461,7 +485,9 @@ export const getReflexiveAddress = (request: Request): { myAddress: string; myUr
     return { myAddress, myUrlBase };
 };
 
-export const configIdToIndexable = (id: string): [Record<string, boolean | string | number | undefined>, string] => {
+export const configIdToIndexable = (
+    id: string
+): [Record<string, boolean | string | number | null | undefined>, string] => {
     let obj = config as unknown as Record<string, never>;
     const arr = id.split(".");
     while (arr.length > 1) {
@@ -485,6 +511,15 @@ export const validateRegistrationRateLimitConfig = (id: string, value: unknown):
     const bounds = registrationRateLimitBounds[id];
     if (typeof value != "number" || !Number.isSafeInteger(value) || value < bounds.min || value > bounds.max) {
         return `${id} must be an integer from ${bounds.min} to ${bounds.max}`;
+    }
+    return undefined;
+};
+
+export const validateWorldStateBoostConfig = (id: string, value: unknown): string | undefined => {
+    if (id != "worldState.boostExpiresAt") return undefined;
+    if (value === undefined || value === null || value === "") return undefined;
+    if (!isValidIsoDateTime(value)) {
+        return `${id} must be an ISO 8601 date-time with a timezone`;
     }
     return undefined;
 };

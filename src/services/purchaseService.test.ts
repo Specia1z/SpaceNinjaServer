@@ -75,6 +75,35 @@ void test("market prices cover unexported sentinel skins", async () => {
     assert.equal(inventory.PremiumCredits, 60);
 });
 
+void test("market prices cover the Banshee Threnodia suit skin", async () => {
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        PremiumCredits: 165,
+        PremiumCreditsFree: 0
+    });
+
+    const response = await handlePurchase(
+        {
+            PurchaseParams: {
+                Source: ePurchaseSource.Market,
+                StoreItem: "/Lotus/StoreItems/Upgrades/Skins/Decree/BansheeDeluxeBSkin",
+                Quantity: 1,
+                UsePremium: true,
+                ExpectedPrice: 165
+            },
+            buildLabel: "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg"
+        },
+        inventory
+    );
+
+    assert.deepEqual(
+        response.InventoryChanges.WeaponSkins?.map(item => item.ItemType),
+        ["/Lotus/Upgrades/Skins/Decree/BansheeDeluxeBSkin"]
+    );
+    assert.equal(response.InventoryChanges.PremiumCredits, -165);
+    assert.equal(inventory.PremiumCredits, 0);
+});
+
 void test("market booster packages honor duration prices", async () => {
     for (const booster of [
         {

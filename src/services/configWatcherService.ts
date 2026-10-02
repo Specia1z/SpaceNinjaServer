@@ -6,7 +6,9 @@ import {
     configPath,
     configRemovedOptionsKeys,
     getWebServerParams,
+    getWorldStateBoostMultiplier,
     inventoryAffectingConfigKeys,
+    isValidIsoDateTime,
     loadConfig,
     type IConfig
 } from "./configService.ts";
@@ -418,6 +420,15 @@ export const validateConfig = (): void => {
             modified = true;
         }
     }
+    if (
+        config.worldState?.boostExpiresAt !== undefined &&
+        config.worldState.boostExpiresAt !== null &&
+        config.worldState.boostExpiresAt !== "" &&
+        !isValidIsoDateTime(config.worldState.boostExpiresAt)
+    ) {
+        delete config.worldState.boostExpiresAt;
+        modified = true;
+    }
     if (!config.antiCheat) {
         // 老配置里没有这一段：补上默认值，让这些开关在 config.json 里可见可调。
         config.antiCheat = {
@@ -474,15 +485,15 @@ export const validateConfig = (): void => {
 export const syncConfigWithDatabase = (): void => {
     // Event messages are deleted after endDate. Since we don't use beginDate/endDate and instead have config toggles, we need to delete the messages once those bools are false.
     // Also, for some reason, I can't just do `Inbox.deleteMany(...)`; - it needs this whole circus.
-    if (!config.worldState?.creditBoostMultiplier) {
+    if (!getWorldStateBoostMultiplier("creditBoostMultiplier")) {
         void Account.updateMany({}, { $unset: { receivedEventMessage_creditBoost: 1 } }).then(() => {});
         void Inbox.deleteMany({ globaUpgradeId: "5b23106f283a555109666672" }).then(() => {});
     }
-    if (!config.worldState?.affinityBoostMultiplier) {
+    if (!getWorldStateBoostMultiplier("affinityBoostMultiplier")) {
         void Account.updateMany({}, { $unset: { receivedEventMessage_affinityBoost: 1 } }).then(() => {});
         void Inbox.deleteMany({ globaUpgradeId: "5b23106f283a555109666673" }).then(() => {});
     }
-    if (!config.worldState?.resourceBoostMultiplier) {
+    if (!getWorldStateBoostMultiplier("resourceBoostMultiplier")) {
         void Account.updateMany({}, { $unset: { receivedEventMessage_resourceBoost: 1 } }).then(() => {});
         void Inbox.deleteMany({ globaUpgradeId: "5b23106f283a555109666674" }).then(() => {});
     }

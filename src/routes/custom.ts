@@ -37,9 +37,12 @@ import {
     deleteStoreOverrideController,
     getAdminItemDataStatusController,
     getCraftingConfigController,
+    deleteSupplementalStorePriceController,
+    listOfficialStorePricePageController,
     listOfficialStorePricesController,
     listStoreOverridesController,
     saveCraftingConfigController,
+    saveSupplementalStorePriceController,
     saveStoreOverrideController,
     syncAdminItemDataController,
     syncOfficialStorePricesController
@@ -178,6 +181,7 @@ customRouter.get("/getRegisteredLosers", getRegisteredLosersController);
 customRouter.get("/admin/item-data/status", getAdminItemDataStatusController);
 customRouter.get("/admin/store-overrides", listStoreOverridesController);
 customRouter.get("/admin/store-prices", listOfficialStorePricesController);
+customRouter.get("/admin/store-price-catalog", listOfficialStorePricePageController);
 customRouter.get("/admin/crafting-config", getCraftingConfigController);
 customRouter.get("/admin/redeem-codes", listRedeemCodesController);
 customRouter.get("/admin/suspicion-events", listSuspicionEventsController);
@@ -211,8 +215,11 @@ customRouter.post("/setAccountCheat", setAccountCheatController);
 customRouter.post("/setGuildCheat", setGuildCheatController);
 customRouter.post("/admin/item-data/sync", syncAdminItemDataController);
 customRouter.post("/admin/store-overrides/sync-prices", syncOfficialStorePricesController);
+customRouter.post("/admin/store-prices/sync", syncOfficialStorePricesController);
 customRouter.post("/admin/store-overrides", saveStoreOverrideController);
 customRouter.post("/admin/store-overrides/delete", deleteStoreOverrideController);
+customRouter.post("/admin/store-prices/manual", saveSupplementalStorePriceController);
+customRouter.post("/admin/store-prices/manual/delete", deleteSupplementalStorePriceController);
 customRouter.post("/admin/crafting-config", saveCraftingConfigController);
 customRouter.post("/admin/crafting-config/delete", deleteCraftingConfigController);
 customRouter.post("/admin/redeem-codes", saveRedeemCodeController);

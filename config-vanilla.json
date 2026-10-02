@@ -199,6 +199,7 @@
     "creditBoostMultiplier": 0,
     "affinityBoostMultiplier": 0,
     "resourceBoostMultiplier": 0,
+    "boostExpiresAt": null,
     "tennoLiveRelay": false,
     "baroTennoConRelay": false,
     "baroAlwaysAvailable": false,

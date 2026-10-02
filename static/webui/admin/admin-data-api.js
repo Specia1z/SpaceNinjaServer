@@ -7,13 +7,6 @@ window.adminDataApi = {
             data: "{}"
         }),
     listStoreOverrides: () => $.get("/custom/admin/store-overrides?" + window.authz),
-    listOfficialStorePrices: () => $.get("/custom/admin/store-prices?" + window.authz),
-    syncStoreOverridePrices: () =>
-        $.post({
-            url: "/custom/admin/store-overrides/sync-prices?" + window.authz,
-            contentType: "application/json",
-            data: "{}"
-        }),
     saveStoreOverride: payload =>
         $.post({
             url: "/custom/admin/store-overrides?" + window.authz,

@@ -212,6 +212,7 @@ export const supplementalMarketPrices: Record<string, number> = {
     "/Lotus/Packages/BansheeDeluxe2SkinBundle": 245,
     "/Lotus/Types/StoreItems/Packages/BansheeDeluxe2SkinBundle": 245,
     "/Lotus/Types/StoreItems/Packages/DeluxeBundles/BansheeDeluxe2SkinBundle": 245,
+    "/Lotus/Upgrades/Skins/Decree/BansheeDeluxeBSkin": 165,
     "/Lotus/Upgrades/Skins/Sentinels/Skins/BansheeDlxSentSkin": 40,
     "/Lotus/Upgrades/Mods/FusionBundles/MarketTier1FusionBundle": 5,
     "/Lotus/Upgrades/Mods/FusionBundles/MarketTier2FusionBundle": 15,

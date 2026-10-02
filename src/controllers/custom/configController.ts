@@ -2,7 +2,8 @@ import type { RequestHandler } from "express";
 import {
     configIdToIndexable,
     inventoryAffectingConfigKeys,
-    validateRegistrationRateLimitConfig
+    validateRegistrationRateLimitConfig,
+    validateWorldStateBoostConfig
 } from "../../services/configService.ts";
 import { syncConfigWithDatabase } from "../../services/configWatcherService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
@@ -30,7 +31,7 @@ export const getConfigController: RequestHandler = async (req, res) => {
 export const setConfigController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     if (isAdministrator(account)) {
-        const edits = req.body as Record<string, boolean | string | number>;
+        const edits = req.body as Record<string, boolean | string | number | null>;
         for (const [id, value] of Object.entries(edits)) {
             if (id === "unlockAllMissionsForNewAccounts" && typeof value !== "boolean") {
                 res.status(400).send(`${id} must be a boolean`);
@@ -39,6 +40,11 @@ export const setConfigController: RequestHandler = async (req, res) => {
             const error = validateRegistrationRateLimitConfig(id, value);
             if (error) {
                 res.status(400).send(error);
+                return;
+            }
+            const worldStateBoostError = validateWorldStateBoostConfig(id, value);
+            if (worldStateBoostError) {
+                res.status(400).send(worldStateBoostError);
                 return;
             }
             const playerPortalError = validatePlayerPolicyField(id, value);
@@ -54,7 +60,7 @@ export const setConfigController: RequestHandler = async (req, res) => {
         }
         let isWorldStateUpdate = false;
         let isInventoryUpdate = false;
-        const accountCheatEdits: { key: string; value: boolean | string | number }[] = [];
+        const accountCheatEdits: { key: string; value: unknown }[] = [];
         for (const [id, value] of Object.entries(edits)) {
             if (id.startsWith("worldState")) isWorldStateUpdate = true;
             if ((inventoryAffectingConfigKeys as readonly string[]).includes(id)) {
@@ -65,7 +71,11 @@ export const setConfigController: RequestHandler = async (req, res) => {
                 accountCheatEdits.push({ key: id.substring("accountCheats.".length), value });
             }
             const [obj, idx] = configIdToIndexable(id);
-            obj[idx] = value;
+            if (id == "worldState.boostExpiresAt" && (value === null || value === "")) {
+                delete obj[idx];
+            } else {
+                obj[idx] = value;
+            }
         }
         for (const edit of accountCheatEdits) {
             await applyGlobalAccountCheatSideEffects(edit.key as keyof IAccountCheats, edit.value);

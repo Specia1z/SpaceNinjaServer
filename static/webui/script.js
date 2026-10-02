@@ -3072,6 +3072,21 @@ function doSaveConfigString(id) {
     });
 }
 
+function doSaveConfigDateTime(id) {
+    const input = document.getElementById(id);
+    const date = input.value ? new Date(input.value) : undefined;
+    const value = date && Number.isFinite(date.getTime()) ? date.toISOString() : null;
+    $.post({
+        url: "/custom/setConfig?" + window.authz,
+        contentType: "application/json",
+        data: JSON.stringify({
+            [id]: value
+        })
+    }).done(function () {
+        config_data[id] = value;
+    });
+}
+
 function doSaveConfigStringArray(id) {
     const value = document
         .getElementById(id)
@@ -3139,6 +3154,12 @@ function applyServerConfig(json) {
         } else if (elm.classList.contains("tags-input")) {
             elm.value = (value ?? []).join(", ");
             elm.oninput();
+        } else if (elm.type == "datetime-local") {
+            const date = value ? new Date(value) : undefined;
+            elm.value =
+                date && Number.isFinite(date.getTime())
+                    ? new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+                    : "";
         } else {
             elm.value = value ?? elm.getAttribute("data-default");
         }

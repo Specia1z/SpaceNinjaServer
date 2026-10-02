@@ -1,7 +1,7 @@
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import type { IMissionCredits } from "../types/missionTypes.ts";
 import { logger } from "../utils/logger.ts";
-import { config } from "./configService.ts";
+import { getWorldStateBoostMultiplier } from "./configService.ts";
 import type { TAccountDocument } from "./loginService.ts";
 
 export interface IMissionCreditSources {
@@ -36,15 +36,16 @@ export const addMissionCredits = async (
     const totalCredits = finalCredits.MissionCredits[1] + finalCredits.CreditsBonus[1] + rngRewardCredits;
     finalCredits.TotalCredits = [totalCredits, totalCredits];
 
-    if (config.worldState?.creditBoostMultiplier) {
-        inventory.RegularCredits += finalCredits.TotalCredits[1] * (config.worldState.creditBoostMultiplier - 1);
-        finalCredits.TotalCredits[1] *= config.worldState.creditBoostMultiplier;
+    const creditBoostMultiplier = getWorldStateBoostMultiplier("creditBoostMultiplier");
+    if (creditBoostMultiplier) {
+        inventory.RegularCredits += finalCredits.TotalCredits[1] * (creditBoostMultiplier - 1);
+        finalCredits.TotalCredits[1] *= creditBoostMultiplier;
     }
     if (creditMultiplier != 1) {
         // Modern clients already applied the account world-state boost to cash they picked up.
         // Completion and RNG rewards are generated on the server and still need the account rate.
         const eligibleCredits = clientBoostedDropCredits
-            ? (finalCredits.CreditsBonus[1] + rngRewardCredits) * (config.worldState?.creditBoostMultiplier || 1)
+            ? (finalCredits.CreditsBonus[1] + rngRewardCredits) * (creditBoostMultiplier || 1)
             : finalCredits.TotalCredits[1];
         const extraCredits = Math.trunc(eligibleCredits * creditMultiplier) - eligibleCredits;
         inventory.RegularCredits += extraCredits;
@@ -70,7 +71,7 @@ export const addMissionCredits = async (
         rngRewardCredits,
         creditMultiplier,
         clientBoostedDropCredits,
-        globalCreditMultiplier: config.worldState?.creditBoostMultiplier || 1,
+        globalCreditMultiplier: creditBoostMultiplier || 1,
         hasCreditBooster,
         hasCreditBlessing,
         finalCredits: finalCredits.TotalCredits[1]
