@@ -20,6 +20,7 @@ import {
     applyStoreOverrides,
     deleteStoreOverride,
     initializeStoreOverrides,
+    isStoreItemGiftable,
     isStoreItemPurchasable,
     saveStoreOverride,
     syncStoreOverridePrices
@@ -253,6 +254,46 @@ void test("limited-only overrides reuse the original store price", async () => {
     assert.equal(state.FlashSales[0].Discount, undefined);
     assert.equal(state.FlashSales[0].PremiumOverride, 105);
     assert.equal(state.FlashSales[0].RegularOverride, undefined);
+    assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 105);
+    await deleteStoreOverride(typeName);
+});
+
+void test("expired limited products are hidden and cannot be purchased or gifted", async () => {
+    await saveStoreOverride(
+        override({
+            CategoryName: "SALE",
+            ProductExpiryDate: new Date(Date.now() - 60_000),
+            Purchasable: true,
+            Giftable: true
+        })
+    );
+    const state = worldState();
+    state.InGameMarket.LandingPage.Categories[0].Items = [storeItem];
+    state.InGameMarket.LandingPage.Categories[2].Items = [storeItem];
+    applyStoreOverrides(state, buildLabel);
+
+    assert.deepEqual(state.InGameMarket.LandingPage.Categories[0].Items, []);
+    assert.deepEqual(state.InGameMarket.LandingPage.Categories[2].Items, []);
+    assert.deepEqual(state.FlashSales, []);
+    assert.equal(isStoreItemPurchasable(typeName), false);
+    assert.equal(isStoreItemGiftable(typeName), false);
+    await deleteStoreOverride(typeName);
+});
+
+void test("expired promotions keep the product listed at its original price", async () => {
+    await saveStoreOverride(
+        override({
+            CategoryName: "SALE",
+            DiscountPercent: 10,
+            StartDate: new Date(Date.now() - 120_000),
+            EndDate: new Date(Date.now() - 60_000)
+        })
+    );
+    const state = worldState();
+    applyStoreOverrides(state, buildLabel);
+
+    assert.deepEqual(state.InGameMarket.LandingPage.Categories[2].Items, [storeItem]);
+    assert.deepEqual(state.FlashSales, []);
     assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 105);
     await deleteStoreOverride(typeName);
 });

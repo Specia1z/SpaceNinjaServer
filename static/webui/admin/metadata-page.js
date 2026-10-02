@@ -9,7 +9,8 @@
         sources: [],
         revision: "",
         dirty: false,
-        busy: false
+        busy: false,
+        expandedPatches: new WeakMap()
     };
 
     const normalize = patch => ({
@@ -32,16 +33,16 @@
 
     function getSources() {
         return effectivePatches().map((patch, index) => ({
-                order: index + 1,
-                source: index < state.globalPatches.length ? "global" : "account",
-                sourceLabel:
-                    index < state.globalPatches.length
-                        ? loc("metadataPatches_globalSource")
-                        : `${loc("metadataPatches_accountSource")} ${state.selectedId ?? ""}`,
-                name: patch.name,
-                enabled: patch.enabled !== false,
-                targets: patch.targets ?? []
-            }));
+            order: index + 1,
+            source: index < state.globalPatches.length ? "global" : "account",
+            sourceLabel:
+                index < state.globalPatches.length
+                    ? loc("metadataPatches_globalSource")
+                    : `${loc("metadataPatches_accountSource")} ${state.selectedId ?? ""}`,
+            name: patch.name,
+            enabled: patch.enabled !== false,
+            targets: patch.targets ?? []
+        }));
     }
 
     function compiledPreview() {
@@ -109,8 +110,22 @@
     }
 
     function createEditor(list, patch, index, rerender) {
-        const section = document.createElement("section");
+        const section = document.createElement("details");
         section.className = "metadata-patch-editor";
+
+        const summary = document.createElement("summary");
+        summary.className = "metadata-patch-summary";
+        const order = document.createElement("span");
+        order.className = "badge text-bg-secondary";
+        order.textContent = String(index + 1);
+        const summaryName = document.createElement("span");
+        summaryName.className = "metadata-patch-summary-name";
+        const summaryStatus = document.createElement("span");
+        summaryStatus.className = "badge ms-auto";
+        summary.append(order, summaryName, summaryStatus);
+
+        const body = document.createElement("div");
+        body.className = "metadata-patch-editor-body";
 
         const header = document.createElement("div");
         header.className = "d-flex flex-wrap align-items-center gap-2 mb-3";
@@ -149,7 +164,13 @@
             button.addEventListener("click", handler);
             header.append(button);
         });
-        section.append(header);
+        const updateSummary = () => {
+            summaryName.textContent = name.value || loc("metadataPatches_unnamed");
+            summaryStatus.className = `badge ms-auto ${enabled.checked ? "text-bg-success" : "text-bg-secondary"}`;
+            summaryStatus.textContent = loc(enabled.checked ? "metadataPatches_enabled" : "metadataPatches_disabled");
+        };
+        enabled.addEventListener("change", updateSummary);
+        body.append(header);
 
         const nameLabel = document.createElement("label");
         nameLabel.className = "form-label";
@@ -160,8 +181,11 @@
         name.maxLength = 200;
         name.value = patch.name;
         name.disabled = state.busy;
-        name.addEventListener("input", () => update(list, index, "name", name.value.trim()));
-        section.append(nameLabel, name);
+        name.addEventListener("input", () => {
+            update(list, index, "name", name.value.trim());
+            updateSummary();
+        });
+        body.append(nameLabel, name);
 
         const textLabel = document.createElement("label");
         textLabel.className = "form-label";
@@ -176,7 +200,11 @@
         const textHint = document.createElement("div");
         textHint.className = "form-text";
         textHint.textContent = loc("metadataPatches_textHint");
-        section.append(textLabel, text, textHint);
+        body.append(textLabel, text, textHint);
+        updateSummary();
+        section.open = state.expandedPatches.get(patch) ?? false;
+        section.addEventListener("toggle", () => state.expandedPatches.set(patch, section.open));
+        section.append(summary, body);
         return section;
     }
 
@@ -288,7 +316,9 @@
     }
 
     function addGlobalPatch() {
-        state.globalPatches.push({ name: "", enabled: true, text: "" });
+        const patch = { name: "", enabled: true, text: "" };
+        state.globalPatches.push(patch);
+        state.expandedPatches.set(patch, true);
         markDirty();
         render();
     }
@@ -297,7 +327,9 @@
     find("#metadata-patches-account-add").addEventListener("click", () => {
         if (!state.selectedId) return;
         state.accountPatches[state.selectedId] ??= [];
-        state.accountPatches[state.selectedId].push({ name: "", enabled: true, text: "" });
+        const patch = { name: "", enabled: true, text: "" };
+        state.accountPatches[state.selectedId].push(patch);
+        state.expandedPatches.set(patch, true);
         markDirty();
         render();
     });
@@ -336,7 +368,11 @@
             const accountMetadataPatches = Object.fromEntries(
                 Object.entries(state.accountPatches).filter(([, patches]) => patches.length)
             );
-            const data = await window.metadataPatchApi.save(state.globalPatches, accountMetadataPatches, state.selectedId);
+            const data = await window.metadataPatchApi.save(
+                state.globalPatches,
+                accountMetadataPatches,
+                state.selectedId
+            );
             state.globalPatches = (data.patches ?? []).map(normalize);
             state.accountPatches = Object.fromEntries(
                 Object.entries(data.accountMetadataPatches ?? {}).map(([id, patches]) => [id, patches.map(normalize)])

@@ -62,6 +62,51 @@ td.text-end > a > svg {
 .metadata-patch-editor {
     border: 1px solid var(--bs-border-color);
     border-radius: var(--bs-border-radius);
+    overflow: hidden;
+}
+
+.metadata-patch-summary {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    gap: 0.75rem;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    list-style: none;
+}
+
+.metadata-patch-summary::-webkit-details-marker {
+    display: none;
+}
+
+.metadata-patch-summary::before {
+    border-bottom: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    content: "";
+    flex: 0 0 0.5rem;
+    height: 0.5rem;
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+    width: 0.5rem;
+}
+
+.metadata-patch-editor[open] > .metadata-patch-summary::before {
+    transform: rotate(45deg);
+}
+
+.metadata-patch-summary:hover {
+    background: var(--bs-tertiary-bg);
+}
+
+.metadata-patch-summary-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.metadata-patch-editor-body {
+    border-top: 1px solid var(--bs-border-color);
     padding: 1rem;
 }
 

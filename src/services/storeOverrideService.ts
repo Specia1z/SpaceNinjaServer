@@ -26,6 +26,9 @@ const isPromotionActive = (override: IStoreOverride, now: number = Date.now()): 
     );
 };
 
+const isProductExpired = (override: IStoreOverride, now: number = Date.now()): boolean =>
+    override.ProductExpiryDate !== undefined && override.ProductExpiryDate.getTime() <= now;
+
 const isCategoryActive = (override: IStoreOverride, now: number = Date.now()): boolean => {
     return (
         override.Enabled &&
@@ -187,7 +190,7 @@ const storeItemName = (typeName: string): string =>
 export const getStoreItemRules = (): string => {
     const rules: Record<string, { giftable?: boolean; purchaseMode?: "platinum" | "steam" }> = {};
     for (const override of storeOverrides.values()) {
-        if (!override.Enabled) continue;
+        if (!override.Enabled || isProductExpired(override)) continue;
         const giftable = override.Listed ? override.Giftable : false;
         if (giftable === undefined && !override.PurchaseMode) continue;
         rules[storeItemName(override.TypeName)] = {
@@ -217,12 +220,12 @@ export const getActiveStorePromotion = (typeName: string): IStoreOverride | unde
 
 export const isStoreItemPurchasable = (typeName: string): boolean => {
     const override = getActiveStoreOverride(typeName);
-    return override ? override.Listed && (override.Purchasable ?? true) : true;
+    return override ? !isProductExpired(override) && override.Listed && (override.Purchasable ?? true) : true;
 };
 
 export const isStoreItemGiftable = (typeName: string): boolean => {
     const override = getActiveStoreOverride(typeName);
-    return override ? override.Listed && override.Giftable !== false : true;
+    return override ? !isProductExpired(override) && override.Listed && override.Giftable !== false : true;
 };
 
 export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string): void => {
@@ -232,10 +235,15 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
         const storeItem = storeItemName(override.TypeName);
         const typeName = overrideTypeName(override.TypeName);
         const categories = worldState.InGameMarket.LandingPage.Categories;
-        if (!override.Listed || override.CategoryName) {
+        const productExpired = isProductExpired(override, now);
+        if (productExpired || !override.Listed || override.CategoryName) {
             for (const category of categories) {
                 if (category.Items) category.Items = category.Items.filter(item => item != storeItem);
             }
+        }
+        if (productExpired) {
+            worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != typeName);
+            continue;
         }
         if (
             override.Listed &&
