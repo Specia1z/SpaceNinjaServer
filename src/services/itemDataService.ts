@@ -2049,6 +2049,118 @@ export const supplementalVendors: Record<string, IVendor> = {
     }
 };
 
+const CURRENT_NIGHTWAVE_VENDOR = "/Lotus/Types/Game/VendorManifests/Events/RadioLegionIntermission16VendorManifest";
+const NIGHTWAVE_CURRENCY = "/Lotus/Types/Items/MiscItems/NoraIntermissionSixteenCreds";
+
+// These offers are present in the current client vendor manifest but are not yet in the npm export snapshot.
+const currentNightwaveVendorAdditions: IVendorOffer[] = [
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Halloween/DOTD2025OkinaSkin",
+        quantity: 1,
+        alwaysOffered: true,
+        bin: 0,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 50 }]
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Halloween/DOTD2025AtomosSkin",
+        quantity: 1,
+        alwaysOffered: true,
+        bin: 0,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 50 }]
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Liset/GrineerShip/LisetGrineerShipDOTD",
+        quantity: 1,
+        alwaysOffered: false,
+        bin: 3,
+        probability: 0.80000001,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 100 }],
+        durationHours: 168
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Halloween/DOTD2025OperatorMask",
+        quantity: 1,
+        alwaysOffered: false,
+        bin: 3,
+        probability: 0.80000001,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 50 }],
+        durationHours: 168
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Halloween/DOTD2025TaxonSkin",
+        quantity: 1,
+        alwaysOffered: true,
+        bin: 0,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 50 }]
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Scarves/DOTD2025MonarchSyandana",
+        quantity: 1,
+        alwaysOffered: false,
+        bin: 3,
+        probability: 0.80000001,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 75 }],
+        durationHours: 168
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Halloween/DOTD2025SentinelMask",
+        quantity: 1,
+        alwaysOffered: false,
+        bin: 3,
+        probability: 0.80000001,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 35 }],
+        durationHours: 168
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Halloween/DOTD2025SentinelTail",
+        quantity: 1,
+        alwaysOffered: false,
+        bin: 3,
+        probability: 0.80000001,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 35 }],
+        durationHours: 168
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Upgrades/Skins/Halloween/DOTD2025SentinelWings",
+        quantity: 1,
+        alwaysOffered: false,
+        bin: 3,
+        probability: 0.80000001,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 35 }],
+        durationHours: 168
+    },
+    {
+        storeItem: "/Lotus/StoreItems/Types/StoreItems/AvatarImages/Seasonal/DOTD2025NoraGlyph",
+        quantity: 1,
+        alwaysOffered: false,
+        bin: 3,
+        probability: 0.80000001,
+        duplicates: 0,
+        itemPrices: [{ ItemType: NIGHTWAVE_CURRENCY, ItemCount: 30 }],
+        durationHours: 168
+    }
+];
+
+const currentNightwaveVendor: IVendor = {
+    ...ExportVendors[CURRENT_NIGHTWAVE_VENDOR],
+    items: [
+        ...ExportVendors[CURRENT_NIGHTWAVE_VENDOR].items,
+        ...currentNightwaveVendorAdditions.filter(
+            addition =>
+                !ExportVendors[CURRENT_NIGHTWAVE_VENDOR].items.some(item => item.storeItem == addition.storeItem)
+        )
+    ]
+};
+
 export const supplementalItemNames: Record<string, string> = {
     "/Lotus/Types/Game/SolarRails/BasicSolarRail": "/Lotus/Language/Items/BasicSolarRailName",
     "/Lotus/Types/Game/LotusMeleeWeapon": "/Lotus/Language/Items/MeleeCategoryName",
@@ -6203,5 +6315,8 @@ export const getUpgrade = (uniqueName: string): IUpgrade | undefined => {
 };
 
 export const getVendor = (uniqueName: string): IVendor | undefined => {
+    if (uniqueName == CURRENT_NIGHTWAVE_VENDOR) {
+        return currentNightwaveVendor;
+    }
     return ExportVendors[uniqueName] ?? supplementalVendors[uniqueName];
 };
