@@ -5483,16 +5483,22 @@ export const toStoreItem = (type: string): string => {
 };
 
 export const fromStoreItem = (type: string): string => {
+    let storeItemPath: string | undefined;
     if (type.startsWith("/Lotus/StoreItems/")) {
-        return "/Lotus/" + type.substring("/Lotus/StoreItems/".length);
-    }
-
-    if (type.startsWith("/Lotus/Types/StoreItems/")) {
-        return "/Lotus/" + type.substring("/Lotus/Types/StoreItems/".length);
+        storeItemPath = type.substring("/Lotus/StoreItems/".length);
+    } else if (type.startsWith("/Lotus/Types/StoreItems/")) {
+        storeItemPath = type.substring("/Lotus/Types/StoreItems/".length);
     }
 
     if (type in ExportBoosters) {
         return ExportBoosters[type].typeName;
+    }
+
+    if (storeItemPath !== undefined) {
+        if (storeItemPath.startsWith("AvatarImages/") || storeItemPath.startsWith("SuitCustomizations/")) {
+            return "/Lotus/Types/StoreItems/" + storeItemPath;
+        }
+        return "/Lotus/" + storeItemPath;
     }
 
     throw new Error(`${type} is not a store item`);

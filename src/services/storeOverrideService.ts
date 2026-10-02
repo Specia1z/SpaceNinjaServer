@@ -56,6 +56,35 @@ export const listStoreOverrides = async (): Promise<IStoreOverride[]> => {
     return StoreOverride.find().sort({ TypeName: 1 }).lean();
 };
 
+export interface IStoreOverridePage {
+    items: IStoreOverride[];
+    page: number;
+    pageSize: number;
+    pageCount: number;
+    total: number;
+}
+
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+export const listStoreOverridePage = async (
+    requestedPage = 1,
+    requestedPageSize = 25,
+    search = ""
+): Promise<IStoreOverridePage> => {
+    const pageSize = Math.min(Math.max(Math.trunc(requestedPageSize) || 25, 10), 100);
+    const normalizedSearch = search.trim();
+    const filter = normalizedSearch ? { TypeName: { $regex: escapeRegExp(normalizedSearch), $options: "i" } } : {};
+    const total = await StoreOverride.countDocuments(filter);
+    const pageCount = Math.ceil(total / pageSize);
+    const page = Math.min(Math.max(Math.trunc(requestedPage) || 1, 1), Math.max(pageCount, 1));
+    const items = await StoreOverride.find(filter)
+        .sort({ TypeName: 1 })
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .lean();
+    return { items, page, pageSize, pageCount, total };
+};
+
 export interface IStorePriceSyncResult {
     total: number;
     updated: number;

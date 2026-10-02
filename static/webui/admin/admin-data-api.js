@@ -6,7 +6,12 @@ window.adminDataApi = {
             contentType: "application/json",
             data: "{}"
         }),
-    listStoreOverrides: () => $.get("/custom/admin/store-overrides?" + window.authz),
+    listStoreOverrides: ({ page, pageSize, search }) =>
+        $.get(
+            "/custom/admin/store-overrides?" +
+                window.authz +
+                `&page=${encodeURIComponent(page)}&pageSize=${encodeURIComponent(pageSize)}&search=${encodeURIComponent(search)}`
+        ),
     saveStoreOverride: payload =>
         $.post({
             url: "/custom/admin/store-overrides?" + window.authz,

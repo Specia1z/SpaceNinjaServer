@@ -14,7 +14,7 @@ import {
     saveSupplementalStorePrice,
     syncOfficialStorePrices
 } from "./officialStorePriceService.ts";
-import { handlePurchase } from "./purchaseService.ts";
+import { handleBundleAcquisition, handlePurchase } from "./purchaseService.ts";
 import { deleteStoreBundle, listStoreBundles, saveStoreBundle } from "./storeBundleService.ts";
 import {
     applyStoreOverrides,
@@ -22,6 +22,7 @@ import {
     initializeStoreOverrides,
     isStoreItemGiftable,
     isStoreItemPurchasable,
+    listStoreOverridePage,
     saveStoreOverride,
     syncStoreOverridePrices
 } from "./storeOverrideService.ts";
@@ -380,6 +381,37 @@ void test("supplemental prices survive official sync and update the live cache",
     assert.equal(await deleteSupplementalStorePrice(manualTypeName), true);
 });
 
+void test("store override pages filter literal paths and clamp requested pages", async () => {
+    const typeNames = Array.from(
+        { length: 11 },
+        (_, index) => `/Lotus/Upgrades/Skins/Decree/PagePagination${String(index).padStart(2, "0")}`
+    );
+    const literalTypeName = "/Lotus/Upgrades/Skins/Decree/PagePaginationBracket[2]";
+    typeNames.push(literalTypeName);
+    await Promise.all(typeNames.map(typeName => deleteStoreOverride(typeName)));
+
+    try {
+        await StoreOverride.create(typeNames.map(TypeName => override({ TypeName })));
+
+        const filtered = await listStoreOverridePage(1, 10, "PagePaginationBracket[2]");
+        assert.equal(filtered.total, 1);
+        assert.equal(filtered.page, 1);
+        assert.equal(filtered.pageCount, 1);
+        assert.equal(filtered.items[0].TypeName, literalTypeName);
+
+        const paged = await listStoreOverridePage(1, 10, "PagePagination");
+        assert.equal(paged.total, 12);
+        assert.equal(paged.pageCount, 2);
+        assert.equal(paged.items.length, 10);
+
+        const clamped = await listStoreOverridePage(99, 10, "PagePagination");
+        assert.equal(clamped.page, 2);
+        assert.equal(clamped.items.length, 2);
+    } finally {
+        await Promise.all(typeNames.map(typeName => deleteStoreOverride(typeName)));
+    }
+});
+
 void test("custom bundle components support inventory-aware pricing and Types StoreItem paths", async () => {
     const bundleTypeName = "/Lotus/Types/StoreItems/Packages/GenericInventoryAwareBundle";
     const componentOne = "/Lotus/StoreItems/Upgrades/Skins/Sentinels/Skins/BansheeDlxSentSkin";
@@ -422,6 +454,33 @@ void test("custom bundle components support inventory-aware pricing and Types St
     await deleteStoreBundle(bundleTypeName);
     await deleteSupplementalStorePrice(bundleTypeName);
     await syncOfficialStorePrices();
+});
+
+void test("store bundles preserve AvatarImages type paths when adding flavour items", async () => {
+    const bundleTypeName = "/Lotus/Types/StoreItems/Packages/AvatarImagePathBundle";
+    const componentTypeName = "/Lotus/StoreItems/AvatarImages/CommunityArtPackVI/AvatarImageCitrineShivecu";
+    await deleteStoreBundle(bundleTypeName);
+
+    try {
+        await saveStoreBundle(bundleTypeName, [{ TypeName: componentTypeName, PurchaseQuantity: 1 }]);
+        const inventory = new Inventory({
+            accountOwnerId: "000000000000000000000001",
+            PremiumCredits: 0,
+            PremiumCreditsFree: 0
+        });
+
+        await handleBundleAcquisition(bundleTypeName, inventory, 1, {}, buildLabel);
+
+        assert.equal(
+            inventory.FlavourItems.some(
+                item =>
+                    item.ItemType == "/Lotus/Types/StoreItems/AvatarImages/CommunityArtPackVI/AvatarImageCitrineShivecu"
+            ),
+            true
+        );
+    } finally {
+        await deleteStoreBundle(bundleTypeName);
+    }
 });
 
 void test("store overrides expose all supported flash-sale labels and flags", async () => {

@@ -7,7 +7,10 @@
         CrewShipFusionPoints: "currency_CrewShipFusionPoints",
         PrimeTokens: "currency_PrimeTokens"
     };
-    let storeOverrides = [];
+    let storeOverrides = { items: [], page: 1, pageSize: 25, pageCount: 0, total: 0 };
+    let storeOverrideRequest = 0;
+    let storeOverrideSearch = "";
+    let storeOverrideSearchTimer;
 
     const formatDate = value => (value ? new Date(value).toLocaleString() : loc("admin_noLimit"));
     const optionalNumber = id => {
@@ -40,6 +43,16 @@
         if (currencyLabels[uniqueName]) return loc(currencyLabels[uniqueName]);
         const entry = (window.itemSearchIndex ?? []).find(item => item.uniqueName === uniqueName);
         return entry?.name ? `${entry.name} (${uniqueName})` : uniqueName;
+    }
+
+    function appendSummaryLines(cell, values) {
+        cell.className = "admin-store-override-summary";
+        values.forEach((value, index) => {
+            const line = document.createElement("div");
+            if (index > 0) line.className = "small text-body-secondary";
+            line.textContent = value;
+            cell.append(line);
+        });
     }
 
     function setupItemPicker(inputId, resolvedId) {
@@ -187,7 +200,7 @@
     }
 
     function editStoreOverride(index) {
-        const override = storeOverrides[index];
+        const override = storeOverrides.items[index];
         document.getElementById("admin-store-type").value = override.TypeName;
         document.getElementById("admin-store-type").dispatchEvent(new Event("input"));
         document.getElementById("admin-store-enabled").checked = override.Enabled;
@@ -220,40 +233,46 @@
     function renderStoreOverrides() {
         const tbody = document.getElementById("admin-store-overrides");
         tbody.replaceChildren();
-        storeOverrides.forEach((override, index) => {
+        storeOverrides.items.forEach((override, index) => {
             const row = tbody.insertRow();
             const itemCell = row.insertCell();
+            itemCell.className = "admin-store-override-item";
             itemCell.textContent = itemDisplayLabel(override.TypeName);
             const path = document.createElement("div");
             path.className = "small text-body-secondary text-break font-monospace";
             path.textContent = override.TypeName;
             itemCell.append(path);
-            row.insertCell().textContent = [
-                override.Enabled ? loc("admin_enabled") : loc("admin_disabled"),
-                override.Listed ? loc("admin_listed") : loc("admin_unlisted"),
-                (override.Purchasable ?? override.Listed) ? loc("admin_purchasable") : loc("admin_notPurchasable"),
-                override.Giftable === undefined
-                    ? loc("admin_storeGameDefault")
-                    : loc(override.Giftable ? "admin_storeGiftAllowed" : "admin_storeGiftDenied"),
-                loc(
+            appendSummaryLines(row.insertCell(), [
+                `${override.Enabled ? loc("admin_enabled") : loc("admin_disabled")} / ${override.Listed ? loc("admin_listed") : loc("admin_unlisted")}`,
+                `${(override.Purchasable ?? override.Listed) ? loc("admin_purchasable") : loc("admin_notPurchasable")} / ${
+                    override.Giftable === undefined
+                        ? loc("admin_storeGameDefault")
+                        : loc(override.Giftable ? "admin_storeGiftAllowed" : "admin_storeGiftDenied")
+                }`,
+                `${loc(
                     override.PurchaseMode === "platinum"
                         ? "admin_storePlatinum"
                         : override.PurchaseMode === "steam"
                           ? "admin_storeSteam"
                           : "admin_storeGameDefault"
-                ),
-                override.CategoryName || loc("admin_storeCategoryAuto")
-            ].join(" / ");
-            row.insertCell().textContent = loc("admin_pricingSummary")
-                .replace("|DISCOUNT|", override.DiscountPercent === undefined ? "-" : `${override.DiscountPercent}%`)
-                .replace("|PREMIUM|", override.PremiumPrice ?? "-")
-                .replace("|REGULAR|", override.RegularPrice ?? "-");
-            row.insertCell().textContent = [
+                )} / ${override.CategoryName || loc("admin_storeCategoryAuto")}`
+            ]);
+            appendSummaryLines(row.insertCell(), [
+                loc("admin_pricingSummary")
+                    .replace(
+                        "|DISCOUNT|",
+                        override.DiscountPercent === undefined ? "-" : `${override.DiscountPercent}%`
+                    )
+                    .replace("|PREMIUM|", override.PremiumPrice ?? "-")
+                    .replace("|REGULAR|", override.RegularPrice ?? "-")
+            ]);
+            appendSummaryLines(row.insertCell(), [
                 `${loc("admin_storePromotionSchedule")}: ${formatDate(override.StartDate)} - ${formatDate(override.EndDate)}`,
                 `${loc("admin_storeProductExpirySchedule")}: ${formatDate(override.ProductExpiryDate)}`,
                 `${loc("admin_storeCategorySchedule")}: ${formatDate(override.CategoryStartDate)} - ${formatDate(override.CategoryEndDate)}`
-            ].join(" / ");
+            ]);
             const actions = row.insertCell();
+            actions.className = "text-nowrap admin-store-override-actions";
             const edit = document.createElement("button");
             edit.className = "btn btn-sm btn-outline-primary me-2";
             edit.textContent = loc("admin_edit");
@@ -264,11 +283,49 @@
             remove.onclick = () => deleteStoreOverride(override.TypeName);
             actions.append(edit, remove);
         });
+
+        document.getElementById("admin-store-override-page-status").textContent = loc("admin_storeOverridePageStatus")
+            .replace("|PAGE|", storeOverrides.pageCount ? storeOverrides.page : 0)
+            .replace("|PAGES|", storeOverrides.pageCount)
+            .replace("|TOTAL|", storeOverrides.total.toLocaleString());
+        document.getElementById("admin-store-override-previous").disabled = storeOverrides.page <= 1;
+        document.getElementById("admin-store-override-next").disabled =
+            storeOverrides.pageCount == 0 || storeOverrides.page >= storeOverrides.pageCount;
     }
 
     async function loadStoreOverrides() {
-        storeOverrides = await window.adminDataApi.listStoreOverrides();
-        renderStoreOverrides();
+        const request = ++storeOverrideRequest;
+        const tbody = document.getElementById("admin-store-overrides");
+        tbody.replaceChildren();
+        const loadingRow = tbody.insertRow();
+        const loadingCell = loadingRow.insertCell();
+        loadingCell.colSpan = 5;
+        loadingCell.className = "text-center text-body-secondary";
+        loadingCell.textContent = loc("general_loading");
+        document.getElementById("admin-store-override-previous").disabled = true;
+        document.getElementById("admin-store-override-next").disabled = true;
+        try {
+            const data = await window.adminDataApi.listStoreOverrides({
+                page: storeOverrides.page,
+                pageSize: storeOverrides.pageSize,
+                search: storeOverrideSearch
+            });
+            if (request != storeOverrideRequest) return;
+            storeOverrides = data;
+            renderStoreOverrides();
+        } catch (error) {
+            if (request != storeOverrideRequest) return;
+            toast(error.responseText || loc("settings_changeFailed"), "danger");
+            storeOverrides = { items: [], page: 1, pageSize: storeOverrides.pageSize, pageCount: 0, total: 0 };
+            renderStoreOverrides();
+        }
+    }
+
+    function changeStoreOverridePage(delta) {
+        const nextPage = storeOverrides.page + delta;
+        if (nextPage < 1 || (storeOverrides.pageCount && nextPage > storeOverrides.pageCount)) return;
+        storeOverrides.page = nextPage;
+        void loadStoreOverrides();
     }
 
     async function saveStoreOverride() {
@@ -302,6 +359,7 @@
         try {
             await window.adminDataApi.saveStoreOverride(payload);
             resetStoreForm();
+            storeOverrides.page = 1;
             await loadStoreOverrides();
             toast(loc("admin_overrideSaved"), "success");
         } catch (error) {
@@ -314,6 +372,19 @@
         await window.adminDataApi.deleteStoreOverride(typeName);
         await loadStoreOverrides();
     }
+
+    document.getElementById("admin-store-override-search")?.addEventListener("input", event => {
+        storeOverrideSearch = event.target.value.trim();
+        storeOverrides.page = 1;
+        clearTimeout(storeOverrideSearchTimer);
+        storeOverrideSearchTimer = setTimeout(() => void loadStoreOverrides(), 250);
+    });
+
+    document.getElementById("admin-store-override-page-size")?.addEventListener("change", event => {
+        storeOverrides.pageSize = Number(event.target.value);
+        storeOverrides.page = 1;
+        void loadStoreOverrides();
+    });
 
     function updateCraftingFormState() {
         const speed = document.getElementById("admin-crafting-speed").value;
@@ -401,6 +472,7 @@
         setGameVersion,
         resetStoreForm,
         saveStoreOverride,
+        changeStoreOverridePage,
         updateCraftingFormState,
         resetCraftingConfig,
         saveCraftingConfig
@@ -412,6 +484,7 @@
         setAdminGameVersion: setGameVersion,
         resetAdminStoreForm: resetStoreForm,
         saveAdminStoreOverride: saveStoreOverride,
+        changeAdminStoreOverridePage: changeStoreOverridePage,
         updateAdminCraftingFormState: updateCraftingFormState,
         resetAdminCraftingConfig: resetCraftingConfig,
         saveAdminCraftingConfig: saveCraftingConfig
@@ -421,6 +494,11 @@
         void awaitAuthz().then(async () => {
             if (!applyServerConfig(await getServerConfig())) return;
             try {
+                storeOverrides.page = 1;
+                storeOverrides.pageSize = 25;
+                storeOverrideSearch = "";
+                document.getElementById("admin-store-override-search").value = "";
+                document.getElementById("admin-store-override-page-size").value = storeOverrides.pageSize;
                 await Promise.all([loadItemDataStatus(), loadStoreOverrides(), loadCraftingConfig()]);
                 window.itemListPromise.then(() => setupItemPicker("admin-store-type", "admin-store-type-resolved"));
             } catch (error) {

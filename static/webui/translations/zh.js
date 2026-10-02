@@ -562,6 +562,7 @@ dict = {
     admin_supplementalPriceDeleted: `补充价格已删除。`,
     admin_storePriceSearchPlaceholder: `按物品路径筛选`,
     admin_storePricePageStatus: `第 |PAGE| / |PAGES| 页 · 共 |TOTAL| 条价格`,
+    admin_storeOverridePageStatus: `[UNTRANSLATED] Page |PAGE| of |PAGES| · |TOTAL| overrides`,
     admin_storeBundlePageStatus: `第 |PAGE| / |PAGES| 页 · 共 |TOTAL| 个组合包`,
     admin_previousPage: `上一页`,
     admin_nextPage: `下一页`,

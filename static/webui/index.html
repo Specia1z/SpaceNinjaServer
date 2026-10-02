@@ -2298,6 +2298,18 @@
                                 <button class="btn btn-outline-secondary" type="button" onclick="resetAdminStoreForm();" data-loc="admin_clearForm"></button>
                             </div>
                         </form>
+                        <div class="row g-2 mt-4 mb-3">
+                            <div class="col-md-8">
+                                <input class="form-control" id="admin-store-override-search" type="search" data-loc-placeholder="admin_storePriceSearchPlaceholder" />
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select" id="admin-store-override-page-size" aria-label="Page size">
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="table-responsive mt-4">
                             <table class="table table-hover align-middle">
                                 <thead>
@@ -2311,6 +2323,13 @@
                                 </thead>
                                 <tbody id="admin-store-overrides"></tbody>
                             </table>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                            <span class="text-body-secondary" id="admin-store-override-page-status"></span>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-secondary" id="admin-store-override-previous" type="button" onclick="changeAdminStoreOverridePage(-1);" data-loc="admin_previousPage"></button>
+                                <button class="btn btn-outline-secondary" id="admin-store-override-next" type="button" onclick="changeAdminStoreOverridePage(1);" data-loc="admin_nextPage"></button>
+                            </div>
                         </div>
                     </section>
                 </div>

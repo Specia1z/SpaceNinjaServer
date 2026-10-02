@@ -4,7 +4,7 @@ import { getAccountForRequest, isAdministrator, type TAccountDocument } from "..
 import { getAdminItemDataStatus, syncAdminItemData } from "../../services/adminItemDataService.ts";
 import {
     deleteStoreOverride,
-    listStoreOverrides,
+    listStoreOverridePage,
     saveStoreOverride,
     syncStoreOverridePrices
 } from "../../services/storeOverrideService.ts";
@@ -57,7 +57,10 @@ export const syncAdminItemDataController: RequestHandler = async (req, res) => {
 
 export const listStoreOverridesController: RequestHandler = async (req, res) => {
     await getAdministrator(req);
-    res.json(await listStoreOverrides());
+    const page = Number(req.query.page);
+    const pageSize = Number(req.query.pageSize);
+    const search = typeof req.query.search == "string" ? req.query.search : "";
+    res.json(await listStoreOverridePage(page, pageSize, search));
 };
 
 export const listOfficialStorePricesController: RequestHandler = async (req, res) => {
