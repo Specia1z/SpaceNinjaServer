@@ -15,7 +15,7 @@ import {
     saveSupplementalStorePrice,
     syncOfficialStorePrices
 } from "../../services/officialStorePriceService.ts";
-import { deleteStoreBundle, listStoreBundles, saveStoreBundle } from "../../services/storeBundleService.ts";
+import { deleteStoreBundle, listStoreBundlePage, saveStoreBundle } from "../../services/storeBundleService.ts";
 import {
     deleteCraftingConfig,
     getCraftingOverride,
@@ -104,7 +104,9 @@ export const syncOfficialStorePricesController: RequestHandler = async (req, res
 
 export const listStoreBundlesController: RequestHandler = async (req, res) => {
     await getAdministrator(req);
-    res.json(await listStoreBundles());
+    const page = Number(req.query.page);
+    const pageSize = Number(req.query.pageSize);
+    res.json(await listStoreBundlePage(page, pageSize));
 };
 
 export const saveStoreBundleController: RequestHandler = async (req, res) => {

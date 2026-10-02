@@ -12,6 +12,14 @@ export interface IStoreBundleListItem {
     Editable: boolean;
 }
 
+export interface IStoreBundlePage {
+    items: IStoreBundleListItem[];
+    page: number;
+    pageSize: number;
+    pageCount: number;
+    total: number;
+}
+
 const normalizeTypeName = (typeName: string): string => {
     if (typeName.startsWith("/Lotus/Types/StoreItems/")) return typeName;
     if (typeName.startsWith("/Lotus/StoreItems/")) {
@@ -84,6 +92,16 @@ export const listStoreBundles = async (): Promise<IStoreBundleListItem[]> => {
         ...custom.map(bundle => ({ ...bundle, Source: "supplemental" as const, Editable: true })),
         ...official
     ].sort((left, right) => left.TypeName.localeCompare(right.TypeName));
+};
+
+export const listStoreBundlePage = async (requestedPage = 1, requestedPageSize = 25): Promise<IStoreBundlePage> => {
+    const pageSize = Math.min(Math.max(Math.trunc(requestedPageSize) || 25, 10), 100);
+    const bundles = await listStoreBundles();
+    const total = bundles.length;
+    const pageCount = Math.ceil(total / pageSize);
+    const page = Math.min(Math.max(Math.trunc(requestedPage) || 1, 1), Math.max(pageCount, 1));
+    const items = bundles.slice((page - 1) * pageSize, page * pageSize);
+    return { items, page, pageSize, pageCount, total };
 };
 
 export const saveStoreBundle = async (

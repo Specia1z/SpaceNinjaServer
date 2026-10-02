@@ -1,24 +1,38 @@
 @media (min-width: 992px) {
     body.logged-in #main-view {
-        display: flex;
+        display: block;
     }
 
     body.logged-in #sidebar {
-        position: fixed;
+        border-bottom: 1px solid var(--bs-border-color);
+        margin-bottom: 1.5rem;
+        position: static;
+        width: 100%;
     }
 
-    body.logged-in #main-content {
-        margin-left: 7rem;
+    body.logged-in #sidebar .offcanvas-header {
+        display: none;
     }
 
-    body.logged-in:has([data-lang="de"].active) #main-content,
-    body.logged-in:has([data-lang="fr"].active) #main-content,
-    body.logged-in:has([data-lang="uk"].active) #main-content {
-        margin-left: 8rem;
+    body.logged-in #sidebar .offcanvas-body {
+        padding: 0 0 0.75rem;
     }
 
-    body.logged-in:has([data-lang="zh"].active) #main-content {
-        margin-left: 6rem;
+    body.logged-in #sidebar .navbar-nav {
+        align-items: center;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.25rem 0.5rem;
+    }
+
+    body.logged-in #sidebar .nav-link {
+        border-radius: var(--bs-border-radius);
+        padding-inline: 0.75rem;
+    }
+
+    body.logged-in #sidebar .nav-link:hover,
+    body.logged-in #sidebar .nav-link.active {
+        background-color: var(--bs-tertiary-bg);
     }
 
     body:not(.logged-in) #sidebar {

@@ -4,9 +4,12 @@
         pageSize: 50,
         search: "",
         request: 0,
+        bundlePage: 1,
+        bundlePageSize: 25,
+        bundleRequest: 0,
         searchTimer: undefined,
         data: { items: [], page: 1, pageSize: 50, pageCount: 0, total: 0 },
-        bundles: []
+        bundles: { items: [], page: 1, pageSize: 25, pageCount: 0, total: 0 }
     };
 
     const find = id => document.getElementById(id);
@@ -81,7 +84,7 @@
     const renderBundles = () => {
         const tbody = find("admin-store-bundles");
         tbody.replaceChildren();
-        for (const bundle of state.bundles) {
+        for (const bundle of state.bundles.items) {
             const row = tbody.insertRow();
             const itemCell = row.insertCell();
             itemCell.textContent = itemDisplayLabel(bundle.TypeName);
@@ -111,11 +114,44 @@
                 actions.append(remove);
             }
         }
+
+        const pageCount = state.bundles.pageCount;
+        find("admin-store-bundle-page-status").textContent = loc("admin_storeBundlePageStatus")
+            .replace("|PAGE|", state.bundles.pageCount ? state.bundles.page : 0)
+            .replace("|PAGES|", pageCount)
+            .replace("|TOTAL|", state.bundles.total.toLocaleString());
+        find("admin-store-bundle-previous").disabled = state.bundles.page <= 1;
+        find("admin-store-bundle-next").disabled = pageCount == 0 || state.bundles.page >= pageCount;
     };
 
     const loadBundles = async () => {
-        state.bundles = await window.adminStorePriceApi.listBundles();
-        renderBundles();
+        const request = ++state.bundleRequest;
+        const tbody = find("admin-store-bundles");
+        tbody.replaceChildren();
+        const loadingRow = tbody.insertRow();
+        const loadingCell = loadingRow.insertCell();
+        loadingCell.colSpan = 4;
+        loadingCell.className = "text-center text-body-secondary";
+        loadingCell.textContent = loc("general_loading");
+        find("admin-store-bundle-previous").disabled = true;
+        find("admin-store-bundle-next").disabled = true;
+
+        try {
+            const data = await window.adminStorePriceApi.listBundles({
+                page: state.bundlePage,
+                pageSize: state.bundlePageSize
+            });
+            if (request != state.bundleRequest) return;
+            state.bundles = data;
+            state.bundlePage = data.page;
+            state.bundlePageSize = data.pageSize;
+            renderBundles();
+        } catch (error) {
+            if (request != state.bundleRequest) return;
+            toast(error.responseText || loc("settings_changeFailed"), "danger");
+            state.bundles = { items: [], page: 1, pageSize: state.bundlePageSize, pageCount: 0, total: 0 };
+            renderBundles();
+        }
     };
 
     const resetBundleForm = () => {
@@ -301,6 +337,13 @@
         void loadCatalog();
     };
 
+    const changeBundlePage = delta => {
+        const nextPage = state.bundlePage + delta;
+        if (nextPage < 1 || (state.bundles.pageCount && nextPage > state.bundles.pageCount)) return;
+        state.bundlePage = nextPage;
+        void loadBundles();
+    };
+
     find("admin-store-price-search")?.addEventListener("input", event => {
         state.search = event.target.value.trim();
         state.page = 1;
@@ -312,6 +355,11 @@
         state.page = 1;
         void loadCatalog();
     });
+    find("admin-store-bundle-page-size")?.addEventListener("change", event => {
+        state.bundlePageSize = Number(event.target.value);
+        state.bundlePage = 1;
+        void loadBundles();
+    });
 
     Object.assign(window, {
         saveAdminSupplementalPrice: saveSupplementalPrice,
@@ -320,7 +368,8 @@
         saveAdminStoreBundle: saveStoreBundle,
         resetAdminStoreBundleForm: resetBundleForm,
         syncAdminStorePrices: syncStorePrices,
-        changeAdminStorePricePage: changePage
+        changeAdminStorePricePage: changePage,
+        changeAdminStoreBundlePage: changeBundlePage
     });
 
     single.getRoute("/webui/store-prices").on("beforeload", () => {
@@ -328,7 +377,10 @@
             if (!applyServerConfig(await getServerConfig())) return;
             state.page = 1;
             state.search = "";
+            state.bundlePage = 1;
+            state.bundlePageSize = 25;
             find("admin-store-price-search").value = "";
+            find("admin-store-bundle-page-size").value = state.bundlePageSize;
             resetForm();
             resetBundleForm();
             await Promise.all([loadCatalog(), loadBundles()]);

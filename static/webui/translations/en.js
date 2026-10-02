@@ -561,6 +561,7 @@ dict = {
     admin_supplementalPriceDeleted: `Supplemental price deleted.`,
     admin_storePriceSearchPlaceholder: `Filter by item path`,
     admin_storePricePageStatus: `Page |PAGE| of |PAGES| · |TOTAL| prices`,
+    admin_storeBundlePageStatus: `Page |PAGE| of |PAGES| · |TOTAL| bundles`,
     admin_previousPage: `Previous`,
     admin_nextPage: `Next`,
     admin_storeItem: `Item type`,

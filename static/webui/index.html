@@ -2372,6 +2372,11 @@
                                 <h4 class="mb-1" data-loc="admin_storeBundles"></h4>
                                 <p class="text-body-secondary mb-0" data-loc="admin_storeBundlesDescription"></p>
                             </div>
+                            <select class="form-select w-auto" id="admin-store-bundle-page-size" aria-label="Page size">
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
@@ -2385,6 +2390,13 @@
                                 </thead>
                                 <tbody id="admin-store-bundles"></tbody>
                             </table>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+                            <span class="text-body-secondary" id="admin-store-bundle-page-status"></span>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-secondary" id="admin-store-bundle-previous" type="button" onclick="changeAdminStoreBundlePage(-1);" data-loc="admin_previousPage"></button>
+                                <button class="btn btn-outline-secondary" id="admin-store-bundle-next" type="button" onclick="changeAdminStoreBundlePage(1);" data-loc="admin_nextPage"></button>
+                            </div>
                         </div>
                     </section>
                     <hr />

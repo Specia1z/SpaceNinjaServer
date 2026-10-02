@@ -23,7 +23,12 @@ window.adminStorePriceApi = {
             contentType: "application/json",
             data: JSON.stringify({ TypeName: typeName })
         }),
-    listBundles: () => $.get("/custom/admin/store-bundles?" + window.authz),
+    listBundles: ({ page, pageSize }) =>
+        $.get(
+            "/custom/admin/store-bundles?" +
+                window.authz +
+                `&page=${encodeURIComponent(page)}&pageSize=${encodeURIComponent(pageSize)}`
+        ),
     saveBundle: payload =>
         $.post({
             url: "/custom/admin/store-bundles?" + window.authz,
