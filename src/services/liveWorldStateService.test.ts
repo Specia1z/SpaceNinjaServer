@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { ISyndicateMissionInfo } from "../types/worldStateTypes.ts";
-import { isFreshSupplementalWorldState, mergeCurrentSyndicateMissions } from "./liveWorldStateService.ts";
+import type { ISyndicateMissionInfo, IVoidTrader } from "../types/worldStateTypes.ts";
+import {
+    getActiveVoidTrader,
+    isFreshSupplementalWorldState,
+    mergeCurrentSyndicateMissions
+} from "./liveWorldStateService.ts";
 
 const now = 1_790_876_000_000;
 const mission = (tag: string, start: number, end: number): ISyndicateMissionInfo => ({
@@ -36,4 +40,21 @@ void test("a future live rotation does not hide the current generated bounty", (
     const generated = mission("CetusSyndicate", now - 1000, now + 1000);
     const upcoming = mission("CetusSyndicate", now + 1000, now + 5000);
     assert.deepEqual(mergeCurrentSyndicateMissions([generated, upcoming], [upcoming], now), [generated, upcoming]);
+});
+
+void test("active void trader is selected from the effective world-state window", () => {
+    const trader = (node: string, activation: number, expiry: number): IVoidTrader => ({
+        _id: { $oid: `${node}-${activation}` },
+        Activation: { $date: { $numberLong: String(activation) } },
+        Expiry: { $date: { $numberLong: String(expiry) } },
+        Character: "Baro'Ki Teel",
+        Node: node,
+        Manifest: []
+    });
+    const traders = [
+        trader("PlutoHUB", now - 10_000, now - 1_000),
+        trader("SaturnHUB", now - 1_000, now + 1_000),
+        trader("EarthHUB", now + 1_000, now + 10_000)
+    ];
+    assert.equal(getActiveVoidTrader(traders, now)?.Node, "SaturnHUB");
 });

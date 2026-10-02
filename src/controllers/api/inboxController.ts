@@ -35,6 +35,13 @@ import { config, getWorldStateBoostMultiplier, isValidIsoDateTime } from "../../
 import { Types } from "mongoose";
 import type { IInventoryChanges } from "../../types/purchaseTypes.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
+import { getWorldState } from "../../services/worldStateService.ts";
+import {
+    applyLiveWorldState,
+    getActiveVoidTrader,
+    refreshLiveWorldState
+} from "../../services/liveWorldStateService.ts";
+import { fromMongoDate } from "../../helpers/inventoryHelpers.ts";
 
 export const inboxController: RequestHandler = async (req, res) => {
     const { deleteId, lastMessage: latestClientMessageId, messageId } = req.query;
@@ -138,7 +145,7 @@ export const inboxController: RequestHandler = async (req, res) => {
         }
         res.end();
     } else if (latestClientMessageId) {
-        await createNewEventMessages(account);
+        await createNewEventMessages(account, buildLabel);
         const newMessages = await getMessagesSorted(account._id, buildLabel, parseOid(latestClientMessageId as string));
 
         if (newMessages.length === 0) {
@@ -149,14 +156,14 @@ export const inboxController: RequestHandler = async (req, res) => {
         res.json({ Inbox: newMessages.map(x => exportInboxMessage(x, buildLabel)) satisfies IMessageClient[] });
     } else {
         //newly created event messages must be newer than account.LatestEventMessageDate
-        await createNewEventMessages(account);
+        await createNewEventMessages(account, buildLabel);
         const messages = await getMessagesSorted(account._id, buildLabel);
         const inbox = messages.map(x => exportInboxMessage(x, buildLabel));
         res.json({ Inbox: inbox satisfies IMessageClient[] });
     }
 };
 
-const createNewEventMessages = async (account: TAccountDocument): Promise<void> => {
+const createNewEventMessages = async (account: TAccountDocument, buildLabel: string): Promise<void> => {
     const newEventMessages: IMessageCreationTemplate[] = [];
     const globalBoostExpiresAt = config.worldState?.boostExpiresAt;
     const globalBoostEndDate = isValidIsoDateTime(globalBoostExpiresAt) ? new Date(globalBoostExpiresAt) : undefined;
@@ -165,11 +172,19 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
     const baroIndex = Math.trunc((Date.now() - 910800000) / (unixTimesInMs.day * 14));
     const baroRelayOverride = config.worldState?.baroRelayOverride;
     const baroNodeIndex = baroRelayOverride && baroRelayOverride > 0 ? baroRelayOverride - 1 : baroIndex % 4;
-    const baroNode = ["EarthHUB", "MercuryHUB", "SaturnHUB", "PlutoHUB"][baroNodeIndex];
-    const baroStart = baroIndex * (unixTimesInMs.day * 14) + 910800000;
+    const fallbackBaroNode = ["EarthHUB", "MercuryHUB", "SaturnHUB", "PlutoHUB"][baroNodeIndex];
+    const fallbackBaroStart = baroIndex * (unixTimesInMs.day * 14) + 910800000;
     const prevBaroEnd = (baroIndex - 1) * (unixTimesInMs.day * 14) + 910800000;
-    const baroEnd = baroStart + unixTimesInMs.day * 14;
-    const baroActualStart = baroStart + unixTimesInMs.day * (config.worldState?.baroAlwaysAvailable ? 0 : 12);
+    const fallbackBaroEnd = fallbackBaroStart + unixTimesInMs.day * 14;
+    const fallbackBaroActualStart =
+        fallbackBaroStart + unixTimesInMs.day * (config.worldState?.baroAlwaysAvailable ? 0 : 12);
+    await refreshLiveWorldState();
+    const worldState = getWorldState(buildLabel);
+    applyLiveWorldState(worldState);
+    const activeBaro = getActiveVoidTrader(worldState.VoidTraders);
+    const baroNode = activeBaro?.Node ?? fallbackBaroNode;
+    const baroStart = activeBaro ? fromMongoDate(activeBaro.Activation).getTime() : fallbackBaroActualStart;
+    const baroEnd = activeBaro ? fromMongoDate(activeBaro.Expiry).getTime() : fallbackBaroEnd;
     const evilBaroStage = config.worldState?.evilBaroStage ?? 0;
     const evilBaroTransmission = [
         "",
@@ -178,7 +193,7 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
         "/Lotus/Sounds/Dialog/BaroHalloween/Week3InboxMessage/DWeek3InboxMessage0120Baro",
         "/Lotus/Sounds/Dialog/BaroHalloween/Week4InboxMessage/DWeek4InboxMessage0170Baro"
     ][evilBaroStage];
-    if (Date.now() >= baroActualStart && account.LatestEventMessageDate.getTime() < baroActualStart) {
+    if (Date.now() >= baroStart && account.LatestEventMessageDate.getTime() < baroStart) {
         newEventMessages.push({
             sndr: "/Lotus/Language/G1Quests/VoidTraderName",
             sub:
@@ -194,7 +209,7 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
                     ? "/Lotus/Interface/Icons/Npcs/EvilBaro.png"
                     : "/Lotus/Interface/Icons/Npcs/BaroKiTeerPortrait.png",
             transmission: evilBaroTransmission,
-            startDate: new Date(baroActualStart),
+            startDate: new Date(baroStart),
             endDate: new Date(baroEnd),
             CrossPlatform: true,
             arg: [
@@ -203,7 +218,7 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
                     Tag: baroNode
                 }
             ],
-            date: new Date(baroActualStart),
+            date: new Date(baroStart),
             minBuildVersion: evilBaroStage > 0 ? gameToBuildVersionInt["40.0.0"] : gameToBuildVersionInt["18.18.0"] // Baro was introduced in U15.6. Unclear when exactly this inbox message was introduced, tho.
         });
     }
@@ -215,7 +230,7 @@ const createNewEventMessages = async (account: TAccountDocument): Promise<void> 
             icon: "/Lotus/Interface/Icons/Npcs/BaroKiTeerPortrait.png",
             transmission: "/Lotus/Sounds/Dialog/BaroHalloween/EndingInboxMessage/DEndingInboxMessage0230Baro",
             startDate: new Date(prevBaroEnd),
-            endDate: new Date(baroActualStart),
+            endDate: new Date(baroStart),
             att: ["/Lotus/Types/StoreItems/AvatarImages/ImageBaroKiteerEvil"],
             CrossPlatform: true,
             date: new Date(prevBaroEnd),

@@ -191,6 +191,14 @@ const getCompatibleVoidTraders = (
     });
 };
 
+export const getActiveVoidTrader = (
+    traders: IWorldState["VoidTraders"],
+    nowMs: number = Date.now()
+): IWorldState["VoidTraders"][number] | undefined =>
+    traders.find(
+        trader => fromMongoDate(trader.Activation).getTime() <= nowMs && fromMongoDate(trader.Expiry).getTime() > nowMs
+    );
+
 const getCompatibleDailyDeals = (deals: IWorldState["DailyDeals"], buildVersion: number): IWorldState["DailyDeals"] =>
     deals.filter(deal => {
         const minBuild = darvoDealMinBuild.get(deal.StoreItem);
