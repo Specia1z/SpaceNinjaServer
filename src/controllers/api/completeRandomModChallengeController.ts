@@ -5,6 +5,7 @@ import type { IInventoryChanges } from "../../types/purchaseTypes.ts";
 import type { IMiscItem } from "../../types/inventoryTypes/inventoryTypes.ts";
 import { getJSONfromString } from "../../helpers/stringHelpers.ts";
 import { isVeiledRivenFingerprint } from "../../helpers/rivenHelper.ts";
+import { logger } from "../../utils/logger.ts";
 
 export const completeRandomModChallengeController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
@@ -35,6 +36,21 @@ export const completeRandomModChallengeController: RequestHandler = async (req, 
         res.status(400).json({ error: "Random mod fingerprint is invalid" });
         return;
     }
+
+    const fingerprintObject =
+        fingerprint && typeof fingerprint == "object" ? (fingerprint as Record<string, unknown>) : undefined;
+    const challenge =
+        fingerprintObject?.challenge && typeof fingerprintObject.challenge == "object"
+            ? (fingerprintObject.challenge as Record<string, unknown>)
+            : undefined;
+    logger.debug(`random mod challenge completion state`, {
+        accountId,
+        itemId: request.ItemId,
+        itemType: upgrade.ItemType,
+        fingerprintKeys: fingerprintObject ? Object.keys(fingerprintObject).sort() : [],
+        challengeProgress: challenge?.Progress,
+        challengeRequired: challenge?.Required
+    });
 
     if (!isVeiledRivenFingerprint(fingerprint)) {
         res.status(400).json({ error: "Random mod challenge is not active" });
