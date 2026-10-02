@@ -2142,7 +2142,10 @@
                     </section>
                     <hr />
                     <section>
-                        <h4 data-loc="admin_storeOverrides"></h4>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <h4 class="mb-0" data-loc="admin_storeOverrides"></h4>
+                            <button class="btn btn-outline-primary" id="admin-store-price-sync" type="button" onclick="syncAdminStorePrices();" data-loc="admin_syncStorePrices"></button>
+                        </div>
                         <p class="text-body-secondary" data-loc="admin_storeOverridesDescription"></p>
                         <form id="admin-store-form" onsubmit="saveAdminStoreOverride();return false;">
                             <div class="mb-3">
@@ -2296,6 +2299,22 @@
                                     </tr>
                                 </thead>
                                 <tbody id="admin-store-overrides"></tbody>
+                            </table>
+                        </div>
+                        <h5 class="mt-4" data-loc="admin_storeOfficialPrices"></h5>
+                        <p class="text-body-secondary" data-loc="admin_storeOfficialPricesDescription"></p>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th data-loc="admin_storeItem"></th>
+                                        <th data-loc="admin_storeOfficialPremium"></th>
+                                        <th data-loc="admin_storeOfficialRegular"></th>
+                                        <th data-loc="admin_storePriceSource"></th>
+                                        <th data-loc="admin_storePriceSyncedAt"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-store-prices"></tbody>
                             </table>
                         </div>
                     </section>

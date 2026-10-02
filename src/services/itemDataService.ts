@@ -93,6 +93,7 @@ import type { Mutable } from "../utils/ts-utils.ts";
 import { getCraftingOverride } from "./craftingConfigService.ts";
 import { getActiveStorePromotion } from "./storeOverrideService.ts";
 import { getSyncedBundle, getSyncedWarframe } from "./adminItemDataService.ts";
+import { getCachedOfficialStorePrice } from "./officialStorePriceCache.ts";
 
 export type WeaponTypeInternal =
     | "LongGuns"
@@ -207,6 +208,10 @@ export const supplementalBundles: Record<string, IBundle> = {
 };
 
 export const supplementalMarketPrices: Record<string, number> = {
+    // Current official price for the Banshee Threnodia Collection.
+    "/Lotus/Packages/BansheeDeluxe2SkinBundle": 245,
+    "/Lotus/Types/StoreItems/Packages/BansheeDeluxe2SkinBundle": 245,
+    "/Lotus/Types/StoreItems/Packages/DeluxeBundles/BansheeDeluxe2SkinBundle": 245,
     "/Lotus/Upgrades/Skins/Sentinels/Skins/BansheeDlxSentSkin": 40,
     "/Lotus/Upgrades/Mods/FusionBundles/MarketTier1FusionBundle": 5,
     "/Lotus/Upgrades/Mods/FusionBundles/MarketTier2FusionBundle": 15,
@@ -5863,20 +5868,30 @@ export const getPrice = (
     quantity: number = 1,
     durability: number = 0,
     usePremium: boolean,
-    buildLabel: string
+    buildLabel: string,
+    ignoreStoreOverrides: boolean = false,
+    ignoreOfficialPriceCache: boolean = false
 ): number => {
     const bundle = isBundle(storeItemName);
     const internalName = bundle ? storeItemName : fromStoreItem(storeItemName);
 
     // A store override either states an absolute price (discount already applied) or a discount percentage
     // to apply to the regular price. Both are honored here so that admins can configure only a percentage.
-    const storeOverride = getActiveStorePromotion(internalName);
+    const storeOverride = ignoreStoreOverrides ? undefined : getActiveStorePromotion(internalName);
     if (storeOverride) {
         const overridePrice = usePremium ? storeOverride.PremiumPrice : storeOverride.RegularPrice;
         if (overridePrice !== undefined) return overridePrice * quantity;
         if (storeOverride.DiscountPercent !== undefined) {
             return applyDiscount(
-                getUndiscountedPrice(storeItemName, quantity, durability, usePremium, buildLabel),
+                getUndiscountedPrice(
+                    storeItemName,
+                    quantity,
+                    durability,
+                    usePremium,
+                    buildLabel,
+                    ignoreStoreOverrides,
+                    ignoreOfficialPriceCache
+                ),
                 storeOverride.DiscountPercent,
                 quantity,
                 internalName
@@ -5884,13 +5899,21 @@ export const getPrice = (
         }
     }
 
-    {
+    if (!ignoreStoreOverrides) {
         const { FlashSales } = getWorldState(buildLabel);
         const flashSale = FlashSales.find(s => s.TypeName == internalName);
         if (flashSale) {
             if (flashSale.Discount !== undefined) {
                 return applyDiscount(
-                    getUndiscountedPrice(storeItemName, quantity, durability, usePremium, buildLabel),
+                    getUndiscountedPrice(
+                        storeItemName,
+                        quantity,
+                        durability,
+                        usePremium,
+                        buildLabel,
+                        ignoreStoreOverrides,
+                        ignoreOfficialPriceCache
+                    ),
                     flashSale.Discount,
                     quantity,
                     internalName
@@ -5904,7 +5927,15 @@ export const getPrice = (
         }
     }
 
-    return getUndiscountedPrice(storeItemName, quantity, durability, usePremium, buildLabel);
+    return getUndiscountedPrice(
+        storeItemName,
+        quantity,
+        durability,
+        usePremium,
+        buildLabel,
+        ignoreStoreOverrides,
+        ignoreOfficialPriceCache
+    );
 };
 
 // The client truncates the discounted unit price before multiplying by quantity.
@@ -5927,8 +5958,18 @@ export const getUndiscountedPrice = (
     quantity: number,
     durability: number,
     usePremium: boolean,
-    buildLabel: string
+    buildLabel: string,
+    ignoreStoreOverrides: boolean = false,
+    ignoreOfficialPriceCache: boolean = false
 ): number => {
+    if (!ignoreOfficialPriceCache) {
+        const cachedPrice = getCachedOfficialStorePrice(storeItemName, usePremium);
+        if (cachedPrice !== undefined) return cachedPrice * quantity;
+    }
+    if (usePremium && Object.hasOwn(supplementalMarketPrices, storeItemName)) {
+        return supplementalMarketPrices[storeItemName] * quantity;
+    }
+
     const bundle = isBundle(storeItemName);
     let internalName = bundle ? storeItemName : fromStoreItem(storeItemName);
 
@@ -5973,7 +6014,9 @@ export const getUndiscountedPrice = (
                     component.purchaseQuantity,
                     [3, 7, 30, 90].indexOf(component.durabilityDays ?? 3),
                     usePremium,
-                    buildLabel
+                    buildLabel,
+                    ignoreStoreOverrides,
+                    ignoreOfficialPriceCache
                 );
             }
             const discount = typeof bundle.packageDiscount === "number" ? bundle.packageDiscount : 0.25;

@@ -37,10 +37,12 @@ import {
     deleteStoreOverrideController,
     getAdminItemDataStatusController,
     getCraftingConfigController,
+    listOfficialStorePricesController,
     listStoreOverridesController,
     saveCraftingConfigController,
     saveStoreOverrideController,
-    syncAdminItemDataController
+    syncAdminItemDataController,
+    syncOfficialStorePricesController
 } from "../controllers/custom/adminDataController.ts";
 
 import { abilityOverrideController } from "../controllers/custom/abilityOverrideController.ts";
@@ -175,6 +177,7 @@ customRouter.get("/retroactivelyApplyGuildCheat", retroactivelyApplyGuildCheatCo
 customRouter.get("/getRegisteredLosers", getRegisteredLosersController);
 customRouter.get("/admin/item-data/status", getAdminItemDataStatusController);
 customRouter.get("/admin/store-overrides", listStoreOverridesController);
+customRouter.get("/admin/store-prices", listOfficialStorePricesController);
 customRouter.get("/admin/crafting-config", getCraftingConfigController);
 customRouter.get("/admin/redeem-codes", listRedeemCodesController);
 customRouter.get("/admin/suspicion-events", listSuspicionEventsController);
@@ -207,6 +210,7 @@ customRouter.post("/setUmbraEchoes", setUmbraEchoesController);
 customRouter.post("/setAccountCheat", setAccountCheatController);
 customRouter.post("/setGuildCheat", setGuildCheatController);
 customRouter.post("/admin/item-data/sync", syncAdminItemDataController);
+customRouter.post("/admin/store-overrides/sync-prices", syncOfficialStorePricesController);
 customRouter.post("/admin/store-overrides", saveStoreOverrideController);
 customRouter.post("/admin/store-overrides/delete", deleteStoreOverrideController);
 customRouter.post("/admin/crafting-config", saveCraftingConfigController);

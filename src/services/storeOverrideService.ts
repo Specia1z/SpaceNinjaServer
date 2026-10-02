@@ -7,10 +7,11 @@ import { sendWsBroadcastToGame } from "./wsService.ts";
 const storeOverrides = new Map<string, IStoreOverride>();
 const permanentOfferStart = new Date(0);
 const permanentOfferEnd = new Date("2100-01-01T00:00:00.000Z");
+let priceSyncRunning = false;
 
 const getOriginalPrice = (storeItem: string, usePremium: boolean, buildLabel: string): number | undefined => {
     try {
-        return getUndiscountedPrice(storeItem, 1, 0, usePremium, buildLabel);
+        return getUndiscountedPrice(storeItem, 1, 0, usePremium, buildLabel, true, true);
     } catch {
         return undefined;
     }
@@ -50,6 +51,82 @@ export const initializeStoreOverrides = async (): Promise<void> => {
 
 export const listStoreOverrides = async (): Promise<IStoreOverride[]> => {
     return StoreOverride.find().sort({ TypeName: 1 }).lean();
+};
+
+export interface IStorePriceSyncResult {
+    total: number;
+    updated: number;
+    unchanged: number;
+    unresolved: string[];
+}
+
+export const syncStoreOverridePrices = async (
+    updatedBy: string,
+    buildLabel: string
+): Promise<IStorePriceSyncResult> => {
+    if (priceSyncRunning) throw new Error("A store price synchronization is already running");
+    priceSyncRunning = true;
+    try {
+        const overrides = await StoreOverride.find().lean();
+        const unresolved: string[] = [];
+        let updated = 0;
+        let unchanged = 0;
+
+        for (const override of overrides) {
+            let premiumPrice: number | undefined;
+            let regularPrice: number | undefined;
+            try {
+                const storeItem = storeItemName(override.TypeName);
+                premiumPrice = getOriginalPrice(storeItem, true, buildLabel);
+                regularPrice = getOriginalPrice(storeItem, false, buildLabel);
+            } catch {
+                unresolved.push(override.TypeName);
+                continue;
+            }
+            const hasOfficialPrice = premiumPrice !== undefined || regularPrice !== undefined;
+            const prices =
+                override.DiscountPercent === undefined
+                    ? {
+                          ...(premiumPrice !== undefined ? { PremiumPrice: premiumPrice } : {}),
+                          ...(regularPrice !== undefined ? { RegularPrice: regularPrice } : {})
+                      }
+                    : {};
+
+            if (!hasOfficialPrice) {
+                unresolved.push(override.TypeName);
+                continue;
+            }
+            if (Object.keys(prices).length === 0) {
+                unchanged++;
+                continue;
+            }
+
+            const changed =
+                (premiumPrice !== undefined && override.PremiumPrice !== premiumPrice) ||
+                (regularPrice !== undefined && override.RegularPrice !== regularPrice);
+            if (!changed) {
+                unchanged++;
+                continue;
+            }
+
+            await StoreOverride.updateOne(
+                { TypeName: override.TypeName },
+                { $set: { ...prices, UpdatedBy: updatedBy } },
+                { runValidators: true }
+            );
+            storeOverrides.set(overrideTypeName(override.TypeName), {
+                ...override,
+                ...prices,
+                UpdatedBy: updatedBy
+            });
+            updated++;
+        }
+
+        if (updated > 0) broadcastStoreRules();
+        return { total: overrides.length, updated, unchanged, unresolved };
+    } finally {
+        priceSyncRunning = false;
+    }
 };
 
 export const saveStoreOverride = async (override: IStoreOverride): Promise<IStoreOverride> => {

@@ -1,7 +1,14 @@
 import type { RequestHandler } from "express";
+import { BL_LATEST } from "../../constants/gameVersions.ts";
 import { getAccountForRequest, isAdministrator, type TAccountDocument } from "../../services/loginService.ts";
 import { getAdminItemDataStatus, syncAdminItemData } from "../../services/adminItemDataService.ts";
-import { deleteStoreOverride, listStoreOverrides, saveStoreOverride } from "../../services/storeOverrideService.ts";
+import {
+    deleteStoreOverride,
+    listStoreOverrides,
+    saveStoreOverride,
+    syncStoreOverridePrices
+} from "../../services/storeOverrideService.ts";
+import { listOfficialStorePrices, syncOfficialStorePrices } from "../../services/officialStorePriceService.ts";
 import {
     deleteCraftingConfig,
     getCraftingOverride,
@@ -44,6 +51,18 @@ export const syncAdminItemDataController: RequestHandler = async (req, res) => {
 export const listStoreOverridesController: RequestHandler = async (req, res) => {
     await getAdministrator(req);
     res.json(await listStoreOverrides());
+};
+
+export const listOfficialStorePricesController: RequestHandler = async (req, res) => {
+    await getAdministrator(req);
+    res.json(await listOfficialStorePrices());
+};
+
+export const syncOfficialStorePricesController: RequestHandler = async (req, res) => {
+    const account = await getAdministrator(req);
+    const official = await syncOfficialStorePrices();
+    const overrides = await syncStoreOverridePrices(account.DisplayName, BL_LATEST);
+    res.json({ official, overrides });
 };
 
 const optionalNumber = (value: unknown, name: string, max?: number): number | undefined => {

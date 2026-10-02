@@ -3,17 +3,20 @@ import { after, before, test } from "node:test";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import { StoreOverride, type IStoreOverride } from "../models/storeOverrideModel.ts";
+import { StorePrice } from "../models/storePriceModel.ts";
 import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
 import { ePurchaseSource } from "../types/purchaseTypes.ts";
 import type { IWorldState } from "../types/worldStateTypes.ts";
 import { getPrice } from "./itemDataService.ts";
+import { syncOfficialStorePrices } from "./officialStorePriceService.ts";
 import { handlePurchase } from "./purchaseService.ts";
 import {
     applyStoreOverrides,
     deleteStoreOverride,
     initializeStoreOverrides,
     isStoreItemPurchasable,
-    saveStoreOverride
+    saveStoreOverride,
+    syncStoreOverridePrices
 } from "./storeOverrideService.ts";
 
 const buildLabel = "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg";
@@ -246,6 +249,69 @@ void test("limited-only overrides reuse the original store price", async () => {
     assert.equal(state.FlashSales[0].RegularOverride, undefined);
     assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 105);
     await deleteStoreOverride(typeName);
+});
+
+void test("full official price sync updates every resolvable override and preserves other fields", async () => {
+    const bansheeTypeName = "/Lotus/Types/StoreItems/Packages/BansheeDeluxe2SkinBundle";
+    const discountedTypeName = "/Lotus/Upgrades/Skins/Sentinels/Skins/BansheeDlxSentSkin";
+    await deleteStoreOverride(typeName);
+    await deleteStoreOverride(bansheeTypeName);
+    await deleteStoreOverride(discountedTypeName);
+    await saveStoreOverride(
+        override({
+            PremiumPrice: 1,
+            RegularPrice: 2,
+            CategoryName: "SALE"
+        })
+    );
+    await saveStoreOverride(
+        override({
+            TypeName: bansheeTypeName,
+            PremiumPrice: 1,
+            CategoryName: "NEW"
+        })
+    );
+    await saveStoreOverride(
+        override({
+            TypeName: discountedTypeName,
+            PremiumPrice: 1,
+            DiscountPercent: 10
+        })
+    );
+
+    const result = await syncStoreOverridePrices("price-sync-test", buildLabel);
+    const repala = await StoreOverride.findOne({ TypeName: typeName }).lean();
+    const banshee = await StoreOverride.findOne({ TypeName: bansheeTypeName }).lean();
+    const discounted = await StoreOverride.findOne({ TypeName: discountedTypeName }).lean();
+
+    assert.ok(repala);
+    assert.ok(banshee);
+    assert.ok(discounted);
+    assert.equal(result.updated, 2);
+    assert.equal(result.unchanged, 1);
+    assert.equal(repala.PremiumPrice, 105);
+    assert.equal(repala.RegularPrice, 2);
+    assert.equal(repala.CategoryName, "SALE");
+    assert.equal(repala.UpdatedBy, "price-sync-test");
+    assert.equal(banshee.PremiumPrice, 245);
+    assert.equal(banshee.CategoryName, "NEW");
+    assert.equal(discounted.PremiumPrice, 1);
+    assert.equal(discounted.DiscountPercent, 10);
+    await deleteStoreOverride(typeName);
+    await deleteStoreOverride(bansheeTypeName);
+    await deleteStoreOverride(discountedTypeName);
+});
+
+void test("official price sync builds the complete catalogue instead of only custom overrides", async () => {
+    const result = await syncOfficialStorePrices();
+    const banshee = await StorePrice.findOne({
+        TypeName: "/Lotus/Types/StoreItems/Packages/BansheeDeluxe2SkinBundle"
+    }).lean();
+
+    assert.ok(result.total > 2_000);
+    assert.equal(result.total, await StorePrice.countDocuments());
+    assert.ok(banshee);
+    assert.equal(banshee.PremiumPrice, 245);
 });
 
 void test("store overrides expose all supported flash-sale labels and flags", async () => {

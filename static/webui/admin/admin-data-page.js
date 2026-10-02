@@ -8,6 +8,7 @@
         PrimeTokens: "currency_PrimeTokens"
     };
     let storeOverrides = [];
+    let officialStorePrices = [];
 
     const formatDate = value => (value ? new Date(value).toLocaleString() : loc("admin_noLimit"));
     const optionalNumber = id => {
@@ -271,6 +272,55 @@
         renderStoreOverrides();
     }
 
+    function renderOfficialStorePrices() {
+        const tbody = document.getElementById("admin-store-prices");
+        tbody.replaceChildren();
+        officialStorePrices.forEach(price => {
+            const row = tbody.insertRow();
+            const itemCell = row.insertCell();
+            itemCell.textContent = itemDisplayLabel(price.TypeName);
+            const path = document.createElement("div");
+            path.className = "small text-body-secondary text-break font-monospace";
+            path.textContent = price.TypeName;
+            itemCell.append(path);
+            row.insertCell().textContent = price.PremiumPrice ?? "-";
+            row.insertCell().textContent = price.RegularPrice ?? "-";
+            row.insertCell().textContent =
+                price.Source === "supplemental"
+                    ? loc("admin_storePriceSourceSupplemental")
+                    : loc("admin_storePriceSourcePublicExport");
+            row.insertCell().textContent = price.SyncedAt ? formatDate(price.SyncedAt) : loc("admin_never");
+        });
+    }
+
+    async function loadOfficialStorePrices() {
+        officialStorePrices = await window.adminDataApi.listOfficialStorePrices();
+        renderOfficialStorePrices();
+    }
+
+    async function syncStorePrices() {
+        if (!confirm(loc("admin_storePriceSyncConfirm"))) return;
+        const button = document.getElementById("admin-store-price-sync");
+        button.disabled = true;
+        try {
+            const result = await window.adminDataApi.syncStoreOverridePrices();
+            await Promise.all([loadStoreOverrides(), loadOfficialStorePrices()]);
+            toast(
+                loc("admin_storePriceSyncComplete")
+                    .replace("|TOTAL|", result.official.total)
+                    .replace("|CREATED|", result.official.created)
+                    .replace("|UPDATED|", result.official.updated)
+                    .replace("|OVERRIDES|", result.overrides.updated)
+                    .replace("|UNRESOLVED|", result.overrides.unresolved.length),
+                "success"
+            );
+        } catch (error) {
+            toast(error.responseText || loc("admin_storePriceSyncFailed"), "danger");
+        } finally {
+            button.disabled = false;
+        }
+    }
+
     async function saveStoreOverride() {
         const listed = document.getElementById("admin-store-listed").checked;
         const payload = {
@@ -401,6 +451,8 @@
         setGameVersion,
         resetStoreForm,
         saveStoreOverride,
+        syncStorePrices,
+        loadOfficialStorePrices,
         updateCraftingFormState,
         resetCraftingConfig,
         saveCraftingConfig
@@ -412,6 +464,7 @@
         setAdminGameVersion: setGameVersion,
         resetAdminStoreForm: resetStoreForm,
         saveAdminStoreOverride: saveStoreOverride,
+        syncAdminStorePrices: syncStorePrices,
         updateAdminCraftingFormState: updateCraftingFormState,
         resetAdminCraftingConfig: resetCraftingConfig,
         saveAdminCraftingConfig: saveCraftingConfig
@@ -421,7 +474,12 @@
         void awaitAuthz().then(async () => {
             if (!applyServerConfig(await getServerConfig())) return;
             try {
-                await Promise.all([loadItemDataStatus(), loadStoreOverrides(), loadCraftingConfig()]);
+                await Promise.all([
+                    loadItemDataStatus(),
+                    loadStoreOverrides(),
+                    loadOfficialStorePrices(),
+                    loadCraftingConfig()
+                ]);
                 window.itemListPromise.then(() => setupItemPicker("admin-store-type", "admin-store-type-resolved"));
             } catch (error) {
                 toast(error.responseText || loc("settings_changeFailed"), "danger");
