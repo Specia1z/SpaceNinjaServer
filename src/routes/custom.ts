@@ -106,6 +106,7 @@ import {
     getAccountRatesController,
     saveAccountRatesController
 } from "../controllers/custom/accountRatesController.ts";
+import { getCurrencyGrantStatsController } from "../controllers/custom/currencyGrantStatsController.ts";
 
 const customRouter = express.Router();
 
@@ -192,6 +193,7 @@ customRouter.get("/admin/suspicion-events", listSuspicionEventsController);
 customRouter.get("/admin/suspicion-events/detail", getSuspicionEventsForAccountController);
 customRouter.get("/admin/metadata-patches", getMetadataPatchesController);
 customRouter.get("/admin/account-rates", getAccountRatesController);
+customRouter.get("/admin/currency-grant-stats", getCurrencyGrantStatsController);
 customRouter.get("/admin/player-presence", listPlayerPresenceController);
 customRouter.get("/admin/player-presence/history", getPlayerPresenceHistoryController);
 customRouter.get("/admin/player-presence/nodes", resolvePresenceNodesController);

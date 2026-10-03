@@ -4,6 +4,7 @@ import { addCrewShipFusionPoints, addFusionPoints, getInventory } from "../../se
 import { getGuildForRequestEx, hasGuildPermission } from "../../services/guildService.ts";
 import { eGuildPermission } from "../../types/guildTypes.ts";
 import { broadcastGuildUpdate, broadcastInventoryUpdate } from "../../services/wsService.ts";
+import { recordCurrencyGrant } from "../../services/currencyGrantStatService.ts";
 
 export const addCurrencyController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
@@ -32,6 +33,13 @@ export const addCurrencyController: RequestHandler = async (req, res) => {
                 default:
                     inventory[request.currency] += request.delta;
                     break;
+            }
+            if (request.delta > 0) {
+                if (request.currency == "PremiumCredits") {
+                    await recordCurrencyGrant(inventory.accountOwnerId, { platinum: request.delta, source: "admin" });
+                } else if (request.currency == "PrimeTokens") {
+                    await recordCurrencyGrant(inventory.accountOwnerId, { regalAya: request.delta, source: "admin" });
+                }
             }
         }
         res.json(inventory[request.currency]);

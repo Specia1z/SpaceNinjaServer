@@ -92,6 +92,9 @@
                             <a class="nav-link" href="/webui/account-rates" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_accountRates"></a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/webui/reward-stats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_rewardStats"></a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/webui/player-presence" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_playerPresence"></a>
                         </li>
                         <li class="nav-item">
@@ -2766,6 +2769,82 @@
                     </div>
                 </div>
             </div>
+            <div data-route="/webui/reward-stats" data-title-tag="navbar_rewardStats">
+                <div class="d-none admin-hide">
+                    <p class="card-text" data-loc="cheats_administratorRequirement"></p>
+                </div>
+                <div class="d-none admin-show admin-reward-stats-page">
+                    <header class="admin-reward-stats-header">
+                        <div>
+                            <h3 class="mb-1" data-loc="rewardStats_title"></h3>
+                            <p class="text-body-secondary mb-0" data-loc="rewardStats_description"></p>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-end gap-2">
+                            <div>
+                                <label class="form-label mb-1" for="reward-stats-day" data-loc="rewardStats_day"></label>
+                                <input class="form-control" id="reward-stats-day" type="date" />
+                            </div>
+                            <button class="btn btn-outline-secondary" id="reward-stats-refresh" type="button" data-loc="rewardStats_refresh"></button>
+                        </div>
+                    </header>
+                    <div class="alert alert-info d-none mt-3" id="reward-stats-notice" role="status"></div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="text-body-secondary" data-loc="rewardStats_totalPlatinum"></div>
+                                    <div class="display-6" id="reward-stats-total-platinum">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="text-body-secondary" data-loc="rewardStats_totalAya"></div>
+                                    <div class="display-6" id="reward-stats-total-aya">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-4">
+                        <section class="col-xl-8">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                <h4 class="mb-0" data-loc="rewardStats_accountsTitle"></h4>
+                                <input class="form-control reward-stats-search" id="reward-stats-search" type="search" data-loc-placeholder="rewardStats_search" autocomplete="off" />
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th data-loc="rewardStats_account"></th>
+                                            <th data-loc="rewardStats_platinum"></th>
+                                            <th data-loc="rewardStats_aya"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reward-stats-accounts"></tbody>
+                                </table>
+                            </div>
+                            <p class="text-body-secondary d-none" id="reward-stats-accounts-empty" data-loc="rewardStats_noData"></p>
+                        </section>
+                        <section class="col-xl-4">
+                            <h4 class="mb-2" data-loc="rewardStats_sourcesTitle"></h4>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th data-loc="rewardStats_source"></th>
+                                            <th data-loc="rewardStats_platinum"></th>
+                                            <th data-loc="rewardStats_aya"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reward-stats-sources"></tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                    <p class="text-body-secondary small mt-3 mb-0" data-loc="rewardStats_scopeHint"></p>
+                </div>
+            </div>
             <div data-route="/webui/player-presence" data-title-tag="navbar_playerPresence">
                 <div class="d-none admin-hide">
                     <p class="card-text" data-loc="cheats_administratorRequirement"></p>
@@ -3030,6 +3109,8 @@
     <script src="/webui/admin/suspicion-page.js"></script>
     <script src="/webui/admin/player-presence-api.js"></script>
     <script src="/webui/admin/player-presence-page.js"></script>
+    <script src="/webui/admin/reward-stats-api.js"></script>
+    <script src="/webui/admin/reward-stats-page.js"></script>
     <script src="/webui/script.importSamples.js" async defer></script>
     <script src="/webui/libs/bootstrap.bundle.min.js"></script>
     <script>

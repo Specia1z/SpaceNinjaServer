@@ -105,6 +105,7 @@ import { addCrewShipWeaponSkin, addEquipment, addSkin } from "./inventoryEquipme
 import { addBooster, addLoreFragmentScans } from "./inventoryProgressService.ts";
 import { applyChallenges, applyKahlProgress } from "./inventoryChallengeService.ts";
 import { applyGlobalAccountCheats } from "./accountCheatService.ts";
+import { recordCurrencyGrant } from "./currencyGrantStatService.ts";
 export { resetKahlWeeklyMission } from "./inventoryChallengeService.ts";
 export { addCalendarProgress, checkCalendarAutoAdvance, getCalendarProgress } from "./calendarProgressService.ts";
 export {
@@ -382,6 +383,7 @@ export const addStartingGear = async (
 
     inventory.PremiumCredits = 50;
     inventory.PremiumCreditsFree = 50;
+    await recordCurrencyGrant(inventory.accountOwnerId, { platinum: 50, source: "starting-gear" });
     inventoryChanges.PremiumCredits = 50;
     inventoryChanges.PremiumCreditsFree = 50;
     inventory.RegularCredits = 3000;
@@ -586,6 +588,13 @@ export const addItem = async (
     // Currencies are handled before anything else because their names deliberately do not look like asset paths.
     if (isCurrencyItemName(typeName)) {
         inventory[typeName] += quantity;
+        if (quantity > 0) {
+            if (typeName == "PremiumCredits") {
+                await recordCurrencyGrant(inventory.accountOwnerId, { platinum: quantity, source: "inventory-add" });
+            } else if (typeName == "PrimeTokens") {
+                await recordCurrencyGrant(inventory.accountOwnerId, { regalAya: quantity, source: "inventory-add" });
+            }
+        }
         logger.debug(`currency changes`, { [typeName]: quantity });
         return { [typeName]: quantity };
     }
@@ -3252,13 +3261,17 @@ export const ensureUserHasSteelPathRewards = async (
 };
 
 export const dispatchPendingPremiumCredits = async (inventory: TInventoryDatabaseDocument): Promise<void> => {
+    const amount = inventory.pendingPremiumCredits ?? 0;
+    if (amount > 0) {
+        await recordCurrencyGrant(inventory.accountOwnerId, { platinum: amount, source: "pending-platinum" });
+    }
     await createMessage(inventory.accountOwnerId, [
         {
             sndr: "/Lotus/Language/Bosses/Ordis",
             msg: "/Lotus/Language/Inbox/FoundItemsBody",
             sub: "/Lotus/Language/Inbox/FoundItemsTitle",
             icon: "/Lotus/Interface/Icons/Npcs/Ordis.png",
-            PremiumCredits: inventory.pendingPremiumCredits,
+            PremiumCredits: amount,
             highPriority: true // FoundItems messages on live have this flag, tho as we are reusing it here for platinum rewards, it's maybe questionable if it's needed, but whatever.
         }
     ]);

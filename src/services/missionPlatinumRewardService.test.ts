@@ -6,7 +6,7 @@ import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inven
 import { config } from "./configService.ts";
 import { addMissionPlatinumReward, addMissionRegalAyaReward } from "./missionPlatinumRewardService.ts";
 
-void test("mission platinum honors chance, multiplier and inbox delivery", () => {
+void test("mission platinum honors chance, multiplier and inbox delivery", async () => {
     const original = {
         min: config.missionPlatinumRewardMin,
         max: config.missionPlatinumRewardMax,
@@ -24,16 +24,16 @@ void test("mission platinum honors chance, multiplier and inbox delivery", () =>
         config.missionPlatinumRewardPityCompletions = 0;
         const inventory = { PremiumCredits: 10 } as TInventoryDatabaseDocument;
 
-        assert.equal(addMissionPlatinumReward(inventory, 1.5), 3);
+        assert.equal(await addMissionPlatinumReward(inventory, 1.5), 3);
         assert.equal(inventory.PremiumCredits, 13);
 
         config.missionPlatinumRewardSendMail = true;
-        assert.equal(addMissionPlatinumReward(inventory, 2), 0);
+        assert.equal(await addMissionPlatinumReward(inventory, 2), 0);
         assert.equal(inventory.pendingPremiumCredits, 4);
         assert.equal(inventory.PremiumCredits, 13);
 
         config.missionPlatinumRewardChance = 0;
-        assert.equal(addMissionPlatinumReward(inventory, 2), 0);
+        assert.equal(await addMissionPlatinumReward(inventory, 2), 0);
         assert.equal(inventory.pendingPremiumCredits, 4);
     } finally {
         config.missionPlatinumRewardMin = original.min;

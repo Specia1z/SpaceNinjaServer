@@ -1062,7 +1062,7 @@ export const addMissionRewards = async (
     let platinumReward = 0;
 
     if (missionStatus === undefined || missionStatus == "GS_SUCCESS") {
-        platinumReward = addMissionPlatinumReward(
+        platinumReward = await addMissionPlatinumReward(
             inventory,
             getEffectiveAccountRate(accountRates, "missionPlatinumMultiplier")
         );

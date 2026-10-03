@@ -365,6 +365,29 @@ td.text-end > a > svg {
     margin-left: auto;
 }
 
+.admin-reward-stats-page {
+    max-width: 100rem;
+    margin-inline: auto;
+}
+
+.admin-reward-stats-header {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    padding-block: 0.25rem 1.25rem;
+}
+
+.reward-stats-search {
+    max-width: 18rem;
+}
+
+.admin-reward-stats-page .table th,
+.admin-reward-stats-page .table td {
+    vertical-align: middle;
+}
+
 @media (max-width: 767px) {
     .account-rates-layout,
     .account-rate-field-grid {

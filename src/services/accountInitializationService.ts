@@ -10,6 +10,7 @@ import { handleStoreItemAcquisition } from "./purchaseService.ts";
 import type { IMissionReward } from "../types/missionTypes.ts";
 import { sendWsBroadcastToGame } from "./wsService.ts";
 import { logger } from "../utils/logger.ts";
+import { recordCurrencyGrant } from "./currencyGrantStatService.ts";
 
 const starChartUnlockVersion = createHash("sha256").update(Object.keys(ExportRegions).sort().join("\n")).digest("hex");
 let pendingStarChartUnlock: Promise<number> | undefined;
@@ -45,6 +46,7 @@ export const unlockStarChartForExistingAccounts = async (): Promise<number> => {
 export const giveNewAccountStarterPack = async (inventory: TInventoryDatabaseDocument): Promise<void> => {
     inventory.PremiumCredits += 200;
     inventory.PremiumCreditsFree += 200;
+    await recordCurrencyGrant(inventory.accountOwnerId, { platinum: 200, source: "starter-pack" });
     inventory.RegularCredits += 250_000;
     inventory.FusionPoints += 10_000;
     updateSlots(inventory, "SuitBin", 2, 0);

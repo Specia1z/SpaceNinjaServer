@@ -193,6 +193,7 @@ function refreshServerConfig() {
         single.getCurrentPath() == "/webui/cheats" ||
         single.getCurrentPath() == "/webui/users" ||
         single.getCurrentPath() == "/webui/account-rates" ||
+        single.getCurrentPath() == "/webui/reward-stats" ||
         single.getCurrentPath() == "/webui/metadata-patches" ||
         single.getCurrentPath() == "/webui/bootstrapper-version"
     ) {
@@ -210,6 +211,7 @@ function invalidateCachedData() {
 
 function doAccountSwitch(to_route) {
     window.accountRatesPage?.reset();
+    window.rewardStatsPage?.reset();
     window.authz = undefined;
     invalidateCachedData();
     single.loadRoute(to_route);
@@ -266,6 +268,7 @@ function revalidateAuthz() {
 
 function logout() {
     window.accountRatesPage?.reset();
+    window.rewardStatsPage?.reset();
     localStorage.removeItem("email");
     localStorage.removeItem("password");
     window.authz = undefined;

@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import type { HydratedDocument, Types } from "mongoose";
 import { Account } from "../models/loginModel.ts";
 import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
+import { recordCurrencyGrant } from "./currencyGrantStatService.ts";
 import { config } from "./configService.ts";
 import type { IDatabaseAccountJson } from "../types/loginTypes.ts";
 import type { IRegistrationFingerprint } from "./registrationRateLimitService.ts";
@@ -178,6 +179,8 @@ export const settleReferral = async (
             const inventory = await Inventory.findOne({ accountOwnerId: side.owner }, "ReferralRewardClaims");
             if (!inventory?.ReferralRewardClaims?.includes(side.claim))
                 throw new Error("referral inventory unavailable");
+        } else {
+            await recordCurrencyGrant(side.owner, { platinum: side.amount, source: "referral" });
         }
     }
 };

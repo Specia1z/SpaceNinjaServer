@@ -3,6 +3,7 @@ import { logger } from "../utils/logger.ts";
 import { config } from "./configService.ts";
 import { getRandomInt } from "./rngService.ts";
 import { createMessage } from "./inboxService.ts";
+import { recordCurrencyGrant } from "./currencyGrantStatService.ts";
 
 type MissionRewardState = {
     rewardDate?: Date;
@@ -120,16 +121,17 @@ export const addMissionRegalAyaReward = async (
                 highPriority: true
             }
         ]);
+        await recordCurrencyGrant(inventory.accountOwnerId, { regalAya: amount, source: "mission-aya" });
         logger.debug(`mission completion Regal Aya reward: ${amount} (sent by inbox)`);
     }
     return amount;
 };
 
 // Returns the directly credited amount; inbox deliveries are dispatched separately.
-export const addMissionPlatinumReward = (
+export const addMissionPlatinumReward = async (
     inventory: TInventoryDatabaseDocument,
     missionPlatinumMultiplier: number
-): number => {
+): Promise<number> => {
     const amount = getMissionRewardAmount({
         inventory,
         min: Math.max(0, Math.trunc(config.missionPlatinumRewardMin ?? 1)),
@@ -146,6 +148,7 @@ export const addMissionPlatinumReward = (
 
     if (!config.missionPlatinumRewardSendMail) {
         inventory.PremiumCredits += amount;
+        await recordCurrencyGrant(inventory.accountOwnerId, { platinum: amount, source: "mission-platinum" });
         logger.debug(`mission completion platinum reward: ${amount} (credited directly)`);
         return amount;
     }
