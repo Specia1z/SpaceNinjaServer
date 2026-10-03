@@ -1,6 +1,6 @@
 import { config } from "./configService.ts";
 import { logger } from "../utils/logger.ts";
-import type { ILiveWorldActivityState, IWorldState } from "../types/worldStateTypes.ts";
+import type { ILiveGoalState, ILiveWorldActivityState, IWorldState } from "../types/worldStateTypes.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import gameToBuildVersionInt from "../constants/gameToBuildVersionInt.ts";
 import { sendWsBroadcastToGame } from "./wsService.ts";
@@ -14,7 +14,7 @@ import varzia from "../constants/varzia.ts";
 import invasionNodes from "../../static/fixed_responses/worldState/invasionNodes.json" with { type: "json" };
 import invasionRewards from "../../static/fixed_responses/worldState/invasionRewards.json" with { type: "json" };
 import syndicateMissionNodes from "../../static/fixed_responses/worldState/syndicateMissions.json" with { type: "json" };
-import { LiveWorldActivityState } from "../models/worldStateModel.ts";
+import { LiveGoalState, LiveWorldActivityState } from "../models/worldStateModel.ts";
 import { fromMongoDate } from "../helpers/inventoryHelpers.ts";
 
 const LIVE_WORLD_STATE_URL = "https://oracle.browse.wf/worldState.min.json";
@@ -57,6 +57,7 @@ const knownInvasionRewards = new Set(
         .flatMap(rewards => rewards.map(reward => reward.ItemType))
 );
 const liveInvasions = new Map<string, { invasion: IWorldState["Invasions"][number]; lastSeen: number }>();
+const liveGoals = new Map<string, { goal: IWorldState["Goals"][number]; activationMs: number }>();
 const liveSyndicateMissions = new Map<
     string,
     { mission: IWorldState["SyndicateMissions"][number]; lastSeen: number }
@@ -248,12 +249,314 @@ const getCompatibleInvasion = (value: unknown): IWorldState["Invasions"][number]
         : undefined;
 };
 
+const getGoalDateMs = (date: IWorldState["Goals"][number]["Activation"]): number =>
+    "$date" in date ? Number(date.$date.$numberLong) : date.sec * 1000 + Math.trunc(date.usec / 1000);
+
+const getGoalOid = (goal: IWorldState["Goals"][number]): string => goal._id.$oid ?? goal._id.$id ?? "";
+
+const getStaticGoalSnapshot = (
+    goal: IWorldState["Goals"][number],
+    stripProgress: boolean
+): IWorldState["Goals"][number] => {
+    const snapshot = structuredClone(goal);
+    if (stripProgress) {
+        delete snapshot.Count;
+        delete snapshot.CountAlt;
+        delete snapshot.HealthPct;
+        delete snapshot.Success;
+    }
+    return snapshot;
+};
+
+const getGoalProgressMode = (goal: IWorldState["Goals"][number]): ILiveGoalState["progressMode"] => {
+    const isCommunityGoal = ("Community" in goal && goal.Community) || !goal.Personal;
+    if (
+        (!isCommunityGoal && goal.Personal) ||
+        (goal.Count === undefined && goal.CountAlt === undefined && goal.HealthPct === undefined)
+    ) {
+        return "none";
+    }
+    return goal.Fomorian ? "depletion" : "additive";
+};
+
+const getGoalProgressTarget = (goal: IWorldState["Goals"][number]): number => {
+    const isCommunityGoal = ("Community" in goal && goal.Community) || !goal.Personal;
+    if (!goal.Fomorian && isCommunityGoal && goal.Goal && goal.Goal > 0) {
+        return goal.Goal;
+    }
+    return 100;
+};
+
+type TInitialLiveGoalProgress = Pick<
+    ILiveGoalState,
+    "count" | "countAlt" | "healthPct" | "success" | "status" | "initialProgressSource"
+> & { completed: boolean };
+
+const clampGoalProgress = (value: number, target: number): number => Math.min(target, Math.max(0, value));
+
+export const getInitialLiveGoalProgress = (
+    goal: IWorldState["Goals"][number],
+    progressMode: ILiveGoalState["progressMode"],
+    target: number
+): TInitialLiveGoalProgress => {
+    if (progressMode == "none") {
+        return {
+            count: 0,
+            countAlt: 0,
+            healthPct: 0,
+            success: 0,
+            status: "active",
+            completed: false,
+            initialProgressSource: "zero"
+        };
+    }
+
+    const officialCount = goal.Count;
+    const officialHealthPct = goal.HealthPct;
+    const hasOfficialCount = officialCount !== undefined && Number.isFinite(officialCount);
+    const hasOfficialHealthPct = officialHealthPct !== undefined && Number.isFinite(officialHealthPct);
+    const count = hasOfficialCount
+        ? clampGoalProgress(officialCount, target)
+        : hasOfficialHealthPct
+          ? clampGoalProgress(
+                (progressMode == "depletion" ? 1 - officialHealthPct : officialHealthPct) * target,
+                target
+            )
+          : 0;
+    const countAlt =
+        goal.CountAlt !== undefined && Number.isFinite(goal.CountAlt) ? clampGoalProgress(goal.CountAlt, target) : 0;
+    const healthPct = progressMode == "depletion" ? 1 - count / target : count / target;
+    const hasOfficialCountAlt = goal.CountAlt !== undefined && Number.isFinite(goal.CountAlt);
+    const hasOfficialProgress = hasOfficialCount || hasOfficialCountAlt || hasOfficialHealthPct;
+    const officialSuccess = goal.Success;
+    const success = Math.max(
+        officialSuccess !== undefined && Number.isFinite(officialSuccess)
+            ? Math.min(1, Math.max(0, officialSuccess))
+            : 0,
+        count >= target ? 1 : 0
+    );
+    const completed = count >= target || success > 0;
+
+    return {
+        count,
+        countAlt,
+        healthPct,
+        success,
+        status: completed ? "completed" : "active",
+        completed,
+        initialProgressSource: hasOfficialProgress ? "official" : "zero"
+    };
+};
+
 const getLocalInvasion = (state: ILiveWorldActivityState): IWorldState["Invasions"][number] => ({
     ...structuredClone(state.snapshot),
     Count: state.localCount,
     Goal: state.goal,
     Completed: state.status == "completed" || Math.abs(state.localCount) >= state.goal
 });
+
+const getLocalGoal = (state: ILiveGoalState): IWorldState["Goals"][number] => {
+    const goal = structuredClone(state.snapshot);
+    if (state.hasCount) {
+        goal.Count = state.count;
+    }
+    if (state.hasCountAlt) {
+        goal.CountAlt = state.countAlt;
+    }
+    if (state.hasHealthPct) {
+        goal.HealthPct = state.healthPct;
+    }
+    if (state.hasSuccess) {
+        goal.Success = state.success;
+    }
+    return goal;
+};
+
+const updateCachedLiveGoal = (state: ILiveGoalState): void => {
+    const goal = getLocalGoal(state);
+    const current = liveGoals.get(state.officialId);
+    const currentCount = current?.goal.Count;
+    const nextCount = goal.Count;
+    if (
+        current &&
+        current.activationMs == state.activationMs &&
+        currentCount !== undefined &&
+        nextCount !== undefined
+    ) {
+        // Concurrent uploads can return from MongoDB out of order. Never expose an older count.
+        if (nextCount < currentCount) {
+            return;
+        }
+    }
+    liveGoals.set(state.officialId, { goal, activationMs: state.activationMs });
+};
+
+const restoreLiveGoals = async (): Promise<void> => {
+    const states = await LiveGoalState.find({ expiresAt: { $gt: new Date() } })
+        .sort({ activationMs: -1 })
+        .lean();
+    liveGoals.clear();
+    for (const state of states) {
+        if (!liveGoals.has(state.officialId)) {
+            liveGoals.set(state.officialId, {
+                goal: getLocalGoal(state as ILiveGoalState),
+                activationMs: state.activationMs
+            });
+        }
+    }
+};
+
+const updateLiveGoals = async (goals: IWorldState["Goals"]): Promise<void> => {
+    const now = new Date();
+    await Promise.all(
+        goals.map(async goal => {
+            const officialId = getGoalOid(goal);
+            const activationMs = getGoalDateMs(goal.Activation);
+            if (!officialId || !Number.isFinite(activationMs)) {
+                return;
+            }
+
+            const progressMode = getGoalProgressMode(goal);
+            const officialExpiryMs = getGoalDateMs(goal.Expiry);
+            const existingState = (await LiveGoalState.findOne({ officialId, activationMs }).lean()) as
+                | (Partial<ILiveGoalState> & Pick<ILiveGoalState, "officialId" | "activationMs">)
+                | null;
+            const target = existingState?.target ?? getGoalProgressTarget(goal);
+            const effectiveProgressMode =
+                existingState?.progressMode && existingState.progressMode != "none"
+                    ? existingState.progressMode
+                    : progressMode;
+            const hasCount =
+                Boolean(existingState?.hasCount) || (effectiveProgressMode != "none" && goal.Count !== undefined);
+            const hasCountAlt =
+                Boolean(existingState?.hasCountAlt) || (effectiveProgressMode != "none" && goal.CountAlt !== undefined);
+            const hasHealthPct =
+                Boolean(existingState?.hasHealthPct) ||
+                (effectiveProgressMode != "none" && goal.HealthPct !== undefined);
+            const hasSuccess =
+                Boolean(existingState?.hasSuccess) || (effectiveProgressMode != "none" && goal.Success !== undefined);
+            const initialProgress = getInitialLiveGoalProgress(goal, progressMode, target);
+            const expiresAt = new Date(
+                Math.max(
+                    now.getTime() + 30 * unixTimesInMs.day,
+                    (Number.isFinite(officialExpiryMs) ? officialExpiryMs : now.getTime()) + 30 * unixTimesInMs.day
+                )
+            );
+            await LiveGoalState.findOneAndUpdate(
+                { officialId, activationMs },
+                {
+                    $set: {
+                        snapshot: getStaticGoalSnapshot(goal, effectiveProgressMode != "none"),
+                        target,
+                        progressMode: effectiveProgressMode,
+                        hasCount,
+                        hasCountAlt,
+                        hasHealthPct,
+                        hasSuccess,
+                        lastSeenAt: now
+                    },
+                    $setOnInsert: {
+                        officialId,
+                        activationMs,
+                        count: initialProgress.count,
+                        countAlt: initialProgress.countAlt,
+                        healthPct: initialProgress.healthPct,
+                        success: initialProgress.success,
+                        status: initialProgress.status,
+                        ...(existingState
+                            ? {}
+                            : {
+                                  progressInitialized: true,
+                                  initialProgressSource: initialProgress.initialProgressSource
+                              }),
+                        ...(initialProgress.completed
+                            ? { completedAt: now, expiresAt: new Date(now.getTime() + 30 * unixTimesInMs.day) }
+                            : { expiresAt })
+                    }
+                },
+                { upsert: true }
+            );
+            if (
+                existingState &&
+                (existingState.progressInitialized === undefined || existingState.initialProgressSource === undefined)
+            ) {
+                await LiveGoalState.updateOne(
+                    { officialId, activationMs },
+                    {
+                        $set: {
+                            ...(existingState.progressInitialized === undefined ? { progressInitialized: true } : {}),
+                            ...(existingState.initialProgressSource === undefined
+                                ? { initialProgressSource: "local" }
+                                : {})
+                        }
+                    }
+                );
+            }
+            await LiveGoalState.updateOne({ officialId, activationMs, status: "active" }, { $set: { expiresAt } });
+        })
+    );
+    await restoreLiveGoals();
+};
+
+export const advanceLiveGoalProgress = async (oid: string, contribution: number): Promise<void> => {
+    if (!config.worldState?.liveSync || !Number.isFinite(contribution) || contribution <= 0) {
+        return;
+    }
+
+    const current = liveGoals.get(oid);
+    if (!current) {
+        return;
+    }
+
+    const retentionMs = 30 * unixTimesInMs.day;
+    const state = await LiveGoalState.findOneAndUpdate(
+        {
+            officialId: oid,
+            activationMs: current.activationMs,
+            status: "active",
+            progressMode: { $ne: "none" }
+        },
+        [
+            { $set: { count: { $add: ["$count", contribution] } } },
+            {
+                $set: {
+                    healthPct: {
+                        $cond: [
+                            "$hasHealthPct",
+                            {
+                                $cond: [
+                                    { $eq: ["$progressMode", "depletion"] },
+                                    { $max: [0, { $subtract: [1, { $divide: ["$count", "$target"] }] }] },
+                                    { $min: [1, { $divide: ["$count", "$target"] }] }
+                                ]
+                            },
+                            "$healthPct"
+                        ]
+                    },
+                    success: {
+                        $cond: [{ $and: ["$hasSuccess", { $gte: ["$count", "$target"] }] }, 1, "$success"]
+                    },
+                    status: {
+                        $cond: [{ $gte: ["$count", "$target"] }, "completed", "$status"]
+                    },
+                    completedAt: {
+                        $cond: [{ $gte: ["$count", "$target"] }, { $ifNull: ["$completedAt", "$$NOW"] }, "$completedAt"]
+                    },
+                    expiresAt: {
+                        $cond: [{ $gte: ["$count", "$target"] }, { $add: ["$$NOW", retentionMs] }, "$expiresAt"]
+                    }
+                }
+            }
+        ],
+        { returnDocument: "after", updatePipeline: true }
+    );
+    if (!state) {
+        return;
+    }
+
+    updateCachedLiveGoal(state.toObject() as ILiveGoalState);
+    sendWsBroadcastToGame(undefined, { sync_world_state: true });
+};
 
 const restoreLiveInvasions = async (): Promise<void> => {
     const states = await LiveWorldActivityState.find({
@@ -478,6 +781,61 @@ const getCompatibleSeasonInfo = (
     return { ...seasonInfo, ActiveChallenges: activeChallenges };
 };
 
+export const mergeLocalGoalProgress = (
+    generatedGoals: IWorldState["Goals"],
+    liveGoals: IWorldState["Goals"],
+    persistedGoals: IWorldState["Goals"],
+    buildVersion: number
+): IWorldState["Goals"] => {
+    const result = structuredClone(
+        buildVersion >= gameToBuildVersionInt["43.5.0"] ? generatedGoals : generatedGoals.filter(isUpdate41Goal)
+    ) as IWorldState["Goals"];
+    const resultIndexes = new Map<string, number>();
+    result.forEach((goal, index) => {
+        const oid = getGoalOid(goal);
+        if (oid) {
+            resultIndexes.set(oid, index);
+        }
+    });
+
+    const persistedByOid = new Map<string, IWorldState["Goals"][number]>();
+    for (const goal of persistedGoals) {
+        const oid = getGoalOid(goal);
+        if (oid) {
+            persistedByOid.set(oid, goal);
+        }
+    }
+
+    const mergeGoal = (goal: IWorldState["Goals"][number]): void => {
+        if (buildVersion < gameToBuildVersionInt["43.5.0"] && !isUpdate41Goal(goal)) {
+            return;
+        }
+        const oid = getGoalOid(goal);
+        if (!oid) {
+            result.push(structuredClone(goal));
+            return;
+        }
+        const index = resultIndexes.get(oid);
+        if (index === undefined) {
+            resultIndexes.set(oid, result.length);
+            result.push(structuredClone(goal));
+        } else {
+            result[index] = structuredClone(goal);
+        }
+    };
+
+    for (const goal of liveGoals) {
+        const oid = getGoalOid(goal);
+        mergeGoal((oid && persistedByOid.get(oid)) || goal);
+    }
+
+    // Keep a locally persisted activity visible when the upstream snapshot temporarily omits it.
+    for (const goal of persistedGoals) {
+        mergeGoal(goal);
+    }
+    return result;
+};
+
 const getUpdate41PrimeVaultSchedule = (
     trader: IWorldState["PrimeVaultTraders"][number]
 ): IWorldState["PrimeVaultTraders"][number]["ScheduleInfo"] => {
@@ -563,6 +921,11 @@ const fetchLiveWorldState = async (): Promise<void> => {
 
         const liveWorldState = parseLiveWorldState(await response.json());
         try {
+            await updateLiveGoals(liveWorldState.Goals);
+        } catch (e) {
+            logger.debug(`Could not persist live goal state: ${String(e)}`);
+        }
+        try {
             const supplementalWorldState = await fetchSupplementalWorldState();
             liveWorldState.PrimeVaultTraders = supplementalWorldState.PrimeVaultTraders;
             liveWorldState.Invasions = supplementalWorldState.Invasions;
@@ -576,7 +939,10 @@ const fetchLiveWorldState = async (): Promise<void> => {
         } catch (e) {
             logger.debug(`Could not supplement browse.wf world state: ${String(e)}`);
         }
-        const nextJson = JSON.stringify(liveWorldState);
+        const nextJson = JSON.stringify({
+            ...liveWorldState,
+            Goals: liveWorldState.Goals.map(goal => getStaticGoalSnapshot(goal, true))
+        });
         const changed = nextJson != cachedWorldStateJson;
         cachedWorldState = liveWorldState;
         cachedWorldStateJson = nextJson;
@@ -600,6 +966,7 @@ export const refreshLiveWorldState = async (): Promise<void> => {
         cachedWorldState = undefined;
         cachedWorldStateJson = undefined;
         liveInvasions.clear();
+        liveGoals.clear();
         liveSyndicateMissions.clear();
         liveCalendarSeasons.clear();
         return;
@@ -614,7 +981,7 @@ export const refreshLiveWorldState = async (): Promise<void> => {
 
     lastRefreshAttempt = Date.now();
     refreshPromise = (async (): Promise<void> => {
-        await restoreLiveInvasions();
+        await Promise.all([restoreLiveInvasions(), restoreLiveGoals()]);
         await fetchLiveWorldState();
     })();
     try {
@@ -625,7 +992,7 @@ export const refreshLiveWorldState = async (): Promise<void> => {
 };
 
 export const applyLiveWorldState = (worldState: IWorldState): void => {
-    if (!config.worldState?.liveSync || !cachedWorldState) {
+    if (!config.worldState?.liveSync) {
         return;
     }
 
@@ -634,9 +1001,18 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
         return;
     }
 
+    const localGoals = [...liveGoals.values()].map(entry => structuredClone(entry.goal));
+    if (!cachedWorldState) {
+        if (localGoals.length > 0) {
+            worldState.Goals = mergeLocalGoalProgress(worldState.Goals, [], localGoals, buildVersion);
+        }
+        return;
+    }
+
     const liveWorldState = structuredClone(cachedWorldState);
     const compatibleSeasonInfo = getCompatibleSeasonInfo(liveWorldState.SeasonInfo, buildVersion);
     const localInvasions = [...liveInvasions.values()].map(entry => structuredClone(entry.invasion));
+    const mergedGoals = mergeLocalGoalProgress(worldState.Goals, liveWorldState.Goals, localGoals, buildVersion);
     const syndicateMissions = mergeCurrentSyndicateMissions(
         worldState.SyndicateMissions,
         liveWorldState.SyndicateMissions,
@@ -644,6 +1020,7 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
     );
     if (buildVersion >= gameToBuildVersionInt["43.5.0"]) {
         Object.assign(worldState, liveWorldState);
+        worldState.Goals = mergedGoals;
         worldState.Invasions = localInvasions;
         worldState.SyndicateMissions = syndicateMissions;
         return;
@@ -651,7 +1028,7 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
 
     Object.assign(worldState, {
         Events: liveWorldState.Events,
-        Goals: (liveWorldState.Goals as IWorldState["Goals"][number][]).filter(isUpdate41Goal),
+        Goals: mergedGoals,
         Alerts: liveWorldState.Alerts.filter(alert => isKnownNode(alert.MissionInfo.location)),
         Sorties: liveWorldState.Sorties.filter(sortie => sortie.Variants.every(variant => isKnownNode(variant.node))),
         LiteSorties: liveWorldState.LiteSorties.filter(sortie =>
@@ -694,6 +1071,21 @@ export const getLiveInvasionByOid = (oid: string): IWorldState["Invasions"][numb
     }
     const invasion = liveInvasions.get(oid)?.invasion;
     return invasion ? structuredClone(invasion) : undefined;
+};
+
+export const getLiveGoalByOid = (oid: string, buildLabel: string): IWorldState["Goals"][number] | undefined => {
+    if (!config.worldState?.liveSync) {
+        return undefined;
+    }
+    const buildVersion = buildVersionToInt(buildLabel);
+    if (buildVersion < gameToBuildVersionInt["41.0.0"]) {
+        return undefined;
+    }
+    const goal = liveGoals.get(oid)?.goal;
+    if (!goal || (buildVersion < gameToBuildVersionInt["43.5.0"] && !isUpdate41Goal(goal))) {
+        return undefined;
+    }
+    return structuredClone(goal);
 };
 
 export const getLiveSyndicateMissionByOid = (oid: string): IWorldState["SyndicateMissions"][number] | undefined => {

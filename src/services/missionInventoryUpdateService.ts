@@ -87,6 +87,7 @@ import {
 import { Loadout } from "../models/inventoryModels/loadoutModel.ts";
 import {
     getInvasionByOid,
+    getGoalByOid,
     getLiteSortie,
     getSortie,
     getWorldState,
@@ -96,7 +97,11 @@ import {
     pushClassicBounties,
     getAlertByOid
 } from "./worldStateService.ts";
-import { advanceLiveInvasionProgress, getLiveSyndicateMissionByOid } from "./liveWorldStateService.ts";
+import {
+    advanceLiveGoalProgress,
+    advanceLiveInvasionProgress,
+    getLiveSyndicateMissionByOid
+} from "./liveWorldStateService.ts";
 import { config, shouldDoServerQol } from "./configService.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "./accountRateService.ts";
 import { addMissionPlatinumReward, addMissionRegalAyaReward } from "./missionPlatinumRewardService.ts";
@@ -1029,6 +1034,7 @@ export const addMissionRewards = async (
         VoidTearParticipantsCurrWave: voidTearWave,
         StrippedItems: strippedItems,
         AffiliationChanges: AffiliationMods,
+        GoalProgress: goalProgress,
         InvasionProgress: invasionProgress,
         EndOfMatchUpload: endOfMatchUpload,
         GoalTag: goalTag,
@@ -1136,8 +1142,14 @@ export const addMissionRewards = async (
     }
 
     if (rewardInfo.goalId) {
-        const goal = getWorldState(buildLabel).Goals.find(x => fromOid(x._id) == rewardInfo.goalId);
+        const goal = getGoalByOid(buildLabel, rewardInfo.goalId);
         if (goal) {
+            if (
+                rewardInfo.GoalProgressAmount &&
+                !goalProgress?.some(progress => fromOid(progress._id) == rewardInfo.goalId)
+            ) {
+                await advanceLiveGoalProgress(rewardInfo.goalId, rewardInfo.GoalProgressAmount);
+            }
             if (rewardInfo.node == goal.Node && goal.MissionKeyName) levelKeyName = goal.MissionKeyName;
             if (goal.ConcurrentNodes && goal.ConcurrentMissionKeyNames) {
                 for (let i = 0; i < goal.ConcurrentNodes.length && i < goal.ConcurrentMissionKeyNames.length; i++) {
@@ -2376,7 +2388,7 @@ async function getRandomMissionDrops(
 
     if (RewardInfo.EnemyCachesFound) {
         if (RewardInfo.goalId) {
-            const goal = getWorldState(buildLabel).Goals.find(x => fromOid(x._id) == RewardInfo.goalId);
+            const goal = getGoalByOid(buildLabel, RewardInfo.goalId);
             if (goal) {
                 let currentMissionKey: string | undefined;
                 if (RewardInfo.node == goal.Node) {

@@ -95,6 +95,8 @@ const liveGoalStateSchema = new Schema<ILiveGoalState>({
     hasSuccess: { type: Boolean, required: true },
     target: { type: Number, required: true },
     progressMode: { type: String, enum: ["none", "additive", "depletion"], required: true },
+    progressInitialized: { type: Boolean, required: true, default: true },
+    initialProgressSource: { type: String, enum: ["official", "zero", "local"], required: true, default: "local" },
     status: { type: String, enum: ["active", "completed"], required: true, default: "active" },
     lastSeenAt: { type: Date, required: true },
     completedAt: Date,

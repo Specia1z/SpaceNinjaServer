@@ -360,6 +360,8 @@ export interface ILiveGoalState {
     hasSuccess: boolean;
     target: number;
     progressMode: "none" | "additive" | "depletion";
+    progressInitialized: boolean;
+    initialProgressSource: "official" | "zero" | "local";
     status: "active" | "completed";
     lastSeenAt: Date;
     completedAt?: Date;

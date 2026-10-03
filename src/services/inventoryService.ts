@@ -98,7 +98,8 @@ import {
 } from "./rngService.ts";
 import type { IMessageCreationTemplate } from "./inboxService.ts";
 import { createMessage } from "./inboxService.ts";
-import { getWorldState } from "./worldStateService.ts";
+import { getGoalByOid } from "./worldStateService.ts";
+import { advanceLiveGoalProgress } from "./liveWorldStateService.ts";
 import { addFusionPoints } from "./inventoryFinanceService.ts";
 import { addCrewShipWeaponSkin, addEquipment, addSkin } from "./inventoryEquipmentService.ts";
 import { addBooster, addLoreFragmentScans } from "./inventoryProgressService.ts";
@@ -3273,9 +3274,7 @@ export const processGoalProgressUpdates = async (
     isStealPath: boolean = false
 ): Promise<void> => {
     for (const uploadProgress of goalProgressUpdates) {
-        const goal = getWorldState(buildLabel, false, false).Goals.find(
-            x => fromOid(x._id) == fromOid(uploadProgress._id)
-        );
+        const goal = getGoalByOid(buildLabel, fromOid(uploadProgress._id));
         if (goal) {
             const goalId = fromOid(goal._id);
 
@@ -3286,6 +3285,7 @@ export const processGoalProgressUpdates = async (
                     uploadProgress.Count += extraCount;
                 }
             }
+            await advanceLiveGoalProgress(goalId, uploadProgress.Count);
             if (goal.Personal) {
                 inventory.PersonalGoalProgress ??= [];
                 const goalProgress = inventory.PersonalGoalProgress.find(x => x.goalId.equals(goalId));
