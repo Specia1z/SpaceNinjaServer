@@ -787,8 +787,33 @@ export const mergeLocalGoalProgress = (
     persistedGoals: IWorldState["Goals"],
     buildVersion: number
 ): IWorldState["Goals"] => {
+    const isCompatibleGoal = (goal: IWorldState["Goals"][number]): boolean =>
+        buildVersion >= gameToBuildVersionInt["43.5.0"] || isUpdate41Goal(goal);
+    const isSameActivity = (a: IWorldState["Goals"][number], b: IWorldState["Goals"][number]): boolean => {
+        const aStart = getGoalDateMs(a.Activation);
+        const aEnd = getGoalDateMs(a.Expiry);
+        const bStart = getGoalDateMs(b.Activation);
+        const bEnd = getGoalDateMs(b.Expiry);
+        return (
+            a.Tag == b.Tag &&
+            a.Desc == b.Desc &&
+            a.Node == b.Node &&
+            a.MissionKeyName == b.MissionKeyName &&
+            a.Personal == b.Personal &&
+            a.Best == b.Best &&
+            Number.isFinite(aStart) &&
+            Number.isFinite(aEnd) &&
+            Number.isFinite(bStart) &&
+            Number.isFinite(bEnd) &&
+            aStart < bEnd &&
+            bStart < aEnd
+        );
+    };
+    const syncedGoals = [...liveGoals, ...persistedGoals].filter(isCompatibleGoal);
     const result = structuredClone(
-        buildVersion >= gameToBuildVersionInt["43.5.0"] ? generatedGoals : generatedGoals.filter(isUpdate41Goal)
+        generatedGoals.filter(
+            goal => isCompatibleGoal(goal) && !syncedGoals.some(synced => isSameActivity(goal, synced))
+        )
     ) as IWorldState["Goals"];
     const resultIndexes = new Map<string, number>();
     result.forEach((goal, index) => {

@@ -90,6 +90,44 @@ void test("local goal progress wins and retained goals survive an upstream omiss
     assert.equal(merged.find(value => value._id.$oid == "retained")?.Count, 42);
 });
 
+void test("official Naberus replaces the generated October goal with its own expiry and ID", () => {
+    const generated = {
+        _id: { $oid: "66fd602de1778d583419e8e7" },
+        Activation: { $date: { $numberLong: "1790812800000" } },
+        Expiry: { $date: { $numberLong: "1793491200000" } },
+        Tag: "DeimosHalloween",
+        Desc: "/Lotus/Language/Events/HalloweenNaberusName",
+        Node: "DeimosHub",
+        Personal: true,
+        Goal: 0,
+        Count: 0,
+        Success: 0
+    } as IWorldState["Goals"][number];
+    const official = {
+        ...generated,
+        _id: { $oid: "6abe75700000000000000000" },
+        Activation: { $date: { $numberLong: "1790866800000" } },
+        Expiry: { $date: { $numberLong: "1793635200000" } }
+    };
+    const otherNode = { ...generated, _id: { $oid: "different-node" }, Node: "OtherNode" };
+    const otherRotation = {
+        ...generated,
+        _id: { $oid: "later-rotation" },
+        Activation: { $date: { $numberLong: "1793700000000" } },
+        Expiry: { $date: { $numberLong: "1793800000000" } }
+    };
+    const version = gameToBuildVersionInt["43.5.0"];
+
+    assert.deepEqual(mergeLocalGoalProgress([generated], [official], [], version), [official]);
+    assert.deepEqual(mergeLocalGoalProgress([generated], [], [official], version), [official]);
+    assert.deepEqual(mergeLocalGoalProgress([generated], [], [], version), [generated]);
+    assert.deepEqual(mergeLocalGoalProgress([otherNode, otherRotation], [official], [], version), [
+        otherNode,
+        otherRotation,
+        official
+    ]);
+});
+
 void test("new official goals are included and seed local progress once", () => {
     const additiveGoal = {
         _id: { $oid: "new-additive" },
