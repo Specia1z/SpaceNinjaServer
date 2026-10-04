@@ -19,6 +19,7 @@ import { deleteStoreBundle, listStoreBundles, saveStoreBundle } from "./storeBun
 import {
     applyStoreOverrides,
     deleteStoreOverride,
+    getStoreItemBogoBonusQuantity,
     initializeStoreOverrides,
     isStoreItemGiftable,
     isStoreItemPurchasable,
@@ -432,6 +433,51 @@ void test("Founder bundles use store overrides for price, listing, and promotion
         assert.equal(hiddenCommunity?.Items?.includes(founderStoreItem), false);
     } finally {
         await deleteStoreOverride(founderTypeName);
+    }
+});
+
+void test("buy-two-get-one applies to paid market quantities without increasing the price", async () => {
+    const fusionTypeName = "/Lotus/Upgrades/Mods/FusionBundles/MarketTier1FusionBundle";
+    const fusionStoreItem = "/Lotus/StoreItems/Upgrades/Mods/FusionBundles/MarketTier1FusionBundle";
+    await deleteStoreOverride(fusionTypeName);
+
+    try {
+        await saveStoreOverride(
+            override({
+                TypeName: fusionTypeName,
+                BogoBuy: 2,
+                BogoGet: 1,
+                Purchasable: true
+            })
+        );
+        assert.equal(getStoreItemBogoBonusQuantity(fusionStoreItem, 1), 0);
+        assert.equal(getStoreItemBogoBonusQuantity(fusionStoreItem, 2), 1);
+
+        const inventory = new Inventory({
+            accountOwnerId: "000000000000000000000001",
+            PremiumCredits: 10,
+            PremiumCreditsFree: 0
+        });
+        const response = await handlePurchase(
+            {
+                PurchaseParams: {
+                    Source: ePurchaseSource.Market,
+                    StoreItem: fusionStoreItem,
+                    Quantity: 2,
+                    UsePremium: true,
+                    ExpectedPrice: 10
+                },
+                buildLabel
+            },
+            inventory
+        );
+
+        assert.equal(response.InventoryChanges.FusionPoints, 300);
+        assert.equal(response.InventoryChanges.PremiumCredits, -10);
+        assert.equal(inventory.FusionPoints, 300);
+        assert.equal(inventory.PremiumCredits, 0);
+    } finally {
+        await deleteStoreOverride(fusionTypeName);
     }
 });
 

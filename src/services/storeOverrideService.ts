@@ -248,6 +248,13 @@ export const getActiveStorePromotion = (typeName: string): IStoreOverride | unde
     return override && isPromotionActive(override) ? override : undefined;
 };
 
+export const getStoreItemBogoBonusQuantity = (typeName: string, paidQuantity: number): number => {
+    if (!Number.isInteger(paidQuantity) || paidQuantity <= 0) return 0;
+    const promotion = getActiveStorePromotion(typeName);
+    if (!promotion?.BogoBuy || !promotion.BogoGet) return 0;
+    return Math.floor(paidQuantity / promotion.BogoBuy) * promotion.BogoGet;
+};
+
 export const isStoreItemPurchasable = (typeName: string): boolean => {
     const override = getActiveStoreOverride(typeName);
     return override ? !isProductExpired(override) && override.Listed && (override.Purchasable ?? true) : true;

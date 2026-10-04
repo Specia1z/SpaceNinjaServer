@@ -52,7 +52,7 @@ import { Types } from "mongoose";
 import { BL_LATEST } from "../constants/gameVersions.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import { applyLiveWorldState, getLiveDailyDealForPurchase } from "./liveWorldStateService.ts";
-import { isStoreItemPurchasable } from "./storeOverrideService.ts";
+import { getStoreItemBogoBonusQuantity, isStoreItemPurchasable } from "./storeOverrideService.ts";
 import { getFounderBundle } from "../constants/founderBundles.ts";
 
 const getStoreItemCategory = (storeItem: string): string => {
@@ -241,6 +241,16 @@ export const handlePurchase = async (
         if (!isStoreItemPurchasable(overrideTypeName)) {
             throw new Error("item is not currently purchasable in the market");
         }
+        const bogoBonusQuantity = getStoreItemBogoBonusQuantity(
+            purchaseRequest.PurchaseParams.StoreItem,
+            purchaseRequest.PurchaseParams.Quantity
+        );
+        if (bogoBonusQuantity > 0) {
+            const bundle = getBundle(purchaseRequest.PurchaseParams.StoreItem, purchaseRequest.buildLabel);
+            if (founderBundle || bundle?.oneTimePurchasable) {
+                throw new Error("buy-one-get-one is not supported for one-time bundles");
+            }
+        }
         const authoritativePrice = getInventoryAwarePrice(
             purchaseRequest.PurchaseParams.StoreItem,
             purchaseRequest.PurchaseParams.Quantity,
@@ -349,16 +359,32 @@ export const handlePurchase = async (
         }
     }
 
-    const purchaseResponse = await handleStoreItemAcquisition(
-        purchaseRequest.PurchaseParams.StoreItem,
-        inventory,
+    const bogoBonusQuantity =
+        purchaseRequest.PurchaseParams.Source == ePurchaseSource.Market ||
+        purchaseRequest.PurchaseParams.Source == ePurchaseSource.Arsenal
+            ? getStoreItemBogoBonusQuantity(
+                  purchaseRequest.PurchaseParams.StoreItem,
+                  purchaseRequest.PurchaseParams.Quantity
+              )
+            : 0;
+    const purchaseResponse: IPurchaseResponse = { InventoryChanges: {} };
+    const acquisitionQuantities = [
         purchaseRequest.PurchaseParams.Quantity,
-        undefined,
-        false,
-        purchaseRequest.PurchaseParams.UsePremium,
-        seed,
-        purchaseRequest.buildLabel
-    );
+        ...Array.from({ length: bogoBonusQuantity }, () => 1)
+    ];
+    for (const acquisitionQuantity of acquisitionQuantities) {
+        const acquisitionResponse = await handleStoreItemAcquisition(
+            purchaseRequest.PurchaseParams.StoreItem,
+            inventory,
+            acquisitionQuantity,
+            undefined,
+            false,
+            purchaseRequest.PurchaseParams.UsePremium,
+            seed,
+            purchaseRequest.buildLabel
+        );
+        combineInventoryChanges(purchaseResponse.InventoryChanges, acquisitionResponse.InventoryChanges);
+    }
     combineInventoryChanges(purchaseResponse.InventoryChanges, prePurchaseInventoryChanges);
 
     switch (purchaseRequest.PurchaseParams.Source) {
