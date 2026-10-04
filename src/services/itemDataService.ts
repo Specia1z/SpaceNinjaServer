@@ -92,7 +92,6 @@ import baro from "../constants/baro.ts";
 import type { Mutable } from "../utils/ts-utils.ts";
 import { getCraftingOverride } from "./craftingConfigService.ts";
 import { getActiveStorePromotion } from "./storeOverrideService.ts";
-import { founderBundles } from "../constants/founderBundles.ts";
 import { getSyncedBundle, getSyncedWarframe } from "./adminItemDataService.ts";
 import {
     getCachedOfficialStorePrice,
@@ -192,7 +191,6 @@ export const supplementalWeapons: Record<string, IWeapon> = {
 };
 
 export const supplementalBundles: Record<string, IBundle> = {
-    ...founderBundles,
     "/Lotus/Types/StoreItems/Packages/WarframeBundles/NarinItemsBundle": {
         name: "/Lotus/Language/Bundles/NarinItemsBundleName",
         description: "/Lotus/Language/Bundles/NarinItemsBundleDesc",
@@ -5700,7 +5698,6 @@ export const getBundle = (uniqueName: string, buildLabel: string): IBundle | und
     }
 
     for (const key of getStoreItemLookupKeys(uniqueName)) {
-        if (Object.hasOwn(founderBundles, key)) return founderBundles[key];
         const syncedBundle = getSyncedBundle(key);
         if (syncedBundle) return syncedBundle;
         if (Object.hasOwn(ExportBundles, key)) return ExportBundles[key];

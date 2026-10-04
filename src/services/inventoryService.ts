@@ -2021,33 +2021,6 @@ const addCustomization = (
     return inventoryChanges;
 };
 
-export const grantFounderTier = (
-    inventory: TInventoryDatabaseDocument,
-    tier: number,
-    inventoryChanges: IInventoryChanges = {}
-): IInventoryChanges => {
-    const targetTier = Math.max(0, Math.min(4, Math.trunc(tier)));
-    const currentTier = Math.max(0, Math.trunc(inventory.Founder ?? 0));
-    const effectiveTier = Math.max(currentTier, targetTier);
-    if (effectiveTier > currentTier) {
-        inventory.Founder = effectiveTier;
-        inventoryChanges.Founder = effectiveTier;
-    }
-
-    const titles = [
-        "/Lotus/Types/Items/Titles/FounderLvl1Title",
-        "/Lotus/Types/Items/Titles/FounderLvl2Title",
-        "/Lotus/Types/Items/Titles/FounderLvl3Title",
-        "/Lotus/Types/Items/Titles/FounderLvl4Title"
-    ];
-    for (const title of titles.slice(0, effectiveTier)) {
-        if (!inventory.FlavourItems.some(item => item.ItemType == title)) {
-            addCustomization(inventory, title, inventoryChanges);
-        }
-    }
-    return inventoryChanges;
-};
-
 const addCrewShip = async (
     inventory: TInventoryDatabaseDocument,
     typeName: string,
@@ -3057,14 +3030,16 @@ export const giveThousandYearFishDeco = async (inventory: TInventoryDatabaseDocu
 };
 
 export const ensureUserHasFounderHonoria = async (inventory: TInventoryDatabaseDocument): Promise<void> => {
-    const eligibleItems = [
-        "/Lotus/Types/Items/Titles/FounderLvl1Title",
-        "/Lotus/Types/Items/Titles/FounderLvl2Title",
-        "/Lotus/Types/Items/Titles/FounderLvl3Title",
-        "/Lotus/Types/Items/Titles/FounderLvl4Title"
-    ].slice(0, Math.max(0, Math.min(4, Math.trunc(inventory.Founder ?? 0))));
-    if (eligibleItems.some(item => !inventory.FlavourItems.some(existing => existing.ItemType == item))) {
-        grantFounderTier(inventory, inventory.Founder ?? 0);
+    if (!inventory.FlavourItems.some(x => x.ItemType == "/Lotus/Types/Items/Titles/FounderLvl1Title")) {
+        const eligibleItems = [
+            "/Lotus/Types/Items/Titles/FounderLvl1Title",
+            "/Lotus/Types/Items/Titles/FounderLvl2Title",
+            "/Lotus/Types/Items/Titles/FounderLvl3Title",
+            "/Lotus/Types/Items/Titles/FounderLvl4Title"
+        ].splice(0, inventory.Founder);
+        for (const item of eligibleItems) {
+            addCustomization(inventory, item);
+        }
         await createMessage(inventory.accountOwnerId, [
             {
                 sndr: "/Lotus/Language/CircleOfHell/RoatheName",

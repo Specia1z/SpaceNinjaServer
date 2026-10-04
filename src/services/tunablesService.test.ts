@@ -6,7 +6,6 @@ import {
     getMetadataPatchesForAccount,
     getTunablesForClient
 } from "./tunablesService.ts";
-import { founderMetadataPatchText } from "../constants/founderBundles.ts";
 
 const previousTunables = config.tunables;
 const accountId = "507f1f77bcf86cd799439011";
@@ -36,33 +35,26 @@ void test("account metadata patches are appended after global patches in array o
         [
             ["global", 0, "global base"],
             ["global", 1, "global second"],
-            ["global", 2, "Built-in Founder bundles"],
-            ["account", 3, "account override"],
-            ["account", 4, "account disabled"]
+            ["account", 2, "account override"],
+            ["account", 3, "account disabled"]
         ]
     );
 });
 
 void test("compiled account output preserves override order and skips disabled patches", () => {
-    const compiled = compileMetadataPatchesForAccount(accountId);
-    assert.ok(compiled.includes("# Server patch: Built-in Founder bundles"));
-    assert.ok(compiled.includes("# Server patch: account override"));
-    assert.ok(
-        compiled.indexOf("# Server patch: Built-in Founder bundles") <
-            compiled.indexOf("# Server patch: account override")
+    assert.equal(
+        compileMetadataPatchesForAccount(accountId),
+        "# Server patch: global base\n/Resource\nCredits = 100\n\n# Server patch: global second\n/Resource\nOther = true\n\n# Server patch: account override\n/Resource\nCredits = 1000"
     );
     assert.equal(compileMetadataPatchesForAccount("507f1f77bcf86cd799439012").includes("account override"), false);
 });
 
-void test("compiled metadata patches retain built-in founder patches when configured patches are empty", () => {
+void test("compiled metadata patches are empty when no structured patches exist", () => {
     const metadataPatches = config.tunables!.metadataPatches;
     const accountMetadataPatches = config.tunables!.accountMetadataPatches;
     config.tunables!.metadataPatches = [];
     config.tunables!.accountMetadataPatches = {};
-    assert.equal(
-        compileMetadataPatchesForAccount(accountId),
-        `# Server patch: Built-in Founder bundles\n${founderMetadataPatchText.trimEnd()}`
-    );
+    assert.equal(compileMetadataPatchesForAccount(accountId), "");
     config.tunables!.metadataPatches = metadataPatches;
     config.tunables!.accountMetadataPatches = accountMetadataPatches;
 });

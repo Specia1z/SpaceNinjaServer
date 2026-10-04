@@ -382,60 +382,6 @@ void test("supplemental prices survive official sync and update the live cache",
     assert.equal(await deleteSupplementalStorePrice(manualTypeName), true);
 });
 
-void test("Founder bundles use store overrides for price, listing, and promotion state", async () => {
-    const founderTypeName = "/Lotus/Types/StoreItems/Packages/CompleteStarterSlotBundle";
-    const founderStoreItem = "/Lotus/Types/StoreItems/Packages/CompleteStarterSlotBundle";
-    await deleteStoreOverride(founderTypeName);
-
-    try {
-        await saveStoreOverride(
-            override({
-                TypeName: founderTypeName,
-                CategoryName: "COMMUNITY",
-                PremiumPrice: 77,
-                Featured: true,
-                DiscountPercent: 10,
-                Purchasable: true
-            })
-        );
-
-        assert.equal(getPrice(founderTypeName, 1, 0, true, buildLabel), 77);
-        const listedState = worldState();
-        listedState.InGameMarket.LandingPage.Categories.push({
-            CategoryName: "COMMUNITY",
-            Name: "community",
-            Icon: "community",
-            Items: []
-        });
-        applyStoreOverrides(listedState, buildLabel);
-        const listedCommunity = listedState.InGameMarket.LandingPage.Categories.find(
-            category => category.CategoryName == "COMMUNITY"
-        );
-        assert.equal(listedCommunity?.Items?.includes(founderStoreItem), true);
-        assert.equal(
-            listedState.FlashSales.some(sale => sale.PremiumOverride == 77 && sale.Featured == true),
-            true
-        );
-
-        await saveStoreOverride(override({ TypeName: founderTypeName, Listed: false, Purchasable: false }));
-        assert.equal(isStoreItemPurchasable(founderTypeName), false);
-        const hiddenState = worldState();
-        hiddenState.InGameMarket.LandingPage.Categories.push({
-            CategoryName: "COMMUNITY",
-            Name: "community",
-            Icon: "community",
-            Items: []
-        });
-        applyStoreOverrides(hiddenState, buildLabel);
-        const hiddenCommunity = hiddenState.InGameMarket.LandingPage.Categories.find(
-            category => category.CategoryName == "COMMUNITY"
-        );
-        assert.equal(hiddenCommunity?.Items?.includes(founderStoreItem), false);
-    } finally {
-        await deleteStoreOverride(founderTypeName);
-    }
-});
-
 void test("buy-two-get-one applies to paid market quantities without increasing the price", async () => {
     const fusionTypeName = "/Lotus/Upgrades/Mods/FusionBundles/MarketTier1FusionBundle";
     const fusionStoreItem = "/Lotus/StoreItems/Upgrades/Mods/FusionBundles/MarketTier1FusionBundle";

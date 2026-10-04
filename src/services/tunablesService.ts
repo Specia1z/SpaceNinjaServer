@@ -3,8 +3,7 @@ import { args } from "../helpers/commandLineArguments.ts";
 import type { ITunables } from "../types/bootstrapperTypes.ts";
 import { config, type IMetadataPatchConfig } from "./configService.ts";
 import { getMetadataPatchState } from "./metadataPatchService.ts";
-import { getActiveStorePromotion, getStoreItemRules, isStoreItemListed } from "./storeOverrideService.ts";
-import { createFounderMetadataPatchText } from "../constants/founderBundles.ts";
+import { getStoreItemRules } from "./storeOverrideService.ts";
 
 let secret;
 if (args.secret) {
@@ -71,21 +70,7 @@ export interface IMetadataPatchSource {
 
 export const getMetadataPatchesForAccount = (accountId?: string): IMetadataPatchSource[] => {
     const metadata = getMetadataPatchState();
-    const founderMetadataPatchText = createFounderMetadataPatchText(definition => {
-        const promotion = getActiveStorePromotion(definition.typeName);
-        return {
-            price: promotion?.PremiumPrice ?? definition.price,
-            listed: isStoreItemListed(definition.typeName)
-        };
-    });
-    const globalPatches = [
-        ...metadata.patches,
-        {
-            name: "Built-in Founder bundles",
-            enabled: true,
-            text: founderMetadataPatchText
-        }
-    ];
+    const globalPatches = metadata.patches;
     const accountPatches = accountId ? (metadata.accountPatches[accountId] ?? []) : [];
     return [
         ...globalPatches.map((patch, order) => ({ patch, source: "global" as const, order })),
