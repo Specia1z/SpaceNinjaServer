@@ -355,6 +355,17 @@ const getLocalInvasion = (state: ILiveWorldActivityState): IWorldState["Invasion
     Completed: state.status == "completed" || Math.abs(state.localCount) >= state.goal
 });
 
+export const mergeLocalInvasionProgress = (localCount: number, officialCount: number | undefined): number => {
+    const local = Number.isFinite(localCount) ? localCount : 0;
+    if (officialCount === undefined || !Number.isFinite(officialCount)) {
+        return local;
+    }
+    return Math.abs(officialCount) > Math.abs(local) ? officialCount : local;
+};
+
+export const isLiveInvasionCompleted = (localCount: number, goal: number, officialCompleted = false): boolean =>
+    officialCompleted || (Number.isFinite(goal) && goal > 0 && Math.abs(localCount) >= goal);
+
 const getLocalGoal = (state: ILiveGoalState): IWorldState["Goals"][number] => {
     const goal = structuredClone(state.snapshot);
     if (state.hasCount) {
@@ -435,7 +446,19 @@ const updateLiveGoals = async (goals: IWorldState["Goals"]): Promise<void> => {
                 (effectiveProgressMode != "none" && goal.HealthPct !== undefined);
             const hasSuccess =
                 Boolean(existingState?.hasSuccess) || (effectiveProgressMode != "none" && goal.Success !== undefined);
-            const initialProgress = getInitialLiveGoalProgress(goal, progressMode, target);
+            const initialProgress = getInitialLiveGoalProgress(goal, effectiveProgressMode, target);
+            const count = Math.max(existingState?.count ?? 0, initialProgress.count);
+            const countAlt = Math.max(existingState?.countAlt ?? 0, initialProgress.countAlt);
+            const success = Math.max(existingState?.success ?? 0, initialProgress.success);
+            const healthPct = hasHealthPct
+                ? target > 0
+                    ? effectiveProgressMode == "depletion"
+                        ? Math.max(0, Math.min(1, 1 - count / target))
+                        : Math.max(0, Math.min(1, count / target))
+                    : initialProgress.healthPct
+                : (existingState?.healthPct ?? initialProgress.healthPct);
+            const completed =
+                existingState?.status == "completed" || initialProgress.completed || count >= target || success > 0;
             const expiresAt = new Date(
                 Math.max(
                     now.getTime() + 30 * unixTimesInMs.day,
@@ -453,6 +476,11 @@ const updateLiveGoals = async (goals: IWorldState["Goals"]): Promise<void> => {
                         hasCountAlt,
                         hasHealthPct,
                         hasSuccess,
+                        count,
+                        countAlt,
+                        healthPct,
+                        success,
+                        status: completed ? "completed" : "active",
                         lastSeenAt: now
                     },
                     $setOnInsert: {
@@ -469,7 +497,7 @@ const updateLiveGoals = async (goals: IWorldState["Goals"]): Promise<void> => {
                                   progressInitialized: true,
                                   initialProgressSource: initialProgress.initialProgressSource
                               }),
-                        ...(initialProgress.completed
+                        ...(completed
                             ? { completedAt: now, expiresAt: new Date(now.getTime() + 30 * unixTimesInMs.day) }
                             : { expiresAt })
                     }
@@ -581,27 +609,29 @@ const updateLiveInvasions = async (invasions: IWorldState["Invasions"]): Promise
             if (!officialId) {
                 return;
             }
+            const existingState = await LiveWorldActivityState.findOne({ type: "invasion", officialId }).lean();
+            const localCount = mergeLocalInvasionProgress(existingState?.localCount ?? 0, invasion.Count);
+            const completed =
+                existingState?.status == "completed" ||
+                isLiveInvasionCompleted(localCount, invasion.Goal, invasion.Completed);
             await LiveWorldActivityState.findOneAndUpdate(
                 { type: "invasion", officialId },
                 {
                     $set: {
                         snapshot: invasion,
                         goal: invasion.Goal,
-                        lastSeenAt: now
+                        localCount,
+                        status: completed ? "completed" : "active",
+                        lastSeenAt: now,
+                        expiresAt: expiry,
+                        ...(completed && !existingState?.completedAt ? { completedAt: now } : {})
                     },
                     $setOnInsert: {
                         type: "invasion",
-                        officialId,
-                        localCount: 0,
-                        status: "active",
-                        expiresAt: expiry
+                        officialId
                     }
                 },
                 { upsert: true }
-            );
-            await LiveWorldActivityState.updateOne(
-                { type: "invasion", officialId, status: "active" },
-                { $set: { expiresAt: expiry } }
             );
         })
     );
@@ -636,7 +666,7 @@ export const advanceLiveInvasionProgress = async (
         return;
     }
 
-    const completed = Math.abs(state.localCount) >= state.goal;
+    const completed = isLiveInvasionCompleted(state.localCount, state.goal);
     if (completed) {
         await LiveWorldActivityState.updateOne(
             { _id: state._id, status: "active" },
@@ -831,6 +861,19 @@ export const mergeLocalGoalProgress = (
         }
     }
 
+    const mergePersistedProgress = (
+        officialGoal: IWorldState["Goals"][number],
+        persistedGoal: IWorldState["Goals"][number]
+    ): IWorldState["Goals"][number] => {
+        const merged = structuredClone(officialGoal) as IWorldState["Goals"][number];
+        for (const key of ["Count", "CountAlt", "HealthPct", "Success"] as const) {
+            if (key in persistedGoal) {
+                (merged as unknown as Record<string, unknown>)[key] = persistedGoal[key];
+            }
+        }
+        return merged;
+    };
+
     const mergeGoal = (goal: IWorldState["Goals"][number]): void => {
         if (buildVersion < gameToBuildVersionInt["43.5.0"] && !isUpdate41Goal(goal)) {
             return;
@@ -851,12 +894,17 @@ export const mergeLocalGoalProgress = (
 
     for (const goal of liveGoals) {
         const oid = getGoalOid(goal);
-        mergeGoal((oid && persistedByOid.get(oid)) || goal);
+        const persisted = oid ? persistedByOid.get(oid) : undefined;
+        mergeGoal(persisted ? mergePersistedProgress(goal, persisted) : goal);
     }
 
     // Keep a locally persisted activity visible when the upstream snapshot temporarily omits it.
+    const liveGoalOids = new Set(liveGoals.map(getGoalOid).filter(Boolean));
     for (const goal of persistedGoals) {
-        mergeGoal(goal);
+        const oid = getGoalOid(goal);
+        if (!oid || !liveGoalOids.has(oid)) {
+            mergeGoal(goal);
+        }
     }
     return result;
 };

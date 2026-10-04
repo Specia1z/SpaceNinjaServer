@@ -4,7 +4,9 @@ import type { IWorldState, ISyndicateMissionInfo, IVoidTrader } from "../types/w
 import {
     getActiveVoidTrader,
     getInitialLiveGoalProgress,
+    isLiveInvasionCompleted,
     isFreshSupplementalWorldState,
+    mergeLocalInvasionProgress,
     mergeCurrentSyndicateMissions,
     mergeLocalGoalProgress
 } from "./liveWorldStateService.ts";
@@ -88,6 +90,38 @@ void test("local goal progress wins and retained goals survive an upstream omiss
     );
     assert.equal(merged.find(value => value._id.$oid == "active")?.Count, 7);
     assert.equal(merged.find(value => value._id.$oid == "retained")?.Count, 42);
+});
+
+void test("official goal metadata wins while persisted progress is retained", () => {
+    const official = {
+        _id: { $oid: "shared-goal" },
+        Activation: { $date: { $numberLong: "1790000000000" } },
+        Expiry: { $date: { $numberLong: "1791000000000" } },
+        Count: 90,
+        Goal: 100,
+        Tag: "OfficialGoal",
+        Desc: "official description",
+        Personal: false
+    } as unknown as IWorldState["Goals"][number];
+    const persisted = {
+        ...official,
+        Desc: "stale local description",
+        Count: 7
+    } as unknown as IWorldState["Goals"][number];
+
+    const merged = mergeLocalGoalProgress([], [official], [persisted], gameToBuildVersionInt["43.5.0"]);
+    assert.equal(merged[0].Desc, "official description");
+    assert.equal(merged[0].Count, 7);
+});
+
+void test("invasion progress adopts a more advanced official count without regressing local progress", () => {
+    assert.equal(mergeLocalInvasionProgress(0, 1200), 1200);
+    assert.equal(mergeLocalInvasionProgress(1500, 1200), 1500);
+    assert.equal(mergeLocalInvasionProgress(-1500, -2000), -2000);
+    assert.equal(mergeLocalInvasionProgress(1500, undefined), 1500);
+    assert.equal(isLiveInvasionCompleted(1000, 30000, false), false);
+    assert.equal(isLiveInvasionCompleted(1000, 30000, true), true);
+    assert.equal(isLiveInvasionCompleted(30000, 30000, false), true);
 });
 
 void test("official Naberus replaces the generated October goal with its own expiry and ID", () => {

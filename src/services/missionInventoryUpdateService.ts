@@ -154,6 +154,8 @@ interface MissionInventoryUpdatesReturnType {
     ProcessedWeeklyMissionChallengeInfos?: IWeeklyMissionChallengeInfo[];
 }
 
+const normalizeInvasionScore = (value: number): number => (Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0);
+
 export const addMissionInventoryUpdates = async (
     account: TAccountDocument,
     buildLabel: string,
@@ -770,6 +772,9 @@ export const addMissionInventoryUpdates = async (
                         logger.warn(`received progress for unknown invasion ${fromOid(clientProgress._id)}`);
                         continue;
                     }
+                    clientProgress.Delta = normalizeInvasionScore(clientProgress.Delta);
+                    clientProgress.AttackerScore = normalizeInvasionScore(clientProgress.AttackerScore);
+                    clientProgress.DefenderScore = normalizeInvasionScore(clientProgress.DefenderScore);
                     if (inventory.finishInvasionsInOneMission) {
                         clientProgress.Delta *= 3;
                         clientProgress.AttackerScore *= 3;
@@ -1106,15 +1111,17 @@ export const addMissionRewards = async (
                     inventory.CompletedAlerts.push(rewardInfo.alertId);
                 }
                 if (alert.MissionInfo.missionReward) {
+                    const missionReward = structuredClone(alert.MissionInfo.missionReward);
                     if (alert.Tag && ["12MinWarEvent", "JadeShadows"].includes(alert.Tag) && isSteelPath) {
-                        if (alert.MissionInfo.missionReward.countedItems) {
-                            alert.MissionInfo.missionReward.countedItems.forEach(item => {
-                                item.ItemCount *= 1.5;
-                            });
+                        if (missionReward.countedItems) {
+                            missionReward.countedItems = missionReward.countedItems.map(item => ({
+                                ...item,
+                                ItemCount: item.ItemCount * 1.5
+                            }));
                         }
                     }
                     missionCompletionCredits += await addFixedLevelRewards(
-                        alert.MissionInfo.missionReward,
+                        missionReward,
                         MissionRewards,
                         buildLabel,
                         rewardInfo

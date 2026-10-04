@@ -69,6 +69,11 @@ import { eEquipmentFeatures } from "../../types/equipmentTypes.ts";
 import { generateRewardSeed } from "../../services/rngService.ts";
 import { getCalendarSeason, getInvasionByOid, getWorldStateTime } from "../../services/worldStateService.ts";
 import { createMessage, getInboxFilter } from "../../services/inboxService.ts";
+import {
+    claimInvasionReward,
+    completeInvasionRewardClaim,
+    type TInvasionRewardClaimResult
+} from "../../services/invasionRewardClaimService.ts";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { PendingTrade } from "../../models/tradingModel.ts";
 import { exportTrade } from "../../services/tradingService.ts";
@@ -251,6 +256,7 @@ export const inventoryController: RequestHandler = async (request, response) => 
         //await inventory.save();
     }
 
+    const completedInvasionRewardClaims: Extract<TInvasionRewardClaimResult, { status: "claimed" }>[] = [];
     for (let i = 0; i != inventory.QualifyingInvasions.length; ) {
         const qi = inventory.QualifyingInvasions[i];
         const invasion = getInvasionByOid(qi.invasionId.toString());
@@ -270,6 +276,16 @@ export const inventoryController: RequestHandler = async (request, response) => 
                 battlePay = invasion.DefenderReward.countedItems;
             }
             if (factionSidedWith && battlePay) {
+                const invasionId = qi.invasionId.toString();
+                const claim = await claimInvasionReward(account._id, invasionId);
+                if (claim.status == "busy") {
+                    ++i;
+                    continue;
+                }
+                if (claim.status == "completed") {
+                    inventory.QualifyingInvasions.splice(i, 1);
+                    continue;
+                }
                 logger.debug(`invasion pay from ${factionSidedWith}`, { battlePay });
                 // Decoupling rewards from the inbox message because it may delete itself without being read
                 for (const item of battlePay) {
@@ -284,24 +300,29 @@ export const inventoryController: RequestHandler = async (request, response) => 
                         buildLabel
                     );
                 }
-                await createMessage(account._id, [
-                    {
-                        sndr:
-                            factionSidedWith == "FC_GRINEER"
-                                ? "/Lotus/Language/Menu/GrineerInvasionLeader"
-                                : "/Lotus/Language/Menu/CorpusInvasionLeader",
-                        msg: `/Lotus/Language/G1Quests/${factionSidedWith}_InvasionThankyouMessageBody`,
-                        sub: `/Lotus/Language/G1Quests/${factionSidedWith}_InvasionThankyouMessageSubject`,
-                        countedAtt: battlePay,
-                        attVisualOnly: true,
-                        icon:
-                            factionSidedWith == "FC_GRINEER"
-                                ? "/Lotus/Interface/Icons/Npcs/EliteRifleLancerAvatar.png" // Source: https://www.reddit.com/r/Warframe/comments/1aj4usx/battle_pay_worth_10_plat/, https://www.youtube.com/watch?v=XhNZ6ai6BOY
-                                : "/Lotus/Interface/Icons/Npcs/CrewmanNormal.png", // My best source for this is https://www.youtube.com/watch?v=rxrCCFm73XE around 1:37
-                        // TOVERIFY: highPriority?
-                        endDate: new Date(Date.now() + 86400_000) // TOVERIFY: This type of inbox message seems to automatically delete itself. We'll just delete it after 24 hours, but it's not clear if this is correct.
-                    }
-                ]);
+                const messageContext = `invasion-reward:${invasionId}`;
+                if (!(await Inbox.exists({ ownerId: account._id, contextInfo: messageContext }))) {
+                    await createMessage(account._id, [
+                        {
+                            sndr:
+                                factionSidedWith == "FC_GRINEER"
+                                    ? "/Lotus/Language/Menu/GrineerInvasionLeader"
+                                    : "/Lotus/Language/Menu/CorpusInvasionLeader",
+                            msg: `/Lotus/Language/G1Quests/${factionSidedWith}_InvasionThankyouMessageBody`,
+                            sub: `/Lotus/Language/G1Quests/${factionSidedWith}_InvasionThankyouMessageSubject`,
+                            countedAtt: battlePay,
+                            attVisualOnly: true,
+                            contextInfo: messageContext,
+                            icon:
+                                factionSidedWith == "FC_GRINEER"
+                                    ? "/Lotus/Interface/Icons/Npcs/EliteRifleLancerAvatar.png" // Source: https://www.reddit.com/r/Warframe/comments/1aj4usx/battle_pay_worth_10_plat/, https://www.youtube.com/watch?v=XhNZ6ai6BOY
+                                    : "/Lotus/Interface/Icons/Npcs/CrewmanNormal.png", // My best source for this is https://www.youtube.com/watch?v=rxrCCFm73XE around 1:37
+                            // TOVERIFY: highPriority?
+                            endDate: new Date(Date.now() + 86400_000) // TOVERIFY: This type of inbox message seems to automatically delete itself. We'll just delete it after 24 hours, but it's not clear if this is correct.
+                        }
+                    ]);
+                }
+                completedInvasionRewardClaims.push(claim);
             }
             logger.debug(`removing QualifyingInvasions entry for completed invasion: ${qi.invasionId.toString()}`);
             inventory.QualifyingInvasions.splice(i, 1);
@@ -375,6 +396,7 @@ export const inventoryController: RequestHandler = async (request, response) => 
 
     if (inventory.isModified()) {
         await inventory.save();
+        await Promise.all(completedInvasionRewardClaims.map(claim => completeInvasionRewardClaim(claim)));
         if (sendUpdateForWebui) sendWsBroadcastToWebui({ update_inventory: true }, account._id.toString());
     }
 
