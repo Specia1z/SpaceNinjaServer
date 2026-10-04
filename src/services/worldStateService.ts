@@ -4885,7 +4885,24 @@ export const nightwaveTagToSeasonName: Record<string, string> = {
 export const nightwaveTagToActivation: Record<string, number> = {
     RadioLegionIntermission16Syndicate: 1786548600000,
     RadioLegionIntermission15Syndicate: 1775662200000,
-    RadioLegionIntermission14Syndicate: 1761589199000
+    RadioLegionIntermission14Syndicate: 1761589199000,
+    // Historical entries only need day-level precision here because weekly acts are aligned to EPOCH weeks.
+    RadioLegionIntermission13Syndicate: 1747785600000,
+    RadioLegionIntermission12Syndicate: 1738800000000,
+    RadioLegionIntermission11Syndicate: 1725321600000,
+    RadioLegionIntermission10Syndicate: 1715731200000,
+    RadioLegionIntermission9Syndicate: 1701216000000,
+    RadioLegionIntermission8Syndicate: 1684886400000,
+    RadioLegionIntermission7Syndicate: 1669766400000,
+    RadioLegionIntermission6Syndicate: 1658016000000,
+    RadioLegionIntermission5Syndicate: 1647475200000,
+    RadioLegionIntermission4Syndicate: 1628035200000,
+    RadioLegionIntermission3Syndicate: 1612137600000,
+    RadioLegion3Syndicate: 1589241600000,
+    RadioLegionIntermission2Syndicate: 1571616000000,
+    RadioLegion2Syndicate: 1562371200000,
+    RadioLegionIntermissionSyndicate: 1558224000000,
+    RadioLegionSyndicate: 1551225600000
 };
 
 const nightwaveTagMinBuildVersion: Record<string, keyof typeof gameToBuildVersionInt> = {

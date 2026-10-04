@@ -252,6 +252,14 @@ const getCompatibleInvasion = (value: unknown): IWorldState["Invasions"][number]
 const getGoalDateMs = (date: IWorldState["Goals"][number]["Activation"]): number =>
     "$date" in date ? Number(date.$date.$numberLong) : date.sec * 1000 + Math.trunc(date.usec / 1000);
 
+const getSafeMongoDateMs = (value: unknown): number => {
+    try {
+        return fromMongoDate(value as Parameters<typeof fromMongoDate>[0]).getTime();
+    } catch {
+        return NaN;
+    }
+};
+
 const getGoalOid = (goal: IWorldState["Goals"][number]): string => goal._id.$oid ?? goal._id.$id ?? "";
 
 const getStaticGoalSnapshot = (
@@ -703,6 +711,11 @@ const getCompatibleSyndicateMission = (value: unknown): IWorldState["SyndicateMi
     ) {
         return undefined;
     }
+    const activationMs = getSafeMongoDateMs(mission.Activation);
+    const expiryMs = getSafeMongoDateMs(mission.Expiry);
+    if (!Number.isFinite(activationMs) || !Number.isFinite(expiryMs) || activationMs >= expiryMs) {
+        return undefined;
+    }
     return mission;
 };
 
@@ -787,7 +800,7 @@ const updateLiveCalendarSeasons = (seasons: IWorldState["KnownCalendarSeasons"])
     }
 };
 
-const getCompatibleSeasonInfo = (
+export const getCompatibleSeasonInfo = (
     value: unknown,
     buildVersion: number
 ): NonNullable<IWorldState["SeasonInfo"]> | undefined => {
@@ -795,16 +808,26 @@ const getCompatibleSeasonInfo = (
         return undefined;
     }
     const seasonInfo = value as NonNullable<IWorldState["SeasonInfo"]>;
-    if (!(seasonInfo.AffiliationTag in nightwaveTagMinBuildVersion)) {
+    if (!(seasonInfo.AffiliationTag in nightwaveTagMinBuildVersion) || !Array.isArray(seasonInfo.ActiveChallenges)) {
         return undefined;
     }
     const minBuildVersion = nightwaveTagMinBuildVersion[seasonInfo.AffiliationTag];
     if (buildVersion < minBuildVersion) {
         return undefined;
     }
-    const activeChallenges = seasonInfo.ActiveChallenges.filter(challenge =>
-        knownNightwaveChallenges.has(challenge.Challenge)
-    );
+    const activationMs = getSafeMongoDateMs(seasonInfo.Activation);
+    const expiryMs = getSafeMongoDateMs(seasonInfo.Expiry);
+    if (!Number.isFinite(activationMs) || !Number.isFinite(expiryMs) || activationMs >= expiryMs) {
+        return undefined;
+    }
+    const activeChallenges = seasonInfo.ActiveChallenges.filter(challenge => {
+        const rawChallenge: unknown = challenge;
+        if (!rawChallenge || typeof rawChallenge != "object") {
+            return false;
+        }
+        const challengeName = (rawChallenge as { Challenge?: unknown }).Challenge;
+        return typeof challengeName == "string" && knownNightwaveChallenges.has(challengeName);
+    });
     if (seasonInfo.ActiveChallenges.length > 0 && activeChallenges.length == 0) {
         return undefined;
     }
@@ -1083,7 +1106,8 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
     }
 
     const liveWorldState = structuredClone(cachedWorldState);
-    const compatibleSeasonInfo = getCompatibleSeasonInfo(liveWorldState.SeasonInfo, buildVersion);
+    const { SeasonInfo: liveSeasonInfo, ...liveWorldStateWithoutSeasonInfo } = liveWorldState;
+    const compatibleSeasonInfo = getCompatibleSeasonInfo(liveSeasonInfo, buildVersion);
     const localInvasions = [...liveInvasions.values()].map(entry => structuredClone(entry.invasion));
     const mergedGoals = mergeLocalGoalProgress(worldState.Goals, liveWorldState.Goals, localGoals, buildVersion);
     const syndicateMissions = mergeCurrentSyndicateMissions(
@@ -1092,10 +1116,13 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
         Date.now()
     );
     if (buildVersion >= gameToBuildVersionInt["43.5.0"]) {
-        Object.assign(worldState, liveWorldState);
+        Object.assign(worldState, liveWorldStateWithoutSeasonInfo);
         worldState.Goals = mergedGoals;
         worldState.Invasions = localInvasions;
         worldState.SyndicateMissions = syndicateMissions;
+        if (compatibleSeasonInfo) {
+            worldState.SeasonInfo = compatibleSeasonInfo;
+        }
         return;
     }
 

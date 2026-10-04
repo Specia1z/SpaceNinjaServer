@@ -3,6 +3,7 @@ import { test } from "node:test";
 import type { IWorldState, ISyndicateMissionInfo, IVoidTrader } from "../types/worldStateTypes.ts";
 import {
     getActiveVoidTrader,
+    getCompatibleSeasonInfo,
     getInitialLiveGoalProgress,
     isLiveInvasionCompleted,
     isFreshSupplementalWorldState,
@@ -11,6 +12,7 @@ import {
     mergeLocalGoalProgress
 } from "./liveWorldStateService.ts";
 import gameToBuildVersionInt from "../constants/gameToBuildVersionInt.ts";
+import { getSeasonChallengePools, pushWeeklyActs } from "./worldStateService.ts";
 
 const now = 1_790_876_000_000;
 const mission = (tag: string, start: number, end: number): ISyndicateMissionInfo => ({
@@ -45,6 +47,42 @@ void test("a future live rotation does not hide the current generated bounty", (
     const generated = mission("CetusSyndicate", now - 1000, now + 1000);
     const upcoming = mission("CetusSyndicate", now + 1000, now + 5000);
     assert.deepEqual(mergeCurrentSyndicateMissions([generated, upcoming], [upcoming], now), [generated, upcoming]);
+});
+
+void test("historical weekly acts use the requested rotation week", () => {
+    const pools = getSeasonChallengePools("RadioLegionIntermission16Syndicate");
+    const currentWeek: NonNullable<IWorldState["SeasonInfo"]>["ActiveChallenges"] = [];
+    const previousWeek: NonNullable<IWorldState["SeasonInfo"]>["ActiveChallenges"] = [];
+    pushWeeklyActs(currentWeek, pools, 100, 1786548600000, 18);
+    pushWeeklyActs(previousWeek, pools, 99, 1786548600000, 18);
+
+    assert.notDeepEqual(
+        currentWeek.map(challenge => challenge._id.$oid),
+        previousWeek.map(challenge => challenge._id.$oid)
+    );
+    assert.notEqual(currentWeek[0].Activation.$date.$numberLong, previousWeek[0].Activation.$date.$numberLong);
+});
+
+void test("official Nightwave metadata is filtered for the client build", () => {
+    const knownChallenge = [...getSeasonChallengePools("RadioLegionIntermission16Syndicate").daily][0];
+    const seasonInfo = {
+        Activation: { $date: { $numberLong: "1786548600000" } },
+        Expiry: { $date: { $numberLong: "2000000000000" } },
+        AffiliationTag: "RadioLegionIntermission16Syndicate",
+        Season: 18,
+        Phase: 0,
+        Params: "",
+        ActiveChallenges: [
+            { _id: { $oid: "known" }, Challenge: knownChallenge },
+            { _id: { $oid: "unknown" }, Challenge: "/Lotus/Unknown/Challenge" }
+        ]
+    } as NonNullable<IWorldState["SeasonInfo"]>;
+
+    const compatible = getCompatibleSeasonInfo(seasonInfo, gameToBuildVersionInt["43.5.0"]);
+    assert.deepEqual(
+        compatible?.ActiveChallenges.map(challenge => challenge._id.$oid),
+        ["known"]
+    );
 });
 
 void test("active void trader is selected from the effective world-state window", () => {

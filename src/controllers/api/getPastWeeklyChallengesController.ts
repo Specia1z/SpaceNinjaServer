@@ -54,7 +54,7 @@ export const getPastWeeklyChallengesController: RequestHandler = async (req, res
                 PastWeeklyChallenges.length < 3
             ) {
                 const tempActs: ISeasonChallenge[] = [];
-                pushWeeklyActs(tempActs, pools, week, nightwaveStartTimestamp, nightwaveSeason);
+                pushWeeklyActs(tempActs, pools, previousWeek, nightwaveStartTimestamp, nightwaveSeason);
 
                 for (const act of tempActs) {
                     if (!completedChallengesIds.has(act._id.$oid) && PastWeeklyChallenges.length < 3) {
