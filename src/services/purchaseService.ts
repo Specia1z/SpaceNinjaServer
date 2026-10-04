@@ -5,6 +5,7 @@ import {
     addItems,
     addMiscItems,
     combineInventoryChanges,
+    grantFounderTier,
     handleOneTimePurchasable,
     updateCredits,
     updateCurrency,
@@ -52,6 +53,7 @@ import { BL_LATEST } from "../constants/gameVersions.ts";
 import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import { applyLiveWorldState, getLiveDailyDealForPurchase } from "./liveWorldStateService.ts";
 import { isStoreItemPurchasable } from "./storeOverrideService.ts";
+import { getFounderBundle } from "../constants/founderBundles.ts";
 
 const getStoreItemCategory = (storeItem: string): string => {
     const storeItemString = getSubstringFromKeyword(storeItem, "StoreItems/");
@@ -107,7 +109,9 @@ const getInventoryAwarePrice = (
         return fullPrice;
     }
 
-    const bundlePrice = bundle.platinumCost ?? fullPrice / quantity;
+    // getPrice already includes an active StoreOverride or promotion. Use that effective price when
+    // applying the client's inventory-aware partial-bundle calculation as well.
+    const bundlePrice = fullPrice / quantity;
     let totalComponentPrice = 0;
     let unownedComponentPrice = 0;
     for (const component of bundle.components) {
@@ -213,6 +217,18 @@ export const handlePurchase = async (
             purchaseRequest.PurchaseParams.Quantity <= 0
         ) {
             throw new Error("invalid purchase quantity");
+        }
+        const founderBundle = getFounderBundle(purchaseRequest.PurchaseParams.StoreItem);
+        if (founderBundle) {
+            if (purchaseRequest.PurchaseParams.Quantity != 1) {
+                throw new Error("founder bundles can only be purchased one at a time");
+            }
+            if (
+                (inventory.Founder ?? 0) >= founderBundle.tier ||
+                inventory.OneTimePurchases?.includes(founderBundle.typeName)
+            ) {
+                throw new Error("founder bundle tier has already been claimed");
+            }
         }
         let overrideTypeName = purchaseRequest.PurchaseParams.StoreItem;
         if (
@@ -629,8 +645,9 @@ export const handleBundleAcquisition = async (
 ): Promise<IInventoryChanges> => {
     const bundle = getBundle(storeItemName, buildLabel)!;
     logger.debug("acquiring bundle", bundle);
+    const founderBundle = getFounderBundle(storeItemName);
     if (bundle.oneTimePurchasable) {
-        handleOneTimePurchasable(inventory, storeItemName, inventoryChanges);
+        handleOneTimePurchasable(inventory, founderBundle?.typeName ?? storeItemName, inventoryChanges);
     }
     for (const component of bundle.components) {
         combineInventoryChanges(
@@ -649,6 +666,7 @@ export const handleBundleAcquisition = async (
             ).InventoryChanges
         );
     }
+    if (founderBundle) grantFounderTier(inventory, founderBundle.tier, inventoryChanges);
     return inventoryChanges;
 };
 

@@ -75,6 +75,61 @@ void test("market prices cover unexported sentinel skins", async () => {
     assert.equal(inventory.PremiumCredits, 60);
 });
 
+void test("Founder bundles grant Founder state without granting platinum", async () => {
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        PremiumCredits: 45,
+        PremiumCreditsFree: 0
+    });
+
+    const response = await handlePurchase(
+        {
+            PurchaseParams: {
+                Source: ePurchaseSource.Market,
+                StoreItem: "/Lotus/Types/StoreItems/Packages/CompleteStarterSlotBundle",
+                Quantity: 1,
+                UsePremium: true,
+                ExpectedPrice: 45
+            },
+            buildLabel: "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg"
+        },
+        inventory
+    );
+
+    assert.equal(response.InventoryChanges.PremiumCredits, -45);
+    assert.equal(response.InventoryChanges.Founder, 1);
+    assert.equal(inventory.PremiumCredits, 0);
+    assert.equal(inventory.Founder, 1);
+    assert.deepEqual(
+        response.InventoryChanges.WeaponSkins?.map(item => item.ItemType),
+        ["/Lotus/Upgrades/Skins/Clan/FoundersBadgeDiscipleItem"]
+    );
+    assert.deepEqual(
+        response.InventoryChanges.FlavourItems?.map(item => item.ItemType),
+        ["/Lotus/Types/Items/Titles/FounderLvl1Title"]
+    );
+    assert.deepEqual(response.InventoryChanges.OneTimePurchases, [
+        "/Lotus/Types/StoreItems/Packages/CompleteStarterSlotBundle"
+    ]);
+
+    await assert.rejects(
+        handlePurchase(
+            {
+                PurchaseParams: {
+                    Source: ePurchaseSource.Market,
+                    StoreItem: "/Lotus/Types/StoreItems/Packages/CompleteStarterSlotBundle",
+                    Quantity: 1,
+                    UsePremium: true,
+                    ExpectedPrice: 45
+                },
+                buildLabel: "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg"
+            },
+            inventory
+        ),
+        /already been claimed/
+    );
+});
+
 void test("market prices cover the Banshee Threnodia suit skin", async () => {
     const inventory = new Inventory({
         accountOwnerId: "000000000000000000000001",

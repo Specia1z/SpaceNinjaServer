@@ -3,6 +3,7 @@ import type { IWorldState } from "../types/worldStateTypes.ts";
 import { toMongoDate2 } from "../helpers/inventoryHelpers.ts";
 import { fromStoreItem, getUndiscountedPrice, toStoreItem } from "./itemDataService.ts";
 import { sendWsBroadcastToGame } from "./wsService.ts";
+import { FOUNDER_BUNDLES } from "../constants/founderBundles.ts";
 
 const storeOverrides = new Map<string, IStoreOverride>();
 const permanentOfferStart = new Date(0);
@@ -252,6 +253,11 @@ export const isStoreItemPurchasable = (typeName: string): boolean => {
     return override ? !isProductExpired(override) && override.Listed && (override.Purchasable ?? true) : true;
 };
 
+export const isStoreItemListed = (typeName: string): boolean => {
+    const override = storeOverrides.get(overrideTypeName(typeName));
+    return override ? override.Enabled && !isProductExpired(override) && override.Listed : true;
+};
+
 export const isStoreItemGiftable = (typeName: string): boolean => {
     const override = getActiveStoreOverride(typeName);
     return override ? !isProductExpired(override) && override.Listed && override.Giftable !== false : true;
@@ -350,5 +356,17 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             EndDate: endDate,
             ...(productExpiryDate ? { ProductExpiryOverride: productExpiryDate } : {})
         });
+    }
+
+    const categories = worldState.InGameMarket.LandingPage.Categories;
+    const defaultCategory = categories.find(category => category.CategoryName == "COMMUNITY");
+    if (defaultCategory) {
+        for (const founderBundle of FOUNDER_BUNDLES) {
+            const storeItem = storeItemName(founderBundle.typeName);
+            if (!isStoreItemListed(founderBundle.typeName)) continue;
+            if (!categories.some(category => category.Items?.includes(storeItem))) {
+                (defaultCategory.Items ??= []).push(storeItem);
+            }
+        }
     }
 };
