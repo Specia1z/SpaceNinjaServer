@@ -719,7 +719,7 @@ export const hasGuildPermission = async (
     accountId: string | Types.ObjectId,
     perm: TGuildPermission
 ): Promise<boolean> => {
-    const member = await GuildMember.findOne({ accountId: accountId, guildId: guild._id });
+    const member = await GuildMember.findOne({ accountId: accountId, guildId: guild._id, status: 0 });
     if (member) {
         return hasGuildPermissionEx(guild, member, perm);
     }
@@ -749,8 +749,8 @@ export const hasGuildPermissionEx = (
     member: IGuildMemberDatabase,
     perm: TGuildPermission
 ): boolean => {
-    const rank = guild.Ranks[member.rank];
-    return (rank.Permissions & perm) != 0;
+    if (member.rank < 0 || member.rank >= guild.Ranks.length) return false;
+    return (guild.Ranks[member.rank].Permissions & perm) != 0;
 };
 
 export const removePigmentsFromGuildMembers = async (guildId: string | Types.ObjectId): Promise<void> => {

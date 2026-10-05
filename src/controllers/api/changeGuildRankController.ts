@@ -11,27 +11,36 @@ import { broadcastGuildUpdate } from "../../services/wsService.ts";
 export const changeGuildRankController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     const buildLabel = getBuildLabel(req, account);
-    const member = (await GuildMember.findOne({
+    const member = await GuildMember.findOne({
         accountId: account._id,
-        guildId: req.query.guildId as string
-    }))!;
-    const guild = await getGuildForRequest(req, account._id);
-    const target = (await GuildMember.findOne({
         guildId: req.query.guildId as string,
-        accountId: req.query.targetId as string
-    }))!;
+        status: 0
+    });
+    const guild = await getGuildForRequest(req, account._id);
+    const target = await GuildMember.findOne({
+        guildId: req.query.guildId as string,
+        accountId: req.query.targetId as string,
+        status: 0
+    });
 
     // TODO: Figure out the exact version when rankChange stopped being a delta.
     const rankChange: number = parseInt(req.query.rankChange as string);
     const rankChangeIsADelta = version_compare(buildLabel, gameToBuildVersion["24.0.0"]) <= 0;
-    const newRank: number = rankChangeIsADelta
-        ? target.rank + parseInt(req.query.rankChange as string)
-        : parseInt(req.query.rankChange as string);
+    if (!member || !target || !Number.isInteger(rankChange)) {
+        res.status(400).json("Invalid permission");
+        return;
+    }
+    const newRank: number = rankChangeIsADelta ? target.rank + rankChange : rankChange;
     logger.debug(
         `treating rankChange of ${rankChange} as ${rankChangeIsADelta ? "a delta" : "an absolute value"}, so newRank = ${newRank}`
     );
 
-    if (newRank < member.rank || !hasGuildPermissionEx(guild, member, eGuildPermission.Promoter)) {
+    if (
+        newRank < 0 ||
+        newRank >= guild.Ranks.length ||
+        newRank < member.rank ||
+        !hasGuildPermissionEx(guild, member, eGuildPermission.Promoter)
+    ) {
         res.status(400).json("Invalid permission");
         return;
     }

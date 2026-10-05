@@ -77,15 +77,26 @@ const inviteToGuild = async (req: Request, res: Response, userName: string): Pro
     }
 
     const senderInventory = await getInventory(senderAccount._id, "GuildId ActiveAvatarImageType");
-    const guild = (await Guild.findById(senderInventory.GuildId!, "Name Ranks"))!;
+    const senderMember = await GuildMember.findOne({ accountId: senderAccount._id, status: 0 }, "guildId");
+    const guildId = senderMember?.guildId ?? senderInventory.GuildId;
+    if (!guildId) {
+        res.status(400).send("Sender is not in a guild");
+        return;
+    }
+    const guild = await Guild.findById(guildId, "Name Ranks");
+    if (!guild) {
+        res.status(400).send("Guild does not exist");
+        return;
+    }
     if (!(await hasGuildPermission(guild, senderAccount._id, eGuildPermission.Recruiter))) {
         res.status(400).send("Invalid permission");
+        return;
     }
 
     try {
         await GuildMember.insertOne({
             accountId: account._id,
-            guildId: senderInventory.GuildId!,
+            guildId,
             status: 2 // outgoing invite
         });
     } catch (e) {
@@ -106,7 +117,7 @@ const inviteToGuild = async (req: Request, res: Response, userName: string): Pro
             ],
             sub: "/Lotus/Language/Menu/Mailbox_ClanInvite_Title",
             icon: ExportFlavour[getEffectiveAvatarImageType(senderInventory)].icon,
-            contextInfo: senderInventory.GuildId!.toString(),
+            contextInfo: guildId.toString(),
             highPriority: true,
             acceptAction: "GUILD_INVITE",
             declineAction: "GUILD_INVITE",
