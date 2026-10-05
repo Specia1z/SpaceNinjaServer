@@ -17,7 +17,7 @@ import { ePurchaseSource } from "../../types/purchaseTypes.ts";
 import type { RequestHandler } from "express";
 import { ExportFlavour } from "warframe-public-export-plus";
 import { fromStoreItem, getBundle, getPrice, isBundle } from "../../services/itemDataService.ts";
-import { isStoreItemGiftable } from "../../services/storeOverrideService.ts";
+import { getStoreItemGiftBonus, isStoreItemGiftable } from "../../services/storeOverrideService.ts";
 
 const checkPurchaseParams = (params: IPurchaseParams): boolean => {
     switch (params.Source) {
@@ -113,10 +113,23 @@ export const giftingController: RequestHandler = async (req, res) => {
     }
     if (isBundle(data.PurchaseParams.StoreItem)) {
         const bundle = getBundle(data.PurchaseParams.StoreItem, senderBuildLabel)!;
-        if (bundle.giftingBonus) {
+        const giftingBonus =
+            getStoreItemGiftBonus(data.PurchaseParams.StoreItem, senderBuildLabel) ?? bundle.giftingBonus;
+        if (giftingBonus) {
             combineInventoryChanges(
                 response.InventoryChanges,
-                (await handleStoreItemAcquisition(bundle.giftingBonus, senderInventory)).InventoryChanges
+                (
+                    await handleStoreItemAcquisition(
+                        giftingBonus,
+                        senderInventory,
+                        1,
+                        3,
+                        false,
+                        true,
+                        undefined,
+                        senderBuildLabel
+                    )
+                ).InventoryChanges
             );
         }
     }

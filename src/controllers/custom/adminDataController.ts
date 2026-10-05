@@ -219,6 +219,16 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
     if (body.Giftable !== undefined && typeof body.Giftable != "boolean") {
         throw new Error("Invalid Giftable");
     }
+    if (
+        body.GiftingBonus !== undefined &&
+        (typeof body.GiftingBonus != "string" ||
+            !body.GiftingBonus.startsWith("/Lotus/") ||
+            body.GiftingBonus.length > 300 ||
+            body.GiftingBonus.includes("\n") ||
+            body.GiftingBonus.includes("\r"))
+    ) {
+        throw new Error("Invalid GiftingBonus");
+    }
     if (body.SupporterPack !== undefined && typeof body.SupporterPack != "boolean") {
         throw new Error("Invalid SupporterPack");
     }
@@ -243,6 +253,7 @@ export const saveStoreOverrideController: RequestHandler = async (req, res) => {
         Listed: listed,
         Purchasable: listed && (body.Purchasable ?? true),
         Giftable: body.Giftable,
+        GiftingBonus: body.GiftingBonus?.trim() || undefined,
         PurchaseMode: body.PurchaseMode,
         CategoryName: body.CategoryName,
         DiscountPercent: discountPercent,

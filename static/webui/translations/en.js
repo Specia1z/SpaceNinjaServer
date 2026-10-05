@@ -599,6 +599,7 @@ dict = {
     admin_storeGiftable: `Gifting`,
     admin_storeGiftAllowed: `Allow gifting`,
     admin_storeGiftDenied: `Block gifting`,
+    admin_storeGiftingBonus: `Gift bonus reward item type`,
     admin_storePurchaseMode: `Purchase method`,
     admin_storeGameDefault: `Game default`,
     admin_storePlatinum: `Platinum`,

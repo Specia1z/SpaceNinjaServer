@@ -19,6 +19,8 @@ import { deleteStoreBundle, listStoreBundles, saveStoreBundle } from "./storeBun
 import {
     applyStoreOverrides,
     deleteStoreOverride,
+    getStoreItemGiftBonus,
+    getStoreItemRules,
     getStoreItemBogoBonusQuantity,
     initializeStoreOverrides,
     isStoreItemGiftable,
@@ -31,6 +33,8 @@ import {
 const buildLabel = "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg";
 const typeName = "/Lotus/Upgrades/Skins/Scarves/SWRepalaScarf";
 const storeItem = "/Lotus/StoreItems/Upgrades/Skins/Scarves/SWRepalaScarf";
+const bonusBundle = "/Lotus/Types/StoreItems/Packages/WarframeBundles/CitrineItemsBundle";
+const bonusReward = "/Lotus/StoreItems/Types/Items/ShipDecos/LisetPropStyanaxSpearShieldDeco";
 let mongod: MongoMemoryServer;
 
 const worldState = (): IWorldState =>
@@ -280,6 +284,31 @@ void test("expired limited products are hidden and cannot be purchased or gifted
     assert.equal(isStoreItemPurchasable(typeName), false);
     assert.equal(isStoreItemGiftable(typeName), false);
     await deleteStoreOverride(typeName);
+});
+
+void test("gift bonus replacement is shared between tunables and gifting lookup", async () => {
+    await assert.rejects(
+        saveStoreOverride(override({ GiftingBonus: bonusReward })),
+        /requires a bundle with an existing gift bonus/
+    );
+    try {
+        await saveStoreOverride(override({ TypeName: bonusBundle, GiftingBonus: bonusReward }));
+        assert.equal(getStoreItemGiftBonus(bonusBundle, buildLabel), bonusReward);
+        const rules = JSON.parse(getStoreItemRules()) as Record<string, { giftBonus?: string }>;
+        assert.equal(rules[bonusBundle].giftBonus, bonusReward);
+        await saveStoreOverride(
+            override({
+                TypeName: bonusBundle,
+                GiftingBonus: bonusReward,
+                ProductExpiryDate: new Date(Date.now() - 60_000)
+            })
+        );
+        assert.equal(getStoreItemGiftBonus(bonusBundle, buildLabel), undefined);
+        const expiredRules = JSON.parse(getStoreItemRules()) as Record<string, { giftBonus?: string }>;
+        assert.equal(expiredRules[bonusBundle], undefined);
+    } finally {
+        await deleteStoreOverride(bonusBundle);
+    }
 });
 
 void test("expired promotions keep the product listed at its original price", async () => {

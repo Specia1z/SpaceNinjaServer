@@ -186,6 +186,7 @@
         document.getElementById("admin-store-listed").checked = true;
         document.getElementById("admin-store-purchasable").checked = true;
         document.getElementById("admin-store-giftable").value = "";
+        document.getElementById("admin-store-gifting-bonus").value = "";
         document.getElementById("admin-store-purchase-mode").value = "";
         document.getElementById("admin-store-category").value = "";
         document.getElementById("admin-store-supporter").value = "";
@@ -208,6 +209,7 @@
         document.getElementById("admin-store-purchasable").checked = override.Purchasable ?? override.Listed;
         document.getElementById("admin-store-giftable").value =
             override.Giftable === undefined ? "" : String(override.Giftable);
+        document.getElementById("admin-store-gifting-bonus").value = override.GiftingBonus ?? "";
         document.getElementById("admin-store-purchase-mode").value = override.PurchaseMode ?? "";
         document.getElementById("admin-store-category").value = override.CategoryName ?? "";
         document.getElementById("admin-store-supporter").value =
@@ -339,6 +341,7 @@
                 document.getElementById("admin-store-giftable").value === ""
                     ? undefined
                     : document.getElementById("admin-store-giftable").value === "true",
+            GiftingBonus: document.getElementById("admin-store-gifting-bonus").value.trim() || undefined,
             PurchaseMode: document.getElementById("admin-store-purchase-mode").value || undefined,
             CategoryName: document.getElementById("admin-store-category").value || undefined,
             DiscountPercent: optionalNumber("admin-store-discount"),
