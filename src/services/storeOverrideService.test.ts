@@ -35,6 +35,8 @@ const typeName = "/Lotus/Upgrades/Skins/Scarves/SWRepalaScarf";
 const storeItem = "/Lotus/StoreItems/Upgrades/Skins/Scarves/SWRepalaScarf";
 const bonusBundle = "/Lotus/Types/StoreItems/Packages/WarframeBundles/CitrineItemsBundle";
 const bonusReward = "/Lotus/StoreItems/Types/Items/ShipDecos/LisetPropStyanaxSpearShieldDeco";
+const kuvaItem = "/Lotus/Types/Items/MiscItems/Kuva";
+const kuvaStoreItem = "/Lotus/StoreItems/Types/Items/MiscItems/Kuva";
 let mongod: MongoMemoryServer;
 
 const worldState = (): IWorldState =>
@@ -287,13 +289,9 @@ void test("expired limited products are hidden and cannot be purchased or gifted
 });
 
 void test("gift bonus replacement is shared between tunables and gifting lookup", async () => {
-    await assert.rejects(
-        saveStoreOverride(override({ GiftingBonus: bonusReward })),
-        /requires a bundle with an existing gift bonus/
-    );
     try {
         await saveStoreOverride(override({ TypeName: bonusBundle, GiftingBonus: bonusReward }));
-        assert.equal(getStoreItemGiftBonus(bonusBundle, buildLabel), bonusReward);
+        assert.equal(getStoreItemGiftBonus(bonusBundle), bonusReward);
         const rules = JSON.parse(getStoreItemRules()) as Record<string, { giftBonus?: string }>;
         assert.equal(rules[bonusBundle].giftBonus, bonusReward);
         await saveStoreOverride(
@@ -303,11 +301,22 @@ void test("gift bonus replacement is shared between tunables and gifting lookup"
                 ProductExpiryDate: new Date(Date.now() - 60_000)
             })
         );
-        assert.equal(getStoreItemGiftBonus(bonusBundle, buildLabel), undefined);
+        assert.equal(getStoreItemGiftBonus(bonusBundle), undefined);
         const expiredRules = JSON.parse(getStoreItemRules()) as Record<string, { giftBonus?: string }>;
         assert.equal(expiredRules[bonusBundle], undefined);
     } finally {
         await deleteStoreOverride(bonusBundle);
+    }
+});
+
+void test("ordinary market items can grant a new gift bonus, including themselves", async () => {
+    try {
+        await saveStoreOverride(override({ TypeName: kuvaItem, GiftingBonus: kuvaItem }));
+        assert.equal(getStoreItemGiftBonus(kuvaStoreItem), kuvaStoreItem);
+        const rules = JSON.parse(getStoreItemRules()) as Record<string, { giftBonus?: string }>;
+        assert.equal(rules[kuvaStoreItem].giftBonus, kuvaStoreItem);
+    } finally {
+        await deleteStoreOverride(kuvaItem);
     }
 });
 

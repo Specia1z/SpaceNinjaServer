@@ -1,8 +1,7 @@
 import { StoreOverride, type IStoreOverride } from "../models/storeOverrideModel.ts";
 import type { IWorldState } from "../types/worldStateTypes.ts";
 import { toMongoDate2 } from "../helpers/inventoryHelpers.ts";
-import { BL_LATEST } from "../constants/gameVersions.ts";
-import { fromStoreItem, getBundle, getUndiscountedPrice, toStoreItem } from "./itemDataService.ts";
+import { fromStoreItem, getUndiscountedPrice, toStoreItem } from "./itemDataService.ts";
 import { sendWsBroadcastToGame } from "./wsService.ts";
 
 const storeOverrides = new Map<string, IStoreOverride>();
@@ -163,9 +162,6 @@ export const syncStoreOverridePrices = async (
 };
 
 export const saveStoreOverride = async (override: IStoreOverride): Promise<IStoreOverride> => {
-    if (override.GiftingBonus && !getBundle(override.TypeName, BL_LATEST)?.giftingBonus) {
-        throw new Error("Gift bonus replacement requires a bundle with an existing gift bonus");
-    }
     const optionalKeys: (keyof IStoreOverride)[] = [
         "CategoryName",
         "Giftable",
@@ -233,10 +229,7 @@ export const getStoreItemRules = (): string => {
     for (const override of storeOverrides.values()) {
         if (!override.Enabled || isProductExpired(override)) continue;
         const giftable = override.Listed ? override.Giftable : false;
-        const giftBonus =
-            override.GiftingBonus && getBundle(override.TypeName, BL_LATEST)?.giftingBonus
-                ? storeItemName(override.GiftingBonus)
-                : undefined;
+        const giftBonus = override.GiftingBonus ? storeItemName(override.GiftingBonus) : undefined;
         if (giftable === undefined && !override.PurchaseMode && !giftBonus) continue;
         rules[storeItemName(override.TypeName)] = {
             giftable,
@@ -281,11 +274,9 @@ export const isStoreItemGiftable = (typeName: string): boolean => {
     return override ? !isProductExpired(override) && override.Listed && override.Giftable !== false : true;
 };
 
-export const getStoreItemGiftBonus = (typeName: string, buildLabel: string): string | undefined => {
+export const getStoreItemGiftBonus = (typeName: string): string | undefined => {
     const override = getActiveStoreOverride(typeName);
-    return override?.GiftingBonus && !isProductExpired(override) && getBundle(typeName, buildLabel)?.giftingBonus
-        ? storeItemName(override.GiftingBonus)
-        : undefined;
+    return override?.GiftingBonus && !isProductExpired(override) ? storeItemName(override.GiftingBonus) : undefined;
 };
 
 export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string): void => {

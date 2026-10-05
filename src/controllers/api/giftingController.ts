@@ -111,27 +111,27 @@ export const giftingController: RequestHandler = async (req, res) => {
         data.PurchaseParams.ExpectedPrice = price;
         updateCurrency(senderInventory, price, CurrencyType.PAID_PLATINUM, response.InventoryChanges);
     }
-    if (isBundle(data.PurchaseParams.StoreItem)) {
-        const bundle = getBundle(data.PurchaseParams.StoreItem, senderBuildLabel)!;
-        const giftingBonus =
-            getStoreItemGiftBonus(data.PurchaseParams.StoreItem, senderBuildLabel) ?? bundle.giftingBonus;
-        if (giftingBonus) {
-            combineInventoryChanges(
-                response.InventoryChanges,
-                (
-                    await handleStoreItemAcquisition(
-                        giftingBonus,
-                        senderInventory,
-                        1,
-                        3,
-                        false,
-                        true,
-                        undefined,
-                        senderBuildLabel
-                    )
-                ).InventoryChanges
-            );
-        }
+    const giftingBonus =
+        getStoreItemGiftBonus(data.PurchaseParams.StoreItem) ??
+        (isBundle(data.PurchaseParams.StoreItem)
+            ? getBundle(data.PurchaseParams.StoreItem, senderBuildLabel)?.giftingBonus
+            : undefined);
+    if (giftingBonus) {
+        combineInventoryChanges(
+            response.InventoryChanges,
+            (
+                await handleStoreItemAcquisition(
+                    giftingBonus,
+                    senderInventory,
+                    1,
+                    3,
+                    false,
+                    true,
+                    undefined,
+                    senderBuildLabel
+                )
+            ).InventoryChanges
+        );
     }
     await senderInventory.save();
 
