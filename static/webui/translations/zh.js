@@ -600,6 +600,7 @@ dict = {
     admin_storeGiftable: `赠送资格`,
     admin_storeGiftAllowed: `允许赠送`,
     admin_storeGiftDenied: `禁止赠送`,
+    admin_storeGiftingBonus: `赠礼加成奖励物品类型`,
     admin_storePurchaseMode: `购买方式`,
     admin_storeGameDefault: `游戏默认`,
     admin_storePlatinum: `白金`,
