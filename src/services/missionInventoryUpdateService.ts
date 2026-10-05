@@ -154,6 +154,7 @@ interface MissionInventoryUpdatesReturnType {
     ProcessedWeeklyMissionChallengeInfos?: IWeeklyMissionChallengeInfo[];
 }
 
+const normalizeInvasionDelta = (value: number): number => (Number.isFinite(value) ? Math.trunc(value) : 0);
 const normalizeInvasionScore = (value: number): number => (Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0);
 
 export const addMissionInventoryUpdates = async (
@@ -772,7 +773,8 @@ export const addMissionInventoryUpdates = async (
                         logger.warn(`received progress for unknown invasion ${fromOid(clientProgress._id)}`);
                         continue;
                     }
-                    clientProgress.Delta = normalizeInvasionScore(clientProgress.Delta);
+                    // Delta is signed: a defender-side completion is reported as -1.
+                    clientProgress.Delta = normalizeInvasionDelta(clientProgress.Delta);
                     clientProgress.AttackerScore = normalizeInvasionScore(clientProgress.AttackerScore);
                     clientProgress.DefenderScore = normalizeInvasionScore(clientProgress.DefenderScore);
                     if (inventory.finishInvasionsInOneMission) {
