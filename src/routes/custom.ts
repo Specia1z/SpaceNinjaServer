@@ -109,6 +109,7 @@ import {
 import { getCurrencyGrantStatsController } from "../controllers/custom/currencyGrantStatsController.ts";
 import { clientConfigController } from "../controllers/custom/clientConfigController.ts";
 import { featureManifestController, featurePackageController } from "../controllers/custom/featurePackageController.ts";
+import { launcherAssetController, launcherManifestController } from "../controllers/custom/launcherController.ts";
 
 const customRouter = express.Router();
 
@@ -157,6 +158,8 @@ customRouter.use(
 customRouter.get("/tunables.json", tunablesController);
 customRouter.get("/featureManifest.json", featureManifestController);
 customRouter.get("/featurePackages/:featureId/:version", featurePackageController);
+customRouter.get("/launcher/manifest.json", launcherManifestController);
+customRouter.get("/launcher/assets/:assetName", launcherAssetController);
 customRouter.get("/clientConfig.json", clientConfigController);
 customRouter.get("/equipmentFeatures", equipmentFeaturesController);
 customRouter.get("/export", exportController);
