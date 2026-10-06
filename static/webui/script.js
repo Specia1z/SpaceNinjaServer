@@ -195,7 +195,8 @@ function refreshServerConfig() {
         single.getCurrentPath() == "/webui/account-rates" ||
         single.getCurrentPath() == "/webui/reward-stats" ||
         single.getCurrentPath() == "/webui/metadata-patches" ||
-        single.getCurrentPath() == "/webui/bootstrapper-version"
+        single.getCurrentPath() == "/webui/bootstrapper-version" ||
+        single.getCurrentPath() == "/webui/client-config"
     ) {
         single.loadRoute(single.getCurrentPath());
     }
@@ -428,7 +429,7 @@ function updateTitle() {
     if (route) {
         const tag = route.elm.getAttribute("data-title-tag");
         if (tag) {
-            document.querySelector("title").textContent = loc(tag) + " | OpenWF WebUI";
+            document.querySelector("title").textContent = loc(tag) + " | PlayWF WebUI";
         }
     }
 }

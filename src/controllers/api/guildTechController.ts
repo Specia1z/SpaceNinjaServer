@@ -157,7 +157,7 @@ export const guildTechController: RequestHandler = async (req, res) => {
     } else if (data.Action == "Contribute") {
         if (
             ("guildId" in req.query && (req.query.guildId as string) == "000000000000000000000000") ||
-            (data.RecipeType && isPersonalResearch(data.RecipeType)) // For U28: https://onlyg.it/OpenWF/SpaceNinjaServer/issues/4312
+            (data.RecipeType && isPersonalResearch(data.RecipeType)) // For U28: https://onlyg.it/PlayWF/SpaceNinjaServer/issues/4312
         ) {
             const inventory = await getInventory2(
                 accountId,

@@ -677,7 +677,7 @@ export const getSortie = (day: number, buildVersion: number): ISortie => {
     const missionTypes = new Set();
 
     if (enemyFaction == "FC_INFESTATION") {
-        // MT_RETRIEVAL may not be chosen for infested enemies (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2907)
+        // MT_RETRIEVAL may not be chosen for infested enemies (https://onlyg.it/PlayWF/SpaceNinjaServer/issues/2907)
         missionTypes.add("MT_RETRIEVAL");
     }
 
@@ -2134,21 +2134,21 @@ export const getWorldState = (
     };
 
     worldState.Events.push({
-        Msg: "Join the OpenWF Discord!",
+        Msg: "Join the PlayWF Discord!",
         Messages: [
-            { LanguageCode: "fr", Message: "Rejoignez le Discord OpenWF!" },
-            { LanguageCode: "it", Message: "Unisciti al Discord di OpenWF!" },
-            { LanguageCode: "de", Message: "Trete dem OpenWF Discord bei!" },
-            { LanguageCode: "es", Message: "Únete al Discord de OpenWF!" },
-            { LanguageCode: "pt", Message: "Junte-se ao Discord do OpenWF!" },
-            { LanguageCode: "ru", Message: "Присоединяйтесь к OpenWF Discord!" },
-            { LanguageCode: "pl", Message: "Dołącz do Discord OpenWF!" },
-            { LanguageCode: "uk", Message: "Приєднуйтесь до OpenWF Discord!" },
-            { LanguageCode: "tr", Message: "OpenWF Discord'a katıl!" },
-            { LanguageCode: "ja", Message: "OpenWFのDiscordに参加しよう！" },
-            { LanguageCode: "zh", Message: "加入OpenWF Discord!" },
-            { LanguageCode: "ko", Message: "OpenWF Discord에 가입하세요!" },
-            { LanguageCode: "tc", Message: "加入OpenWF Discord!" }
+            { LanguageCode: "fr", Message: "Rejoignez le Discord PlayWF!" },
+            { LanguageCode: "it", Message: "Unisciti al Discord di PlayWF!" },
+            { LanguageCode: "de", Message: "Trete dem PlayWF Discord bei!" },
+            { LanguageCode: "es", Message: "Únete al Discord de PlayWF!" },
+            { LanguageCode: "pt", Message: "Junte-se ao Discord do PlayWF!" },
+            { LanguageCode: "ru", Message: "Присоединяйтесь к PlayWF Discord!" },
+            { LanguageCode: "pl", Message: "Dołącz do Discord PlayWF!" },
+            { LanguageCode: "uk", Message: "Приєднуйтесь до PlayWF Discord!" },
+            { LanguageCode: "tr", Message: "PlayWF Discord'a katıl!" },
+            { LanguageCode: "ja", Message: "PlayWFのDiscordに参加しよう！" },
+            { LanguageCode: "zh", Message: "加入PlayWF Discord!" },
+            { LanguageCode: "ko", Message: "PlayWF Discord에 가입하세요!" },
+            { LanguageCode: "tc", Message: "加入PlayWF Discord!" }
         ],
         Prop: "https://discord.gg/PNNZ3asUuY",
         Icon: "/Lotus/Interface/Icons/DiscordIconNoBacker.png"
@@ -3772,7 +3772,7 @@ export const getWorldState = (
         const activation = config.worldState?.thermiaFracturesOverride ? 1740416400000 : getSortieTime(activeStartDay);
         const expiry = config.worldState?.thermiaFracturesOverride ? 2000000000000 : getSortieTime(activeStartDay + 14);
 
-        // If we push it, the game may show the event even tho it's not activated yet (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2721)
+        // If we push it, the game may show the event even tho it's not activated yet (https://onlyg.it/PlayWF/SpaceNinjaServer/issues/2721)
         if (timeMs >= activation) {
             worldState.Goals.push({
                 _id: toOid2("5c7cb0d00000000000000000", buildVersion),

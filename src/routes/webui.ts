@@ -55,6 +55,8 @@ webuiRouter.get("/webui/anti-cheat", virtualRouteController);
 webuiRouter.get("/webui/metadata-patches", virtualRouteController);
 webuiRouter.get("/webui/account-rates", virtualRouteController);
 webuiRouter.get("/webui/player-presence", virtualRouteController);
+webuiRouter.get("/webui/bootstrapper-version", virtualRouteController);
+webuiRouter.get("/webui/client-config", virtualRouteController);
 
 // Serve static files
 webuiRouter.use("/webui", express.static(path.join(baseDir, "static/webui")));

@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-SpaceNinjaServer 是基于 [OpenWF SpaceNinjaServer](https://onlyg.it/OpenWF/SpaceNinjaServer) 的独立二次开发版本，由 [Specia1z](https://github.com/Specia1z) 维护。项目用于私有服务器、兼容性研究、软件保存与开发测试，并非 Digital Extremes 的官方服务。
+SpaceNinjaServer 是基于 [PlayWF SpaceNinjaServer](https://onlyg.it/PlayWF/SpaceNinjaServer) 的独立二次开发版本，由 [Specia1z](https://github.com/Specia1z) 维护。项目用于私有服务器、兼容性研究、软件保存与开发测试，并非 Digital Extremes 的官方服务。
 
 ## 重要声明
 

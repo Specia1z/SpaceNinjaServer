@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en" data-bs-theme="dark">
 <head>
-    <title>OpenWF WebUI</title>
+    <title>PlayWF WebUI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="/webui/libs/bootstrap.min.css" />
     <link rel="stylesheet" href="/webui/style.css" />
@@ -12,7 +12,7 @@
             <button class="navbar-toggler d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Toggle sidebar">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="navbar-brand">OpenWF WebUI</a>
+            <a class="navbar-brand">PlayWF WebUI</a>
             <div class="ms-auto nav-item dropdown">
                 <button id="active-lang-name" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"></button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -52,7 +52,7 @@
     <div class="container pt-3 pb-3" id="main-view">
         <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="sidebarLabel">OpenWF WebUI</h5>
+                <h5 class="offcanvas-title" id="sidebarLabel">PlayWF WebUI</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
@@ -102,6 +102,9 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/webui/bootstrapper-version" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_bootstrapperVersion"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/client-config" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Client Configuration</a>
                         </li>
                     </ul>
                 </div>
@@ -3021,6 +3024,67 @@
                     </section>
                 </div>
             </div>
+            <div data-route="/webui/client-config" data-title-tag="navbar_clientConfig">
+                <div class="d-none admin-hide">
+                    <p>Administrator access is required to edit the client configuration.</p>
+                </div>
+                <div class="d-none admin-show">
+                    <h3 class="mb-2">Client Configuration</h3>
+                    <p class="text-body-secondary">These values are served to new PlayWF clients. They are not stored in the game directory. Changes apply when the client starts again.</p>
+                    <section class="config-form">
+                        <div class="row g-3">
+                            <div class="col-lg-6">
+                                <div class="card h-100">
+                                    <h5 class="card-header">Server Connection</h5>
+                                    <div class="card-body">
+                                        <form class="mb-3" onsubmit="doSaveConfigString('client.server_host'); return false;"><label class="form-label" for="client.server_host">Server host</label><div class="input-group"><input class="form-control" id="client.server_host" type="text" maxlength="255" /><button class="btn btn-primary" type="submit">Save</button></div></form>
+                                        <form class="mb-3" onsubmit="doSaveConfigInt('client.http_port'); return false;"><label class="form-label" for="client.http_port">HTTP port</label><div class="input-group"><input class="form-control" id="client.http_port" type="number" min="1" max="65535" /><button class="btn btn-primary" type="submit">Save</button></div></form>
+                                        <form class="mb-3" onsubmit="doSaveConfigInt('client.https_port'); return false;"><label class="form-label" for="client.https_port">HTTPS port</label><div class="input-group"><input class="form-control" id="client.https_port" type="number" min="1" max="65535" /><button class="btn btn-primary" type="submit">Save</button></div></form>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.secure_connections" /><label class="form-check-label" for="client.secure_connections">Use HTTPS and certificate validation</label></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card h-100">
+                                    <h5 class="card-header">Language and Display</h5>
+                                    <div class="card-body">
+                                        <form class="mb-3" onsubmit="doSaveConfigString('client.language'); return false;"><label class="form-label" for="client.language">Language</label><div class="input-group"><input class="form-control" id="client.language" type="text" maxlength="16" /><button class="btn btn-primary" type="submit">Save</button></div></form>
+                                        <form class="mb-3" onsubmit="doSaveConfigString('client.fallback_language'); return false;"><label class="form-label" for="client.fallback_language">Fallback language</label><div class="input-group"><input class="form-control" id="client.fallback_language" type="text" maxlength="16" /><button class="btn btn-primary" type="submit">Save</button></div></form>
+                                        <form class="mb-3" onsubmit="doSaveConfigInt('client.fallback_windowMode'); return false;"><label class="form-label" for="client.fallback_windowMode">Window mode</label><div class="input-group"><input class="form-control" id="client.fallback_windowMode" type="number" min="-1" max="10" /><button class="btn btn-primary" type="submit">Save</button></div></form>
+                                        <form onsubmit="doSaveConfigFloat('client.fov_override'); return false;"><label class="form-label" for="client.fov_override">FOV override</label><div class="input-group"><input class="form-control" id="client.fov_override" type="number" min="0" max="360" step="0.1" /><button class="btn btn-primary" type="submit">Save</button></div></form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <h5 class="card-header">Gameplay Patches</h5>
+                                    <div class="card-body">
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.high_damage_numbers_patch" /><label class="form-check-label" for="client.high_damage_numbers_patch">High damage numbers</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.skip_mission_start_timer" /><label class="form-check-label" for="client.skip_mission_start_timer">Skip mission start timer</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.disable_profanity_filter" /><label class="form-check-label" for="client.disable_profanity_filter">Disable profanity filter</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.pause_always_stops_time" /><label class="form-check-label" for="client.pause_always_stops_time">Pause always stops time</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.disable_firewall_prompt" /><label class="form-check-label" for="client.disable_firewall_prompt">Disable firewall prompt</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.logout_on_request_failure" /><label class="form-check-label" for="client.logout_on_request_failure">Logout on request failure</label></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card">
+                                    <h5 class="card-header">Diagnostics and Overlay</h5>
+                                    <div class="card-body">
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.ee_log_in_console" /><label class="form-check-label" for="client.ee_log_in_console">Log game messages in console</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.client_http_logging" /><label class="form-check-label" for="client.client_http_logging">Log client HTTP requests</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.disable_overlay" /><label class="form-check-label" for="client.disable_overlay">Disable overlay</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.overlay_compatibility_mode" /><label class="form-check-label" for="client.overlay_compatibility_mode">Overlay compatibility mode</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.keep_console_open" /><label class="form-check-label" for="client.keep_console_open">Keep console open</label></div>
+                                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="client.alternative_loading" /><label class="form-check-label" for="client.alternative_loading">Alternative loading</label></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </div>
         <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     </div>
@@ -3099,6 +3163,7 @@
     <script src="/webui/admin/metadata-api.js"></script>
     <script src="/webui/admin/metadata-page.js"></script>
     <script src="/webui/admin/bootstrapper-version-page.js"></script>
+    <script src="/webui/admin/client-config-page.js"></script>
     <script src="/webui/admin/admin-data-api.js"></script>
     <script src="/webui/admin/admin-data-page.js"></script>
     <script src="/webui/admin/store-price-api.js"></script>

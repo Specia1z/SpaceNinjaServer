@@ -76,6 +76,40 @@ export interface IMetadataPatchConfig {
     operations?: string[];
 }
 
+/** Public defaults consumed by the PlayWF client before account login. */
+export interface IClientConfig {
+    fallback_language?: string;
+    fallback_languageVO?: string;
+    fallback_graphicsDriver?: string;
+    fallback_windowMode?: number;
+    fallback_cluster?: string;
+    language?: string;
+    server_host?: string;
+    http_port?: number;
+    https_port?: number;
+    secure_connections?: boolean;
+    high_damage_numbers_patch?: boolean;
+    skip_mission_start_timer?: boolean;
+    disable_profanity_filter?: boolean;
+    logout_on_request_failure?: boolean;
+    fov_override?: number;
+    simulacrum_blacklisted?: boolean;
+    simulacrum_whitelisted?: boolean;
+    pause_always_stops_time?: boolean;
+    disable_firewall_prompt?: boolean;
+    ee_log_in_console?: boolean;
+    alternative_loading?: boolean;
+    save_all_metadata?: boolean;
+    write_all_metadata_reads_to_console?: boolean;
+    write_all_metadata_reads_to_ee_log?: boolean;
+    write_patched_metadata_reads_to_console?: boolean;
+    write_patched_metadata_reads_to_ee_log?: boolean;
+    client_http_logging?: boolean;
+    disable_overlay?: boolean;
+    overlay_compatibility_mode?: boolean;
+    keep_console_open?: boolean;
+}
+
 export interface IAccountDropMultiplier {
     /** Per-account pickup amount on modern clients; final-settlement fallback for legacy clients. */
     resourceMultiplier?: number;
@@ -255,6 +289,7 @@ export interface IConfig {
         maxClientItemCountPerReport?: number;
     };
     webui?: IWebuiConfig;
+    client?: IClientConfig;
     unfaithfulBugFixes?: {
         ignore1999LastRegionPlayed?: boolean;
         fixXtraCheeseTimer?: boolean;
@@ -520,6 +555,63 @@ export const validateWorldStateBoostConfig = (id: string, value: unknown): strin
     if (value === undefined || value === null || value === "") return undefined;
     if (!isValidIsoDateTime(value)) {
         return `${id} must be an ISO 8601 date-time with a timezone`;
+    }
+    return undefined;
+};
+
+const clientConfigTypes: Record<string, "boolean" | "number" | "string"> = {
+    "client.fallback_language": "string",
+    "client.fallback_languageVO": "string",
+    "client.fallback_graphicsDriver": "string",
+    "client.fallback_windowMode": "number",
+    "client.fallback_cluster": "string",
+    "client.language": "string",
+    "client.server_host": "string",
+    "client.http_port": "number",
+    "client.https_port": "number",
+    "client.secure_connections": "boolean",
+    "client.high_damage_numbers_patch": "boolean",
+    "client.skip_mission_start_timer": "boolean",
+    "client.disable_profanity_filter": "boolean",
+    "client.logout_on_request_failure": "boolean",
+    "client.fov_override": "number",
+    "client.simulacrum_blacklisted": "boolean",
+    "client.simulacrum_whitelisted": "boolean",
+    "client.pause_always_stops_time": "boolean",
+    "client.disable_firewall_prompt": "boolean",
+    "client.ee_log_in_console": "boolean",
+    "client.alternative_loading": "boolean",
+    "client.save_all_metadata": "boolean",
+    "client.write_all_metadata_reads_to_console": "boolean",
+    "client.write_all_metadata_reads_to_ee_log": "boolean",
+    "client.write_patched_metadata_reads_to_console": "boolean",
+    "client.write_patched_metadata_reads_to_ee_log": "boolean",
+    "client.client_http_logging": "boolean",
+    "client.disable_overlay": "boolean",
+    "client.overlay_compatibility_mode": "boolean",
+    "client.keep_console_open": "boolean"
+};
+
+export const validateClientConfig = (id: string, value: unknown): string | undefined => {
+    if (!(id in clientConfigTypes))
+        return id.startsWith("client.") ? `${id} is not a supported client setting` : undefined;
+    const type = clientConfigTypes[id];
+    if (value === null || typeof value !== type || (type === "number" && !Number.isFinite(value as number))) {
+        return `${id} must be a ${type}`;
+    }
+    if (
+        (id === "client.http_port" || id === "client.https_port") &&
+        (!Number.isInteger(value as number) || (value as number) < 1 || (value as number) > 65535)
+    ) {
+        return `${id} must be an integer from 1 to 65535`;
+    }
+    if (id === "client.fov_override" && ((value as number) < 0 || (value as number) > 360))
+        return `${id} must be from 0 to 360`;
+    if (
+        id === "client.fallback_windowMode" &&
+        (!Number.isInteger(value as number) || (value as number) < -1 || (value as number) > 10)
+    ) {
+        return `${id} must be an integer from -1 to 10`;
     }
     return undefined;
 };

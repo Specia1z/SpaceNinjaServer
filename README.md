@@ -2,7 +2,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-An independent second-development fork of [OpenWF SpaceNinjaServer](https://onlyg.it/OpenWF/SpaceNinjaServer), maintained by [Specia1z](https://github.com/Specia1z). It provides a self-hosted implementation of the web services used by Warframe clients and is intended for private servers, testing, preservation, and development.
+An independent second-development fork of [PlayWF SpaceNinjaServer](https://onlyg.it/PlayWF/SpaceNinjaServer), maintained by [Specia1z](https://github.com/Specia1z). It provides a self-hosted implementation of the web services used by Warframe clients and is intended for private servers, testing, preservation, and development.
 
 This fork keeps the upstream project and its attribution while maintaining its own development history and release direction. It is not affiliated with or endorsed by Digital Extremes.
 
@@ -41,7 +41,7 @@ npm run build
 npm start
 ```
 
-The server can also be run with Docker Compose. The included compose file starts SpaceNinjaServer together with MongoDB, a locally patched OpenWF IRC build, and the upstream Hub image. Configuration, logs, static data, and database files are stored under `docker-data/`.
+The server can also be run with Docker Compose. The included compose file starts SpaceNinjaServer together with MongoDB, a locally patched PlayWF IRC build, and the upstream Hub image. Configuration, logs, static data, and database files are stored under `docker-data/`.
 
 `warframe-public-export-plus` is bundled with the installation and Docker image, so the server can start without network access. `npm start`, `npm run dev`, `npm run raw`, and the self-contained release launchers check the official npm registry before loading server modules. By default they only report a newer version. Set `PUBLIC_EXPORT_AUTO_UPDATE=1` to download a compatible update in the same `0.6.x` series, verify its registry SHA-512 integrity and archive paths, and atomically replace only that package. A failed check or update falls back to the bundled snapshot. Cross-minor or major versions require a SpaceNinjaServer upgrade. Set `PUBLIC_EXPORT_CHECK_UPDATES=0` for fully offline startup. Slow links can override the default 120-second package download timeout with `PUBLIC_EXPORT_DOWNLOAD_TIMEOUT_MS`. Manual commands are also available: `npm run check-public-export` and `npm run update-public-export`.
 
@@ -146,7 +146,7 @@ Live source availability is not required for persisted local activity progress t
 
 ## Attribution and License
 
-This project is derived from the OpenWF SpaceNinjaServer project. See [LICENSE](LICENSE) for the applicable AGPLv3 license and Commons Clause condition. Source and project history from upstream remain acknowledged here for transparency.
+This project is derived from the PlayWF SpaceNinjaServer project. See [LICENSE](LICENSE) for the applicable AGPLv3 license and Commons Clause condition. Source and project history from upstream remain acknowledged here for transparency.
 
 ## Disclaimer
 

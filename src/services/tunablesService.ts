@@ -142,7 +142,7 @@ export const getTunablesForClient = (
         if (!allowed) {
             const title = config.tunables?.versionMismatchTitle?.trim();
             const message = config.tunables?.versionMismatchMessage?.trim();
-            tunables.client_version_popup_title = title || "OpenWF Bootstrapper";
+            tunables.client_version_popup_title = title || "PlayWF Bootstrapper";
             tunables.client_version_popup_message = (
                 message ||
                 "This client build is not supported by the server.\nExpected buildlab: |EXPECTED_BUILDLAB|\nFound buildlab: |FOUND_BUILDLAB|"

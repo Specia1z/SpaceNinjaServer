@@ -10,7 +10,7 @@ export const findSessionsController: RequestHandler = async (_req, res) => {
     const sessions = await getSession(req);
 
     if (!sessions.length && "id" in req) {
-        // (OpenWF-specific) Maybe NRS can tell us who the host of this session is...
+        // (PlayWF-specific) Maybe NRS can tell us who the host of this session is...
         logger.debug(`Unknown session id, asking NRS...`);
         try {
             for (const [nrsAddr, nrsPort] of getNrsAddresses()) {

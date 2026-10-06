@@ -4,7 +4,8 @@ import {
     config,
     getWorldStateBoostMultiplier,
     isWorldStateBoostActive,
-    validateWorldStateBoostConfig
+    validateWorldStateBoostConfig,
+    validateClientConfig
 } from "./configService.ts";
 
 void test("global world state boosts honor their shared expiry", () => {
@@ -34,4 +35,15 @@ void test("global world state boost expiry accepts only timezone-qualified date-
     assert.equal(validateWorldStateBoostConfig("worldState.boostExpiresAt", ""), undefined);
     assert.equal(validateWorldStateBoostConfig("worldState.boostExpiresAt", "2099-01-01T00:00Z"), undefined);
     assert.match(validateWorldStateBoostConfig("worldState.boostExpiresAt", "2099-01-01T00:00:00") ?? "", /ISO 8601/);
+});
+
+void test("client configuration validates supported types and ranges", () => {
+    assert.equal(validateClientConfig("client.server_host", "localhost"), undefined);
+    assert.equal(validateClientConfig("client.http_port", 8080), undefined);
+    assert.equal(validateClientConfig("client.fov_override", 90.5), undefined);
+    assert.match(validateClientConfig("client.http_port", 0) ?? "", /1 to 65535/);
+    assert.match(validateClientConfig("client.fallback_windowMode", 1.5) ?? "", /integer/);
+    assert.match(validateClientConfig("client.secure_connections", "true") ?? "", /boolean/);
+    assert.match(validateClientConfig("client.unknown", true) ?? "", /not a supported client setting/);
+    assert.equal(validateClientConfig("webui.enabled", false), undefined);
 });

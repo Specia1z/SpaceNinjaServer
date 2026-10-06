@@ -107,6 +107,8 @@ import {
     saveAccountRatesController
 } from "../controllers/custom/accountRatesController.ts";
 import { getCurrencyGrantStatsController } from "../controllers/custom/currencyGrantStatsController.ts";
+import { clientConfigController } from "../controllers/custom/clientConfigController.ts";
+import { featureManifestController, featurePackageController } from "../controllers/custom/featurePackageController.ts";
 
 const customRouter = express.Router();
 
@@ -153,6 +155,9 @@ customRouter.use(
 );
 
 customRouter.get("/tunables.json", tunablesController);
+customRouter.get("/featureManifest.json", featureManifestController);
+customRouter.get("/featurePackages/:featureId/:version", featurePackageController);
+customRouter.get("/clientConfig.json", clientConfigController);
 customRouter.get("/equipmentFeatures", equipmentFeaturesController);
 customRouter.get("/export", exportController);
 customRouter.get("/getItemLists", getItemListsController);

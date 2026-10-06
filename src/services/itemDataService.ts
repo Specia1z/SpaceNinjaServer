@@ -6183,7 +6183,7 @@ export const getUndiscountedPrice = (
     } else if (internalName in ExportBoosterPacks) {
         if (usePremium) price = ExportBoosterPacks[internalName].platinumCost;
     } else {
-        // https://onlyg.it/OpenWF/SpaceNinjaServer/issues/3941
+        // https://onlyg.it/PlayWF/SpaceNinjaServer/issues/3941
         if (internalName.endsWith("LeftArmor")) {
             internalName = internalName.substring(0, internalName.length - "LeftArmor".length) + "Armor";
         }

@@ -213,7 +213,7 @@ const createLoginResponse = (request: Request, account: IDatabaseAccountJson, bu
         // U12.4 and down
 
         // The NatHash is a 64 byte (128 hexit) value which was presumably used for NRS authentication.
-        // (OpenWF-specific) We can use this to smuggle custom data like the username to NRS.
+        // (PlayWF-specific) We can use this to smuggle custom data like the username to NRS.
         resp.NatHash = Array.from(new TextEncoder().encode("OWF1" + account.DisplayName))
             .map(byte => byte.toString(16).padStart(2, "0"))
             .join("")
@@ -301,7 +301,7 @@ const createLoginResponse = (request: Request, account: IDatabaseAccountJson, bu
     let raw = JSON.stringify(resp);
     if (
         clientMod &&
-        decodeURIComponent(clientMod).startsWith("OpenWF Bootstrapper v") &&
+        decodeURIComponent(clientMod).startsWith("PlayWF Bootstrapper v") &&
         version_compare(decodeURIComponent(clientMod).substring(21), "0.12.0") >= 0
     ) {
         raw +=

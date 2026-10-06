@@ -1,4 +1,4 @@
-// This is specific to the OpenWF Bootstrapper: https://openwf.io/bootstrapper-manual
+// This is specific to the PlayWF Bootstrapper: https://openwf.io/bootstrapper-manual
 export interface ITunables {
     prohibit_skip_mission_start_timer?: boolean;
     prohibit_disable_profanity_filter?: boolean;

@@ -176,8 +176,8 @@ export const inventoryController: RequestHandler = async (request, response) => 
         const { week } = getWorldStateTime();
         const currentSeason = getCalendarSeason(week);
         // We need to do the following to ensure the in-game calendar does not break:
-        getCalendarProgress(inventory, currentSeason); // Keep the CalendarProgress up-to-date (at least for the current year iteration) (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2364)
-        checkCalendarAutoAdvance(inventory, currentSeason); // Skip birthday events for characters if we do not have them unlocked yet (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2424)
+        getCalendarProgress(inventory, currentSeason); // Keep the CalendarProgress up-to-date (at least for the current year iteration) (https://onlyg.it/PlayWF/SpaceNinjaServer/issues/2364)
+        checkCalendarAutoAdvance(inventory, currentSeason); // Skip birthday events for characters if we do not have them unlocked yet (https://onlyg.it/PlayWF/SpaceNinjaServer/issues/2424)
 
         // also handle sending of kiss cinematic at year rollover
         if (
@@ -537,7 +537,7 @@ export const getInventoryResponse = async (
             inventoryResponse.PlayerLevel = inventory.spoofMasteryRank;
             if (!xpBasedLevelCapDisabled) {
                 // This client has not been patched to accept any mastery rank, need to fake the XP.
-                // Limiting this to MR 100 to avoid breakage: https://onlyg.it/OpenWF/SpaceNinjaServer/issues/4244
+                // Limiting this to MR 100 to avoid breakage: https://onlyg.it/PlayWF/SpaceNinjaServer/issues/4244
                 inventoryResponse.XPInfo = [];
                 let numFrames = getExpRequiredForMr(Math.min(inventory.spoofMasteryRank, 100)) / (30 * 200);
                 while (numFrames-- > 0) {

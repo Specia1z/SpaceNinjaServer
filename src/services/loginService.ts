@@ -151,7 +151,7 @@ export const getAccountForQuery = async (
         throw new Error("Request is missing accountId parameter");
     }
 
-    // Tokens are specific to OpenWF to avoid sending the nonce (which gives full account access) over insecure transports.
+    // Tokens are specific to PlayWF to avoid sending the nonce (which gives full account access) over insecure transports.
     if (query.token && acceptToken == query.ct) {
         const account = await Account.findById(query.accountId);
         if (!account || !account.Nonce) {

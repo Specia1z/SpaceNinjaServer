@@ -3,7 +3,8 @@ import {
     configIdToIndexable,
     inventoryAffectingConfigKeys,
     validateRegistrationRateLimitConfig,
-    validateWorldStateBoostConfig
+    validateWorldStateBoostConfig,
+    validateClientConfig
 } from "../../services/configService.ts";
 import { syncConfigWithDatabase } from "../../services/configWatcherService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
@@ -45,6 +46,11 @@ export const setConfigController: RequestHandler = async (req, res) => {
             const worldStateBoostError = validateWorldStateBoostConfig(id, value);
             if (worldStateBoostError) {
                 res.status(400).send(worldStateBoostError);
+                return;
+            }
+            const clientConfigError = validateClientConfig(id, value);
+            if (clientConfigError) {
+                res.status(400).send(clientConfigError);
                 return;
             }
             const playerPortalError = validatePlayerPolicyField(id, value);

@@ -173,7 +173,7 @@ export const addMissionInventoryUpdates = async (
         if (
             node &&
             node.miscItemFee &&
-            !inventoryUpdates.SortieId && // Entry is free for sortie missions (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/4183)
+            !inventoryUpdates.SortieId && // Entry is free for sortie missions (https://onlyg.it/PlayWF/SpaceNinjaServer/issues/4183)
             !inventory.noNodeEntryFees
         ) {
             addMiscItems(inventory, [
@@ -187,7 +187,7 @@ export const addMissionInventoryUpdates = async (
     if (
         inventoryUpdates.KeyToRemove &&
         !inventory.dontSubtractKeys &&
-        (inventoryUpdates.EndOfMatchUpload || !("EndOfMatchUpload" in inventoryUpdates)) // https://onlyg.it/OpenWF/SpaceNinjaServer/issues/3910
+        (inventoryUpdates.EndOfMatchUpload || !("EndOfMatchUpload" in inventoryUpdates)) // https://onlyg.it/PlayWF/SpaceNinjaServer/issues/3910
     ) {
         if (!inventoryUpdates.KeyOwner || inventory.accountOwnerId.equals(inventoryUpdates.KeyOwner)) {
             addLevelKeys(inventory, [
@@ -374,7 +374,7 @@ export const addMissionInventoryUpdates = async (
                 const miscItems: ITypeCount[] = [];
                 const recipes: ITypeCount[] = [];
                 // Some old versions puts Recipes into MiscItems, so we need to separate them out to add them to the correct place
-                // https://onlyg.it/OpenWF/SpaceNinjaServer/issues/4019
+                // https://onlyg.it/PlayWF/SpaceNinjaServer/issues/4019
                 for (const item of value) {
                     if (item.ItemType in ExportRecipes || item.ItemType in supplementalRecipes) {
                         recipes.push(item);
@@ -571,7 +571,7 @@ export const addMissionInventoryUpdates = async (
                     // U11 and below also don't initialize ItemCount since RawUpgrade doesn't exist in them
                     clientUpgrade.ItemCount ??= 1;
                     if (version_compare(buildLabel, gameToBuildVersion["18.18.0"]) < 0) {
-                        // Really old builds (tested U7-U8) do not have the UpgradeFingerprint set for unranked mod drops (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/3361)
+                        // Really old builds (tested U7-U8) do not have the UpgradeFingerprint set for unranked mod drops (https://onlyg.it/PlayWF/SpaceNinjaServer/issues/3361)
                         clientUpgrade.UpgradeFingerprint ||= "lvl=0|";
                         // Acquired Mods have a different UpgradeFingerprint format in pre-U18.18.0 builds, this converts them to the format the database expects
                         clientUpgrade.UpgradeFingerprint = convertFromLegacyFingerprint(
@@ -591,7 +591,7 @@ export const addMissionInventoryUpdates = async (
                             addMods(inventory, [
                                 {
                                     ItemType: clientUpgrade.ItemType,
-                                    ItemCount: Math.abs(clientUpgrade.ItemCount) // U12 seems to provide a negative quantity for mods picked up during missions (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/3863)
+                                    ItemCount: Math.abs(clientUpgrade.ItemCount) // U12 seems to provide a negative quantity for mods picked up during missions (https://onlyg.it/PlayWF/SpaceNinjaServer/issues/3863)
                                 }
                             ]);
                         } else {
@@ -1245,8 +1245,8 @@ export const addMissionRewards = async (
     }
 
     // ignoring tags not in ExportRegions, because it can just be garbage:
-    // - https://onlyg.it/OpenWF/SpaceNinjaServer/issues/1013
-    // - https://onlyg.it/OpenWF/SpaceNinjaServer/issues/1365
+    // - https://onlyg.it/PlayWF/SpaceNinjaServer/issues/1013
+    // - https://onlyg.it/PlayWF/SpaceNinjaServer/issues/1365
     if (missions) {
         const node = await getRegion(missions.Tag, buildLabel);
         if (node) {
@@ -1750,7 +1750,7 @@ export const addMissionRewards = async (
                 }
 
                 if (si.DropTable == "/Lotus/Types/DropTables/ContainerDropTables/VoidVaultMissionRewardsDropTable") {
-                    // Consume netracells search pulse; only when the container reward was picked up. Discussed in https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2673
+                    // Consume netracells search pulse; only when the container reward was picked up. Discussed in https://onlyg.it/PlayWF/SpaceNinjaServer/issues/2673
                     updateEntratiVault(inventory);
                     inventory.EntratiVaultCountLastPeriod! += 1;
                 }
@@ -1962,7 +1962,7 @@ async function getRandomMissionDrops(
             ];
         } else if (
             RewardInfo.T == 70 ||
-            RewardInfo.T == 6 // https://onlyg.it/OpenWF/SpaceNinjaServer/issues/2526
+            RewardInfo.T == 6 // https://onlyg.it/PlayWF/SpaceNinjaServer/issues/2526
         ) {
             // Orowyrm chest, gives 10 Pathos Clamps, or 15 on Steel Path.
             drops.push({
