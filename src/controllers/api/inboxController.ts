@@ -26,8 +26,8 @@ import {
     updateCurrency
 } from "../../services/inventoryService.ts";
 import { logger } from "../../utils/logger.ts";
-import { ExportFlavour } from "warframe-public-export-plus";
 import { handleStoreItemAcquisition } from "../../services/purchaseService.ts";
+import { getAvatarIcon } from "../../services/avatarService.ts";
 import { fromStoreItem, isStoreItem } from "../../services/itemDataService.ts";
 import type { IOid } from "../../types/commonTypes.ts";
 import { unixTimesInMs } from "../../constants/timeConstants.ts";
@@ -123,7 +123,7 @@ export const inboxController: RequestHandler = async (req, res) => {
                                     }
                                 ],
                                 sub: "/Lotus/Language/Menu/GiftReceivedConfirmationSubject",
-                                icon: ExportFlavour[getEffectiveAvatarImageType(inventory)].icon,
+                                icon: getAvatarIcon(getEffectiveAvatarImageType(inventory)),
                                 highPriority: true
                             }
                         ]);

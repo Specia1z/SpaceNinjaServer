@@ -2,11 +2,11 @@ import { getJSONfromString, regexEscape } from "../../helpers/stringHelpers.ts";
 import { Alliance, AllianceMember, Guild, GuildMember } from "../../models/guildModel.ts";
 import { createMessage } from "../../services/inboxService.ts";
 import { getEffectiveAvatarImageType, getInventory } from "../../services/inventoryService.ts";
+import { getAvatarIcon } from "../../services/avatarService.ts";
 import { getAccountForRequest, getSuffixedName } from "../../services/loginService.ts";
 import { eGuildPermission } from "../../types/guildTypes.ts";
 import { logger } from "../../utils/logger.ts";
 import type { RequestHandler } from "express";
-import { ExportFlavour } from "warframe-public-export-plus";
 
 export const addToAllianceController: RequestHandler = async (req, res) => {
     // Check requester is a warlord in their guild
@@ -95,7 +95,7 @@ export const addToAllianceController: RequestHandler = async (req, res) => {
                 }
             ],
             sub: "/Lotus/Language/Menu/Mailbox_AllianceInvite_Title",
-            icon: ExportFlavour[getEffectiveAvatarImageType(senderInventory)].icon,
+            icon: getAvatarIcon(getEffectiveAvatarImageType(senderInventory)),
             contextInfo: alliance._id.toString(),
             highPriority: true,
             acceptAction: "ALLIANCE_INVITE",

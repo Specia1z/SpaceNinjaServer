@@ -5,6 +5,7 @@ import { addInventoryDataToFriendInfo, areFriends } from "../../services/friendS
 import { hasGuildPermission } from "../../services/guildService.ts";
 import { createMessage } from "../../services/inboxService.ts";
 import { getEffectiveAvatarImageType, getInventory } from "../../services/inventoryService.ts";
+import { getAvatarIcon } from "../../services/avatarService.ts";
 import {
     getAccountForRequest,
     getAccountIdForRequest,
@@ -18,7 +19,6 @@ import type { IGuildMemberClient } from "../../types/guildTypes.ts";
 import { eGuildPermission } from "../../types/guildTypes.ts";
 import { logger } from "../../utils/logger.ts";
 import type { Request, Response, RequestHandler } from "express";
-import { ExportFlavour } from "warframe-public-export-plus";
 
 export const addToGuildGetController: RequestHandler = async (req, res) => {
     await inviteToGuild(req, res, req.query.userName as string);
@@ -116,7 +116,7 @@ const inviteToGuild = async (req: Request, res: Response, userName: string): Pro
                 }
             ],
             sub: "/Lotus/Language/Menu/Mailbox_ClanInvite_Title",
-            icon: ExportFlavour[getEffectiveAvatarImageType(senderInventory)].icon,
+            icon: getAvatarIcon(getEffectiveAvatarImageType(senderInventory)),
             contextInfo: guildId.toString(),
             highPriority: true,
             acceptAction: "GUILD_INVITE",

@@ -15,9 +15,9 @@ import type { IOid } from "../../types/commonTypes.ts";
 import type { IPurchaseParams, IPurchaseResponse } from "../../types/purchaseTypes.ts";
 import { ePurchaseSource } from "../../types/purchaseTypes.ts";
 import type { RequestHandler } from "express";
-import { ExportFlavour } from "warframe-public-export-plus";
 import { fromStoreItem, getBundle, getPrice, isBundle } from "../../services/itemDataService.ts";
 import { getStoreItemGiftBonus, isStoreItemGiftable } from "../../services/storeOverrideService.ts";
+import { getAvatarIcon } from "../../services/avatarService.ts";
 
 const checkPurchaseParams = (params: IPurchaseParams): boolean => {
     switch (params.Source) {
@@ -151,7 +151,7 @@ export const giftingController: RequestHandler = async (req, res) => {
                 }
             ],
             sub: "/Lotus/Language/Menu/GiftReceivedSubject",
-            icon: ExportFlavour[getEffectiveAvatarImageType(senderInventory)].icon,
+            icon: getAvatarIcon(getEffectiveAvatarImageType(senderInventory)),
             gifts: [
                 {
                     GiftType: data.PurchaseParams.StoreItem
