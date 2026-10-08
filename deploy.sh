@@ -75,7 +75,14 @@ echo "==> Pulling images"
 $COMPOSE pull
 
 echo "==> Starting the stack"
-$COMPOSE up -d --build
+UP_ARGS=(--force-recreate)
+if [ -f Dockerfile ] && [ -f docker-entrypoint.sh ] && [ -f package.json ] && [ -f package-lock.json ]; then
+    echo "==> Full source checkout detected; building SpaceNinjaServer"
+    UP_ARGS+=(--build)
+else
+    echo "==> Source checkout is incomplete; using the pulled SpaceNinjaServer image"
+fi
+$COMPOSE up -d "${UP_ARGS[@]}"
 
 echo
 echo "Done. Useful commands:"

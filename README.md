@@ -56,14 +56,14 @@ mkdir -p /opt/spaceninjaserver && cd /opt/spaceninjaserver
 curl -fsSL https://raw.githubusercontent.com/Specia1z/SpaceNinjaServer/main/deploy.sh | bash
 ```
 
-When the repository is already checked out, the same script uses the local compose file and is equivalent to:
+For an image-only deployment, the script uses the published SpaceNinjaServer image and is equivalent to:
 
 ```bash
 docker compose pull
-docker compose up -d --build
+docker compose up -d
 ```
 
-To build the checked-out source instead of using the published Web image:
+To build a complete checked-out source tree instead of using the published Web image:
 
 ```bash
 docker compose up -d --build

@@ -159,14 +159,14 @@ mkdir -p /opt/spaceninjaserver && cd /opt/spaceninjaserver
 curl -fsSL https://raw.githubusercontent.com/Specia1z/SpaceNinjaServer/main/deploy.sh | bash
 ```
 
-若已经 clone 了仓库，脚本会直接使用仓库内的 compose 文件，等价于：
+对于只有部署文件的镜像部署，脚本会使用已拉取的 SpaceNinjaServer 镜像，等价于：
 
 ```bash
 docker compose pull
-docker compose up -d --build
+docker compose up -d
 ```
 
-如果需要直接构建当前检出的源码，而不是使用已发布的 Web 镜像：
+如果需要构建完整检出的源码，而不是使用已发布的 Web 镜像：
 
 ```bash
 docker compose up -d --build
