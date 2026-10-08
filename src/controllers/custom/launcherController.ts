@@ -1,11 +1,11 @@
 import type { RequestHandler } from "express";
 
-import { readLauncherReleaseManifest, resolveLauncherAsset } from "../../services/launcherReleaseService.ts";
+import { getSignedLauncherReleaseManifest, resolveLauncherAsset } from "../../services/launcherReleaseService.ts";
 
 export const launcherManifestController: RequestHandler = (_req, res) => {
     try {
         res.setHeader("Cache-Control", "no-cache");
-        res.json(readLauncherReleaseManifest());
+        res.json(getSignedLauncherReleaseManifest());
     } catch {
         res.status(503).send("Launcher release unavailable");
     }

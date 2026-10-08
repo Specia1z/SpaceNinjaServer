@@ -181,6 +181,21 @@ Compose 默认将宿主机 TCP `8800`、`8801` 映射到容器内 Web 端口 `80
 - `docker-data/logs`：服务器日志。
 - `docker-data/static-data`：运行时静态数据。
 
+要启用 PlayWF 清单签名，请在 `docker-compose.yml` 旁边创建 `.env`，并将匹配的私钥放在
+`secrets/playwf-manifest-private.pem`：
+
+```text
+PLAYWF_MANIFEST_SIGNING_KEY_PATH=/run/secrets/playwf-manifest-private.pem
+PLAYWF_MANIFEST_SIGNING_KEY_ID=playwf-release-2026-01
+```
+
+Compose 会将可选的 `.env` 注入服务容器，并以只读方式挂载私钥。私钥必须与 PlayWF 客户端
+内置的公钥匹配；生成新密钥后，需要先重新构建并分发客户端。修改私钥或 `.env` 后重新创建容器：
+
+```bash
+docker compose up -d --build --force-recreate
+```
+
 修改配置后重启服务：
 
 ```bash
@@ -236,6 +251,21 @@ GitHub Releases 提供 Windows x64、Linux x64/ARM64、macOS Intel 和 macOS App
 - 对公网开放前，修改默认配置并限制 WebUI 管理权限。
 - 使用可信证书和反向代理，不要将仓库内的开发证书视为生产证书。
 - 限制 MongoDB 监听范围，不要把未认证的数据库端口暴露到公网。
+
+## PlayWF 清单签名
+
+Launcher release manifest 和 feature-package manifest 在返回客户端前会使用
+RSA-PSS/SHA-256 签名。私钥必须放在仓库之外，并在启动服务前配置：
+
+```text
+PLAYWF_MANIFEST_SIGNING_KEY_PATH=C:\secrets\playwf-manifest-private.pem
+PLAYWF_MANIFEST_SIGNING_KEY_ID=playwf-release-2026-01
+```
+
+如果部署系统直接提供 PEM 文本，也可以使用
+`PLAYWF_MANIFEST_SIGNING_KEY_PEM` 替代路径。未配置私钥时，清单接口返回
+`503`，避免发布未签名清单。匹配的公钥编译在 PlayWF 客户端中；轮换密钥时，
+必须先更新客户端公钥并重建，再切换服务端私钥。
 - 定期备份 MongoDB 与配置文件，并验证备份能够恢复。
 - 实时同步和第三方接口应设置合理的出站访问策略、监控与故障处理。
 

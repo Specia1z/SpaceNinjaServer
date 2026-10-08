@@ -4,12 +4,15 @@ import path from "node:path";
 
 import { repoDir } from "../helpers/pathHelper.ts";
 import type { IFeaturePackage, IFeaturePackageManifest } from "../types/featurePackageTypes.ts";
+import { signManifest, type IManifestSignature } from "./manifestSignatureService.ts";
 
 const featurePackageRoot = path.join(repoDir, "static", "features");
 const manifestPath = path.join(featurePackageRoot, "manifest.json");
 const featureIdPattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const featureVersionPattern = /^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$/;
 const sha256Pattern = /^[a-f0-9]{64}$/;
+
+export type IFeaturePackageManifestResponse = IFeaturePackageManifest & { signature: IManifestSignature };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value == "object" && value != null && !Array.isArray(value);
@@ -94,6 +97,9 @@ export const readFeaturePackageManifest = (): IFeaturePackageManifest => {
     }
     return { schema: 1, features };
 };
+
+export const getSignedFeaturePackageManifest = (): IFeaturePackageManifestResponse =>
+    signManifest(readFeaturePackageManifest());
 
 export const verifyFeaturePackage = (feature: IFeaturePackage, filePath: string): boolean => {
     const stat = fs.statSync(filePath);

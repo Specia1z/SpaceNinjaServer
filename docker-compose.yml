@@ -4,11 +4,16 @@ services:
         build:
             context: .
 
+        env_file:
+            - path: .env
+              required: false
+
         volumes:
             - ./docker-data/conf:/app/conf
             - ./docker-data/static-data:/app/static/data
             - ./docker-data/logs:/app/logs
             - ./.well-known:/app/.well-known
+            - ./secrets/playwf-manifest-private.pem:/run/secrets/playwf-manifest-private.pem:ro
         ports:
             # The lefthand value determines the port you actually connect to. Within the container, SpaceNinjaServer will always use 80 and 443 (righthand values).
             - 8800:80

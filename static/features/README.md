@@ -1,6 +1,8 @@
 # PlayWF Feature Packages
 
 `manifest.json` declares the `.pwfpkg` files that the Bootstrapper may fetch.
+The server adds an RSA-PSS/SHA-256 signature before returning the manifest to a
+client; the local source file does not contain the generated signature.
 Package files must be placed below this directory and must match the declared
 size and SHA-256 digest.
 

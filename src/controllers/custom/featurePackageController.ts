@@ -1,10 +1,14 @@
 import type { RequestHandler } from "express";
 
-import { readFeaturePackageManifest, resolveFeaturePackage } from "../../services/featurePackageService.ts";
+import { getSignedFeaturePackageManifest, resolveFeaturePackage } from "../../services/featurePackageService.ts";
 
 export const featureManifestController: RequestHandler = (_req, res) => {
-    res.setHeader("Cache-Control", "no-cache");
-    res.json(readFeaturePackageManifest());
+    try {
+        res.setHeader("Cache-Control", "no-cache");
+        res.json(getSignedFeaturePackageManifest());
+    } catch {
+        res.status(503).send("Feature manifest unavailable");
+    }
 };
 
 export const featurePackageController: RequestHandler = (req, res) => {

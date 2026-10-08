@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { repoDir } from "../helpers/pathHelper.ts";
+import { signManifest, type IManifestSignature } from "./manifestSignatureService.ts";
 
 const launcherRoot = path.join(repoDir, "static", "launcher");
 const launcherManifestPath = path.join(launcherRoot, "manifest.json");
@@ -24,6 +25,8 @@ export interface ILauncherReleaseManifest {
     assets: ILauncherReleaseAsset[];
 }
 
+export type ILauncherReleaseManifestResponse = ILauncherReleaseManifest & { signature: IManifestSignature };
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value == "object" && value != null && !Array.isArray(value);
 
@@ -42,7 +45,13 @@ const isLauncherAssetUrl = (value: unknown): value is string => {
 };
 
 const parseManifest = (value: unknown): ILauncherReleaseManifest => {
-    if (!isRecord(value) || value.schema !== 1 || typeof value.tag !== "string" || value.tag.length == 0 || value.tag.length > 128) {
+    if (
+        !isRecord(value) ||
+        value.schema !== 1 ||
+        typeof value.tag !== "string" ||
+        value.tag.length == 0 ||
+        value.tag.length > 128
+    ) {
         throw new Error("Invalid launcher release manifest");
     }
     if (!isStringArray(value.supported_build_versions) || !isStringArray(value.supported_game_versions)) {
@@ -92,7 +101,8 @@ const getAssetPath = (assetName: string): string => {
     if (!assetNamePattern.test(assetName) || assetName.includes("..")) throw new Error("Invalid launcher asset name");
     const root = path.resolve(launcherRoot);
     const filePath = path.resolve(root, assetName);
-    if (filePath != root && !filePath.startsWith(root + path.sep)) throw new Error("Launcher asset path escapes its root");
+    if (filePath != root && !filePath.startsWith(root + path.sep))
+        throw new Error("Launcher asset path escapes its root");
     return filePath;
 };
 
@@ -114,9 +124,16 @@ export const readLauncherReleaseManifest = (): ILauncherReleaseManifest => {
     return manifest;
 };
 
-export const resolveLauncherAsset = (assetName: string): { asset: ILauncherReleaseAsset; filePath: string } | undefined => {
+export const getSignedLauncherReleaseManifest = (): ILauncherReleaseManifestResponse =>
+    signManifest(readLauncherReleaseManifest());
+
+export const resolveLauncherAsset = (
+    assetName: string
+): { asset: ILauncherReleaseAsset; filePath: string } | undefined => {
     const manifest = readLauncherReleaseManifest();
-    const asset = manifest.assets.find(item => item.name == assetName && item.url == `/custom/launcher/assets/${item.name}`);
+    const asset = manifest.assets.find(
+        item => item.name == assetName && item.url == `/custom/launcher/assets/${item.name}`
+    );
     if (!asset) return undefined;
     const filePath = getAssetPath(asset.name);
     if (!verifyAsset(asset, filePath)) throw new Error(`Launcher asset does not match manifest: ${asset.name}`);

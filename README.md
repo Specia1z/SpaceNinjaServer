@@ -71,6 +71,24 @@ docker compose up -d --build
 
 Compose runs only SpaceNinjaServer and the official MongoDB image. The built-in TLS IRC service runs inside the SpaceNinjaServer container on ports `6695-6699`, allowing both TLS 1.2 and TLS 1.3 clients to connect. Hub and NRS are external services and are not managed by this compose file. The first launch creates `docker-data/conf/config.json` automatically.
 
+To enable signed PlayWF manifests, create a `.env` file beside
+`docker-compose.yml` and place the matching private key at
+`secrets/playwf-manifest-private.pem`:
+
+```text
+PLAYWF_MANIFEST_SIGNING_KEY_PATH=/run/secrets/playwf-manifest-private.pem
+PLAYWF_MANIFEST_SIGNING_KEY_ID=playwf-release-2026-01
+```
+
+Compose loads the optional `.env` file into the server container and mounts the
+private key read-only. The private key must match the public key embedded in the
+PlayWF client; generating a new key requires rebuilding and distributing the
+client first. Recreate the container after changing the key or `.env`:
+
+```bash
+docker compose up -d --build --force-recreate
+```
+
 Administrators can submit red IRC announcements for all currently connected players from **WebUI → Users → Global IRC Announcement**. When built-in IRC is enabled, announcements are broadcast directly inside the SpaceNinjaServer process and no management port is required. When using an external IRC server instead, configure its management endpoint with `ircManagementUrl`; do not expose that endpoint publicly.
 
 The default compose file publishes UDP port `6953` for the protocol-opaque Hub relay. Keep it when `udpRelayPort` is enabled and points at a reachable bare-metal Hub through `udpRelayTarget`; remove the mapping when clients connect directly to the Hub. Bare-metal NRS ports, including its DTLS listener and optional relay pool, must be opened on the host firewall separately.
@@ -117,6 +135,23 @@ Important settings include:
 - `worldState.circuitGameModes`: provide an array to override the random Circuit rotation.
 
 The WebUI can change supported configuration values for authorized administrators. Configuration changes are watched and applied without rebuilding the application.
+
+## PlayWF Manifest Signing
+
+The launcher release manifest and feature-package manifest are signed with
+RSA-PSS/SHA-256 before they are returned to clients. Configure the private key
+outside the repository:
+
+```text
+PLAYWF_MANIFEST_SIGNING_KEY_PATH=C:\secrets\playwf-manifest-private.pem
+PLAYWF_MANIFEST_SIGNING_KEY_ID=playwf-release-2026-01
+```
+
+`PLAYWF_MANIFEST_SIGNING_KEY_PEM` can be used instead of the path when a secret
+manager provides PEM text. The manifest endpoints return `503` when no signing
+key is configured. The matching public key is compiled into the PlayWF client;
+rotate it by updating the client key and rebuilding before changing the server
+key.
 
 ## Development
 
