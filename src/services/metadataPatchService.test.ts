@@ -51,3 +51,15 @@ void test("metadata patches import config once and then use MongoDB as source of
     assert.equal(persisted.AccountPatches.account![0].text, "/Account\nSet(4)");
     assert.deepEqual(persisted.AccountBlacklist, ["blocked-account"]);
 });
+
+void test("config blacklist is merged into an existing MongoDB settings record", async () => {
+    await MetadataPatchSettings.updateOne({ Key: "server" }, { $set: { AccountBlacklist: ["blocked-account"] } });
+    config.tunables!.metadataPatchBlacklist = ["configured-blocked-account"];
+
+    await initializeMetadataPatches();
+
+    assert.deepEqual(getMetadataPatchState().accountBlacklist, ["blocked-account", "configured-blocked-account"]);
+    const persisted = await MetadataPatchSettings.findOne().lean();
+    assert.deepEqual(persisted?.AccountBlacklist, ["blocked-account", "configured-blocked-account"]);
+    delete config.tunables!.metadataPatchBlacklist;
+});

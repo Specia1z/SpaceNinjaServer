@@ -13,6 +13,10 @@ export interface IMetadataPatchState {
 
 let state: IMetadataPatchState | undefined;
 
+const mergeBlacklists = (...blacklists: (string[] | undefined)[]): string[] => [
+    ...new Set(blacklists.flatMap(blacklist => blacklist ?? []))
+];
+
 const fromConfig = (): IMetadataPatchState => ({
     patches: config.tunables?.metadataPatches ?? [],
     accountPatches: config.tunables?.accountMetadataPatches ?? {},
@@ -22,7 +26,7 @@ const fromConfig = (): IMetadataPatchState => ({
 const fromDocument = (document: IMetadataPatchSettings): IMetadataPatchState => ({
     patches: document.Patches,
     accountPatches: document.AccountPatches,
-    accountBlacklist: document.AccountBlacklist ?? []
+    accountBlacklist: mergeBlacklists(document.AccountBlacklist, config.tunables?.metadataPatchBlacklist)
 });
 
 export const initializeMetadataPatches = async (): Promise<void> => {
@@ -39,7 +43,14 @@ export const initializeMetadataPatches = async (): Promise<void> => {
         },
         { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     ).lean();
-    state = fromDocument(document!);
+    const next = fromDocument(document!);
+    if (JSON.stringify(document!.AccountBlacklist ?? []) != JSON.stringify(next.accountBlacklist)) {
+        await MetadataPatchSettings.updateOne(
+            { Key: METADATA_PATCH_SETTINGS_KEY },
+            { $set: { AccountBlacklist: next.accountBlacklist } }
+        );
+    }
+    state = next;
 };
 
 export const getMetadataPatchState = (): IMetadataPatchState => state ?? fromConfig();

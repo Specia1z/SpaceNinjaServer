@@ -67,6 +67,12 @@ void test("blacklisted accounts receive no global or account metadata patches", 
     delete config.tunables!.metadataPatchBlacklist;
 });
 
+void test("unauthenticated bootstrapper requests with a blacklist receive no global patches", () => {
+    config.tunables!.metadataPatchBlacklist = [accountId];
+    assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1").metadata_patches, undefined);
+    delete config.tunables!.metadataPatchBlacklist;
+});
+
 void test("native proxy forcing is only emitted when explicitly enabled", () => {
     assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1").force_native_proxy, undefined);
 

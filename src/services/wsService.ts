@@ -240,6 +240,16 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                     (ws as IWsCustomData).accountId = accountId;
                     (ws as IWsCustomData).realAccountId = accountId;
                     logger.debug(`got bootstrapper connection for ${accountId}`);
+                    const { getTunablesForClient } = await import("./tunablesService.ts");
+                    ws.send(
+                        JSON.stringify({
+                            tunables: getTunablesForClient(
+                                (ws as IWsCustomData).address,
+                                (ws as IWsCustomData).reflexiveAddress,
+                                accountId
+                            )
+                        } satisfies IWsMsgToClientGame)
+                    );
                     if (!haveOtherGameWs(accountId, ws)) await markReferralOnlineStart(account._id);
                     const referralAccount = await Account.findById(account._id);
                     if (referralAccount) {

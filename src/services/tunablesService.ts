@@ -154,7 +154,13 @@ export const getTunablesForClient = (
                 .replaceAll("|FOUND_BUILDLAB|", buildVersion || "unknown");
         }
     }
-    const metadataPatches = compileMetadataPatchesForAccount(accountId);
+    // The first bootstrapper request can happen before account authentication. Do not leak global
+    // patches to an unauthenticated client when any account is explicitly blacklisted; the authenticated
+    // WebSocket refresh below sends the account-specific result.
+    const metadataPatches =
+        accountId === undefined && getMetadataPatchState().accountBlacklist.length > 0
+            ? ""
+            : compileMetadataPatchesForAccount(accountId);
     if (metadataPatches) {
         tunables.metadata_patches = metadataPatches;
         tunables.metadata_patches_revision = crypto.createHash("sha256").update(metadataPatches).digest("hex");
