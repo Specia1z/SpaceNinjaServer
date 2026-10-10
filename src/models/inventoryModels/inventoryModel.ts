@@ -94,6 +94,11 @@ import type {
     IDescentLevelReward,
     IDescentCategoryRewardClient,
     IDescentCategoryRewardDatabase,
+    IKuvaKeyChoice,
+    IKuvaKeyClient,
+    IKuvaKeyDatabase,
+    IKuvaKeysRewardsClient,
+    IKuvaKeysRewardsDatabase,
     IFocusLoadoutDatabase,
     IChallengeInstanceStateDatabase,
     IChallengeInstanceStateClient,
@@ -1648,6 +1653,48 @@ const miscAccountDataSchema = new Schema<IMiscAccountData>(
     { _id: false }
 );
 
+const kuvaKeySchema = new Schema<IKuvaKeyDatabase>(
+    {
+        ItemType: { type: String, required: true },
+        Seed: { type: BigInt, required: true }
+    },
+    { id: false }
+);
+kuvaKeySchema.set("toJSON", {
+    virtuals: true,
+    transform(_doc, obj: Record<string, any>) {
+        const db = obj as IKuvaKeyDatabase;
+        const client = obj as IKuvaKeyClient;
+        client.ItemId = toOid(db._id);
+        delete obj._id;
+        delete obj.__v;
+    }
+});
+
+const kuvaKeyChoiceSchema = new Schema<IKuvaKeyChoice>(
+    {
+        ItemType: { type: String, required: true },
+        Seed: { type: BigInt, required: true },
+        Claimed: { type: Boolean, default: false }
+    },
+    { _id: false }
+);
+
+const kuvaKeysRewardsSchema = new Schema<IKuvaKeysRewardsDatabase>(
+    {
+        Expiry: { type: Date, required: true },
+        Choices: { type: [kuvaKeyChoiceSchema], default: [] }
+    },
+    { _id: false }
+);
+kuvaKeysRewardsSchema.set("toJSON", {
+    transform(_doc, ret: Record<string, any>) {
+        const db = ret as IKuvaKeysRewardsDatabase;
+        const client = ret as IKuvaKeysRewardsClient;
+        client.Expiry = toMongoDate(db.Expiry);
+    }
+});
+
 const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
     {
         accountOwnerId: Schema.Types.ObjectId,
@@ -2120,7 +2167,10 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
 
         WeeklyGuildVaultBonusInfo: { type: [weeklyGuildVaultBonusSchema], default: undefined },
 
-        MiscAccountData: { type: [miscAccountDataSchema], default: undefined }
+        MiscAccountData: { type: [miscAccountDataSchema], default: undefined },
+
+        KuvaKeys: [kuvaKeySchema],
+        KuvaKeysRewards: { type: kuvaKeysRewardsSchema, default: undefined }
     },
     { timestamps: { createdAt: "Created", updatedAt: false } }
 );
@@ -2209,6 +2259,7 @@ export type InventoryDocumentProps = {
     CrewShipSalvagedWeaponSkins: Types.DocumentArray<IUpgradeDatabase>;
     PersonalTechProjects: Types.DocumentArray<IPersonalTechProjectDatabase>;
     CrewMembers: Types.DocumentArray<ICrewMemberDatabase>;
+    KuvaKeys: Types.DocumentArray<IKuvaKeyDatabase>;
     KubrowPets: Types.DocumentArray<IKubrowPetDatabase>;
     KubrowPetPrints: Types.DocumentArray<IKubrowPetPrintDatabase>;
     HybridFusionTreasures: Types.DocumentArray<IHybridFusionTreasure>;

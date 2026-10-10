@@ -160,6 +160,8 @@ export interface IInventoryDatabase
             | "FusionTreasures"
             | "PendingTrades"
             | "StepSequencers"
+            | "KuvaKeys"
+            | "KuvaKeysRewards"
             | TEquipmentKey
         >,
         InventoryDatabaseEquipment,
@@ -229,6 +231,8 @@ export interface IInventoryDatabase
     PeriodicMissionCompletions: IPeriodicMissionCompletionDatabase[];
     FusionTreasures?: IFusionTreasure[];
     StepSequencers: IStepSequencerDatabase[];
+    KuvaKeys: IKuvaKeyDatabase[];
+    KuvaKeysRewards?: IKuvaKeysRewardsDatabase;
 }
 
 export interface IQuestKeyDatabase {
@@ -569,6 +573,8 @@ export interface IInventoryClient
     Sketches?: ISketch[];
     WeeklyGuildVaultBonusInfo?: IWeeklyGuildVaultBonus[] | IWeeklyGuildVaultBonus; // should be an array
     MiscAccountData?: IMiscAccountData[];
+    KuvaKeys?: IKuvaKeyClient[];
+    KuvaKeysRewards?: IKuvaKeysRewardsClient;
 }
 
 export interface IAffiliation {
@@ -1254,6 +1260,31 @@ export interface IDescentCategoryRewardDatabase extends Omit<IDescentCategoryRew
 export interface IDescentLevelReward {
     FloorCheckpoint: number;
     Rewards: ICountedStoreItem[];
+}
+
+export interface IKuvaKeyClient {
+    ItemType: string;
+    ItemId: IOid;
+    Seed: bigint;
+}
+
+export interface IKuvaKeyDatabase extends Omit<IKuvaKeyClient, "ItemId"> {
+    _id: Types.ObjectId;
+}
+
+export interface IKuvaKeyChoice {
+    ItemType: string;
+    Seed: bigint;
+    Claimed: boolean;
+}
+
+export interface IKuvaKeysRewardsClient {
+    Expiry: IMongoDate;
+    Choices: IKuvaKeyChoice[];
+}
+
+export interface IKuvaKeysRewardsDatabase extends Omit<IKuvaKeysRewardsClient, "Expiry"> {
+    Expiry: Date;
 }
 
 export interface IDialogueHistoryClient {
