@@ -140,6 +140,8 @@ export type TWorldStateBoostMultiplierKey =
     | "affinityBoostMultiplier"
     | "resourceBoostMultiplier";
 
+export type TVarziaRotationMode = "daily" | "weekly" | "monthly" | "custom";
+
 const isoDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 export const isValidIsoDateTime = (value: unknown): value is string =>
@@ -310,6 +312,9 @@ export interface IConfig {
         baroRelayOverride?: number;
         evilBaroStage?: number;
         varziaFullyStocked?: boolean;
+        varziaCustomRotationEnabled?: boolean;
+        varziaCustomRotationMode?: TVarziaRotationMode;
+        varziaCustomRotationDays?: number;
         vanguardVaultRelics?: boolean;
         wolfHunt?: number;
         scarletSpear?: boolean;
@@ -555,6 +560,23 @@ export const validateWorldStateBoostConfig = (id: string, value: unknown): strin
     if (value === undefined || value === null || value === "") return undefined;
     if (!isValidIsoDateTime(value)) {
         return `${id} must be an ISO 8601 date-time with a timezone`;
+    }
+    return undefined;
+};
+
+export const validateVarziaRotationConfig = (id: string, value: unknown): string | undefined => {
+    if (id == "worldState.varziaCustomRotationEnabled") {
+        return typeof value == "boolean" ? undefined : `${id} must be a boolean`;
+    }
+    if (id == "worldState.varziaCustomRotationMode") {
+        return typeof value == "string" && ["daily", "weekly", "monthly", "custom"].includes(value)
+            ? undefined
+            : `${id} must be one of daily, weekly, monthly, custom`;
+    }
+    if (id == "worldState.varziaCustomRotationDays") {
+        return typeof value == "number" && Number.isSafeInteger(value) && value >= 1 && value <= 3650
+            ? undefined
+            : `${id} must be an integer from 1 to 3650`;
     }
     return undefined;
 };

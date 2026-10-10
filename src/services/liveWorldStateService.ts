@@ -16,6 +16,7 @@ import invasionRewards from "../../static/fixed_responses/worldState/invasionRew
 import syndicateMissionNodes from "../../static/fixed_responses/worldState/syndicateMissions.json" with { type: "json" };
 import { LiveGoalState, LiveWorldActivityState } from "../models/worldStateModel.ts";
 import { fromMongoDate } from "../helpers/inventoryHelpers.ts";
+import { updateVarziaRotationCache } from "./varziaRotationService.ts";
 
 const LIVE_WORLD_STATE_URL = "https://oracle.browse.wf/worldState.min.json";
 const SUPPLEMENTAL_WORLD_STATE_URLS = [
@@ -1024,6 +1025,11 @@ const fetchLiveWorldState = async (): Promise<void> => {
         try {
             const supplementalWorldState = await fetchSupplementalWorldState();
             liveWorldState.PrimeVaultTraders = supplementalWorldState.PrimeVaultTraders;
+            try {
+                await updateVarziaRotationCache(supplementalWorldState.PrimeVaultTraders);
+            } catch (e) {
+                logger.debug(`Could not cache official Varzia rotation: ${String(e)}`);
+            }
             liveWorldState.Invasions = supplementalWorldState.Invasions;
             liveWorldState.SyndicateMissions = supplementalWorldState.SyndicateMissions;
             liveWorldState.SeasonInfo = supplementalWorldState.SeasonInfo;
@@ -1106,7 +1112,16 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
     }
 
     const liveWorldState = structuredClone(cachedWorldState);
-    const { SeasonInfo: liveSeasonInfo, ...liveWorldStateWithoutSeasonInfo } = liveWorldState;
+    const {
+        SeasonInfo: liveSeasonInfo,
+        PrimeVaultTraders: livePrimeVaultTraders,
+        ...liveWorldStateWithoutSeasonInfo
+    } = liveWorldState;
+    const useLocalVarzia = Boolean(
+        config.worldState.varziaOverride ||
+        config.worldState.varziaFullyStocked ||
+        config.worldState.varziaCustomRotationEnabled
+    );
     const compatibleSeasonInfo = getCompatibleSeasonInfo(liveSeasonInfo, buildVersion);
     const localInvasions = [...liveInvasions.values()].map(entry => structuredClone(entry.invasion));
     const mergedGoals = mergeLocalGoalProgress(worldState.Goals, liveWorldState.Goals, localGoals, buildVersion);
@@ -1116,7 +1131,10 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
         Date.now()
     );
     if (buildVersion >= gameToBuildVersionInt["43.5.0"]) {
-        Object.assign(worldState, liveWorldStateWithoutSeasonInfo);
+        Object.assign(worldState, {
+            ...liveWorldStateWithoutSeasonInfo,
+            ...(!useLocalVarzia && livePrimeVaultTraders ? { PrimeVaultTraders: livePrimeVaultTraders } : {})
+        });
         worldState.Goals = mergedGoals;
         worldState.Invasions = localInvasions;
         worldState.SyndicateMissions = syndicateMissions;
@@ -1152,9 +1170,9 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
         VoidTraders: getCompatibleVoidTraders(liveWorldState.VoidTraders, buildVersion),
         VoidStorms: liveWorldState.VoidStorms.filter(storm => isKnownNode(storm.Node)),
         DailyDeals: getCompatibleDailyDeals(liveWorldState.DailyDeals, buildVersion),
-        ...(liveWorldState.PrimeVaultTraders
+        ...(livePrimeVaultTraders && !useLocalVarzia
             ? {
-                  PrimeVaultTraders: liveWorldState.PrimeVaultTraders.map(trader => ({
+                  PrimeVaultTraders: livePrimeVaultTraders.map(trader => ({
                       ...trader,
                       EvergreenManifest: worldState.PrimeVaultTraders[0]?.EvergreenManifest ?? [],
                       ScheduleInfo: getUpdate41PrimeVaultSchedule(trader)

@@ -382,6 +382,29 @@ export const validateConfig = (): void => {
         modified = true;
     }
     if (
+        config.worldState?.varziaCustomRotationEnabled !== undefined &&
+        typeof config.worldState.varziaCustomRotationEnabled != "boolean"
+    ) {
+        config.worldState.varziaCustomRotationEnabled = false;
+        modified = true;
+    }
+    if (
+        config.worldState?.varziaCustomRotationMode !== undefined &&
+        !["daily", "weekly", "monthly", "custom"].includes(config.worldState.varziaCustomRotationMode)
+    ) {
+        config.worldState.varziaCustomRotationMode = "weekly";
+        modified = true;
+    }
+    if (
+        config.worldState?.varziaCustomRotationDays !== undefined &&
+        (!Number.isSafeInteger(config.worldState.varziaCustomRotationDays) ||
+            config.worldState.varziaCustomRotationDays < 1 ||
+            config.worldState.varziaCustomRotationDays > 3650)
+    ) {
+        config.worldState.varziaCustomRotationDays = 28;
+        modified = true;
+    }
+    if (
         config.worldState?.nightwaveEpisode &&
         (config.worldState.nightwaveEpisode > 5 || config.worldState.nightwaveEpisode < 1)
     ) {

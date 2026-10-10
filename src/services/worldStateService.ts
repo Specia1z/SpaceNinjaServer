@@ -9,7 +9,7 @@ import invasionNodes from "../../static/fixed_responses/worldState/invasionNodes
 import invasionRewards from "../../static/fixed_responses/worldState/invasionRewards.json" with { type: "json" };
 import pvpChallenges from "../../static/fixed_responses/worldState/pvpChallenges.json" with { type: "json" };
 import { EPOCH, unixTimesInMs } from "../constants/timeConstants.ts";
-import { config, getWorldStateBoostMultiplier, isValidIsoDateTime } from "./configService.ts";
+import { config, getWorldStateBoostMultiplier, isValidIsoDateTime, type TVarziaRotationMode } from "./configService.ts";
 import { getRandomElement, getRandomInt, sequentiallyUniqueRandomElement, SRng } from "./rngService.ts";
 import type { IMissionReward, IRegion, ITilesetMission, TFaction, TMissionType } from "warframe-public-export-plus";
 import { ExportRegions, ExportSyndicates, ExportTilesets, ExportRecipes } from "warframe-public-export-plus";
@@ -66,6 +66,12 @@ import {
     getLiveInvasionByOid,
     refreshLiveWorldState
 } from "./liveWorldStateService.ts";
+import {
+    getCachedVarziaManifest,
+    getCachedVarziaRotation,
+    getVarziaRotationAnchor,
+    getVarziaRotationCache
+} from "./varziaRotationService.ts";
 
 const sortieBosses = [
     "SORTIE_BOSS_HYENA",
@@ -1727,8 +1733,35 @@ const fullyStockBaro = (vt: IVoidTrader, buildVersion: number): void => {
     );
 };
 
-const getVarziaRotation = (week: number, buildVersion: number): string => {
-    const seed = new SRng(week).randomInt(0, 100_000);
+export const VARZIA_ROTATION_EPOCH = 1662738144266;
+
+export const getVarziaRotationPeriodMs = (mode: TVarziaRotationMode, customDays = 28): number => {
+    switch (mode) {
+        case "daily":
+            return unixTimesInMs.day;
+        case "weekly":
+            return unixTimesInMs.week;
+        case "monthly":
+            return 30 * unixTimesInMs.day;
+        case "custom":
+            return customDays * unixTimesInMs.day;
+    }
+};
+
+export const getVarziaRotationWindow = (
+    timeMs: number,
+    mode: TVarziaRotationMode,
+    customDays = 28,
+    epoch = VARZIA_ROTATION_EPOCH
+): { index: number; activation: number; expiry: number } => {
+    const periodMs = getVarziaRotationPeriodMs(mode, customDays);
+    const index = Math.floor((timeMs - epoch) / periodMs);
+    const activation = epoch + index * periodMs;
+    return { index, activation, expiry: activation + periodMs };
+};
+
+const getVarziaRotation = (rotationIndex: number, buildVersion: number): string => {
+    const seed = new SRng(rotationIndex).randomInt(0, 100_000);
     const rng = new SRng(seed);
     const [itemType, rotation] = rng.randomElement(Object.entries(varzia.primeDualPacks))!;
     if (buildVersion < rotation.minBuildVersionInt) {
@@ -1739,9 +1772,15 @@ const getVarziaRotation = (week: number, buildVersion: number): string => {
 };
 
 const getVarziaManifest = (dualPack: string, buildVersion: number): IPrimeVaultTraderOffer[] => {
+    const cachedManifest = getCachedVarziaManifest(dualPack);
+    if (cachedManifest) return cachedManifest;
+
     const rotationManifest = varzia.primeDualPacks[dualPack];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!rotationManifest || buildVersion < rotationManifest.minBuildVersionInt) {
+    if (!rotationManifest) {
+        return [];
+    }
+    if (buildVersion < rotationManifest.minBuildVersionInt) {
         return [];
     }
     const mainPack = [{ ItemType: dualPack, PrimePrice: 10 }];
@@ -4250,18 +4289,34 @@ export const getWorldState = (
     // Varzia
     // introduced in 30.9.4
     if (buildVersion >= gameToBuildVersionInt["31.0.0"]) {
+        const varziaRotationAnchor = getVarziaRotationAnchor() ?? VARZIA_ROTATION_EPOCH;
+        const customRotation = config.worldState?.varziaCustomRotationEnabled
+            ? getVarziaRotationWindow(
+                  timeMs,
+                  config.worldState.varziaCustomRotationMode ?? "weekly",
+                  config.worldState.varziaCustomRotationDays ?? 28,
+                  varziaRotationAnchor
+              )
+            : { index: week, activation: weekStart, expiry: weekEnd };
         const pt: IPrimeVaultTrader = {
-            _id: { $oid: ((weekStart / 1000) & 0xffffffff).toString(16).padStart(8, "0") + "c36af423770eaa97" },
-            Activation: { $date: { $numberLong: weekStart.toString() } },
+            _id: {
+                $oid:
+                    ((customRotation.activation / 1000) & 0xffffffff).toString(16).padStart(8, "0") + "c36af423770eaa97"
+            },
+            Activation: { $date: { $numberLong: customRotation.activation.toString() } },
             InitialStartDate: { $date: { $numberLong: "1662738144266" } },
             Node: "TradeHUB1",
             Manifest: [],
-            Expiry: { $date: { $numberLong: weekEnd.toString() } },
-            EvergreenManifest: varzia.evergreen,
+            Expiry: { $date: { $numberLong: customRotation.expiry.toString() } },
+            EvergreenManifest: getVarziaRotationCache()?.evergreenManifest ?? varzia.evergreen,
             ScheduleInfo: []
         };
         worldState.PrimeVaultTraders.push(pt);
-        const rotation = config.worldState?.varziaOverride || getVarziaRotation(week, buildVersion);
+        const getRotation = (rotationIndex: number): string =>
+            config.worldState?.varziaCustomRotationEnabled
+                ? (getCachedVarziaRotation(rotationIndex) ?? getVarziaRotation(rotationIndex, buildVersion))
+                : getVarziaRotation(rotationIndex, buildVersion);
+        const rotation = config.worldState?.varziaOverride || getRotation(customRotation.index);
         pt.Manifest = config.worldState?.varziaFullyStocked
             ? getAllVarziaManifests(buildVersion)
             : getVarziaManifest(rotation, buildVersion);
@@ -4269,8 +4324,15 @@ export const getWorldState = (
             pt.Expiry = { $date: { $numberLong: "2000000000000" } };
         } else {
             pt.ScheduleInfo.push({
-                Expiry: { $date: { $numberLong: (weekEnd + unixTimesInMs.week).toString() } },
-                FeaturedItem: getVarziaRotation(week + 1, buildVersion)
+                Expiry: {
+                    $date: {
+                        $numberLong: (
+                            customRotation.expiry +
+                            (customRotation.expiry - customRotation.activation)
+                        ).toString()
+                    }
+                },
+                FeaturedItem: getRotation(customRotation.index + 1)
             });
         }
     }

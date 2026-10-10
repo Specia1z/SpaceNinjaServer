@@ -4,6 +4,7 @@ import {
     config,
     getWorldStateBoostMultiplier,
     isWorldStateBoostActive,
+    validateVarziaRotationConfig,
     validateWorldStateBoostConfig,
     validateClientConfig
 } from "./configService.ts";
@@ -35,6 +36,15 @@ void test("global world state boost expiry accepts only timezone-qualified date-
     assert.equal(validateWorldStateBoostConfig("worldState.boostExpiresAt", ""), undefined);
     assert.equal(validateWorldStateBoostConfig("worldState.boostExpiresAt", "2099-01-01T00:00Z"), undefined);
     assert.match(validateWorldStateBoostConfig("worldState.boostExpiresAt", "2099-01-01T00:00:00") ?? "", /ISO 8601/);
+});
+
+void test("Varzia rotation configuration validates supported modes and day ranges", () => {
+    assert.equal(validateVarziaRotationConfig("worldState.varziaCustomRotationEnabled", true), undefined);
+    assert.equal(validateVarziaRotationConfig("worldState.varziaCustomRotationMode", "monthly"), undefined);
+    assert.equal(validateVarziaRotationConfig("worldState.varziaCustomRotationDays", 28), undefined);
+    assert.match(validateVarziaRotationConfig("worldState.varziaCustomRotationMode", "yearly") ?? "", /daily/);
+    assert.match(validateVarziaRotationConfig("worldState.varziaCustomRotationDays", 0) ?? "", /1 to 3650/);
+    assert.match(validateVarziaRotationConfig("worldState.varziaCustomRotationEnabled", "true") ?? "", /boolean/);
 });
 
 void test("client configuration validates supported types and ranges", () => {

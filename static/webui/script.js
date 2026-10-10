@@ -3023,6 +3023,24 @@ for (const [index, id] of uiConfigs.entries()) {
     }
 }
 
+function updateVarziaRotationControls() {
+    const enabled = document.getElementById("worldState.varziaCustomRotationEnabled");
+    const mode = document.getElementById("worldState.varziaCustomRotationMode");
+    const days = document.getElementById("worldState.varziaCustomRotationDays");
+    if (!enabled || !mode || !days) return;
+    mode.disabled = !enabled.checked;
+    days.disabled = !enabled.checked || mode.value != "custom";
+}
+
+document.getElementById("worldState.varziaCustomRotationEnabled")?.addEventListener(
+    "change",
+    updateVarziaRotationControls
+);
+document.getElementById("worldState.varziaCustomRotationMode")?.addEventListener(
+    "change",
+    updateVarziaRotationControls
+);
+
 document.querySelectorAll(".config-form .input-group").forEach(grp => {
     const input = grp.querySelector("input, select");
     const btn = grp.querySelector("button");
@@ -3168,6 +3186,7 @@ function applyServerConfig(json) {
             elm.value = value ?? elm.getAttribute("data-default");
         }
     });
+    updateVarziaRotationControls();
     return true;
 }
 

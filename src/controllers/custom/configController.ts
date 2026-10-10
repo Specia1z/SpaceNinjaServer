@@ -4,6 +4,7 @@ import {
     inventoryAffectingConfigKeys,
     validateRegistrationRateLimitConfig,
     validateWorldStateBoostConfig,
+    validateVarziaRotationConfig,
     validateClientConfig
 } from "../../services/configService.ts";
 import { syncConfigWithDatabase } from "../../services/configWatcherService.ts";
@@ -46,6 +47,11 @@ export const setConfigController: RequestHandler = async (req, res) => {
             const worldStateBoostError = validateWorldStateBoostConfig(id, value);
             if (worldStateBoostError) {
                 res.status(400).send(worldStateBoostError);
+                return;
+            }
+            const varziaRotationError = validateVarziaRotationConfig(id, value);
+            if (varziaRotationError) {
+                res.status(400).send(varziaRotationError);
                 return;
             }
             const clientConfigError = validateClientConfig(id, value);

@@ -3,6 +3,7 @@
 
 /.env
 /config.json
+/varzia-rotation-cache.json
 /static/data/**
 !/static/data/.gitkeep
 yarn.lock

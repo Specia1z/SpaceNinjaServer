@@ -12,7 +12,13 @@ import {
     mergeLocalGoalProgress
 } from "./liveWorldStateService.ts";
 import gameToBuildVersionInt from "../constants/gameToBuildVersionInt.ts";
-import { getSeasonChallengePools, pushWeeklyActs } from "./worldStateService.ts";
+import {
+    getSeasonChallengePools,
+    getVarziaRotationPeriodMs,
+    getVarziaRotationWindow,
+    pushWeeklyActs,
+    VARZIA_ROTATION_EPOCH
+} from "./worldStateService.ts";
 
 const now = 1_790_876_000_000;
 const mission = (tag: string, start: number, end: number): ISyndicateMissionInfo => ({
@@ -83,6 +89,17 @@ void test("official Nightwave metadata is filtered for the client build", () => 
         compatible?.ActiveChallenges.map(challenge => challenge._id.$oid),
         ["known"]
     );
+});
+
+void test("Varzia custom rotation windows use an independent epoch", () => {
+    const daily = getVarziaRotationWindow(VARZIA_ROTATION_EPOCH + 86_400_000, "daily");
+    assert.deepEqual(daily, {
+        index: 1,
+        activation: VARZIA_ROTATION_EPOCH + 86_400_000,
+        expiry: VARZIA_ROTATION_EPOCH + 2 * 86_400_000
+    });
+    assert.equal(getVarziaRotationPeriodMs("monthly"), 30 * 86_400_000);
+    assert.equal(getVarziaRotationPeriodMs("custom", 13), 13 * 86_400_000);
 });
 
 void test("active void trader is selected from the effective world-state window", () => {

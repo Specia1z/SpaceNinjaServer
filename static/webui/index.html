@@ -1483,6 +1483,27 @@
                                     <input class="form-check-input" type="checkbox" id="worldState.varziaFullyStocked" />
                                     <label class="form-check-label" for="worldState.varziaFullyStocked" data-loc="worldState_varziaFullyStocked"></label>
                                 </div>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="worldState.varziaCustomRotationEnabled" />
+                                    <label class="form-check-label" for="worldState.varziaCustomRotationEnabled" data-loc="worldState_varziaCustomRotationEnabled"></label>
+                                </div>
+                                <div class="form-group mt-2">
+                                    <label class="form-label" for="worldState.varziaCustomRotationMode" data-loc="worldState_varziaCustomRotationMode"></label>
+                                    <select class="form-control" id="worldState.varziaCustomRotationMode" data-default="weekly">
+                                        <option value="daily" data-loc="worldState_varziaRotationDaily"></option>
+                                        <option value="weekly" data-loc="worldState_varziaRotationWeekly"></option>
+                                        <option value="monthly" data-loc="worldState_varziaRotationMonthly"></option>
+                                        <option value="custom" data-loc="worldState_varziaRotationCustom"></option>
+                                    </select>
+                                </div>
+                                <form class="form-group mt-2" onsubmit="doSaveConfigInt('worldState.varziaCustomRotationDays'); return false;">
+                                    <label class="form-label" for="worldState.varziaCustomRotationDays" data-loc="worldState_varziaCustomRotationDays"></label>
+                                    <div class="input-group">
+                                        <input id="worldState.varziaCustomRotationDays" class="form-control" type="number" min="1" max="3650" step="1" data-default="28" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <div class="form-text mt-2" data-loc="worldState_varziaRotationHint"></div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="worldState.vanguardVaultRelics" />
                                     <label class="form-check-label" for="worldState.vanguardVaultRelics" data-loc="worldState_vanguardVaultRelics"></label>
