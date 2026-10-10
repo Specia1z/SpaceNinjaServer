@@ -23,7 +23,8 @@ window.accountRatesApi = (() => {
 
     return {
         list: () => request(),
-        save: (accountId, profile) => request("", { accountId, profile }),
+        save: (accountId, profile, features) => request("", { accountId, profile, features }),
+        saveFeatures: (accountId, features) => request("", { accountId, features }),
         remove: accountId => request("/delete", { accountId })
     };
 })();

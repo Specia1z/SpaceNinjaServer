@@ -135,6 +135,13 @@ export interface IAccountRateProfile {
     dailyTributeMultiplier?: number;
 }
 
+export interface IAccountFeatureProfile {
+    universalPolarityEverywhere?: boolean;
+    unlockDoubleCapacityPotatoesEverywhere?: boolean;
+    unlockExilusEverywhere?: boolean;
+    unlockArcanesEverywhere?: boolean;
+}
+
 export type TWorldStateBoostMultiplierKey =
     | "creditBoostMultiplier"
     | "affinityBoostMultiplier"
@@ -257,6 +264,8 @@ export interface IConfig {
     accountDropMultipliers?: Record<string, IAccountDropMultiplier>;
     /** Per-account reward multipliers, keyed by the MongoDB account id. */
     accountRateProfiles?: Record<string, IAccountRateProfile>;
+    /** Per-account inventory feature unlocks, keyed by the MongoDB account id. */
+    accountFeatureProfiles?: Record<string, IAccountFeatureProfile>;
     relicPlatinumReward?: {
         common?: number;
         uncommon?: number;

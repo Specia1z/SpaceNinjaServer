@@ -355,6 +355,16 @@ td.text-end > a > svg {
     min-width: 0;
 }
 
+.account-rate-feature-grid {
+    display: grid;
+    gap: 0.75rem 1.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-rate-feature {
+    min-width: 0;
+}
+
 .account-rates-actions {
     border-top: 1px solid var(--bs-border-color);
     justify-content: flex-start;
@@ -390,7 +400,8 @@ td.text-end > a > svg {
 
 @media (max-width: 767px) {
     .account-rates-layout,
-    .account-rate-field-grid {
+    .account-rate-field-grid,
+    .account-rate-feature-grid {
         grid-template-columns: minmax(0, 1fr);
     }
 

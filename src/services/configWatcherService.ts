@@ -25,6 +25,7 @@ import {
 } from "./wsService.ts";
 import varzia from "../constants/varzia.ts";
 import { getTunablesForClient } from "./tunablesService.ts";
+import { normalizeAccountFeatureProfile } from "./accountFeatureService.ts";
 import { normalizeAccountRateProfile } from "./accountRateService.ts";
 import { Account } from "../models/loginModel.ts";
 import { Inbox } from "../models/inboxModel.ts";
@@ -40,6 +41,7 @@ chokidar.watch(configPath).on("change", () => {
         const prevWorldState = JSON.stringify(config.worldState);
         const prevTunables = JSON.stringify(config.tunables);
         const prevInventoryConfig = JSON.stringify(inventoryAffectingConfigKeys.map(key => config[key]));
+        const prevAccountFeatureProfiles = JSON.stringify(config.accountFeatureProfiles);
         const prevWebParams = JSON.stringify(getWebServerParams());
         const prevUdpRelayParams = getUdpRelayParams();
         const prevUnlockAllMissions = config.unlockAllMissionsForNewAccounts;
@@ -90,6 +92,11 @@ chokidar.watch(configPath).on("change", () => {
 
         if (JSON.stringify(inventoryAffectingConfigKeys.map(key => config[key])) != prevInventoryConfig) {
             logger.debug(`inventory-affecting config changed, informing clients`);
+            sendWsBroadcastToGame(undefined, { sync_inventory: true });
+        }
+
+        if (JSON.stringify(config.accountFeatureProfiles) != prevAccountFeatureProfiles) {
+            logger.debug(`account feature profiles changed, informing clients`);
             sendWsBroadcastToGame(undefined, { sync_inventory: true });
         }
 
@@ -270,6 +277,26 @@ export const validateConfig = (): void => {
                 }
             }
             config.accountRateProfiles = normalizedProfiles;
+        }
+    }
+    if (config.accountFeatureProfiles !== undefined) {
+        const rawAccountFeatureProfiles: unknown = config.accountFeatureProfiles;
+        if (
+            typeof rawAccountFeatureProfiles != "object" ||
+            rawAccountFeatureProfiles == null ||
+            Array.isArray(rawAccountFeatureProfiles)
+        ) {
+            config.accountFeatureProfiles = {};
+            modified = true;
+        } else {
+            const normalizedProfiles: Record<string, ReturnType<typeof normalizeAccountFeatureProfile>> = {};
+            for (const [accountId, rawProfile] of Object.entries(rawAccountFeatureProfiles)) {
+                normalizedProfiles[accountId] = normalizeAccountFeatureProfile(rawProfile);
+                if (JSON.stringify(normalizedProfiles[accountId]) != JSON.stringify(rawProfile)) {
+                    modified = true;
+                }
+            }
+            config.accountFeatureProfiles = normalizedProfiles;
         }
     }
     if (config.administratorNames) {

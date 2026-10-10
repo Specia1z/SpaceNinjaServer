@@ -4,8 +4,10 @@ window.accountRatesPage = (() => {
     const state = {
         accounts: [],
         definitions: [],
+        featureDefinitions: [],
         selectedId: null,
         draft: null,
+        featureDraft: null,
         dirty: false,
         busy: false,
         requestId: 0
@@ -28,6 +30,15 @@ window.accountRatesPage = (() => {
 
     function selectedAccount() {
         return state.accounts.find(account => account.id === state.selectedId);
+    }
+
+    function updateDirty() {
+        const account = selectedAccount();
+        state.dirty = Boolean(
+            account &&
+            (JSON.stringify(state.draft) !== JSON.stringify(account.profile) ||
+                JSON.stringify(state.featureDraft) !== JSON.stringify(account.featureProfile))
+        );
     }
 
     function renderList() {
@@ -93,7 +104,7 @@ window.accountRatesPage = (() => {
                 input.disabled = state.busy;
                 input.addEventListener("input", () => {
                     state.draft[definition.key] = input.value.trim() === "" ? NaN : Number(input.value);
-                    state.dirty = true;
+                    updateDirty();
                     input.classList.remove("is-invalid");
                     clearNotice();
                 });
@@ -105,6 +116,33 @@ window.accountRatesPage = (() => {
             }
             section.append(heading, grid);
             fields.append(section);
+        }
+    }
+
+    function renderFeatures() {
+        const fields = find("#account-rates-features");
+        fields.replaceChildren();
+        if (!state.featureDraft) return;
+        for (const definition of state.featureDefinitions) {
+            const field = document.createElement("div");
+            field.className = "account-rate-feature form-check form-switch";
+            const input = document.createElement("input");
+            input.className = "form-check-input";
+            input.id = `account-rate-feature-${definition.key}`;
+            input.type = "checkbox";
+            input.checked = state.featureDraft[definition.key] === true;
+            input.disabled = state.busy;
+            input.addEventListener("change", () => {
+                state.featureDraft[definition.key] = input.checked;
+                updateDirty();
+                clearNotice();
+            });
+            const label = document.createElement("label");
+            label.className = "form-check-label";
+            label.htmlFor = input.id;
+            label.textContent = loc(definition.labelKey);
+            field.append(input, label);
+            fields.append(field);
         }
     }
 
@@ -133,7 +171,9 @@ window.accountRatesPage = (() => {
         for (const id of ["account-rates-save", "account-rates-reset", "account-rates-delete"]) {
             find(`#${id}`).disabled = state.busy;
         }
+        find("#account-rates-features-save").disabled = state.busy;
         renderFields();
+        renderFeatures();
     }
 
     function select(id) {
@@ -143,6 +183,7 @@ window.accountRatesPage = (() => {
         if (!account) return;
         state.selectedId = id;
         state.draft = { ...account.profile };
+        state.featureDraft = { ...account.featureProfile };
         state.dirty = false;
         clearNotice();
         render();
@@ -163,10 +204,12 @@ window.accountRatesPage = (() => {
             if (requestId !== state.requestId) return;
             state.accounts = data.accounts ?? [];
             state.definitions = data.definitions ?? [];
+            state.featureDefinitions = data.featureDefinitions ?? [];
             if (!state.accounts.some(account => account.id === state.selectedId)) {
                 state.selectedId = state.accounts[0]?.id ?? null;
             }
             state.draft = selectedAccount() ? { ...selectedAccount().profile } : null;
+            state.featureDraft = selectedAccount() ? { ...selectedAccount().featureProfile } : null;
             state.dirty = false;
             showAdmin(true);
             clearNotice();
@@ -227,8 +270,25 @@ window.accountRatesPage = (() => {
                 account.profile = saved.profile;
                 account.hasCustomProfile = true;
                 state.draft = { ...saved.profile };
-                state.dirty = false;
+                updateDirty();
                 notice(loc("accountRates_saved"), "success");
+            }
+        );
+    }
+
+    function saveFeatures() {
+        if (!state.featureDraft || state.busy) return;
+        const account = selectedAccount();
+        void mutate(
+            () => window.accountRatesApi.saveFeatures(account.id, { ...state.featureDraft }),
+            saved => {
+                account.profile = saved.profile;
+                account.featureProfile = saved.featureProfile;
+                account.hasCustomFeatures = saved.hasCustomFeatures;
+                account.hasCustomProfile = Boolean(account.hasCustomProfile || saved.hasCustomFeatures);
+                state.featureDraft = { ...saved.featureProfile };
+                updateDirty();
+                notice(loc("accountRates_featuresSaved"), "success");
             }
         );
     }
@@ -240,9 +300,9 @@ window.accountRatesPage = (() => {
             () => window.accountRatesApi.remove(account.id),
             () => {
                 account.profile = Object.fromEntries([["enabled", true], ...state.definitions.map(d => [d.key, 1])]);
-                account.hasCustomProfile = false;
+                account.hasCustomProfile = account.hasCustomFeatures;
                 state.draft = { ...account.profile };
-                state.dirty = false;
+                updateDirty();
                 notice(loc("accountRates_deleted"), "success");
             }
         );
@@ -252,8 +312,10 @@ window.accountRatesPage = (() => {
         state.requestId++;
         state.accounts = [];
         state.definitions = [];
+        state.featureDefinitions = [];
         state.selectedId = null;
         state.draft = null;
+        state.featureDraft = null;
         state.busy = false;
         state.dirty = false;
         clearNotice();
@@ -264,21 +326,23 @@ window.accountRatesPage = (() => {
     find("#account-rates-refresh").addEventListener("click", () => void load());
     find("#account-rates-enabled").addEventListener("change", event => {
         state.draft.enabled = event.target.checked;
-        state.dirty = true;
+        updateDirty();
         clearNotice();
     });
     find("#account-rates-expires-at").addEventListener("input", event => {
         const value = event.target.value;
         state.draft.expiresAt = value ? new Date(value).toISOString() : undefined;
-        state.dirty = true;
+        updateDirty();
         event.target.classList.remove("is-invalid");
         clearNotice();
     });
     find("#account-rates-save").addEventListener("click", save);
+    find("#account-rates-features-save").addEventListener("click", saveFeatures);
     find("#account-rates-delete").addEventListener("click", remove);
     find("#account-rates-reset").addEventListener("click", () => {
         state.draft = Object.fromEntries([["enabled", true], ...state.definitions.map(d => [d.key, 1])]);
-        state.dirty = true;
+        state.featureDraft = Object.fromEntries(state.featureDefinitions.map(d => [d.key, false]));
+        updateDirty();
         clearNotice();
         render();
     });

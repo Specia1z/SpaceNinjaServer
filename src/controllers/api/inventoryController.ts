@@ -83,6 +83,7 @@ import type { ITypeCount } from "../../types/commonTypes.ts";
 import { sendWsBroadcastToWebui } from "../../services/wsService.ts";
 import { wikiDateToBuildVersion } from "../../helpers/versionHelper.ts";
 import { applyGlobalAccountCheats } from "../../services/accountCheatService.ts";
+import { getEffectiveAccountFeatureProfile } from "../../services/accountFeatureService.ts";
 
 export const inventoryController: RequestHandler = async (request, response) => {
     const account = await getAccountForRequest(request);
@@ -414,6 +415,7 @@ export const getInventoryResponse = async (
     forExport: boolean = false
 ): Promise<IInventoryClient> => {
     applyGlobalAccountCheats(inventory);
+    const accountFeatures = getEffectiveAccountFeatureProfile(inventory.accountOwnerId.toString());
     const [inventoryWithLoadOutPresets, ships, latestMessage, pendingTrades] = await Promise.all([
         inventory.populate<{ LoadOutPresets: ILoadoutDatabase }>("LoadOutPresets"),
         Ship.find({ ShipOwnerId: inventory.accountOwnerId }),
@@ -549,7 +551,10 @@ export const getInventoryResponse = async (
             }
         }
 
-        if (config.universalPolarityEverywhere && version_compare(buildLabel, gameToBuildVersion["24.4.0"]) >= 0) {
+        if (
+            accountFeatures.universalPolarityEverywhere &&
+            version_compare(buildLabel, gameToBuildVersion["24.4.0"]) >= 0
+        ) {
             // Apparently AP_ANY already existed in U24.4
             const Polarity: IPolarity[] = [];
             // 12 is needed for necramechs. 15 is needed for plexus/crewshipharness.
@@ -568,7 +573,7 @@ export const getInventoryResponse = async (
             }
         }
 
-        if (config.unlockDoubleCapacityPotatoesEverywhere) {
+        if (accountFeatures.unlockDoubleCapacityPotatoesEverywhere) {
             for (const key of equipmentKeys) {
                 if (key in inventoryResponse) {
                     for (const equipment of inventoryResponse[key]) {
@@ -579,7 +584,7 @@ export const getInventoryResponse = async (
             }
         }
 
-        if (config.unlockExilusEverywhere) {
+        if (accountFeatures.unlockExilusEverywhere) {
             for (const key of equipmentKeys) {
                 if (key in inventoryResponse) {
                     for (const equipment of inventoryResponse[key]) {
@@ -590,7 +595,7 @@ export const getInventoryResponse = async (
             }
         }
 
-        if (config.unlockArcanesEverywhere) {
+        if (accountFeatures.unlockArcanesEverywhere) {
             for (const key of equipmentKeys) {
                 if (key in inventoryResponse) {
                     for (const equipment of inventoryResponse[key]) {

@@ -153,6 +153,7 @@
   "missionPlatinumRewardSendMail": true,
   "accountDropMultipliers": {},
   "accountRateProfiles": {},
+  "accountFeatureProfiles": {},
   "relicPlatinumReward": {
     "common": 0,
     "uncommon": 0,

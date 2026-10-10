@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { Types } from "mongoose";
+import { parseAccountFeatureProfile } from "../../services/accountFeatureService.ts";
 import { parseAccountRateProfile } from "../../services/accountRateService.ts";
 import {
     deleteAccountRates,
@@ -8,7 +9,7 @@ import {
     saveAccountRates
 } from "../../services/accountRateAdminService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
-import { sendWsBroadcastEx } from "../../services/wsService.ts";
+import { sendWsBroadcastEx, sendWsBroadcastToGame } from "../../services/wsService.ts";
 
 const requireAdministrator = async (
     req: Parameters<RequestHandler>[0],
@@ -37,9 +38,13 @@ export const getAccountRatesController: RequestHandler = async (req, res) => {
 export const saveAccountRatesController: RequestHandler = async (req, res) => {
     if (!(await requireAdministrator(req, res))) return;
 
-    const body = req.body as { accountId?: unknown; profile?: unknown } | undefined;
-    if (typeof body?.accountId != "string" || !Types.ObjectId.isValid(body.accountId)) {
-        res.status(400).send("A valid accountId is required");
+    const body = req.body as { accountId?: unknown; profile?: unknown; features?: unknown } | undefined;
+    if (
+        typeof body?.accountId != "string" ||
+        !Types.ObjectId.isValid(body.accountId) ||
+        (body.profile === undefined && body.features === undefined)
+    ) {
+        res.status(400).send("A valid accountId and profile or features are required");
         return;
     }
     const account = await findAccountForRates(body.accountId);
@@ -50,12 +55,20 @@ export const saveAccountRatesController: RequestHandler = async (req, res) => {
 
     let profile;
     try {
-        profile = parseAccountRateProfile(body.profile);
+        profile = body.profile === undefined ? undefined : parseAccountRateProfile(body.profile);
     } catch (error) {
         res.status(400).send((error as Error).message);
         return;
     }
-    const saved = await saveAccountRates(account, profile);
+    let features;
+    try {
+        features = body.features === undefined ? undefined : parseAccountFeatureProfile(body.features);
+    } catch (error) {
+        res.status(400).send((error as Error).message);
+        return;
+    }
+    const saved = await saveAccountRates(account, profile, features);
+    sendWsBroadcastToGame(account._id.toString(), { sync_inventory: true });
     sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
     res.json(saved);
 };
