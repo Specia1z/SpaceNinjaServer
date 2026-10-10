@@ -275,6 +275,50 @@ export const getNemesisPasscode = (nemesis: { fp: bigint; Faction: TNemesisFacti
     return passcode;
 };
 
+const nemesisHintProgressThresholds = [35, 60, 100] as const;
+
+export const advanceNemesisHintProgress = (
+    nemesis: Pick<INemesisDatabase, "Faction" | "fp" | "HintProgress" | "Hints">,
+    rewardProgress: number,
+    multiplier: number
+): number => {
+    if (nemesis.Faction == "FC_INFESTATION") return 0;
+
+    if (nemesis.Hints.length >= nemesisHintProgressThresholds.length) {
+        nemesis.HintProgress = 0;
+        return 0;
+    }
+
+    if (!Number.isFinite(rewardProgress) || rewardProgress <= 0) return 0;
+    const safeMultiplier = Number.isFinite(multiplier) && multiplier >= 0 ? multiplier : 1;
+    const progressToAdd = rewardProgress * safeMultiplier;
+    if (!Number.isFinite(progressToAdd) || progressToAdd <= 0) return 0;
+
+    const currentProgress =
+        Number.isFinite(nemesis.HintProgress) && nemesis.HintProgress >= 0 ? nemesis.HintProgress : 0;
+    nemesis.HintProgress = currentProgress + progressToAdd;
+    const passcode = getNemesisPasscode(nemesis);
+    const rng = new SRng(nemesis.fp);
+    let hintsAdded = 0;
+
+    while (nemesis.Hints.length < nemesisHintProgressThresholds.length) {
+        const progressNeeded = nemesisHintProgressThresholds[nemesis.Hints.length];
+        if (nemesis.HintProgress < progressNeeded) break;
+
+        nemesis.HintProgress -= progressNeeded;
+        const availableHints = passcode.filter(code => !nemesis.Hints.includes(code));
+        if (availableHints.length == 0) break;
+
+        nemesis.Hints.push(availableHints[rng.randomInt(0, availableHints.length - 1)]);
+        hintsAdded++;
+    }
+
+    if (nemesis.Hints.length >= nemesisHintProgressThresholds.length) {
+        nemesis.HintProgress = 0;
+    }
+    return hintsAdded;
+};
+
 /*const requiemMods: readonly string[] = [
     "/Lotus/Upgrades/Mods/Immortal/ImmortalOneMod",
     "/Lotus/Upgrades/Mods/Immortal/ImmortalTwoMod",
@@ -519,16 +563,21 @@ export const getInfestedLichItemRewards = (fp: bigint): string[] => {
     return [rotAReward, rotBReward];
 };
 
-export const getNemesisTaxInfo = (nemesis: INemesisDatabase): INemesisTaxInfo | undefined => {
+export const getNemesisTaxInfo = (
+    nemesis: INemesisDatabase,
+    taxRateReductionPercent = 0
+): INemesisTaxInfo | undefined => {
+    const reduction = Math.min(Math.max(taxRateReductionPercent, 0), 100) / 100;
+    const multiplier = 1 - reduction;
     if (nemesis.Faction == "FC_GRINEER") {
         return {
-            TaxRate: nemesis.InfNodes.length * 0.007,
+            TaxRate: nemesis.InfNodes.length * 0.007 * multiplier,
             TaxCreditsOnly: false
         };
     }
     if (nemesis.Faction == "FC_CORPUS") {
         return {
-            TaxRate: lerp(0.5, 0.95, Math.min(nemesis.InfNodes.length / 10, 1)),
+            TaxRate: lerp(0.5, 0.95, Math.min(nemesis.InfNodes.length / 10, 1)) * multiplier,
             TaxCreditsOnly: true
         };
     }

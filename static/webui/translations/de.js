@@ -296,6 +296,7 @@ dict = {
     cheats_nemesisAntivirusGainMultiplier: `Antivirus-Fortschrittsmultiplikator`,
     cheats_nemesisHintProgressMultiplierGrineer: `Hinweis-Fortschrittsmultiplikator (Grineer)`,
     cheats_nemesisHintProgressMultiplierCorpus: `Hinweis-Fortschrittsmultiplikator (Corpus)`,
+    cheats_nemesisTaxRateReductionPercent: `Reduzierung der Nemesis-Steuer (%)`,
     cheats_nemesisExtraWeapon: `Zusätzliche Nemesis-Waffe/-Symbol bei Besiegung (0 zum deaktivieren)`,
     cheats_noHubDiscrimination: `Keine Hub-Trennung`,
     cheats_autoCompleteQuestsForNewAccounts: `[UNTRANSLATED] Automatically Complete All Quests for New Accounts`,

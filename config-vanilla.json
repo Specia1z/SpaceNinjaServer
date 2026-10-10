@@ -84,6 +84,7 @@
     "nemesisAntivirusGainMultiplier": 1,
     "nemesisHintProgressMultiplierGrineer": 1,
     "nemesisHintProgressMultiplierCorpus": 1,
+    "nemesisTaxRateReductionPercent": 0,
     "nemesisExtraWeapon": 0,
     "spoofMasteryRank": -1,
     "dailyTributeRewardMultiplier": 1,

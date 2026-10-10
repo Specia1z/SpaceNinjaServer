@@ -87,6 +87,7 @@ export const accountCheatNumbers = [
     "nemesisAntivirusGainMultiplier",
     "nemesisHintProgressMultiplierGrineer",
     "nemesisHintProgressMultiplierCorpus",
+    "nemesisTaxRateReductionPercent",
     "nemesisExtraWeapon",
     "spoofMasteryRank",
     "dailyTributeRewardMultiplier",

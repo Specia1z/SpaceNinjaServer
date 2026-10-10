@@ -81,8 +81,8 @@ import {
     getInfNodes,
     getKillTokenRewardCount,
     getNemesisManifest,
-    getNemesisPasscode,
-    getNemesisTaxInfo
+    getNemesisTaxInfo,
+    advanceNemesisHintProgress
 } from "../helpers/nemesisHelpers.ts";
 import { Loadout } from "../models/inventoryModels/loadoutModel.ts";
 import {
@@ -103,6 +103,7 @@ import {
     getLiveSyndicateMissionByOid
 } from "./liveWorldStateService.ts";
 import { config, shouldDoServerQol } from "./configService.ts";
+import { getAccountCheatValue } from "./accountCheatService.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "./accountRateService.ts";
 import { addMissionPlatinumReward, addMissionRegalAyaReward } from "./missionPlatinumRewardService.ts";
 import { addMissionCredits } from "./missionCreditService.ts";
@@ -236,31 +237,21 @@ export const addMissionInventoryUpdates = async (
             inventory.Nemesis.HenchmenKilled +=
                 inventoryUpdates.RewardInfo.NemesisHenchmenKills * HenchmenKilledMultiplier;
         }
-        if (inventoryUpdates.RewardInfo.NemesisHintProgress && inventory.Nemesis) {
-            let HintProgressMultiplier = 1;
+        if (inventoryUpdates.RewardInfo.NemesisHintProgress !== undefined && inventory.Nemesis) {
+            let hintProgressMultiplier = 1;
             switch (inventory.Nemesis.Faction) {
                 case "FC_GRINEER":
-                    HintProgressMultiplier = inventory.nemesisHintProgressMultiplierGrineer ?? 1;
+                    hintProgressMultiplier = inventory.nemesisHintProgressMultiplierGrineer ?? 1;
                     break;
                 case "FC_CORPUS":
-                    HintProgressMultiplier = inventory.nemesisHintProgressMultiplierCorpus ?? 1;
+                    hintProgressMultiplier = inventory.nemesisHintProgressMultiplierCorpus ?? 1;
                     break;
             }
-            inventory.Nemesis.HintProgress += inventoryUpdates.RewardInfo.NemesisHintProgress * HintProgressMultiplier;
-            if (inventory.Nemesis.Faction != "FC_INFESTATION" && inventory.Nemesis.Hints.length != 3) {
-                const progressNeeded = [35, 60, 100][inventory.Nemesis.Hints.length];
-                if (inventory.Nemesis.HintProgress >= progressNeeded) {
-                    inventory.Nemesis.HintProgress -= progressNeeded;
-                    const passcode = getNemesisPasscode(inventory.Nemesis);
-                    const Hints = inventory.Nemesis.Hints;
-                    const rng = new SRng(inventory.Nemesis.fp);
-                    inventory.Nemesis.Hints.push(
-                        passcode.filter(code => !Hints.includes(code))[
-                            rng.randomInt(0, 2 - inventory.Nemesis.Hints.length)
-                        ]
-                    );
-                }
-            }
+            advanceNemesisHintProgress(
+                inventory.Nemesis,
+                inventoryUpdates.RewardInfo.NemesisHintProgress,
+                hintProgressMultiplier
+            );
         }
         if (inventoryUpdates.RewardInfo.jobId) {
             // e.g. for Profit-Taker Phase 1:
@@ -1562,7 +1553,7 @@ export const addMissionRewards = async (
     );
 
     const NemesisTaxInfo: INemesisTaxInfo | undefined = nodeControlledByNemesis
-        ? getNemesisTaxInfo(inventory.Nemesis!)
+        ? getNemesisTaxInfo(inventory.Nemesis!, getAccountCheatValue("nemesisTaxRateReductionPercent"))
         : undefined;
     if (NemesisTaxInfo) {
         const taxedCredits = Math.round(credits.TotalCredits[0] * NemesisTaxInfo.TaxRate);

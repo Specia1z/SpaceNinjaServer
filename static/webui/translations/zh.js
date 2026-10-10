@@ -367,6 +367,7 @@ dict = {
     cheats_nemesisAntivirusGainMultiplier: `杀毒进度倍率 (科腐者)`,
     cheats_nemesisHintProgressMultiplierGrineer: `解密进度倍率 (Grineer)`,
     cheats_nemesisHintProgressMultiplierCorpus: `解密进度倍率 (Corpus)`,
+    cheats_nemesisTaxRateReductionPercent: `玄骸税率减免 (%)`,
     cheats_nemesisExtraWeapon: `额外玄骸武器/代币 (0为禁用)`,
     cheats_noHubDiscrimination: `中继站无地区限制`,
     cheats_autoCompleteQuestsForNewAccounts: `新账号自动完成全部系列任务`,

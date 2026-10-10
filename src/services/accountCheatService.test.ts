@@ -20,6 +20,8 @@ void test("global account cheat config overrides legacy inventory values", () =>
     assert.equal(values.get("infiniteCredits"), true);
     assert.equal(values.get("spoofMasteryRank"), 42);
     assert.equal(values.get("skipAllDialogue"), false);
+    assert.equal(defaultAccountCheats.nemesisTaxRateReductionPercent, 0);
+    assert.equal(values.get("nemesisTaxRateReductionPercent"), defaultAccountCheats.nemesisTaxRateReductionPercent);
     assert.equal(values.get("nemesisExtraWeapon"), defaultAccountCheats.nemesisExtraWeapon);
     assert.equal(unmarked.length, values.size);
     config.accountCheats = previous;
@@ -30,5 +32,7 @@ void test("global account cheat config validates keys and numeric bounds", () =>
     assert.match(validateAccountCheatConfig("accountCheats.infiniteCredits", 1) ?? "", /boolean/);
     assert.equal(validateAccountCheatConfig("accountCheats.spoofMasteryRank", -1), undefined);
     assert.match(validateAccountCheatConfig("accountCheats.spoofMasteryRank", 65536) ?? "", /integer/);
+    assert.equal(validateAccountCheatConfig("accountCheats.nemesisTaxRateReductionPercent", 100), undefined);
+    assert.match(validateAccountCheatConfig("accountCheats.nemesisTaxRateReductionPercent", 101) ?? "", /integer/);
     assert.match(validateAccountCheatConfig("accountCheats.notARealCheat", true) ?? "", /Unknown/);
 });
