@@ -59,6 +59,14 @@ void test("compiled metadata patches are empty when no structured patches exist"
     config.tunables!.accountMetadataPatches = accountMetadataPatches;
 });
 
+void test("blacklisted accounts receive no global or account metadata patches", () => {
+    config.tunables!.metadataPatchBlacklist = [accountId];
+    assert.deepEqual(getMetadataPatchesForAccount(accountId), []);
+    assert.equal(compileMetadataPatchesForAccount(accountId), "");
+    assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1", accountId).metadata_patches, undefined);
+    delete config.tunables!.metadataPatchBlacklist;
+});
+
 void test("native proxy forcing is only emitted when explicitly enabled", () => {
     assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1").force_native_proxy, undefined);
 

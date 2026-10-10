@@ -7,6 +7,7 @@ export interface IMetadataPatchSettings {
     Key: string;
     Patches: IMetadataPatchConfig[];
     AccountPatches: Partial<Record<string, IMetadataPatchConfig[]>>;
+    AccountBlacklist?: string[];
 }
 
 const metadataPatchSchema = new Schema<IMetadataPatchConfig>(
@@ -24,7 +25,8 @@ const metadataPatchSettingsSchema = new Schema<IMetadataPatchSettings>(
     {
         Key: { type: String, required: true, unique: true },
         Patches: { type: [metadataPatchSchema], required: true, default: [] },
-        AccountPatches: { type: Schema.Types.Mixed, required: true, default: {} }
+        AccountPatches: { type: Schema.Types.Mixed, required: true, default: {} },
+        AccountBlacklist: { type: [String], required: true, default: [] }
     },
     { timestamps: true }
 );

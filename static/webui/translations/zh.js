@@ -819,6 +819,8 @@ dict = {
     metadataPatches_globalList: `全局补丁顺序`,
     metadataPatches_accountTitle: `账号专属补丁`,
     metadataPatches_accountDescription: `选择账号，在全局补丁之后追加该账号的补丁。后执行的条目会覆盖先前对同一字段的赋值。`,
+    metadataPatches_blacklist: `禁止接收服务端元数据补丁`,
+    metadataPatches_blacklisted: `已屏蔽`,
     metadataPatches_accountSearch: `搜索账号`,
     metadataPatches_accountNoSelection: `请选择要编辑补丁的账号。`,
     metadataPatches_accountEmpty: `没有匹配的账号。`,

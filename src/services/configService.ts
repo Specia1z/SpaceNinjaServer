@@ -396,6 +396,8 @@ export interface IConfig {
         metadataPatches?: IMetadataPatchConfig[];
         /** Metadata patches appended after the global patches for a matching account ID. */
         accountMetadataPatches?: Partial<Record<string, IMetadataPatchConfig[]>>;
+        /** Account IDs that must not receive any server metadata patches. */
+        metadataPatchBlacklist?: string[];
     };
     dev?: {
         keepVendorsExpired?: boolean;

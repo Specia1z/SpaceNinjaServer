@@ -818,6 +818,8 @@ dict = {
     metadataPatches_globalList: `Global patch order`,
     metadataPatches_accountTitle: `Account patches`,
     metadataPatches_accountDescription: `Select an account to append patches after the global list. Later entries override earlier assignments.`,
+    metadataPatches_blacklist: `Block server metadata patches`,
+    metadataPatches_blacklisted: `Blocked`,
     metadataPatches_accountSearch: `Search accounts`,
     metadataPatches_accountNoSelection: `Select an account to edit its patches.`,
     metadataPatches_accountEmpty: `No matching accounts.`,

@@ -4,6 +4,7 @@
     const state = {
         globalPatches: [],
         accountPatches: {},
+        metadataPatchBlacklist: [],
         accounts: [],
         selectedId: null,
         sources: [],
@@ -27,7 +28,12 @@
         return state.selectedId ? (state.accountPatches[state.selectedId] ?? []) : [];
     }
 
+    function selectedAccountIsBlacklisted() {
+        return Boolean(state.selectedId && state.metadataPatchBlacklist.includes(state.selectedId));
+    }
+
     function effectivePatches() {
+        if (selectedAccountIsBlacklisted()) return [];
         return [...state.globalPatches, ...selectedPatches()];
     }
 
@@ -246,8 +252,11 @@
             name.className = "metadata-patches-account-item-name";
             name.textContent = account.displayName;
             const badge = document.createElement("span");
-            badge.className = `badge ${account.hasCustomPatches ? "text-bg-primary" : "text-bg-secondary"}`;
-            badge.textContent = String((state.accountPatches[account.id] ?? []).length);
+            const blacklisted = state.metadataPatchBlacklist.includes(account.id);
+            badge.className = `badge ${blacklisted ? "text-bg-danger" : account.hasCustomPatches ? "text-bg-primary" : "text-bg-secondary"}`;
+            badge.textContent = blacklisted
+                ? loc("metadataPatches_blacklisted")
+                : String((state.accountPatches[account.id] ?? []).length);
             button.append(name, badge);
             list.append(button);
         });
@@ -264,6 +273,9 @@
             find("#metadata-patches-account-id").textContent = account.id;
             find("#metadata-patches-account-count").textContent =
                 `${selectedPatches().length} ${loc("metadataPatches_count")}`;
+            const blacklist = find("#metadata-patches-account-blacklist");
+            blacklist.checked = selectedAccountIsBlacklisted();
+            blacklist.disabled = state.busy;
             renderPatchList("#metadata-patches-account-list-editor", selectedPatches(), "metadataPatches_empty");
         }
         renderPreview();
@@ -306,6 +318,7 @@
         state.accountPatches = Object.fromEntries(
             Object.entries(data.accountMetadataPatches ?? {}).map(([id, patches]) => [id, patches.map(normalize)])
         );
+        state.metadataPatchBlacklist = data.metadataPatchBlacklist ?? [];
         state.accounts = data.accounts ?? [];
         state.selectedId = state.accounts[0]?.id ?? null;
         state.sources = data.sources ?? [];
@@ -334,6 +347,18 @@
         render();
     });
     find("#metadata-patches-account-search").addEventListener("input", renderAccounts);
+    find("#metadata-patches-account-blacklist").addEventListener("change", event => {
+        if (!state.selectedId) return;
+        const accountId = state.selectedId;
+        const blacklist = state.metadataPatchBlacklist;
+        if (event.target.checked) {
+            if (!blacklist.includes(accountId)) blacklist.push(accountId);
+        } else {
+            state.metadataPatchBlacklist = blacklist.filter(id => id != accountId);
+        }
+        markDirty();
+        render();
+    });
     find("[data-loc='metadataPatches_copy']").addEventListener("click", async () => {
         const compiled = compiledPreview();
         if (!compiled) {
@@ -371,12 +396,14 @@
             const data = await window.metadataPatchApi.save(
                 state.globalPatches,
                 accountMetadataPatches,
+                state.metadataPatchBlacklist,
                 state.selectedId
             );
             state.globalPatches = (data.patches ?? []).map(normalize);
             state.accountPatches = Object.fromEntries(
                 Object.entries(data.accountMetadataPatches ?? {}).map(([id, patches]) => [id, patches.map(normalize)])
             );
+            state.metadataPatchBlacklist = data.metadataPatchBlacklist ?? [];
             state.accounts = data.accounts ?? state.accounts;
             state.sources = data.sources ?? [];
             state.revision = data.revision ?? "";

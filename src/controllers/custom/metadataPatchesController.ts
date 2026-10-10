@@ -18,6 +18,7 @@ const MAX_TARGET_LENGTH = 1000;
 const MAX_OPERATION_LENGTH = 10000;
 const MAX_PATCH_TEXT_LENGTH = 12 * 1024 * 1024;
 const MAX_ACCOUNT_PATCH_ENTRIES = 5000;
+const MAX_ACCOUNT_BLACKLIST_ENTRIES = 5000;
 const MAX_METADATA_SETTINGS_BYTES = 14 * 1024 * 1024;
 
 const sourceLabel = (entry: IMetadataPatchSource): string =>
@@ -26,6 +27,7 @@ const sourceLabel = (entry: IMetadataPatchSource): string =>
 interface IMetadataPatchesResponse {
     patches: IMetadataPatchConfig[];
     accountMetadataPatches: Partial<Record<string, IMetadataPatchConfig[]>>;
+    metadataPatchBlacklist: string[];
     selectedAccountId: string;
     compiled: string;
     sources: {
@@ -48,6 +50,7 @@ const getResponse = (accountId?: string): IMetadataPatchesResponse => {
     return {
         patches,
         accountMetadataPatches,
+        metadataPatchBlacklist: metadata.accountBlacklist,
         selectedAccountId: accountId ?? "",
         compiled,
         sources: entries.map(entry => ({
@@ -154,6 +157,22 @@ export const parseAccountMetadataPatches = (value: unknown): Record<string, IMet
     );
 };
 
+export const parseMetadataPatchBlacklist = (value: unknown): string[] => {
+    if (value === undefined) return [];
+    if (!Array.isArray(value) || value.length > MAX_ACCOUNT_BLACKLIST_ENTRIES) {
+        throw new Error(
+            `metadataPatchBlacklist must be an array with at most ${MAX_ACCOUNT_BLACKLIST_ENTRIES} account IDs`
+        );
+    }
+    const accountIds = value.map((accountId, index) => {
+        if (typeof accountId != "string" || !accountId.trim() || accountId.length > 100) {
+            throw new Error(`metadataPatchBlacklist entry ${index + 1} must be a non-empty account ID`);
+        }
+        return accountId.trim();
+    });
+    return [...new Set(accountIds)];
+};
+
 export const getMetadataPatchesController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     if (!isAdministrator(account)) {
@@ -185,11 +204,22 @@ export const saveMetadataPatchesController: RequestHandler = async (req, res) =>
             body.accountMetadataPatches === undefined
                 ? getMetadataPatchState().accountPatches
                 : parseAccountMetadataPatches(body.accountMetadataPatches);
-        const settingsSize = Buffer.byteLength(JSON.stringify({ patches, accountMetadataPatches }), "utf8");
+        const metadataPatchBlacklist =
+            body.metadataPatchBlacklist === undefined
+                ? getMetadataPatchState().accountBlacklist
+                : parseMetadataPatchBlacklist(body.metadataPatchBlacklist);
+        const settingsSize = Buffer.byteLength(
+            JSON.stringify({ patches, accountMetadataPatches, metadataPatchBlacklist }),
+            "utf8"
+        );
         if (settingsSize > MAX_METADATA_SETTINGS_BYTES) {
             throw new Error(`Metadata patch settings must be at most ${MAX_METADATA_SETTINGS_BYTES} bytes`);
         }
-        await saveMetadataPatchState({ patches, accountPatches: accountMetadataPatches });
+        await saveMetadataPatchState({
+            patches,
+            accountPatches: accountMetadataPatches,
+            accountBlacklist: metadataPatchBlacklist
+        });
 
         forEachWsClient(client => {
             if (client.isGame) {

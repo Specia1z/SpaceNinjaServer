@@ -25,13 +25,15 @@ after(async () => {
 void test("metadata patches import config once and then use MongoDB as source of truth", async () => {
     config.tunables = {
         metadataPatches: [{ name: "initial", targets: ["/Initial"], operations: ["Set(1)"] }],
-        accountMetadataPatches: { account: [{ name: "account", text: "/Account\nSet(2)" }] }
+        accountMetadataPatches: { account: [{ name: "account", text: "/Account\nSet(2)" }] },
+        metadataPatchBlacklist: ["blocked-account"]
     };
 
     await initializeMetadataPatches();
     assert.deepEqual(getMetadataPatchState(), {
         patches: [{ name: "initial", targets: ["/Initial"], operations: ["Set(1)"] }],
-        accountPatches: { account: [{ name: "account", text: "/Account\nSet(2)" }] }
+        accountPatches: { account: [{ name: "account", text: "/Account\nSet(2)" }] },
+        accountBlacklist: ["blocked-account"]
     });
 
     config.tunables.metadataPatches = [{ name: "changed", text: "/Changed" }];
@@ -40,10 +42,12 @@ void test("metadata patches import config once and then use MongoDB as source of
 
     await saveMetadataPatchState({
         patches: [{ name: "global text", text: "/Global\nSet(3)" }],
-        accountPatches: { account: [{ name: "account text", text: "/Account\nSet(4)" }] }
+        accountPatches: { account: [{ name: "account text", text: "/Account\nSet(4)" }] },
+        accountBlacklist: ["blocked-account"]
     });
     const persisted = await MetadataPatchSettings.findOne().lean();
     assert.ok(persisted);
     assert.equal(persisted.Patches[0].text, "/Global\nSet(3)");
     assert.equal(persisted.AccountPatches.account![0].text, "/Account\nSet(4)");
+    assert.deepEqual(persisted.AccountBlacklist, ["blocked-account"]);
 });

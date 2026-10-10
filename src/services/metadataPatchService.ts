@@ -8,18 +8,21 @@ import { config, type IMetadataPatchConfig } from "./configService.ts";
 export interface IMetadataPatchState {
     patches: IMetadataPatchConfig[];
     accountPatches: Partial<Record<string, IMetadataPatchConfig[]>>;
+    accountBlacklist: string[];
 }
 
 let state: IMetadataPatchState | undefined;
 
 const fromConfig = (): IMetadataPatchState => ({
     patches: config.tunables?.metadataPatches ?? [],
-    accountPatches: config.tunables?.accountMetadataPatches ?? {}
+    accountPatches: config.tunables?.accountMetadataPatches ?? {},
+    accountBlacklist: config.tunables?.metadataPatchBlacklist ?? []
 });
 
 const fromDocument = (document: IMetadataPatchSettings): IMetadataPatchState => ({
     patches: document.Patches,
-    accountPatches: document.AccountPatches
+    accountPatches: document.AccountPatches,
+    accountBlacklist: document.AccountBlacklist ?? []
 });
 
 export const initializeMetadataPatches = async (): Promise<void> => {
@@ -30,7 +33,8 @@ export const initializeMetadataPatches = async (): Promise<void> => {
         {
             $setOnInsert: {
                 Patches: initial.patches,
-                AccountPatches: initial.accountPatches
+                AccountPatches: initial.accountPatches,
+                AccountBlacklist: initial.accountBlacklist
             }
         },
         { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
@@ -46,7 +50,8 @@ export const saveMetadataPatchState = async (next: IMetadataPatchState): Promise
         {
             $set: {
                 Patches: next.patches,
-                AccountPatches: next.accountPatches
+                AccountPatches: next.accountPatches,
+                AccountBlacklist: next.accountBlacklist
             }
         },
         { upsert: true, returnDocument: "after", runValidators: true, setDefaultsOnInsert: true }

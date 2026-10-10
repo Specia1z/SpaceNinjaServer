@@ -70,6 +70,9 @@ export interface IMetadataPatchSource {
 
 export const getMetadataPatchesForAccount = (accountId?: string): IMetadataPatchSource[] => {
     const metadata = getMetadataPatchState();
+    if (accountId && metadata.accountBlacklist.includes(accountId)) {
+        return [];
+    }
     const globalPatches = metadata.patches;
     const accountPatches = accountId ? (metadata.accountPatches[accountId] ?? []) : [];
     return [

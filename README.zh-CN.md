@@ -70,6 +70,8 @@ Copy-Item config-vanilla.json config.json
 - `worldState.liveSync`：是否启用实时世界状态同步。模板默认关闭。
 - `database`：保留对象配置可使用本地持久化的嵌入式 MongoDB，也可替换为已有 MongoDB URI。
 
+`tunables.metadataPatchBlacklist` 可配置不接收任何服务端元数据补丁的账号 ID 列表。管理员也可以在 WebUI 的“元数据补丁”页面按账号切换黑名单；修改会立即推送给已连接的 Bootstrapper，但已经加载的游戏元数据需要完整重启游戏才能重新应用。
+
 按账号设置资源拾取量和任务 Mod 倍率时，在 `config.json` 的 `accountDropMultipliers` 中使用游戏显示名作为键。未配置的账号保持原行为：
 
 ```json

@@ -694,6 +694,8 @@ dict = {
     metadataPatches_globalList: `[UNTRANSLATED] Global patch order`,
     metadataPatches_accountTitle: `[UNTRANSLATED] Account patches`,
     metadataPatches_accountDescription: `[UNTRANSLATED] Select an account to append patches after the global list.`,
+    metadataPatches_blacklist: `[UNTRANSLATED] Block server metadata patches`,
+    metadataPatches_blacklisted: `[UNTRANSLATED] Blocked`,
     metadataPatches_accountSearch: `[UNTRANSLATED] Search accounts`,
     metadataPatches_accountNoSelection: `[UNTRANSLATED] Select an account to edit its patches.`,
     metadataPatches_accountEmpty: `[UNTRANSLATED] No matching accounts.`,

@@ -293,7 +293,8 @@
     "versionMismatchTitle": null,
     "versionMismatchMessage": null,
     "metadataPatches": [],
-    "accountMetadataPatches": {}
+    "accountMetadataPatches": {},
+    "metadataPatchBlacklist": []
   },
   "dev": {
     "keepVendorsExpired": false
