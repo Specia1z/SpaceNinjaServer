@@ -154,13 +154,10 @@ export const getTunablesForClient = (
                 .replaceAll("|FOUND_BUILDLAB|", buildVersion || "unknown");
         }
     }
-    // The first bootstrapper request can happen before account authentication. Do not leak global
-    // patches to an unauthenticated client when any account is explicitly blacklisted; the authenticated
-    // WebSocket refresh below sends the account-specific result.
-    const metadataPatches =
-        accountId === undefined && getMetadataPatchState().accountBlacklist.length > 0
-            ? ""
-            : compileMetadataPatchesForAccount(accountId);
+    // The first bootstrapper request can happen before account authentication, so it cannot be
+    // filtered by an account blacklist. Apply account-specific filtering once the WebSocket has
+    // authenticated the game instead of suppressing global patches for every unknown account.
+    const metadataPatches = compileMetadataPatchesForAccount(accountId);
     if (metadataPatches) {
         tunables.metadata_patches = metadataPatches;
         tunables.metadata_patches_revision = crypto.createHash("sha256").update(metadataPatches).digest("hex");

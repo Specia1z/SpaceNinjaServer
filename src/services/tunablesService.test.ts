@@ -67,9 +67,13 @@ void test("blacklisted accounts receive no global or account metadata patches", 
     delete config.tunables!.metadataPatchBlacklist;
 });
 
-void test("unauthenticated bootstrapper requests with a blacklist receive no global patches", () => {
+void test("an account blacklist does not suppress global patches for other bootstrapper clients", () => {
     config.tunables!.metadataPatchBlacklist = [accountId];
-    assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1").metadata_patches, undefined);
+    assert.equal(
+        getTunablesForClient("127.0.0.1", "127.0.0.1").metadata_patches,
+        "# Server patch: global base\n/Resource\nCredits = 100\n\n# Server patch: global second\n/Resource\nOther = true"
+    );
+    assert.equal(getTunablesForClient("127.0.0.1", "127.0.0.1", accountId).metadata_patches, undefined);
     delete config.tunables!.metadataPatchBlacklist;
 });
 
