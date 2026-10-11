@@ -87,7 +87,6 @@ import {
 } from "../helpers/nemesisHelpers.ts";
 import { Loadout } from "../models/inventoryModels/loadoutModel.ts";
 import {
-    getInvasionByOid,
     getGoalByOid,
     getLiteSortie,
     getSortie,
@@ -98,11 +97,8 @@ import {
     pushClassicBounties,
     getAlertByOid
 } from "./worldStateService.ts";
-import {
-    advanceLiveGoalProgress,
-    advanceLiveInvasionProgress,
-    getLiveSyndicateMissionByOid
-} from "./liveWorldStateService.ts";
+import { advanceLiveGoalProgress, getLiveSyndicateMissionByOid } from "./liveWorldStateService.ts";
+import { processInvasionProgress } from "./invasionProgressService.ts";
 import { config, shouldDoServerQol } from "./configService.ts";
 import { getAccountCheatValue } from "./accountCheatService.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "./accountRateService.ts";
@@ -141,7 +137,6 @@ import { Guild } from "../models/guildModel.ts";
 import { handleGuildGoalProgress } from "./guildService.ts";
 import { importLoadOutConfig } from "./importService.ts";
 import gameToBuildVersion from "../constants/gameToBuildVersion.ts";
-import { corpusDeathSquadInfo, grineerDeathSquadInfo } from "./invasionService.ts";
 import { libraryTargetToAvatar } from "../constants/synthesis.ts";
 import { buildVersionToInt, wikiDateToBuildVersionInt } from "../helpers/versionHelper.ts";
 import baro from "../constants/baro.ts";
@@ -155,19 +150,6 @@ interface MissionInventoryUpdatesReturnType {
     InventoryChanges: IInventoryChanges;
     ProcessedWeeklyMissionChallengeInfos?: IWeeklyMissionChallengeInfo[];
 }
-
-const normalizeInvasionDelta = (value: number): number => (Number.isFinite(value) ? Math.trunc(value) : 0);
-const normalizeInvasionScore = (value: number): number => (Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0);
-const MAX_INVASION_CONTRIBUTION_KEYS = 256;
-
-const getInvasionContributionKey = (
-    inventoryUpdates: IMissionInventoryUpdateRequest,
-    invasionId: string
-): string | undefined => {
-    const sharedSessionId =
-        typeof inventoryUpdates.sharedSessionId == "string" ? inventoryUpdates.sharedSessionId.trim() : "";
-    return sharedSessionId ? `${invasionId}|${sharedSessionId}` : undefined;
-};
 
 export const addMissionInventoryUpdates = async (
     account: TAccountDocument,
@@ -769,103 +751,7 @@ export const addMissionInventoryUpdates = async (
                 break;
             }
             case "InvasionProgress": {
-                const rewardInfo = inventoryUpdates.RewardInfo;
-                const canCreditInvasionProgress =
-                    inventoryUpdates.EndOfMatchUpload === true &&
-                    inventoryUpdates.MissionStatus == "GS_SUCCESS" &&
-                    rewardInfo !== undefined;
-                if (!canCreditInvasionProgress) {
-                    logger.debug("ignoring invasion progress without a successful end-of-match reward");
-                    break;
-                }
-                for (const clientProgress of value) {
-                    const invasionId = fromOid(clientProgress._id);
-                    const invasion = getInvasionByOid(invasionId);
-                    if (!invasion) {
-                        logger.warn(`received progress for unknown invasion ${invasionId}`);
-                        continue;
-                    }
-                    if (
-                        rewardInfo.node != invasion.Node ||
-                        (rewardInfo.invasionId !== undefined && rewardInfo.invasionId != invasionId)
-                    ) {
-                        logger.debug(`ignoring invasion progress for a mismatched mission: ${invasionId}`);
-                        continue;
-                    }
-
-                    const contributionKey = getInvasionContributionKey(inventoryUpdates, invasionId);
-                    if (contributionKey && inventory.InvasionContributionKeys?.includes(contributionKey)) {
-                        logger.debug(`ignoring replayed invasion progress for ${invasionId}`);
-                        continue;
-                    }
-
-                    const attackerScore = normalizeInvasionScore(clientProgress.AttackerScore);
-                    const defenderScore = normalizeInvasionScore(clientProgress.DefenderScore);
-                    if (attackerScore == defenderScore) {
-                        logger.debug(`ignoring invasion progress without a single winning faction: ${invasionId}`);
-                        continue;
-                    }
-                    const completionMultiplier = inventory.finishInvasionsInOneMission ? 3 : 1;
-                    // Scores are direction markers, not a client-controlled global progress amount.
-                    clientProgress.Delta = normalizeInvasionDelta(attackerScore > defenderScore ? 1 : -1);
-                    clientProgress.AttackerScore = attackerScore > defenderScore ? completionMultiplier : 0;
-                    clientProgress.DefenderScore = defenderScore > attackerScore ? completionMultiplier : 0;
-                    if (inventory.finishInvasionsInOneMission) {
-                        clientProgress.Delta *= completionMultiplier;
-                    }
-                    if (contributionKey) {
-                        inventory.InvasionContributionKeys ??= [];
-                        inventory.InvasionContributionKeys.push(contributionKey);
-                        if (inventory.InvasionContributionKeys.length > MAX_INVASION_CONTRIBUTION_KEYS) {
-                            inventory.InvasionContributionKeys.splice(
-                                0,
-                                inventory.InvasionContributionKeys.length - MAX_INVASION_CONTRIBUTION_KEYS
-                            );
-                        }
-                    }
-                    const dbProgress = inventory.QualifyingInvasions.find(x => x.invasionId.equals(invasionId));
-                    if (dbProgress) {
-                        dbProgress.Delta += clientProgress.Delta;
-                        dbProgress.AttackerScore += clientProgress.AttackerScore;
-                        dbProgress.DefenderScore += clientProgress.DefenderScore;
-                    } else {
-                        inventory.QualifyingInvasions.push({
-                            invasionId: new Types.ObjectId(invasionId),
-                            Delta: clientProgress.Delta,
-                            AttackerScore: clientProgress.AttackerScore,
-                            DefenderScore: clientProgress.DefenderScore
-                        });
-                    }
-                    await advanceLiveInvasionProgress(
-                        invasionId,
-                        clientProgress.AttackerScore,
-                        clientProgress.DefenderScore,
-                        1
-                    );
-                    const factionSidedWith = clientProgress.AttackerScore ? invasion.Faction : invasion.DefenderFaction;
-                    if (invasion.Faction != "FC_INFESTATION") {
-                        const info = factionSidedWith != "FC_GRINEER" ? grineerDeathSquadInfo : corpusDeathSquadInfo;
-                        if (!inventory[info.booleanKey] && !inventory.noDeathMarks) {
-                            const numberKey = info.numberKey;
-                            inventory[numberKey] ??= 0;
-                            inventory[numberKey] += clientProgress.AttackerScore + clientProgress.DefenderScore;
-                            if (inventory[numberKey] >= 5) {
-                                inventory[numberKey] = 0;
-                                const isRepeatMark = inventory[info.booleanKey] !== undefined;
-                                inventory[info.booleanKey] = true;
-                                await createMessage(inventory.accountOwnerId, [
-                                    {
-                                        sndr: info.inboxSender,
-                                        msg: isRepeatMark ? info.inboxMessageRepeat : info.inboxMessage,
-                                        sub: info.inboxTitle,
-                                        icon: info.inboxIcon,
-                                        highPriority: true
-                                    }
-                                ]);
-                            }
-                        }
-                    }
-                }
+                await processInvasionProgress(inventory, inventoryUpdates);
                 break;
             }
             case "CalendarProgress": {

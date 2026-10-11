@@ -20,12 +20,10 @@ import {
     loadoutKeysLegacy
 } from "../../types/inventoryTypes/inventoryTypes.ts";
 import type { IPolarity } from "../../types/inventoryTypes/commonInventoryTypes.ts";
-import type { ICountedItem } from "warframe-public-export-plus";
 import { ExportArcanes, ExportResources, ExportWarframes, ExportWeapons } from "warframe-public-export-plus";
 import { applyCheatsToInfestedFoundry, handleSubsumeCompletion } from "../../services/infestedFoundryService.ts";
 import {
     addEmailItem,
-    addItem,
     addMiscItems,
     addMods,
     allDailyAffiliationKeys,
@@ -67,13 +65,13 @@ import { unixTimesInMs } from "../../constants/timeConstants.ts";
 import { DailyDeal } from "../../models/worldStateModel.ts";
 import { eEquipmentFeatures } from "../../types/equipmentTypes.ts";
 import { generateRewardSeed } from "../../services/rngService.ts";
-import { getCalendarSeason, getInvasionByOid, getWorldStateTime } from "../../services/worldStateService.ts";
-import { createMessage, getInboxFilter } from "../../services/inboxService.ts";
+import { getCalendarSeason, getWorldStateTime } from "../../services/worldStateService.ts";
+import { getInboxFilter } from "../../services/inboxService.ts";
 import {
-    claimInvasionReward,
     completeInvasionRewardClaim,
     type TInvasionRewardClaimResult
 } from "../../services/invasionRewardClaimService.ts";
+import { processInvasionRewards } from "../../services/invasionRewardService.ts";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { PendingTrade } from "../../models/tradingModel.ts";
 import { exportTrade } from "../../services/tradingService.ts";
@@ -257,81 +255,8 @@ export const inventoryController: RequestHandler = async (request, response) => 
         //await inventory.save();
     }
 
-    const completedInvasionRewardClaims: Extract<TInvasionRewardClaimResult, { status: "claimed" }>[] = [];
-    for (let i = 0; i != inventory.QualifyingInvasions.length; ) {
-        const qi = inventory.QualifyingInvasions[i];
-        const invasion = getInvasionByOid(qi.invasionId.toString());
-        if (!invasion) {
-            logger.debug(`removing QualifyingInvasions entry for unknown invasion: ${qi.invasionId.toString()}`);
-            inventory.QualifyingInvasions.splice(i, 1);
-            continue;
-        }
-        if (invasion.Completed) {
-            let factionSidedWith: string | undefined;
-            let battlePay: readonly ICountedItem[] | undefined;
-            if (qi.AttackerScore >= 3) {
-                factionSidedWith = invasion.Faction;
-                battlePay = invasion.AttackerReward.countedItems;
-            } else if (qi.DefenderScore >= 3) {
-                factionSidedWith = invasion.DefenderFaction;
-                battlePay = invasion.DefenderReward.countedItems;
-            }
-            if (factionSidedWith && battlePay) {
-                const invasionId = qi.invasionId.toString();
-                const claim = await claimInvasionReward(account._id, invasionId);
-                if (claim.status == "busy") {
-                    ++i;
-                    continue;
-                }
-                if (claim.status == "completed") {
-                    inventory.QualifyingInvasions.splice(i, 1);
-                    continue;
-                }
-                logger.debug(`invasion pay from ${factionSidedWith}`, { battlePay });
-                const messageContext = `invasion-reward:${invasionId}`;
-                const rewardMessageExists = await Inbox.exists({ ownerId: account._id, contextInfo: messageContext });
-                if (!rewardMessageExists) {
-                    // Decoupling rewards from the inbox message because it may delete itself without being read.
-                    for (const item of battlePay) {
-                        await addItem(
-                            inventory,
-                            item.ItemType,
-                            item.ItemCount,
-                            false,
-                            undefined,
-                            undefined,
-                            false,
-                            buildLabel
-                        );
-                    }
-                    await createMessage(account._id, [
-                        {
-                            sndr:
-                                factionSidedWith == "FC_GRINEER"
-                                    ? "/Lotus/Language/Menu/GrineerInvasionLeader"
-                                    : "/Lotus/Language/Menu/CorpusInvasionLeader",
-                            msg: `/Lotus/Language/G1Quests/${factionSidedWith}_InvasionThankyouMessageBody`,
-                            sub: `/Lotus/Language/G1Quests/${factionSidedWith}_InvasionThankyouMessageSubject`,
-                            countedAtt: battlePay,
-                            attVisualOnly: true,
-                            contextInfo: messageContext,
-                            icon:
-                                factionSidedWith == "FC_GRINEER"
-                                    ? "/Lotus/Interface/Icons/Npcs/EliteRifleLancerAvatar.png" // Source: https://www.reddit.com/r/Warframe/comments/1aj4usx/battle_pay_worth_10_plat/, https://www.youtube.com/watch?v=XhNZ6ai6BOY
-                                    : "/Lotus/Interface/Icons/Npcs/CrewmanNormal.png", // My best source for this is https://www.youtube.com/watch?v=rxrCCFm73XE around 1:37
-                            // TOVERIFY: highPriority?
-                            endDate: new Date(Date.now() + 86400_000) // TOVERIFY: This type of inbox message seems to automatically delete itself. We'll just delete it after 24 hours, but it's not clear if this is correct.
-                        }
-                    ]);
-                }
-                completedInvasionRewardClaims.push(claim);
-            }
-            logger.debug(`removing QualifyingInvasions entry for completed invasion: ${qi.invasionId.toString()}`);
-            inventory.QualifyingInvasions.splice(i, 1);
-            continue;
-        }
-        ++i;
-    }
+    const completedInvasionRewardClaims: Extract<TInvasionRewardClaimResult, { status: "claimed" }>[] =
+        await processInvasionRewards(account._id, buildLabel, inventory);
 
     {
         const now = Date.now();
