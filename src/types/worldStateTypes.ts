@@ -337,6 +337,7 @@ export interface IInvasion {
 export interface ILiveWorldActivityState {
     type: "invasion";
     officialId: string;
+    source?: "official" | "local";
     snapshot: IInvasion;
     localCount: number;
     goal: number;

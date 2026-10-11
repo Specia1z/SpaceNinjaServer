@@ -288,21 +288,22 @@ export const inventoryController: RequestHandler = async (request, response) => 
                     continue;
                 }
                 logger.debug(`invasion pay from ${factionSidedWith}`, { battlePay });
-                // Decoupling rewards from the inbox message because it may delete itself without being read
-                for (const item of battlePay) {
-                    await addItem(
-                        inventory,
-                        item.ItemType,
-                        item.ItemCount,
-                        false,
-                        undefined,
-                        undefined,
-                        false,
-                        buildLabel
-                    );
-                }
                 const messageContext = `invasion-reward:${invasionId}`;
-                if (!(await Inbox.exists({ ownerId: account._id, contextInfo: messageContext }))) {
+                const rewardMessageExists = await Inbox.exists({ ownerId: account._id, contextInfo: messageContext });
+                if (!rewardMessageExists) {
+                    // Decoupling rewards from the inbox message because it may delete itself without being read.
+                    for (const item of battlePay) {
+                        await addItem(
+                            inventory,
+                            item.ItemType,
+                            item.ItemCount,
+                            false,
+                            undefined,
+                            undefined,
+                            false,
+                            buildLabel
+                        );
+                    }
                     await createMessage(account._id, [
                         {
                             sndr:

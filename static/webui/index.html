@@ -106,6 +106,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/webui/client-config" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Client Configuration</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/world-activities" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_worldActivities"></a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -3125,6 +3128,94 @@
                     </section>
                 </div>
             </div>
+            <div data-route="/webui/world-activities" data-title-tag="navbar_worldActivities">
+                <div class="d-none admin-hide">
+                    <p class="card-text" data-loc="cheats_administratorRequirement"></p>
+                </div>
+                <div class="d-none admin-show">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                        <div>
+                            <h3 class="mb-1" data-loc="worldActivities_title"></h3>
+                            <p class="text-body-secondary mb-0" data-loc="worldActivities_description"></p>
+                        </div>
+                        <button class="btn btn-outline-secondary" id="world-activities-refresh" type="button" data-loc="worldActivities_refresh"></button>
+                    </div>
+                    <div class="alert d-none" id="world-activities-notice" role="status"></div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-header" data-loc="worldActivities_runtime"></div>
+                                <div class="card-body">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-6" data-loc="worldActivities_mode"></dt>
+                                        <dd class="col-sm-6" id="world-activities-mode"></dd>
+                                        <dt class="col-sm-6" data-loc="worldActivities_source"></dt>
+                                        <dd class="col-sm-6" id="world-activities-source"></dd>
+                                        <dt class="col-sm-6" data-loc="worldActivities_rotation"></dt>
+                                        <dd class="col-sm-6" id="world-activities-rotation"></dd>
+                                        <dt class="col-sm-6" data-loc="worldActivities_settles"></dt>
+                                        <dd class="col-sm-6" id="world-activities-settles"></dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="card h-100">
+                                <div class="card-header" data-loc="worldActivities_invasions"></div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th data-loc="worldActivities_node"></th>
+                                                <th data-loc="worldActivities_factions"></th>
+                                                <th data-loc="worldActivities_progress"></th>
+                                                <th data-loc="worldActivities_status"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="world-activities-invasions"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <section class="config-form">
+                        <div class="card">
+                            <div class="card-header" data-loc="worldActivities_settings"></div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-4">
+                                        <label class="form-label" for="worldState.invasionMode" data-loc="worldActivities_mode"></label>
+                                        <select class="form-select" id="worldState.invasionMode">
+                                            <option value="official" data-loc="worldActivities_official"></option>
+                                            <option value="local" data-loc="worldActivities_local"></option>
+                                            <option value="hybrid" data-loc="worldActivities_hybrid"></option>
+                                        </select>
+                                    </div>
+                                    <div class="col-lg-4">
+                                        <form onsubmit="doSaveConfigInt('worldState.invasionRotationHours'); return false;">
+                                            <label class="form-label" for="worldState.invasionRotationHours" data-loc="worldActivities_rotationHours"></label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="worldState.invasionRotationHours" type="number" min="1" max="168" step="1" />
+                                                <button class="btn btn-primary" type="submit" data-loc="cheats_save"></button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-lg-4">
+                                        <form onsubmit="doSaveConfigInt('worldState.invasionMaxDurationHours'); return false;">
+                                            <label class="form-label" for="worldState.invasionMaxDurationHours" data-loc="worldActivities_maxDurationHours"></label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="worldState.invasionMaxDurationHours" type="number" min="1" max="168" step="1" />
+                                                <button class="btn btn-primary" type="submit" data-loc="cheats_save"></button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                <p class="form-text mt-3 mb-0" data-loc="worldActivities_settingsHint"></p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </div>
         <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     </div>
@@ -3204,6 +3295,7 @@
     <script src="/webui/admin/metadata-page.js"></script>
     <script src="/webui/admin/bootstrapper-version-page.js"></script>
     <script src="/webui/admin/client-config-page.js"></script>
+    <script src="/webui/admin/world-activities-page.js"></script>
     <script src="/webui/admin/admin-data-api.js"></script>
     <script src="/webui/admin/admin-data-page.js"></script>
     <script src="/webui/admin/store-price-api.js"></script>

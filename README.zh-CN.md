@@ -68,9 +68,13 @@ Copy-Item config-vanilla.json config.json
 - `registrationRateLimit`：游戏自动建号与 WebUI 注册共用限额，默认滚动 24 小时内同一来源地址最多尝试 3 次、全服最多创建 100 个账号，且包括失败写入在内的注册尝试最多 1000 次；可在 `config.json`（Docker 为 `docker-data/conf/config.json`）中调整 `windowMinutes`、`perAddress`、`global`、`globalAttempts`。已有账号登录不受影响。默认只信任实际连接的 IP，不信任客户端自填的 `X-Forwarded-For`；若服务位于反向代理后，需将**代理的确切 IP** 填入 `trustedProxies`，否则同一代理后的玩家会共用限额。计数保存在进程内，重启会重置，多实例不共享；抵御分布式批量注册还需要邀请码或验证机制。
 - `playerPortal`：玩家中心总开关、注册和改名开关、改名白金消耗与冷却天数、邀请双方奖励、每账号邀请上限，以及每达到多少名邀请人的里程碑奖励。管理员可在 `/player/` 以管理员身份登录后直接调整，服务端会校验范围并持久化。
 - `worldState.liveSync`：是否启用实时世界状态同步。模板默认关闭。
+- `worldState.invasionMode`：入侵来源模式，可选 `official`、`local` 或 `hybrid`。`local` 模式即使关闭实时同步也会使用服务端确定性轮换；`hybrid` 模式会在官方进行中的入侵超过最大持续时间后切换到本地轮换。
+- `worldState.invasionRotationHours` 和 `worldState.invasionMaxDurationHours`：分别设置本地轮换周期和混合模式回退上限，范围为 1-168 小时。管理员也可以在 WebUI 的“世界活动”页面中修改。
 - `database`：保留对象配置可使用本地持久化的嵌入式 MongoDB，也可替换为已有 MongoDB URI。
 
 `tunables.metadataPatchBlacklist` 可配置不接收任何服务端元数据补丁的账号 ID 列表。管理员也可以在 WebUI 的“元数据补丁”页面按账号切换黑名单；修改会立即推送给已连接的 Bootstrapper，但已经加载的游戏元数据需要完整重启游戏才能重新应用。
+
+`tunables.playwfContent` 可配置由 OpenWF Bootstrapper 自动启动的 Pluto 脚本。每个启用的 `mods` 条目需要设置类似 `/PlayWF/example.pluto` 的 `scriptPath`；服务端会将可用脚本加入 `client.auto_start_scripts`，并从 `static/PlayWF/` 或 `PlayWF/` 对应路径提供脚本。设置 `autoStart: false` 可以只提供脚本而不自动启动，小脚本也可以直接填写 `script` 内联内容。`tunables.prohibitScripts` 开启时不会下发自动启动列表。
 
 按账号设置资源拾取量和任务 Mod 倍率时，在 `config.json` 的 `accountDropMultipliers` 中使用游戏显示名作为键。未配置的账号保持原行为：
 

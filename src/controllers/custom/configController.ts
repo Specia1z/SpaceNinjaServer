@@ -5,7 +5,8 @@ import {
     validateRegistrationRateLimitConfig,
     validateWorldStateBoostConfig,
     validateVarziaRotationConfig,
-    validateClientConfig
+    validateClientConfig,
+    validateInvasionConfig
 } from "../../services/configService.ts";
 import { syncConfigWithDatabase } from "../../services/configWatcherService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
@@ -57,6 +58,11 @@ export const setConfigController: RequestHandler = async (req, res) => {
             const clientConfigError = validateClientConfig(id, value);
             if (clientConfigError) {
                 res.status(400).send(clientConfigError);
+                return;
+            }
+            const invasionConfigError = validateInvasionConfig(id, value);
+            if (invasionConfigError) {
+                res.status(400).send(invasionConfigError);
                 return;
             }
             const playerPortalError = validatePlayerPolicyField(id, value);

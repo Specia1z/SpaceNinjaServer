@@ -14,6 +14,7 @@ import { publicExportRouter } from "./routes/publicExport.ts";
 import { statsRouter } from "./routes/stats.ts";
 import { webuiRouter } from "./routes/webui.ts";
 import { playerRouter } from "./routes/player.ts";
+import { playwfContentMiddleware } from "./services/playwfContentService.ts";
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use("/api", apiRouter);
 app.use("/api", arbiterRouter);
 app.use("/", cacheRouter);
 app.use("/custom", customRouter);
+app.use(playwfContentMiddleware);
 app.use("/cdn/account/:accountId/:accountToken", dynamicRouter);
 app.use("/cdn", dynamicRouter); // >= U40
 app.use("/dynamic/account/:accountId/:accountToken", dynamicRouter);

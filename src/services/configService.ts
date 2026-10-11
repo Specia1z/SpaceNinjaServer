@@ -76,6 +76,28 @@ export interface IMetadataPatchConfig {
     operations?: string[];
 }
 
+export interface IPlaywfContentMod {
+    id?: string;
+    version?: number | string;
+    displayName?: string;
+    description?: string;
+    metadataPath?: string;
+    scriptPath?: string;
+    /** Inline Pluto source. Useful for small scripts; prefer sourcePath for larger files. */
+    script?: string;
+    /** Repository-relative source file, resolved from repoDir. */
+    sourcePath?: string;
+    enabled?: boolean;
+    autoStart?: boolean;
+}
+
+export interface IPlaywfContentConfig {
+    schemaVersion?: number;
+    namespace?: string;
+    revision?: string;
+    mods?: IPlaywfContentMod[];
+}
+
 /** Public defaults consumed by the PlayWF client before account login. */
 export interface IClientConfig {
     fallback_language?: string;
@@ -108,6 +130,7 @@ export interface IClientConfig {
     disable_overlay?: boolean;
     overlay_compatibility_mode?: boolean;
     keep_console_open?: boolean;
+    auto_start_scripts?: string[];
 }
 
 export interface IAccountDropMultiplier {
@@ -148,6 +171,7 @@ export type TWorldStateBoostMultiplierKey =
     | "resourceBoostMultiplier";
 
 export type TVarziaRotationMode = "daily" | "weekly" | "monthly" | "custom";
+export type TInvasionMode = "official" | "local" | "hybrid";
 
 const isoDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
@@ -309,6 +333,12 @@ export interface IConfig {
     };
     worldState?: {
         liveSync?: boolean;
+        /** Source and settlement policy for the invasion activity. */
+        invasionMode?: TInvasionMode;
+        /** Duration of a local invasion rotation in hours. */
+        invasionRotationHours?: number;
+        /** Hybrid mode switches to the local rotation after this many hours. */
+        invasionMaxDurationHours?: number;
         creditBoostMultiplier?: number;
         affinityBoostMultiplier?: number;
         resourceBoostMultiplier?: number;
@@ -407,6 +437,8 @@ export interface IConfig {
         accountMetadataPatches?: Partial<Record<string, IMetadataPatchConfig[]>>;
         /** Account IDs that must not receive any server metadata patches. */
         metadataPatchBlacklist?: string[];
+        /** Pluto scripts and related content served to the OpenWF Bootstrapper. */
+        playwfContent?: IPlaywfContentConfig;
     };
     dev?: {
         keepVendorsExpired?: boolean;
@@ -645,6 +677,21 @@ export const validateClientConfig = (id: string, value: unknown): string | undef
         (!Number.isInteger(value as number) || (value as number) < -1 || (value as number) > 10)
     ) {
         return `${id} must be an integer from -1 to 10`;
+    }
+    return undefined;
+};
+
+export const validateInvasionConfig = (id: string, value: unknown): string | undefined => {
+    if (id == "worldState.invasionMode") {
+        if (value !== "official" && value !== "local" && value !== "hybrid") {
+            return `${id} must be one of official, local, or hybrid`;
+        }
+        return undefined;
+    }
+    if (id == "worldState.invasionRotationHours" || id == "worldState.invasionMaxDurationHours") {
+        if (!Number.isInteger(value) || (value as number) < 1 || (value as number) > 168) {
+            return `${id} must be an integer from 1 to 168`;
+        }
     }
     return undefined;
 };

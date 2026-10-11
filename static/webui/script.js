@@ -196,7 +196,8 @@ function refreshServerConfig() {
         single.getCurrentPath() == "/webui/reward-stats" ||
         single.getCurrentPath() == "/webui/metadata-patches" ||
         single.getCurrentPath() == "/webui/bootstrapper-version" ||
-        single.getCurrentPath() == "/webui/client-config"
+        single.getCurrentPath() == "/webui/client-config" ||
+        single.getCurrentPath() == "/webui/world-activities"
     ) {
         single.loadRoute(single.getCurrentPath());
     }

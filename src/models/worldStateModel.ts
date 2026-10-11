@@ -64,6 +64,7 @@ alertSchema.index({ Expiry: 1 }, { expireAfterSeconds: 0 });
 const liveWorldActivityStateSchema = new Schema<ILiveWorldActivityState>({
     type: { type: String, required: true },
     officialId: { type: String, required: true },
+    source: { type: String, enum: ["official", "local"] },
     snapshot: { type: Schema.Types.Mixed, required: true },
     localCount: { type: Number, required: true, default: 0 },
     goal: { type: Number, required: true },

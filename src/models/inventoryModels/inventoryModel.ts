@@ -1702,6 +1702,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         starChartUnlockVersion: String,
         ReferralRewardClaims: { type: [String], default: [] },
         MarketRequestIds: { type: [String], default: [] },
+        InvasionContributionKeys: { type: [String], default: undefined },
 
         // SNS account cheats
         skipAllDialogue: Boolean,
@@ -2183,6 +2184,7 @@ inventorySchema.set("toJSON", {
         delete returnedObject.starChartUnlockVersion;
         delete returnedObject.ReferralRewardClaims;
         delete returnedObject.MissionRelicRewards;
+        delete returnedObject.InvasionContributionKeys;
         delete returnedObject.HarvesterPoints;
         delete returnedObject.DeathSquadPoints;
         delete returnedObject.NemesisTaxedCredits;

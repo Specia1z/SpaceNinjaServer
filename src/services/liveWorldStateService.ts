@@ -17,6 +17,8 @@ import syndicateMissionNodes from "../../static/fixed_responses/worldState/syndi
 import { LiveGoalState, LiveWorldActivityState } from "../models/worldStateModel.ts";
 import { fromMongoDate } from "../helpers/inventoryHelpers.ts";
 import { updateVarziaRotationCache } from "./varziaRotationService.ts";
+import { BV_LATEST } from "../constants/gameVersions.ts";
+import { getInvasionRotationStatus, getLocalInvasionByOid, getLocalInvasions } from "./invasionRotationService.ts";
 
 const LIVE_WORLD_STATE_URL = "https://oracle.browse.wf/worldState.min.json";
 const SUPPLEMENTAL_WORLD_STATE_URLS = [
@@ -151,6 +153,7 @@ const update41GoalTags = new Set([
 
 let cachedWorldState: ILiveWorldState | undefined;
 let cachedWorldStateJson: string | undefined;
+let lastOfficialInvasions: IWorldState["Invasions"] | undefined;
 let refreshPromise: Promise<void> | undefined;
 let lastRefreshAttempt = 0;
 let lastError: string | undefined;
@@ -260,6 +263,33 @@ const getSafeMongoDateMs = (value: unknown): number => {
         return NaN;
     }
 };
+
+const getInvasionMode = (): "official" | "local" | "hybrid" => config.worldState?.invasionMode ?? "official";
+
+const getInvasionRotationHours = (): number => config.worldState?.invasionRotationHours ?? 24;
+
+const getInvasionMaxDurationHours = (): number => config.worldState?.invasionMaxDurationHours ?? 48;
+
+const isInvasionSyncEnabled = (): boolean => Boolean(config.worldState?.liveSync) || getInvasionMode() != "official";
+
+const shouldUseLocalInvasions = (officialInvasions: IWorldState["Invasions"] | undefined): boolean => {
+    const mode = getInvasionMode();
+    if (mode == "local") return true;
+    if (mode == "official") return false;
+    if (!officialInvasions || officialInvasions.length == 0) return true;
+    const cutoff = Date.now() - getInvasionMaxDurationHours() * unixTimesInMs.hour;
+    return officialInvasions.some(invasion => {
+        if (invasion.Completed) return false;
+        const activationMs = getSafeMongoDateMs(invasion.Activation);
+        return !Number.isFinite(activationMs) || activationMs < cutoff;
+    });
+};
+
+const getConfiguredLocalInvasions = (): IWorldState["Invasions"] =>
+    getLocalInvasions(BV_LATEST, Date.now(), getInvasionRotationHours());
+
+export const isLocalInvasionSourceActive = (): boolean =>
+    getInvasionMode() == "local" || (getInvasionMode() == "hybrid" && shouldUseLocalInvasions(lastOfficialInvasions));
 
 const getGoalOid = (goal: IWorldState["Goals"][number]): string => goal._id.$oid ?? goal._id.$id ?? "";
 
@@ -609,7 +639,10 @@ const restoreLiveInvasions = async (): Promise<void> => {
     }
 };
 
-const updateLiveInvasions = async (invasions: IWorldState["Invasions"]): Promise<void> => {
+const updateLiveInvasions = async (
+    invasions: IWorldState["Invasions"],
+    source: "official" | "local"
+): Promise<void> => {
     const now = new Date();
     const expiry = new Date(now.getTime() + 30 * unixTimesInMs.day);
     await Promise.all(
@@ -619,25 +652,34 @@ const updateLiveInvasions = async (invasions: IWorldState["Invasions"]): Promise
                 return;
             }
             const existingState = await LiveWorldActivityState.findOne({ type: "invasion", officialId }).lean();
-            const localCount = mergeLocalInvasionProgress(existingState?.localCount ?? 0, invasion.Count);
+            const sameSource =
+                existingState?.source === source || (existingState?.source === undefined && source == "official");
+            const localCount = mergeLocalInvasionProgress(
+                sameSource ? (existingState?.localCount ?? 0) : 0,
+                invasion.Count
+            );
             const completed =
-                existingState?.status == "completed" ||
+                (sameSource && existingState?.status == "completed") ||
                 isLiveInvasionCompleted(localCount, invasion.Goal, invasion.Completed);
+            const completedAt = completed ? (sameSource ? (existingState?.completedAt ?? now) : now) : undefined;
             await LiveWorldActivityState.findOneAndUpdate(
                 { type: "invasion", officialId },
                 {
                     $set: {
                         snapshot: invasion,
+                        source,
                         goal: invasion.Goal,
                         localCount,
                         status: completed ? "completed" : "active",
                         lastSeenAt: now,
                         expiresAt: expiry,
-                        ...(completed && !existingState?.completedAt ? { completedAt: now } : {})
+                        ...(completedAt ? { completedAt } : {})
                     },
+                    $unset: completed ? {} : { completedAt: 1 },
                     $setOnInsert: {
                         type: "invasion",
-                        officialId
+                        officialId,
+                        source
                     }
                 },
                 { upsert: true }
@@ -654,7 +696,7 @@ export const advanceLiveInvasionProgress = async (
     defenderScore: number,
     multiplier = 1
 ): Promise<void> => {
-    if (!config.worldState?.liveSync || attackerScore == defenderScore) {
+    if (!isInvasionSyncEnabled() || attackerScore == defenderScore) {
         return;
     }
 
@@ -1030,15 +1072,36 @@ const fetchLiveWorldState = async (): Promise<void> => {
             } catch (e) {
                 logger.debug(`Could not cache official Varzia rotation: ${String(e)}`);
             }
-            liveWorldState.Invasions = supplementalWorldState.Invasions;
+            lastOfficialInvasions = supplementalWorldState.Invasions;
+            const invasions = shouldUseLocalInvasions(supplementalWorldState.Invasions)
+                ? getConfiguredLocalInvasions()
+                : supplementalWorldState.Invasions;
+            liveWorldState.Invasions = invasions;
             liveWorldState.SyndicateMissions = supplementalWorldState.SyndicateMissions;
             liveWorldState.SeasonInfo = supplementalWorldState.SeasonInfo;
             liveWorldState.KnownCalendarSeasons = supplementalWorldState.KnownCalendarSeasons;
             liveWorldState.Descents = supplementalWorldState.Descents;
-            await updateLiveInvasions(supplementalWorldState.Invasions);
+            await updateLiveInvasions(
+                invasions,
+                shouldUseLocalInvasions(supplementalWorldState.Invasions) ? "local" : "official"
+            );
             updateLiveSyndicateMissions(supplementalWorldState.SyndicateMissions);
             updateLiveCalendarSeasons(supplementalWorldState.KnownCalendarSeasons);
         } catch (e) {
+            const fallbackInvasions = shouldUseLocalInvasions(lastOfficialInvasions)
+                ? getConfiguredLocalInvasions()
+                : lastOfficialInvasions;
+            if (fallbackInvasions) {
+                liveWorldState.Invasions = fallbackInvasions;
+                try {
+                    await updateLiveInvasions(
+                        fallbackInvasions,
+                        shouldUseLocalInvasions(lastOfficialInvasions) ? "local" : "official"
+                    );
+                } catch (persistError) {
+                    logger.debug(`Could not persist fallback invasion state: ${String(persistError)}`);
+                }
+            }
             logger.debug(`Could not supplement browse.wf world state: ${String(e)}`);
         }
         const nextJson = JSON.stringify({
@@ -1064,13 +1127,26 @@ const fetchLiveWorldState = async (): Promise<void> => {
 };
 
 export const refreshLiveWorldState = async (): Promise<void> => {
-    if (!config.worldState?.liveSync) {
+    if (!config.worldState?.liveSync && getInvasionMode() == "official") {
         cachedWorldState = undefined;
         cachedWorldStateJson = undefined;
+        lastOfficialInvasions = undefined;
         liveInvasions.clear();
         liveGoals.clear();
         liveSyndicateMissions.clear();
         liveCalendarSeasons.clear();
+        return;
+    }
+
+    if (!config.worldState?.liveSync) {
+        cachedWorldState = undefined;
+        cachedWorldStateJson = undefined;
+        lastOfficialInvasions = undefined;
+        liveGoals.clear();
+        liveSyndicateMissions.clear();
+        liveCalendarSeasons.clear();
+        await restoreLiveInvasions();
+        await updateLiveInvasions(getConfiguredLocalInvasions(), "local");
         return;
     }
 
@@ -1094,7 +1170,7 @@ export const refreshLiveWorldState = async (): Promise<void> => {
 };
 
 export const applyLiveWorldState = (worldState: IWorldState): void => {
-    if (!config.worldState?.liveSync) {
+    if (!isInvasionSyncEnabled()) {
         return;
     }
 
@@ -1108,6 +1184,10 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
         if (localGoals.length > 0) {
             worldState.Goals = mergeLocalGoalProgress(worldState.Goals, [], localGoals, buildVersion);
         }
+        const localInvasions = [...liveInvasions.values()].map(entry => structuredClone(entry.invasion));
+        if (localInvasions.length > 0) {
+            worldState.Invasions = localInvasions;
+        }
         return;
     }
 
@@ -1118,9 +1198,9 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
         ...liveWorldStateWithoutSeasonInfo
     } = liveWorldState;
     const useLocalVarzia = Boolean(
-        config.worldState.varziaOverride ||
-        config.worldState.varziaFullyStocked ||
-        config.worldState.varziaCustomRotationEnabled
+        config.worldState?.varziaOverride ||
+        config.worldState?.varziaFullyStocked ||
+        config.worldState?.varziaCustomRotationEnabled
     );
     const compatibleSeasonInfo = getCompatibleSeasonInfo(liveSeasonInfo, buildVersion);
     const localInvasions = [...liveInvasions.values()].map(entry => structuredClone(entry.invasion));
@@ -1153,7 +1233,7 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
             sortie.Missions.every(mission => isKnownNode(mission.node))
         ),
         ActiveMissions: liveWorldState.ActiveMissions.filter(fissure => isKnownNode(fissure.Node)),
-        ...(liveWorldState.Invasions ? { Invasions: localInvasions } : {}),
+        ...(liveWorldState.Invasions || localInvasions.length > 0 ? { Invasions: localInvasions } : {}),
         SyndicateMissions: syndicateMissions,
         ...(liveWorldState.KnownCalendarSeasons
             ? {
@@ -1184,12 +1264,50 @@ export const applyLiveWorldState = (worldState: IWorldState): void => {
 };
 
 export const getLiveInvasionByOid = (oid: string): IWorldState["Invasions"][number] | undefined => {
-    if (!config.worldState?.liveSync) {
+    if (!isInvasionSyncEnabled()) {
         return undefined;
     }
+    const localInvasion = isLocalInvasionSourceActive()
+        ? getLocalInvasionByOid(oid, BV_LATEST, getInvasionRotationHours())
+        : undefined;
     const invasion = liveInvasions.get(oid)?.invasion;
-    return invasion ? structuredClone(invasion) : undefined;
+    if (localInvasion?.Completed && !invasion?.Completed) return localInvasion;
+    if (invasion) return structuredClone(invasion);
+    return localInvasion;
 };
+
+export const getLiveInvasionSnapshot = (): Array<{
+    oid: string;
+    node: string;
+    faction: string;
+    defenderFaction: string;
+    count: number;
+    goal: number;
+    completed: boolean;
+    activation: string;
+}> =>
+    [...liveInvasions.entries()].map(([oid, entry]) => ({
+        oid,
+        node: entry.invasion.Node,
+        faction: entry.invasion.Faction,
+        defenderFaction: entry.invasion.DefenderFaction,
+        count: entry.invasion.Count,
+        goal: entry.invasion.Goal,
+        completed: entry.invasion.Completed,
+        activation: JSON.stringify(entry.invasion.Activation)
+    }));
+
+export const getInvasionRuntimeStatus = (): {
+    mode: "official" | "local" | "hybrid";
+    source: "official" | "local";
+    rotation: ReturnType<typeof getInvasionRotationStatus>;
+    invasions: ReturnType<typeof getLiveInvasionSnapshot>;
+} => ({
+    mode: getInvasionMode(),
+    source: isLocalInvasionSourceActive() ? "local" : "official",
+    rotation: getInvasionRotationStatus(Date.now(), getInvasionRotationHours()),
+    invasions: getLiveInvasionSnapshot()
+});
 
 export const getLiveGoalByOid = (oid: string, buildLabel: string): IWorldState["Goals"][number] | undefined => {
     if (!config.worldState?.liveSync) {

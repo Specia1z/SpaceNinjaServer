@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 
 import { config, type IClientConfig } from "../../services/configService.ts";
+import { getPlaywfAutoStartScripts } from "../../services/playwfContentService.ts";
 
 const clientConfigKeys = [
     "fallback_language",
@@ -32,7 +33,8 @@ const clientConfigKeys = [
     "client_http_logging",
     "disable_overlay",
     "overlay_compatibility_mode",
-    "keep_console_open"
+    "keep_console_open",
+    "auto_start_scripts"
 ] as const satisfies readonly (keyof IClientConfig)[];
 
 export const clientConfigController: RequestHandler = (req, res) => {
@@ -45,5 +47,9 @@ export const clientConfigController: RequestHandler = (req, res) => {
         const value = config.client?.[key];
         if (value !== undefined) publicConfig[key] = value as never;
     }
+    const autoStartScripts = [...(config.client?.auto_start_scripts ?? []), ...getPlaywfAutoStartScripts()].filter(
+        (script, index, scripts) => scripts.indexOf(script) == index
+    );
+    if (autoStartScripts.length) publicConfig.auto_start_scripts = autoStartScripts;
     res.json(publicConfig);
 };

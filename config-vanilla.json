@@ -198,6 +198,9 @@
   },
   "worldState": {
     "liveSync": false,
+    "invasionMode": "official",
+    "invasionRotationHours": 24,
+    "invasionMaxDurationHours": 48,
     "creditBoostMultiplier": 0,
     "affinityBoostMultiplier": 0,
     "resourceBoostMultiplier": 0,
@@ -295,7 +298,13 @@
     "versionMismatchMessage": null,
     "metadataPatches": [],
     "accountMetadataPatches": {},
-    "metadataPatchBlacklist": []
+    "metadataPatchBlacklist": [],
+    "playwfContent": {
+      "schemaVersion": 1,
+      "namespace": "/PlayWF",
+      "revision": "",
+      "mods": []
+    }
   },
   "dev": {
     "keepVendorsExpired": false

@@ -158,6 +158,16 @@ interface MissionInventoryUpdatesReturnType {
 
 const normalizeInvasionDelta = (value: number): number => (Number.isFinite(value) ? Math.trunc(value) : 0);
 const normalizeInvasionScore = (value: number): number => (Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0);
+const MAX_INVASION_CONTRIBUTION_KEYS = 256;
+
+const getInvasionContributionKey = (
+    inventoryUpdates: IMissionInventoryUpdateRequest,
+    invasionId: string
+): string | undefined => {
+    const sharedSessionId =
+        typeof inventoryUpdates.sharedSessionId == "string" ? inventoryUpdates.sharedSessionId.trim() : "";
+    return sharedSessionId ? `${invasionId}|${sharedSessionId}` : undefined;
+};
 
 export const addMissionInventoryUpdates = async (
     account: TAccountDocument,
@@ -759,38 +769,75 @@ export const addMissionInventoryUpdates = async (
                 break;
             }
             case "InvasionProgress": {
+                const rewardInfo = inventoryUpdates.RewardInfo;
+                const canCreditInvasionProgress =
+                    inventoryUpdates.EndOfMatchUpload === true &&
+                    inventoryUpdates.MissionStatus == "GS_SUCCESS" &&
+                    rewardInfo !== undefined;
+                if (!canCreditInvasionProgress) {
+                    logger.debug("ignoring invasion progress without a successful end-of-match reward");
+                    break;
+                }
                 for (const clientProgress of value) {
-                    const invasion = getInvasionByOid(fromOid(clientProgress._id));
+                    const invasionId = fromOid(clientProgress._id);
+                    const invasion = getInvasionByOid(invasionId);
                     if (!invasion) {
-                        logger.warn(`received progress for unknown invasion ${fromOid(clientProgress._id)}`);
+                        logger.warn(`received progress for unknown invasion ${invasionId}`);
                         continue;
                     }
-                    // Delta is signed: a defender-side completion is reported as -1.
-                    clientProgress.Delta = normalizeInvasionDelta(clientProgress.Delta);
-                    clientProgress.AttackerScore = normalizeInvasionScore(clientProgress.AttackerScore);
-                    clientProgress.DefenderScore = normalizeInvasionScore(clientProgress.DefenderScore);
-                    if (inventory.finishInvasionsInOneMission) {
-                        clientProgress.Delta *= 3;
-                        clientProgress.AttackerScore *= 3;
-                        clientProgress.DefenderScore *= 3;
+                    if (
+                        rewardInfo.node != invasion.Node ||
+                        (rewardInfo.invasionId !== undefined && rewardInfo.invasionId != invasionId)
+                    ) {
+                        logger.debug(`ignoring invasion progress for a mismatched mission: ${invasionId}`);
+                        continue;
                     }
-                    const dbProgress = inventory.QualifyingInvasions.find(x =>
-                        x.invasionId.equals(fromOid(clientProgress._id))
-                    );
+
+                    const contributionKey = getInvasionContributionKey(inventoryUpdates, invasionId);
+                    if (contributionKey && inventory.InvasionContributionKeys?.includes(contributionKey)) {
+                        logger.debug(`ignoring replayed invasion progress for ${invasionId}`);
+                        continue;
+                    }
+
+                    const attackerScore = normalizeInvasionScore(clientProgress.AttackerScore);
+                    const defenderScore = normalizeInvasionScore(clientProgress.DefenderScore);
+                    if (attackerScore == defenderScore) {
+                        logger.debug(`ignoring invasion progress without a single winning faction: ${invasionId}`);
+                        continue;
+                    }
+                    const completionMultiplier = inventory.finishInvasionsInOneMission ? 3 : 1;
+                    // Scores are direction markers, not a client-controlled global progress amount.
+                    clientProgress.Delta = normalizeInvasionDelta(attackerScore > defenderScore ? 1 : -1);
+                    clientProgress.AttackerScore = attackerScore > defenderScore ? completionMultiplier : 0;
+                    clientProgress.DefenderScore = defenderScore > attackerScore ? completionMultiplier : 0;
+                    if (inventory.finishInvasionsInOneMission) {
+                        clientProgress.Delta *= completionMultiplier;
+                    }
+                    if (contributionKey) {
+                        inventory.InvasionContributionKeys ??= [];
+                        inventory.InvasionContributionKeys.push(contributionKey);
+                        if (inventory.InvasionContributionKeys.length > MAX_INVASION_CONTRIBUTION_KEYS) {
+                            inventory.InvasionContributionKeys.splice(
+                                0,
+                                inventory.InvasionContributionKeys.length - MAX_INVASION_CONTRIBUTION_KEYS
+                            );
+                        }
+                    }
+                    const dbProgress = inventory.QualifyingInvasions.find(x => x.invasionId.equals(invasionId));
                     if (dbProgress) {
                         dbProgress.Delta += clientProgress.Delta;
                         dbProgress.AttackerScore += clientProgress.AttackerScore;
                         dbProgress.DefenderScore += clientProgress.DefenderScore;
                     } else {
                         inventory.QualifyingInvasions.push({
-                            invasionId: new Types.ObjectId(fromOid(clientProgress._id)),
+                            invasionId: new Types.ObjectId(invasionId),
                             Delta: clientProgress.Delta,
                             AttackerScore: clientProgress.AttackerScore,
                             DefenderScore: clientProgress.DefenderScore
                         });
                     }
                     await advanceLiveInvasionProgress(
-                        fromOid(clientProgress._id),
+                        invasionId,
                         clientProgress.AttackerScore,
                         clientProgress.DefenderScore,
                         1

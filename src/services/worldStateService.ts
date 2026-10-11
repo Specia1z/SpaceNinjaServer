@@ -5,13 +5,11 @@ import sortieTilesets from "../../static/fixed_responses/worldState/sortieTilese
 import sortieTilesetMissions from "../../static/fixed_responses/worldState/sortieTilesetMissions.json" with { type: "json" };
 import syndicateMissions from "../../static/fixed_responses/worldState/syndicateMissions.json" with { type: "json" };
 import darvoDeals from "../constants/darvoDeals.ts";
-import invasionNodes from "../../static/fixed_responses/worldState/invasionNodes.json" with { type: "json" };
-import invasionRewards from "../../static/fixed_responses/worldState/invasionRewards.json" with { type: "json" };
 import pvpChallenges from "../../static/fixed_responses/worldState/pvpChallenges.json" with { type: "json" };
 import { EPOCH, unixTimesInMs } from "../constants/timeConstants.ts";
 import { config, getWorldStateBoostMultiplier, isValidIsoDateTime, type TVarziaRotationMode } from "./configService.ts";
 import { getRandomElement, getRandomInt, sequentiallyUniqueRandomElement, SRng } from "./rngService.ts";
-import type { IMissionReward, IRegion, ITilesetMission, TFaction, TMissionType } from "warframe-public-export-plus";
+import type { IRegion, ITilesetMission, TFaction, TMissionType } from "warframe-public-export-plus";
 import { ExportRegions, ExportSyndicates, ExportTilesets, ExportRecipes } from "warframe-public-export-plus";
 import type {
     ICalendarDay,
@@ -64,6 +62,7 @@ import {
     getLiveCalendarSeason,
     getLiveGoalByOid,
     getLiveInvasionByOid,
+    isLocalInvasionSourceActive,
     refreshLiveWorldState
 } from "./liveWorldStateService.ts";
 import {
@@ -72,6 +71,7 @@ import {
     getVarziaRotationAnchor,
     getVarziaRotationCache
 } from "./varziaRotationService.ts";
+import { createInvasionAt, getLocalInvasionByOid } from "./invasionRotationService.ts";
 
 const sortieBosses = [
     "SORTIE_BOSS_HYENA",
@@ -1859,71 +1859,21 @@ const getAllVarziaManifests = (buildVersion: number): IPrimeVaultTraderOffer[] =
 };
 
 const createInvasion = (day: number, idx: number, buildVersion: number): IInvasion => {
-    const id = day * 3 + idx;
-    const defender = (["FC_GRINEER", "FC_CORPUS", day % 2 ? "FC_GRINEER" : "FC_CORPUS"] as const)[idx];
-    const rng = new SRng(new SRng(id).randomInt(0, 1_000_000));
-    const isInfestationOutbreak = rng.randomInt(0, 1) == 0;
-    const attacker = isInfestationOutbreak ? "FC_INFESTATION" : defender == "FC_GRINEER" ? "FC_CORPUS" : "FC_GRINEER";
     const startMs = EPOCH + day * 86400_000;
-    const oid =
-        ((startMs / 1000) & 0xffffffff).toString(16).padStart(8, "0") +
-        "fd148cb8" +
-        (idx & 0xffffffff).toString(16).padStart(8, "0");
-    const node = sequentiallyUniqueRandomElement(invasionNodes[defender], id, 5, 690175)!; // Can't repeat the other 2 on this day nor the last 3
-    const progress = (Date.now() - startMs) / 86400_000;
-    const countMultiplier = isInfestationOutbreak || rng.randomInt(0, 1) ? -1 : 1; // if defender is winning, count is negative
-    const fiftyPercent = rng.randomInt(1000, 29000); // introduce some 'yitter' for the percentages
-    const rewardFloat = rng.randomFloat();
-    const rewardTier = rewardFloat < 0.201 ? "RARE" : rewardFloat < 0.7788 ? "COMMON" : "UNCOMMON";
-    const attackerReward: IMissionReward = {};
-    const defenderReward: IMissionReward = {};
-    if (isInfestationOutbreak) {
-        defenderReward.countedItems = [
-            rng.randomElement(invasionRewards[rng.randomInt(0, 1) ? "FC_INFESTATION" : defender][rewardTier])!
-        ];
-    } else {
-        attackerReward.countedItems = [rng.randomElement(invasionRewards[attacker][rewardTier])!];
-        defenderReward.countedItems = [rng.randomElement(invasionRewards[defender][rewardTier])!];
-    }
-    return {
-        _id: toOid2(oid, buildVersion),
-        Faction: attacker,
-        DefenderFaction: defender,
-        Node: node,
-        Count: Math.round(
-            (progress < 0.5 ? progress * 2 * fiftyPercent : fiftyPercent + (30_000 - fiftyPercent) * (progress - 0.5)) *
-                countMultiplier
-        ),
-        Goal: 30000, // Value seems to range from 30000 to 98000 in intervals of 1000. Higher values are increasingly rare. I don't think this is relevant for the frontend besides dividing count by it.
-        LocTag: isInfestationOutbreak
-            ? ExportRegions[node].missionType == "MT_ASSASSINATION"
-                ? "/Lotus/Language/Menu/InfestedInvasionBoss"
-                : "/Lotus/Language/Menu/InfestedInvasionGeneric"
-            : attacker == "FC_CORPUS"
-              ? "/Lotus/Language/Menu/CorpusInvasionGeneric"
-              : "/Lotus/Language/Menu/GrineerInvasionGeneric",
-        Completed: startMs + 86400_000 < Date.now(), // Sorta unfaithful. Invasions on live are (at least in part) in fluenced by people completing them. And otherwise also probably not hardcoded to last 24 hours.
-        ChainID: { $oid: oid },
-        AttackerReward: attackerReward,
-        AttackerMissionInfo: {
-            seed: rng.randomInt(0, 1_000_000),
-            faction: defender
-        },
-        DefenderReward: defenderReward,
-        DefenderMissionInfo: {
-            seed: rng.randomInt(0, 1_000_000),
-            faction: attacker
-        },
-        Activation: toMongoDate2(startMs, buildVersion)
-    };
+    return createInvasionAt(startMs, day, idx, buildVersion, startMs + 86400_000 < Date.now(), true);
 };
 
 export const getInvasionByOid = (oid: string): IInvasion | undefined => {
+    const liveInvasion = getLiveInvasionByOid(oid);
+    if (liveInvasion) return liveInvasion;
+    if (isLocalInvasionSourceActive()) {
+        return getLocalInvasionByOid(oid, BV_LATEST, config.worldState?.invasionRotationHours ?? 24);
+    }
     const arr = oid.split("fd148cb8");
     if (arr.length == 2 && arr[0].length == 8 && arr[1].length == 8) {
         return createInvasion(idToDay(oid), parseInt(arr[1], 16), BV_LATEST);
     }
-    return getLiveInvasionByOid(oid);
+    return undefined;
 };
 
 export const getGoalByOid = (buildLabel: string, oid: string): IGoal | IGoalV9 | undefined =>

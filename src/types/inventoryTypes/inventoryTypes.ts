@@ -172,6 +172,7 @@ export interface IInventoryDatabase
     starChartUnlockVersion?: string;
     ReferralRewardClaims?: string[];
     MarketRequestIds?: string[];
+    InvasionContributionKeys?: string[];
     MissionRelicRewards?: (ITypeCount & { Rarity?: TRarity })[];
     HarvesterPoints?: number;
     DeathSquadPoints?: number;
