@@ -6,10 +6,12 @@
   "scripts": {
     "prestart": "node scripts/publicExportUpdater.mjs --auto",
     "start": "node --enable-source-maps build/src/index.js",
-    "build": "tsgo --inlineSourceMap && ncp static/webui build/static/webui && ncp static/player build/static/player",
+    "build": "tsgo --inlineSourceMap && npm run build:webui && ncp static/webui build/static/webui && ncp static/player build/static/player",
     "build:tsc": "tsc --inlineSourceMap && ncp static/webui build/static/webui && ncp static/player build/static/player",
     "build:dev": "tsgo --inlineSourceMap",
     "build:dev:tsc": "tsc --inlineSourceMap",
+    "build:webui": "vue-tsc --noEmit -p webui-vue/tsconfig.json && vite build --config webui-vue/vite.config.ts",
+    "dev:webui": "vite --config webui-vue/vite.config.ts",
     "build-and-start": "npm run build && npm run start",
     "predev": "node scripts/publicExportUpdater.mjs --auto",
     "dev": "node scripts/dev.cjs",
@@ -35,6 +37,8 @@
   },
   "type": "module",
   "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
+    "ant-design-vue": "^4.2.6",
     "chokidar": "^4.0.3",
     "express": "^5",
     "google-auth-library": "^10.5.0",
@@ -43,6 +47,7 @@
     "mongoose": "^9.6.2",
     "morgan": "^1.10.0",
     "undici": "^7.10.0",
+    "vue": "^3.5.43",
     "warframe-public-export-plus": "^0.6.11",
     "warframe-riven-info": "^0.1.2",
     "winston": "^3.17.0",
@@ -63,11 +68,14 @@
     "@types/node": "^25.6.2",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
+    "@vitejs/plugin-vue": "^6.0.10",
     "eslint": "^10",
     "eslint-plugin-prettier": "^5.2.5",
     "knip": "^6.12.2",
     "prettier": "^3.5.3",
     "tree-kill": "^1.2.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "vue-tsc": "^3.3.13"
   }
 }

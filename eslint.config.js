@@ -4,7 +4,7 @@ import prettierPlugin from "eslint-plugin-prettier";
 
 export default [
     {
-        ignores: ["build/**", "node_modules/**"],
+        ignores: ["build/**", "node_modules/**", "webui-vue/**"],
         linterOptions: {
             reportUnusedDisableDirectives: "error"
         }

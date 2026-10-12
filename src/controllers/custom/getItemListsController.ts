@@ -7,8 +7,10 @@ import {
     supplementalItemNames,
     supplementalKeys,
     supplementalRecipes,
+    supplementalResources,
     supplementalSuits,
     supplementalUpgrades,
+    supplementalWeapons,
     U5Modules
 } from "../../services/itemDataService.ts";
 import type { IU5FingerprintUpgrade } from "../../services/itemDataService.ts";
@@ -24,6 +26,7 @@ import { getAdminItemData, getGameVersionCutoff, isAvailableAt } from "../../ser
 interface ListedItem {
     uniqueName: string;
     name: string;
+    icon?: string;
     subtype?: string;
     fusionLimit?: number;
     exalted?: readonly string[];
@@ -55,6 +58,7 @@ interface ItemLists {
     SpaceSuits: ListedItem[];
     MechSuits: ListedItem[];
     miscitems: ListedItem[];
+    Resources: ListedItem[];
     Syndicates: ListedItem[];
     OperatorAmps: ListedItem[];
     QuestKeys: ListedItem[];
@@ -76,6 +80,11 @@ interface ItemLists {
     //circuitGameModes: ListedItem[];
     blueprintAndItem: string;
 }
+
+const supplementalItemIcons: Record<string, string> = {
+    "/Lotus/Powersuits/Operator/AdultOperatorSuitRemaster": "/Lotus/Interface/Icons/Categories/IconOperator256.png",
+    "/Lotus/Powersuits/Operator/ChildOperatorSuitRemaster": "/Lotus/Interface/Icons/Categories/IconOperatorHead256.png"
+};
 
 const relicQualitySuffixes: Record<TRelicQuality, string> = {
     VPQ_BRONZE: "",
@@ -106,6 +115,7 @@ const getItemListsController: RequestHandler = async (req, response) => {
         SpaceSuits: [],
         MechSuits: [],
         miscitems: [],
+        Resources: [],
         Syndicates: [],
         OperatorAmps: [],
         QuestKeys: [],
@@ -155,6 +165,29 @@ const getItemListsController: RequestHandler = async (req, response) => {
             }
         ]*/
         blueprintAndItem: getString("/Lotus/Language/Items/BlueprintAndItem", lang)
+    };
+    const iconCollections = [
+        ...(Object.values(adminItemData) as unknown[]),
+        supplementalResources,
+        supplementalSuits,
+        supplementalUpgrades,
+        supplementalWeapons
+    ].filter(
+        (collection): collection is Record<string, unknown> =>
+            !!collection && typeof collection == "object" && !Array.isArray(collection)
+    );
+    const getIcon = (uniqueName: string): string | undefined => {
+        if (supplementalItemIcons[uniqueName]) return supplementalItemIcons[uniqueName];
+        const variants = [uniqueName, uniqueName.replace("/Lotus/StoreItems/", "/Lotus/")];
+        for (const collection of iconCollections) {
+            for (const variant of variants) {
+                const item = collection[variant];
+                if (item && typeof item == "object" && typeof (item as { icon?: unknown }).icon == "string") {
+                    return (item as { icon: string }).icon;
+                }
+            }
+        }
+        return undefined;
     };
     const eligibleForVault = new Set<string>([
         ...Object.values(adminItemData.dojoRecipes.research).flatMap(r => r.ingredients.map(i => i.ItemType)),
@@ -247,6 +280,14 @@ const getItemListsController: RequestHandler = async (req, response) => {
         }
     }
     for (const [uniqueName, item] of Object.entries(adminItemData.resources)) {
+        const resourceName = getNormalizedString(item.name, lang) || uniqueName.split("/").filter(Boolean).at(-1) || uniqueName;
+        res.Resources.push({
+            uniqueName,
+            name: resourceName,
+            icon: item.icon,
+            subtype: "Resource",
+            parentName: item.parentName
+        });
         if (item.productCategory == "SupplyDrop") {
             continue; // skip helminth resources
         }
@@ -635,6 +676,16 @@ const getItemListsController: RequestHandler = async (req, response) => {
         });
     }
 
+    for (const value of Object.values(res)) {
+        if (!Array.isArray(value)) continue;
+        for (const entry of value as unknown[]) {
+            if (!entry || typeof entry != "object") continue;
+            const item = entry as { uniqueName?: unknown; icon?: unknown };
+            if (typeof item.uniqueName == "string" && typeof item.icon != "string") {
+                item.icon = getIcon(item.uniqueName);
+            }
+        }
+    }
     response.json(res);
 };
 
