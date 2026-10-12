@@ -504,6 +504,11 @@ const updateLiveGoals = async (goals: IWorldState["Goals"]): Promise<void> => {
                     (Number.isFinite(officialExpiryMs) ? officialExpiryMs : now.getTime()) + 30 * unixTimesInMs.day
                 )
             );
+            const nextExpiresAt = completed
+                ? existingState?.status === "completed" && existingState.expiresAt
+                    ? existingState.expiresAt
+                    : new Date(now.getTime() + 30 * unixTimesInMs.day)
+                : expiresAt;
             await LiveGoalState.findOneAndUpdate(
                 { officialId, activationMs },
                 {
@@ -520,25 +525,19 @@ const updateLiveGoals = async (goals: IWorldState["Goals"]): Promise<void> => {
                         healthPct,
                         success,
                         status: completed ? "completed" : "active",
+                        expiresAt: nextExpiresAt,
+                        ...(completed ? { completedAt: existingState?.completedAt ?? now } : {}),
                         lastSeenAt: now
                     },
                     $setOnInsert: {
                         officialId,
                         activationMs,
-                        count: initialProgress.count,
-                        countAlt: initialProgress.countAlt,
-                        healthPct: initialProgress.healthPct,
-                        success: initialProgress.success,
-                        status: initialProgress.status,
                         ...(existingState
                             ? {}
                             : {
                                   progressInitialized: true,
                                   initialProgressSource: initialProgress.initialProgressSource
                               }),
-                        ...(completed
-                            ? { completedAt: now, expiresAt: new Date(now.getTime() + 30 * unixTimesInMs.day) }
-                            : { expiresAt })
                     }
                 },
                 { upsert: true }
@@ -559,7 +558,6 @@ const updateLiveGoals = async (goals: IWorldState["Goals"]): Promise<void> => {
                     }
                 );
             }
-            await LiveGoalState.updateOne({ officialId, activationMs, status: "active" }, { $set: { expiresAt } });
         })
     );
     await restoreLiveGoals();
@@ -678,8 +676,7 @@ const updateLiveInvasions = async (
                     $unset: completed ? {} : { completedAt: 1 },
                     $setOnInsert: {
                         type: "invasion",
-                        officialId,
-                        source
+                        officialId
                     }
                 },
                 { upsert: true }
