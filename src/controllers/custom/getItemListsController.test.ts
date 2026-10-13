@@ -23,7 +23,6 @@ interface ItemListPayload {
     Pistols: ListedItem[];
     Melee: ListedItem[];
     miscitems: ListedItem[];
-    Resources: ListedItem[];
     Nodes: ListedItem[];
     Bundles: ListedItem[];
 }
@@ -50,15 +49,12 @@ void test("item list exposes all major categories from one self-contained snapsh
         .flat();
     const allNames = new Set(allItems.map(item => item.uniqueName));
     const miscNames = new Set(payload.miscitems.map(item => item.uniqueName));
-    const listedResources = payload.Resources;
 
     assert.ok(payload.Suits.length >= Object.keys(ExportWarframes).length - 10);
     assert.ok(
         payload.LongGuns.length + payload.Pistols.length + payload.Melee.length >= Object.keys(ExportWeapons).length / 2
     );
     assert.ok(Object.keys(ExportResources).filter(uniqueName => miscNames.has(uniqueName)).length > 2_000);
-    assert.equal(listedResources.length, Object.keys(ExportResources).length);
-    assert.ok(Object.keys(ExportResources).every(uniqueName => listedResources.some(item => item.uniqueName == uniqueName)));
     assert.ok(Object.keys(ExportRecipes).filter(uniqueName => miscNames.has(uniqueName)).length > 1_000);
     assert.ok(Object.keys(ExportRelics).every(uniqueName => miscNames.has(uniqueName)));
     assert.ok(Object.keys(ExportCustoms).filter(uniqueName => allNames.has(uniqueName)).length > 1_000);

@@ -107,12 +107,7 @@ import {
     saveAccountRatesController
 } from "../controllers/custom/accountRatesController.ts";
 import { getCurrencyGrantStatsController } from "../controllers/custom/currencyGrantStatsController.ts";
-import {
-    getAccountInventoryController,
-    updateAccountModController
-} from "../controllers/custom/accountInventoryController.ts";
 import { clientConfigController } from "../controllers/custom/clientConfigController.ts";
-import { getAdminOverviewController } from "../controllers/custom/adminOverviewController.ts";
 import { featureManifestController, featurePackageController } from "../controllers/custom/featurePackageController.ts";
 import { launcherAssetController, launcherManifestController } from "../controllers/custom/launcherController.ts";
 import {
@@ -210,8 +205,6 @@ customRouter.get("/admin/suspicion-events", listSuspicionEventsController);
 customRouter.get("/admin/suspicion-events/detail", getSuspicionEventsForAccountController);
 customRouter.get("/admin/metadata-patches", getMetadataPatchesController);
 customRouter.get("/admin/account-rates", getAccountRatesController);
-customRouter.get("/admin/account-inventory", getAccountInventoryController);
-customRouter.get("/admin/overview", getAdminOverviewController);
 customRouter.get("/admin/currency-grant-stats", getCurrencyGrantStatsController);
 customRouter.get("/admin/player-presence", listPlayerPresenceController);
 customRouter.get("/admin/player-presence/history", getPlayerPresenceHistoryController);
@@ -257,7 +250,6 @@ customRouter.post("/admin/suspicion-events/ban", setAccountBanController);
 customRouter.post("/admin/suspicion-events/clear", clearSuspicionEventsController);
 customRouter.post("/admin/metadata-patches", saveMetadataPatchesController);
 customRouter.post("/admin/account-rates", saveAccountRatesController);
-customRouter.post("/admin/account-inventory", updateAccountModController);
 customRouter.post("/admin/account-rates/delete", deleteAccountRatesController);
 customRouter.post("/admin/irc-announcement", ircAnnouncementController);
 customRouter.post("/admin/world-activities/refresh", refreshWorldActivitiesController);

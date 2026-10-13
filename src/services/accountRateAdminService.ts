@@ -19,7 +19,6 @@ export const listAccountRates = async (): Promise<{
     accounts: {
         id: string;
         displayName: string;
-        banned: boolean;
         profile: TResolvedAccountRateProfile;
         featureProfile: TResolvedAccountFeatureProfile;
         hasCustomProfile: boolean;
@@ -28,7 +27,7 @@ export const listAccountRates = async (): Promise<{
     orphanedProfiles: string[];
     orphanedFeatureProfiles: string[];
 }> => {
-    const accounts = await Account.find({}, "DisplayName Banned").sort({ DisplayName: 1 });
+    const accounts = await Account.find({}, "DisplayName").sort({ DisplayName: 1 });
     const accountIds = new Set(accounts.map(account => account._id.toString()));
     return {
         definitions: ACCOUNT_RATE_DEFINITIONS,
@@ -36,7 +35,6 @@ export const listAccountRates = async (): Promise<{
         accounts: accounts.map(account => ({
             id: account._id.toString(),
             displayName: account.DisplayName,
-            banned: account.Banned === true,
             profile: getAccountRateProfile(account),
             featureProfile: getAccountFeatureProfile(account._id.toString()),
             hasCustomProfile:
