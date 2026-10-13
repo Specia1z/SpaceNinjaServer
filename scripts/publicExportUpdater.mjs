@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+    cpSync,
     existsSync,
     lstatSync,
     mkdirSync,
@@ -157,6 +158,29 @@ const assertNoSymlinks = directory => {
     }
 };
 
+const defaultDirectoryFs = { renameSync, cpSync, rmSync };
+
+// Overlay filesystems may reject renaming a directory from an image layer with EXDEV.
+// Copy it in the writable layer instead; the caller removes the source after the copy.
+export const moveDirectory = (source, destination, fs = defaultDirectoryFs) => {
+    try {
+        fs.renameSync(source, destination);
+        return true;
+    } catch (error) {
+        if (error?.code !== "EXDEV") {
+            throw error;
+        }
+    }
+
+    try {
+        fs.cpSync(source, destination, { recursive: true, errorOnExist: true, force: false });
+    } catch (error) {
+        fs.rmSync(destination, { recursive: true, force: true });
+        throw error;
+    }
+    return false;
+};
+
 const extractAndInstall = (archive, metadata, packageRoot) => {
     const nodeModules = resolve(packageRoot, "node_modules");
     const cacheRoot = resolve(nodeModules, ".cache");
@@ -210,16 +234,32 @@ const extractAndInstall = (archive, metadata, packageRoot) => {
         const target = resolve(nodeModules, packageName);
         const backup = resolve(nodeModules, `${packageName}.backup-${process.pid}`);
         rmSync(backup, { recursive: true, force: true });
-        renameSync(target, backup);
+        const targetRenamed = moveDirectory(target, backup);
         try {
-            renameSync(extractedPackage, target);
+            if (!targetRenamed) {
+                rmSync(target, { recursive: true });
+            }
+            const packageRenamed = moveDirectory(extractedPackage, target);
+            if (!packageRenamed) {
+                rmSync(extractedPackage, { recursive: true });
+            }
             if (readManifest(packageRoot).version !== metadata.version) {
                 throw new Error("Installed Public Export version failed post-update verification");
             }
             rmSync(backup, { recursive: true, force: true });
         } catch (error) {
-            rmSync(target, { recursive: true, force: true });
-            renameSync(backup, target);
+            try {
+                rmSync(target, { recursive: true, force: true });
+                const backupRenamed = moveDirectory(backup, target);
+                if (!backupRenamed) {
+                    rmSync(backup, { recursive: true });
+                }
+            } catch (rollbackError) {
+                throw new AggregateError(
+                    [error, rollbackError],
+                    `Public Export update failed and rollback failed; original package backup is at ${backup}`
+                );
+            }
             throw error;
         }
     } finally {
