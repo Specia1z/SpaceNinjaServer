@@ -1,0 +1,13 @@
+<div data-route="/webui/" data-title-tag="login_title">
+                <p data-loc="login_description"></p>
+                <form onsubmit="doLogin();return false;">
+                    <label for="email" data-loc="login_emailLabel"></label>
+                    <input class="form-control" type="text" id="email" required />
+                    <br />
+                    <label for="password" data-loc="login_passwordLabel"></label>
+                    <input class="form-control" type="password" id="password" required />
+                    <br />
+                    <button class="btn btn-primary" type="submit" data-loc="login_loginButton"></button>
+                    <button class="btn btn-secondary" type="submit" onclick="registerSubmit = true;" data-loc="login_registerButton"></button>
+                </form>
+            </div>

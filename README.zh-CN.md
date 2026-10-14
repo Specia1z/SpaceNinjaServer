@@ -76,25 +76,23 @@ Copy-Item config-vanilla.json config.json
 
 `tunables.playwfContent` 可配置由 OpenWF Bootstrapper 自动启动的 Pluto 脚本。每个启用的 `mods` 条目需要设置类似 `/PlayWF/example.pluto` 的 `scriptPath`；服务端会将可用脚本加入 `client.auto_start_scripts`，并从 `static/PlayWF/` 或 `PlayWF/` 对应路径提供脚本。设置 `autoStart: false` 可以只提供脚本而不自动启动，小脚本也可以直接填写 `script` 内联内容。`tunables.prohibitScripts` 开启时不会下发自动启动列表。
 
-按账号设置资源拾取量和任务 Mod 倍率时，在 `config.json` 的 `accountDropMultipliers` 中使用游戏显示名作为键。未配置的账号保持原行为：
+管理员可以在 WebUI 的“账号倍率”页面按账号 ID 设置奖励倍率和账号专属仓库功能。倍率配置保存在 `config.json` 的 `accountRateProfiles` 中；未配置的账号保持原行为：
 
 ```json
 {
-  "accountDropMultipliers": {
-    "ExampleAccount": {
-      "resourceMultiplier": 5,
-      "modMultiplier": 10
-    },
-    "AnotherAccount": {
-      "resourceMultiplier": 2
+  "accountRateProfiles": {
+    "507f1f77bcf86cd799439011": {
+      "enabled": true,
+      "resourceDropMultiplier": 5,
+      "modDropMultiplier": 10
     }
   }
 }
 ```
 
-修改配置后重启服务，或等待配置热加载生效。现代客户端（39.1 及以上）需要重新登录，才能取得独立于全局配置的账号专属资源拾取量加成；旧客户端继续通过最终结算补偿资源。Mod 在最终结算时对上报的拾取物、任务奖励及服务端抽取奖励放大，不改变任务内拾取动画。此处的旧版资源/Mod 倍率不影响固定任务资源奖励、蓝图和信用点；信用点倍率请在账号倍率档案中单独设置。
+修改配置后重启服务，或等待配置热加载生效。现代客户端（39.1 及以上）通过签名的账号专属世界状态接收资源、现金和普通经验加成；修改客户端倍率后需要重新登录。旧客户端继续通过最终结算补偿资源和现金。客户端已经放大的现金拾取不会在结算时重复乘算，但服务端生成的奖励仍受账号倍率与仓库现金加成器影响。档案停用或到期时按 1 倍生效，但保留已保存的数值。旧版 `accountDropMultipliers`（按显示名）仅用于兼容读取，保存新版档案时会迁移到账号 ID；新配置请使用 `accountRateProfiles`。
 
-管理员还可以在 WebUI 的“账号倍率”页面按账号 ID 管理资源、Mod、任务现金、普通经验（战甲/武器 Affinity）、专精经验、集团声望、午夜电波声望、遗物物品数量、遗物白金、任务白金和每日登录奖励倍率。页面支持搜索账号、启用/停用档案、设置可选到期时间、重置和删除；旧版按显示名配置的资源/Mod 倍率会显示在相应账号中，保存新档案时自动迁移到账号 ID。现代客户端通过账号专属世界状态接收资源、现金和普通经验加成，与全局活动倍率叠加；客户端已经放大的现金拾取不再在结算时重复乘算，但服务端生成的任务奖励仍受账号倍率与仓库现金加成器影响。旧客户端的资源和现金继续通过最终结算补偿。修改账号世界状态倍率后需要重新登录；普通经验不同于专精经验。
+管理员还可以在 WebUI 中管理 Mod、普通经验、专精经验、集团声望、午夜电波声望、遗物物品数量和白金、任务白金、每日登录奖励等倍率，以及账号专属仓库功能。页面支持搜索账号、启用/停用档案、设置到期时间、重置和删除。
 
 外部 MongoDB 示例：
 

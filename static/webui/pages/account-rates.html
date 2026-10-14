@@ -1,0 +1,154 @@
+<div id="account-rates-route" class="account-rates-page" data-route="/webui/account-rates" data-title-tag="navbar_accountRates">
+    <section class="account-rates-access-state d-none admin-hide" role="status">
+        <span class="account-rates-access-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+        <h1 data-loc="cheats_administratorRequirement"></h1>
+    </section>
+
+    <div class="admin-show d-none" id="account-rates-admin">
+        <header class="account-rates-hero">
+            <div class="account-rates-hero-copy">
+                <span class="account-rates-eyebrow" data-loc="navbar_accountRates"></span>
+                <h1 data-loc="accountRates_title"></h1>
+                <p data-loc="accountRates_description"></p>
+            </div>
+            <div class="account-rates-hero-tools">
+                <span class="account-rates-hero-mark" aria-hidden="true"><i class="bi bi-sliders2-vertical"></i></span>
+                <button class="btn btn-outline-secondary" id="account-rates-refresh" type="button">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    <span data-loc="accountRates_refresh"></span>
+                </button>
+            </div>
+        </header>
+
+        <section class="account-rates-stat-grid" aria-live="polite">
+            <article class="card account-rates-stat-card">
+                <span class="account-rates-stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                <div>
+                    <span class="account-rates-stat-label" data-loc="admin_account"></span>
+                    <strong class="account-rates-stat-value" id="account-rates-total">0</strong>
+                </div>
+            </article>
+            <article class="card account-rates-stat-card account-rates-stat-configured">
+                <span class="account-rates-stat-icon"><i class="bi bi-toggles" aria-hidden="true"></i></span>
+                <div>
+                    <span class="account-rates-stat-label" data-loc="accountRates_configured"></span>
+                    <strong class="account-rates-stat-value" id="account-rates-configured-count">0</strong>
+                </div>
+            </article>
+            <div class="account-rates-summary-wrap">
+                <span class="account-rates-summary-label" data-loc="accountRates_configured"></span>
+                <strong id="account-rates-summary">0/0</strong>
+            </div>
+        </section>
+
+        <div class="alert alert-info d-none account-rates-notice" id="account-rates-notice" role="status"></div>
+
+        <section class="account-rates-workspace">
+            <aside class="card account-rates-directory" aria-labelledby="account-rates-directory-heading">
+                <header class="account-rates-card-header">
+                    <div class="account-rates-card-heading">
+                        <span class="account-rates-card-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="account-rates-card-kicker" data-loc="navbar_accountRates"></span>
+                            <h2 id="account-rates-directory-heading" data-loc="admin_account"></h2>
+                        </div>
+                    </div>
+                    <span class="badge text-bg-secondary" id="account-rates-visible-count">0</span>
+                </header>
+                <div class="account-rates-directory-tools">
+                    <label class="visually-hidden" for="account-rates-search" data-loc="accountRates_search"></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                        <input class="form-control" id="account-rates-search" type="search" data-loc-placeholder="accountRates_search" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="account-rate-account-list" id="account-rates-accounts"></div>
+                <div class="account-rates-directory-footnote">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    <span data-loc="accountRates_enabledHint"></span>
+                </div>
+            </aside>
+
+            <main class="account-rates-editor" id="account-rates-editor">
+                <div class="card account-rates-empty" id="account-rates-empty">
+                    <span class="account-rates-empty-icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+                    <h2 data-loc="accountRates_noSelection"></h2>
+                    <p class="text-body-secondary" data-loc="accountRates_description"></p>
+                </div>
+
+                <div class="d-none account-rates-editor-content" id="account-rates-form-wrap">
+                    <section class="card account-rates-profile-card">
+                        <header class="account-rates-profile-header">
+                            <div class="account-rates-profile-identity">
+                                <span class="account-rates-account-avatar" aria-hidden="true"><i class="bi bi-person-fill"></i></span>
+                                <div class="account-rates-identity">
+                                    <span class="account-rates-card-kicker" data-loc="admin_account"></span>
+                                    <h2 id="account-rates-selected-name"></h2>
+                                    <code id="account-rates-selected-id"></code>
+                                    <span class="badge rounded-pill text-bg-secondary account-rates-profile-status" id="account-rates-profile-status"></span>
+                                </div>
+                            </div>
+                            <div class="account-rates-enabled-control">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" id="account-rates-enabled" type="checkbox" />
+                                    <label class="form-check-label" for="account-rates-enabled" data-loc="accountRates_enabled"></label>
+                                </div>
+                                <span data-loc="accountRates_enabledHint"></span>
+                            </div>
+                        </header>
+
+                        <div class="account-rates-expiry-panel">
+                            <span class="account-rates-expiry-icon"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
+                            <div class="account-rates-expiry-copy">
+                                <label class="form-label" for="account-rates-expires-at" data-loc="accountRates_expiresAt"></label>
+                                <p class="form-text" data-loc="accountRates_expiresAtHint"></p>
+                            </div>
+                            <input class="form-control" id="account-rates-expires-at" type="datetime-local" />
+                        </div>
+                    </section>
+
+                    <div id="account-rates-fields" class="account-rates-groups"></div>
+
+                    <section class="card account-rates-features-card">
+                        <header class="account-rates-card-header">
+                            <div class="account-rates-card-heading">
+                                <span class="account-rates-card-icon account-rates-card-icon-features"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                                <div>
+                                    <span class="account-rates-card-kicker" data-loc="admin_account"></span>
+                                    <h2 data-loc="accountRates_featuresTitle"></h2>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm" id="account-rates-features-save" type="button">
+                                <i class="bi bi-check2" aria-hidden="true"></i>
+                                <span data-loc="accountRates_featuresSave"></span>
+                            </button>
+                        </header>
+                        <div class="account-rates-features-intro" data-loc="accountRates_featuresDescription"></div>
+                        <div class="account-rate-feature-grid" id="account-rates-features"></div>
+                    </section>
+
+                    <footer class="account-rates-actionbar">
+                        <div class="account-rates-actionbar-note">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <span data-loc="accountRates_description"></span>
+                        </div>
+                        <div class="account-rates-actions">
+                            <button class="btn btn-outline-secondary" id="account-rates-reset" type="button">
+                                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                                <span data-loc="accountRates_reset"></span>
+                            </button>
+                            <button class="btn btn-primary" id="account-rates-save" type="button">
+                                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                <span data-loc="accountRates_save"></span>
+                            </button>
+                            <button class="btn btn-outline-danger account-rates-delete" id="account-rates-delete" type="button" data-bs-toggle="tooltip" data-loc-title="accountRates_delete">
+                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                <span data-loc="accountRates_delete"></span>
+                            </button>
+                        </div>
+                    </footer>
+                </div>
+            </main>
+        </section>
+    </div>
+</div>

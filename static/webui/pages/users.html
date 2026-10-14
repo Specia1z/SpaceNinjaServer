@@ -1,0 +1,153 @@
+<div id="users-route" class="users-page" data-route="/webui/users, /webui/admin" data-title-tag="admin_users">
+    <section class="users-access-state d-none admin-hide" role="status">
+        <span class="users-state-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+        <h1 data-loc="cheats_administratorRequirement"></h1>
+    </section>
+
+    <div id="users-admin" class="admin-show d-none">
+        <header class="users-hero">
+            <div class="users-hero-copy">
+                <span class="users-eyebrow" data-loc="admin_users"></span>
+                <h1 data-loc="admin_users"></h1>
+            </div>
+            <div class="users-hero-mark" aria-hidden="true"><i class="bi bi-person-gear"></i></div>
+        </header>
+
+        <section class="users-stat-grid">
+            <article class="card users-stat-card">
+                <span class="users-stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                <div>
+                    <span class="users-stat-label" data-loc="admin_users"></span>
+                    <strong class="users-stat-value" id="admin-users-total">0</strong>
+                </div>
+            </article>
+            <article class="card users-stat-card users-stat-admins">
+                <span class="users-stat-icon"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
+                <div>
+                    <span class="users-stat-label" data-loc="admin_administrator"></span>
+                    <strong class="users-stat-value" id="admin-users-admin-count">0</strong>
+                </div>
+            </article>
+            <article class="card users-stat-card users-stat-banned">
+                <span class="users-stat-icon"><i class="bi bi-person-fill-slash" aria-hidden="true"></i></span>
+                <div>
+                    <span class="users-stat-label" data-loc="admin_banned"></span>
+                    <strong class="users-stat-value" id="admin-users-banned-count">0</strong>
+                </div>
+            </article>
+        </section>
+
+        <section class="card users-card users-accounts-card">
+            <header class="card-header users-card-header">
+                <div>
+                    <span class="users-card-kicker" data-loc="admin_account"></span>
+                    <h2 data-loc="admin_users"></h2>
+                </div>
+                <div class="users-account-tools">
+                    <span id="admin-users-visible-count" class="badge text-bg-secondary">0</span>
+                    <button class="btn btn-sm btn-outline-secondary" id="admin-users-refresh" type="button">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        <span class="visually-hidden" data-loc="admin_refreshStatus"></span>
+                    </button>
+                </div>
+            </header>
+            <div class="users-table-toolbar">
+                <label class="visually-hidden" for="admin-users-search" data-loc="admin_account"></label>
+                <div class="input-group users-search">
+                    <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                    <input class="form-control" id="admin-users-search" type="search" data-loc-placeholder="admin_account" autocomplete="off" />
+                    <button class="btn btn-outline-secondary d-none" id="admin-users-clear-search" type="button">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        <span class="visually-hidden" data-loc="inventory_clearSearch"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive users-table-wrap">
+                <table class="table table-hover align-middle users-table mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col" data-loc="admin_account"></th>
+                            <th scope="col">ID</th>
+                            <th scope="col" data-loc="admin_status"></th>
+                            <th scope="col" data-loc="admin_actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="registered-losers"></tbody>
+                </table>
+                <div id="admin-users-empty" class="users-empty-state d-none">
+                    <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+                    <span data-loc="code_nothingToDo"></span>
+                </div>
+            </div>
+        </section>
+
+        <div class="users-tools-grid">
+            <section class="card users-card users-broadcast-card">
+                <header class="card-header users-card-header">
+                    <div>
+                        <span class="users-card-kicker" data-loc="admin_sendInboxMessage"></span>
+                        <h2 data-loc="admin_broadcastInbox"></h2>
+                    </div>
+                    <span class="users-card-icon" aria-hidden="true"><i class="bi bi-envelope-paper"></i></span>
+                </header>
+                <form id="admin-broadcast-form" class="card-body users-form-grid">
+                    <div class="users-form-field users-field-target">
+                        <label class="form-label" for="admin-message-target" data-loc="admin_messageTarget"></label>
+                        <input class="form-control tags-input tags-input-unique" id="admin-message-target" list="datalist-usernames" autocomplete="off" />
+                    </div>
+                    <div class="users-form-field">
+                        <label class="form-label" for="admin-message-sender" data-loc="admin_messageSender"></label>
+                        <input class="form-control" id="admin-message-sender" value="/Lotus/Language/Bosses/Ordis" required />
+                    </div>
+                    <div class="users-form-field">
+                        <label class="form-label" for="admin-message-subject" data-loc="admin_messageSubject"></label>
+                        <input class="form-control" id="admin-message-subject" required />
+                    </div>
+                    <div class="users-form-field users-field-full">
+                        <label class="form-label" for="admin-message-body" data-loc="admin_messageBody"></label>
+                        <textarea class="form-control" id="admin-message-body" rows="5" required></textarea>
+                    </div>
+                    <div class="users-form-field users-field-full">
+                        <label class="form-label" for="admin-message-icon" data-loc="admin_messageIcon"></label>
+                        <input class="form-control" id="admin-message-icon" placeholder="/Lotus/Interface/Icons/Npcs/Ordis.png" />
+                    </div>
+                    <div class="users-form-field">
+                        <label class="form-label" for="admin-message-att" data-loc="admin_messageAtt"></label>
+                        <textarea class="form-control font-monospace" id="admin-message-att" rows="4" placeholder="/Lotus/Powersuits/Excalibur/ExcaliburPrime&#10;/Lotus/Weapons/Tenno/Melee/LongSword/SkanaPrime&#10;/Lotus/Weapons/Tenno/Pistol/LatoPrime"></textarea>
+                    </div>
+                    <div class="users-form-field">
+                        <label class="form-label" for="admin-message-counted-att" data-loc="admin_messageCountedAtt"></label>
+                        <textarea class="form-control font-monospace" id="admin-message-counted-att" rows="4" placeholder="[&#10;  { &quot;ItemType&quot;: &quot;/Lotus/Types/Items/MiscItems/OxiumAlloy&quot;, &quot;ItemCount&quot;: 1200 }&#10;]"></textarea>
+                    </div>
+                    <div class="users-form-footer users-field-full">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="admin-message-high-priority" checked />
+                            <label class="form-check-label" for="admin-message-high-priority"><abbr data-loc="admin_messageHighPriority" data-loc-title="admin_messageHighPriorityHelp"></abbr></label>
+                        </div>
+                        <button class="btn btn-primary" id="admin-broadcast-submit" type="submit" data-loc="admin_sendInboxMessage"></button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card users-card users-irc-card">
+                <header class="card-header users-card-header">
+                    <div>
+                        <span class="users-card-kicker" data-loc="admin_ircSend"></span>
+                        <h2 data-loc="admin_ircTitle"></h2>
+                    </div>
+                    <span class="users-card-icon users-irc-icon" aria-hidden="true"><i class="bi bi-megaphone"></i></span>
+                </header>
+                <form id="admin-irc-form" class="card-body users-irc-form">
+                    <label class="form-label" for="admin-irc-message" data-loc="admin_ircMessage"></label>
+                    <textarea class="form-control" id="admin-irc-message" rows="5" maxlength="400" autocomplete="off" required></textarea>
+                    <div class="users-irc-meta">
+                        <p class="form-text" data-loc="admin_ircDescription"></p>
+                        <span id="admin-irc-byte-count" class="users-byte-count">0 / 400</span>
+                    </div>
+                    <div class="alert d-none" id="admin-irc-notice" role="status" aria-live="polite"></div>
+                    <button class="btn btn-danger" id="admin-irc-submit" type="submit" data-loc="admin_ircSend"></button>
+                </form>
+            </section>
+        </div>
+    </div>
+</div>

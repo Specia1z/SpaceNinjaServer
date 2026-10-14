@@ -151,7 +151,6 @@
   "missionPlatinumRewardDailyCap": 2,
   "missionPlatinumRewardPityCompletions": 30,
   "missionPlatinumRewardSendMail": true,
-  "accountDropMultipliers": {},
   "accountRateProfiles": {},
   "accountFeatureProfiles": {},
   "relicPlatinumReward": {
@@ -165,11 +164,14 @@
   "noMasteryRankUpCooldown": false,
   "antiCheat": {
     "enabled": true,
+    "responseMode": "observe",
     "enforce": false,
     "minMissionTimeSec": 20,
     "maxMissionCompletesPerReport": 10,
     "maxXpPerMissionSecond": 100000,
-    "maxClientItemCountPerReport": 10000
+    "maxClientItemCountPerReport": 10000,
+    "maxClientInventoryEntriesPerReport": 250,
+    "maxClientCreditsPerReport": 10000000
   },
   "webui": {
     "enabled": true,

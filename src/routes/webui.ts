@@ -30,6 +30,7 @@ webuiRouter.use("/webui", (req, res, next) => {
 const virtualRouteController: RequestHandler = async (_req, res) => {
     if (config.webui?.enabled ?? true) {
         res.set("Content-Type", "text/html;charset=utf8");
+        res.set("Cache-Control", "no-store, no-cache, must-revalidate");
         res.send(await fs.readFile(path.join(baseDir, "static/webui/index.html")));
     } else {
         res.sendStatus(404);

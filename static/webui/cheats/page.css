@@ -1,0 +1,236 @@
+.cheats-page {
+    margin-inline: auto;
+    max-width: 112rem;
+}
+
+.cheats-hero {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 86% 12%, color-mix(in srgb, var(--bs-primary) 22%, transparent), transparent 38%),
+        linear-gradient(130deg, color-mix(in srgb, var(--bs-primary) 8%, var(--bs-tertiary-bg)), var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 17%, var(--bs-border-color));
+    border-radius: 1.2rem;
+    box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    min-height: 8rem;
+    overflow: hidden;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    position: relative;
+}
+
+.cheats-hero-copy {
+    position: relative;
+    z-index: 1;
+}
+
+.cheats-eyebrow {
+    color: var(--bs-primary);
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+}
+
+.cheats-hero h1 {
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    margin: 0;
+}
+
+.cheats-hero-mark {
+    align-items: center;
+    color: color-mix(in srgb, var(--bs-primary) 52%, transparent);
+    display: flex;
+    flex: 0 0 auto;
+    font-size: clamp(3.5rem, 8vw, 6rem);
+    justify-content: center;
+    line-height: 1;
+    margin-inline: 2rem 1rem;
+    opacity: 0.72;
+    transform: rotate(-9deg);
+}
+
+.cheats-layout.row {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    margin: 0;
+}
+
+.cheats-layout > .cheats-column {
+    display: contents;
+}
+
+.cheats-card {
+    border-color: var(--bs-border-color);
+    border-radius: 0.9rem;
+    box-shadow: 0 0.65rem 1.8rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.cheats-account-card {
+    grid-column: span 4;
+}
+
+.cheats-server-card {
+    grid-column: span 8;
+}
+
+#server-cheats-card {
+    margin-bottom: 0 !important;
+}
+
+.cheats-card > .card-header {
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 78%, transparent);
+    border-bottom-color: var(--bs-border-color);
+    font-size: 1rem;
+    font-weight: 700;
+    min-height: 3.5rem;
+    padding: 0.85rem 1rem;
+}
+
+.cheats-card > .card-body {
+    min-width: 0;
+    padding: clamp(0.85rem, 2vw, 1.25rem);
+}
+
+.cheats-account-card > .card-body {
+    background:
+        radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--bs-primary) 8%, transparent), transparent 42%),
+        var(--bs-body-bg);
+}
+
+.cheats-action-grid {
+    display: grid !important;
+    gap: 0.6rem !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 !important;
+}
+
+.cheats-action-grid .btn {
+    min-height: 3.25rem;
+    padding: 0.65rem 0.75rem;
+    white-space: normal;
+}
+
+#server-cheats-config:not(.d-none) {
+    display: grid;
+    gap: 0.6rem 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#server-cheats-config > #global-account-cheats {
+    border-bottom: 1px solid var(--bs-border-color);
+    display: grid;
+    gap: 0.45rem 1rem;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 0.5rem;
+    padding-bottom: 1rem;
+}
+
+#server-cheats-config .form-check {
+    align-items: flex-start;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--bs-border-color) 75%, transparent);
+    border-radius: 0.65rem;
+    margin: 0;
+    min-height: 2.65rem;
+    padding: 0.6rem 0.65rem 0.6rem 2rem;
+}
+
+#server-cheats-config .form-check-input {
+    margin-left: -1.35rem;
+    margin-top: 0.18rem;
+}
+
+#server-cheats-config .form-check-label {
+    line-height: 1.4;
+}
+
+#server-cheats-config > .form-check,
+#server-cheats-config > form,
+#server-cheats-config > .form-text,
+#server-cheats-config > h6 {
+    min-width: 0;
+}
+
+#server-cheats-config > .form-text,
+#server-cheats-config > h6 {
+    grid-column: 1 / -1;
+}
+
+#server-cheats-config > form {
+    margin: 0 !important;
+}
+
+#server-cheats-config > form .form-label {
+    line-height: 1.35;
+}
+
+#server-cheats-config .input-group {
+    min-width: 0;
+}
+
+#server-cheats-config .input-group .form-control {
+    min-width: 0;
+}
+
+#server-cheats-config .form-check abbr {
+    color: var(--bs-secondary-color);
+    margin-left: 0.25rem;
+}
+
+#server-cheats-config .form-check abbr svg {
+    height: 0.9em;
+    vertical-align: -0.08em;
+}
+
+#server-cheats-config .form-text {
+    color: var(--bs-secondary-color);
+}
+
+@media (max-width: 991.98px) {
+    .cheats-layout.row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cheats-account-card,
+    .cheats-server-card {
+        grid-column: 1;
+    }
+}
+
+@media (max-width: 767.98px) {
+    #server-cheats-config:not(.d-none),
+    #server-cheats-config > #global-account-cheats {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #server-cheats-config > #global-account-cheats,
+    #server-cheats-config > .form-text,
+    #server-cheats-config > h6 {
+        grid-column: 1;
+    }
+
+    .cheats-hero-mark {
+        font-size: 3.25rem;
+        margin-inline: 0 0.25rem;
+    }
+}
+
+@media (max-width: 440px) {
+    .cheats-hero-mark {
+        display: none;
+    }
+
+    .cheats-action-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

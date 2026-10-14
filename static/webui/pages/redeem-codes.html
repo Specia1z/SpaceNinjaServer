@@ -1,0 +1,270 @@
+<div class="redeem-codes-route" data-route="/webui/redeem-codes" data-title-tag="navbar_redeemCodes">
+    <section class="redeem-codes-access d-none admin-hide" role="status">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <p data-loc="cheats_administratorRequirement"></p>
+    </section>
+
+    <main class="redeem-codes-page admin-show d-none">
+        <header class="redeem-hero">
+            <div>
+                <span class="redeem-eyebrow" data-loc="navbar_redeemCodes"></span>
+                <h1 data-loc="admin_redeemCodes"></h1>
+                <p data-loc="admin_redeemCodesDescription"></p>
+            </div>
+            <span class="redeem-hero-icon" aria-hidden="true"><i class="bi bi-ticket-perforated"></i></span>
+        </header>
+
+        <section class="redeem-summary" aria-label="Redemption code statistics">
+            <article class="redeem-summary-card">
+                <span class="redeem-summary-icon"><i class="bi bi-ticket-detailed" aria-hidden="true"></i></span>
+                <div><span data-loc="admin_redeemTotalCodes"></span><strong id="admin-redeem-total-count">0</strong></div>
+            </article>
+            <article class="redeem-summary-card redeem-summary-active">
+                <span class="redeem-summary-icon"><i class="bi bi-check-circle" aria-hidden="true"></i></span>
+                <div><span data-loc="admin_redeemActiveCodes"></span><strong id="admin-redeem-active-count">0</strong></div>
+            </article>
+            <article class="redeem-summary-card redeem-summary-uses">
+                <span class="redeem-summary-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                <div><span data-loc="admin_redeemTotalUses"></span><strong id="admin-redeem-total-uses">0</strong></div>
+            </article>
+        </section>
+
+        <ul class="nav nav-pills redeem-tabs" role="tablist" aria-label="Redemption code sections">
+            <li class="nav-item" role="presentation"><button class="nav-link active" id="redeem-tab-create" data-bs-toggle="tab" data-bs-target="#redeem-pane-create" type="button" role="tab" aria-controls="redeem-pane-create" aria-selected="true"><i class="bi bi-plus-circle" aria-hidden="true"></i><span data-loc="admin_redeemTabCreate"></span></button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="redeem-tab-batch" data-bs-toggle="tab" data-bs-target="#redeem-pane-batch" type="button" role="tab" aria-controls="redeem-pane-batch" aria-selected="false"><i class="bi bi-magic" aria-hidden="true"></i><span data-loc="admin_redeemTabBatch"></span></button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="redeem-tab-existing" data-bs-toggle="tab" data-bs-target="#redeem-pane-existing" type="button" role="tab" aria-controls="redeem-pane-existing" aria-selected="false"><i class="bi bi-card-list" aria-hidden="true"></i><span data-loc="admin_redeemTabExisting"></span></button></li>
+        </ul>
+
+        <div class="tab-content redeem-tab-content">
+            <div class="tab-pane fade show active" id="redeem-pane-create" role="tabpanel" aria-labelledby="redeem-tab-create" tabindex="0">
+                <section class="card redeem-panel">
+                    <header class="redeem-panel-header">
+                        <span class="redeem-panel-icon"><i class="bi bi-ticket-perforated" aria-hidden="true"></i></span>
+                        <div><span class="redeem-kicker" data-loc="admin_redeemTabCreate"></span><h2 data-loc="admin_redeemCreateTitle"></h2><p data-loc="admin_redeemCreateDescription"></p></div>
+                    </header>
+                    <form class="redeem-form" id="admin-redeem-form">
+                        <div class="redeem-form-grid">
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-code" data-loc="admin_redeemCode"></label>
+                                <input class="form-control font-monospace" id="admin-redeem-code" required autocomplete="off" maxlength="64" placeholder="WELCOME-2026" />
+                                <span class="form-text" data-loc="admin_redeemCodeHint"></span>
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-label" data-loc="admin_redeemLabel"></label>
+                                <input class="form-control" id="admin-redeem-label" autocomplete="off" maxlength="200" />
+                            </div>
+                        </div>
+
+                        <div class="redeem-reward-picker">
+                            <label class="form-label" for="admin-redeem-type" data-loc="admin_rewardPicker"></label>
+                            <div class="input-group">
+                                <input class="form-control" id="admin-redeem-type" autocomplete="off" placeholder="Forma / /Lotus/Types/Items/..." />
+                                <button class="btn btn-outline-secondary" id="admin-redeem-add-reward" type="button"><i class="bi bi-plus-lg" aria-hidden="true"></i><span data-loc="admin_rewardAdd"></span></button>
+                            </div>
+                            <span class="form-text" id="admin-redeem-type-resolved" aria-live="polite"></span>
+                            <span class="form-text" data-loc="admin_rewardPickerHint"></span>
+                        </div>
+
+                        <div class="redeem-field">
+                            <label class="form-label" for="admin-redeem-rewards" data-loc="admin_redeemRewards"></label>
+                            <textarea class="form-control font-monospace" id="admin-redeem-rewards" rows="4" required placeholder="/Lotus/Types/Items/MiscItems/Forma, 3&#10;/Lotus/Types/Recipes/WarframeRecipes/ExcaliburPrimeBlueprint"></textarea>
+                            <span class="form-text" data-loc="admin_redeemRewardsHint"></span>
+                        </div>
+
+                        <div class="redeem-form-grid redeem-form-options">
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-expires" data-loc="admin_expiresAt"></label>
+                                <input class="form-control" id="admin-redeem-expires" type="datetime-local" />
+                                <span class="form-text" data-loc="admin_expiresAtHint"></span>
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-max-uses" data-loc="admin_maxUses"></label>
+                                <input class="form-control" id="admin-redeem-max-uses" type="number" min="0" max="1000000" step="1" value="0" />
+                                <span class="form-text" data-loc="admin_maxUsesHint"></span>
+                            </div>
+                            <label class="form-check redeem-enabled-check">
+                                <input class="form-check-input" id="admin-redeem-enabled" type="checkbox" checked />
+                                <span class="form-check-label" data-loc="admin_enabled"></span>
+                            </label>
+                        </div>
+                        <footer class="redeem-form-footer">
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i><span data-loc="admin_saveRedeemCode"></span></button>
+                            <button class="btn btn-outline-secondary" id="admin-redeem-reset" type="button"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span data-loc="admin_clearForm"></span></button>
+                        </footer>
+                    </form>
+                </section>
+            </div>
+
+            <div class="tab-pane fade" id="redeem-pane-batch" role="tabpanel" aria-labelledby="redeem-tab-batch" tabindex="0">
+                <section class="card redeem-panel">
+                    <header class="redeem-panel-header">
+                        <span class="redeem-panel-icon redeem-batch-icon"><i class="bi bi-magic" aria-hidden="true"></i></span>
+                        <div><span class="redeem-kicker" data-loc="admin_redeemTabBatch"></span><h2 data-loc="admin_batchGenerate"></h2><p data-loc="admin_batchGenerateDescription"></p></div>
+                    </header>
+                    <form class="redeem-form" id="admin-redeem-batch-form">
+                        <div class="redeem-generator-grid">
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-count" data-loc="admin_batchCount"></label>
+                                <input class="form-control" id="admin-redeem-batch-count" type="number" min="1" max="500" step="1" value="10" required />
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-format" data-loc="admin_redeemFormat"></label>
+                                <select class="form-select" id="admin-redeem-batch-format">
+                                    <option value="random" data-loc="admin_redeemFormatRandom"></option>
+                                    <option value="uuid" data-loc="admin_redeemFormatUuid"></option>
+                                    <option value="uuid-compact" data-loc="admin_redeemFormatUuidCompact"></option>
+                                </select>
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-length" data-loc="admin_codeLength"></label>
+                                <input class="form-control" id="admin-redeem-batch-length" type="number" min="4" max="64" step="1" value="16" required />
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-prefix" data-loc="admin_codePrefix"></label>
+                                <input class="form-control font-monospace" id="admin-redeem-batch-prefix" autocomplete="off" maxlength="24" placeholder="WELCOME-" />
+                                <span class="form-text" data-loc="admin_codePrefixHint"></span>
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-alphabet" data-loc="admin_redeemAlphabet"></label>
+                                <select class="form-select" id="admin-redeem-batch-alphabet">
+                                    <option value="unambiguous" data-loc="admin_redeemAlphabetUnambiguous"></option>
+                                    <option value="alphanumeric" data-loc="admin_redeemAlphabetAlphanumeric"></option>
+                                    <option value="hex" data-loc="admin_redeemAlphabetHex"></option>
+                                    <option value="digits" data-loc="admin_redeemAlphabetDigits"></option>
+                                    <option value="custom" data-loc="admin_redeemAlphabetCustom"></option>
+                                </select>
+                            </div>
+                            <div class="redeem-field d-none" id="admin-redeem-custom-alphabet-field">
+                                <label class="form-label" for="admin-redeem-batch-custom-alphabet" data-loc="admin_redeemCustomAlphabet"></label>
+                                <input class="form-control font-monospace" id="admin-redeem-batch-custom-alphabet" autocomplete="off" maxlength="36" pattern="[A-Za-z0-9]{2,36}" />
+                                <span class="form-text" data-loc="admin_redeemCustomAlphabetHint"></span>
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-group-size" data-loc="admin_redeemGroupSize"></label>
+                                <select class="form-select" id="admin-redeem-batch-group-size">
+                                    <option value="0" data-loc="admin_redeemGroupNone"></option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="8">8</option>
+                                </select>
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-separator" data-loc="admin_redeemGroupSeparator"></label>
+                                <select class="form-select" id="admin-redeem-batch-separator">
+                                    <option value="-">-</option>
+                                    <option value="_">_</option>
+                                    <option value=".">.</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <section class="redeem-preview" aria-live="polite">
+                            <div class="redeem-preview-copy">
+                                <span class="redeem-kicker" data-loc="admin_redeemPreview"></span>
+                                <code id="admin-redeem-batch-preview">ABCD-EFGH-JKMP</code>
+                                <span class="form-text" data-loc="admin_redeemPreviewHint"></span>
+                            </div>
+                            <div class="redeem-preview-details">
+                                <span id="admin-redeem-batch-summary"></span>
+                                <span class="text-danger d-none" id="admin-redeem-batch-format-error" data-loc="admin_redeemFormatInvalid"></span>
+                            </div>
+                        </section>
+
+                        <div class="redeem-field">
+                            <label class="form-label" for="admin-redeem-batch-label" data-loc="admin_redeemLabel"></label>
+                            <input class="form-control" id="admin-redeem-batch-label" autocomplete="off" maxlength="200" />
+                        </div>
+
+                        <div class="redeem-reward-picker">
+                            <label class="form-label" for="admin-redeem-batch-type" data-loc="admin_rewardPicker"></label>
+                            <div class="input-group">
+                                <input class="form-control" id="admin-redeem-batch-type" autocomplete="off" placeholder="Forma / /Lotus/Types/Items/..." />
+                                <button class="btn btn-outline-secondary" id="admin-redeem-batch-add-reward" type="button"><i class="bi bi-plus-lg" aria-hidden="true"></i><span data-loc="admin_rewardAdd"></span></button>
+                            </div>
+                            <span class="form-text" id="admin-redeem-batch-type-resolved" aria-live="polite"></span>
+                            <span class="form-text" data-loc="admin_rewardPickerHint"></span>
+                        </div>
+
+                        <div class="redeem-field">
+                            <label class="form-label" for="admin-redeem-batch-rewards" data-loc="admin_redeemRewards"></label>
+                            <textarea class="form-control font-monospace" id="admin-redeem-batch-rewards" rows="4" required placeholder="/Lotus/Types/Items/MiscItems/Forma, 3"></textarea>
+                            <span class="form-text" data-loc="admin_redeemRewardsHint"></span>
+                        </div>
+
+                        <div class="redeem-form-grid redeem-form-options">
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-expires" data-loc="admin_expiresAt"></label>
+                                <input class="form-control" id="admin-redeem-batch-expires" type="datetime-local" />
+                                <span class="form-text" data-loc="admin_expiresAtHint"></span>
+                            </div>
+                            <div class="redeem-field">
+                                <label class="form-label" for="admin-redeem-batch-max-uses" data-loc="admin_maxUses"></label>
+                                <input class="form-control" id="admin-redeem-batch-max-uses" type="number" min="0" max="1000000" step="1" value="1" />
+                                <span class="form-text" data-loc="admin_maxUsesHint"></span>
+                            </div>
+                            <label class="form-check redeem-enabled-check">
+                                <input class="form-check-input" id="admin-redeem-batch-enabled" type="checkbox" checked />
+                                <span class="form-check-label" data-loc="admin_enabled"></span>
+                            </label>
+                        </div>
+
+                        <div class="redeem-batch-result d-none" id="admin-redeem-batch-result" aria-live="polite">
+                            <div class="redeem-batch-result-heading">
+                                <strong id="admin-redeem-batch-result-summary"></strong>
+                                <button class="btn btn-sm btn-outline-secondary" id="admin-redeem-batch-copy" type="button"><i class="bi bi-clipboard" aria-hidden="true"></i><span data-loc="admin_redeemCopyAll"></span></button>
+                            </div>
+                            <label class="visually-hidden" for="admin-redeem-batch-output" data-loc="admin_redeemGeneratedCodes"></label>
+                            <textarea class="form-control font-monospace" id="admin-redeem-batch-output" rows="6" readonly></textarea>
+                        </div>
+
+                        <footer class="redeem-form-footer">
+                            <button class="btn btn-primary" id="admin-redeem-batch-submit" type="submit"><i class="bi bi-magic" aria-hidden="true"></i><span data-loc="admin_generateCodes"></span></button>
+                        </footer>
+                    </form>
+                </section>
+            </div>
+
+            <div class="tab-pane fade" id="redeem-pane-existing" role="tabpanel" aria-labelledby="redeem-tab-existing" tabindex="0">
+                <section class="card redeem-panel redeem-list-panel">
+                    <header class="redeem-panel-header redeem-list-header">
+                        <span class="redeem-panel-icon redeem-list-icon"><i class="bi bi-card-list" aria-hidden="true"></i></span>
+                        <div><span class="redeem-kicker" data-loc="admin_redeemTabExisting"></span><h2 data-loc="admin_existingCodes"></h2><p data-loc="admin_redeemListDescription"></p></div>
+                        <button class="btn btn-outline-secondary" id="admin-redeem-refresh" type="button"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span data-loc="admin_refreshStatus"></span></button>
+                    </header>
+                    <div class="redeem-list-toolbar">
+                        <div class="input-group redeem-search">
+                            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                            <input class="form-control" id="admin-redeem-search" type="search" data-loc-placeholder="admin_redeemSearchPlaceholder" />
+                        </div>
+                        <label class="visually-hidden" for="admin-redeem-filter" data-loc="admin_redeemFilter"></label>
+                        <select class="form-select redeem-filter" id="admin-redeem-filter">
+                            <option value="all" data-loc="admin_redeemFilterAll"></option>
+                            <option value="active" data-loc="admin_redeemFilterActive"></option>
+                            <option value="disabled" data-loc="admin_redeemFilterDisabled"></option>
+                            <option value="expired" data-loc="admin_redeemFilterExpired"></option>
+                        </select>
+                    </div>
+                    <div class="table-responsive redeem-table-wrap">
+                        <table class="table table-hover align-middle redeem-table">
+                            <thead>
+                                <tr>
+                                    <th data-loc="admin_redeemCode"></th>
+                                    <th data-loc="admin_redeemLabel"></th>
+                                    <th data-loc="admin_redeemRewards"></th>
+                                    <th data-loc="admin_redeemUsage"></th>
+                                    <th data-loc="admin_expiresAt"></th>
+                                    <th data-loc="admin_storeState"></th>
+                                    <th data-loc="admin_actions"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-redeem-codes"></tbody>
+                        </table>
+                        <div class="redeem-empty d-none" id="admin-redeem-empty"><i class="bi bi-ticket" aria-hidden="true"></i><span data-loc="admin_redeemCodesEmpty"></span></div>
+                    </div>
+                    <footer class="redeem-list-footer"><span id="admin-redeem-list-count"></span></footer>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>

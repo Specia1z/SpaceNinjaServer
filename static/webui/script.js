@@ -197,7 +197,8 @@ function refreshServerConfig() {
         single.getCurrentPath() == "/webui/metadata-patches" ||
         single.getCurrentPath() == "/webui/bootstrapper-version" ||
         single.getCurrentPath() == "/webui/client-config" ||
-        single.getCurrentPath() == "/webui/world-activities"
+        single.getCurrentPath() == "/webui/world-activities" ||
+        single.getCurrentPath() == "/webui/world-state"
     ) {
         single.loadRoute(single.getCurrentPath());
     }
@@ -244,14 +245,40 @@ function doLogin() {
     window.registerSubmit = false;
 }
 
-function awaitAuthz() {
+function awaitAuthz(timeout = 15000) {
     return new Promise(resolve => {
-        let interval;
-        interval = setInterval(() => {
-            if (window.authz) {
-                clearInterval(interval);
-                resolve();
+        if (window.authz) {
+            resolve();
+            return;
+        }
+        if (!localStorage.getItem("email") || !localStorage.getItem("password")) {
+            if (single.getCurrentPath() !== "/webui/") {
+                single.loadRoute("/webui/");
             }
+            return;
+        }
+
+        let interval;
+        const finish = () => {
+            clearInterval(interval);
+            clearTimeout(timeoutId);
+            resolve();
+        };
+        const timeoutId = setTimeout(() => {
+            if (window.authz) {
+                finish();
+                return;
+            }
+
+            console.warn("WebUI authentication did not complete before the route loaded");
+            clearInterval(interval);
+            if (single.getCurrentPath() !== "/webui/") {
+                single.loadRoute("/webui/");
+            }
+        }, timeout);
+
+        interval = setInterval(() => {
+            if (window.authz) finish();
         }, 10);
     });
 }
@@ -291,10 +318,13 @@ function doLogout() {
     }
 }
 
-function renameAccount(taken_name) {
-    const newname = window.prompt(
-        `${taken_name ? loc("code_changeNameRetry").replace("|NAME|", taken_name) + " " : ""}${loc("code_changeNameConfirm")}`
-    );
+async function renameAccount(taken_name) {
+    const newname = await window.webuiComponents.prompt({
+        title: localStorage.getItem("possessing") ? loc("code_rename") : loc("navbar_renameAccount"),
+        message: `${taken_name ? loc("code_changeNameRetry").replace("|NAME|", taken_name) + " " : ""}${loc("code_changeNameConfirm")}`,
+        defaultValue: taken_name || "",
+        confirmLabel: loc("ui_save")
+    });
     if (newname) {
         revalidateAuthz().then(() => {
             fetch("/custom/renameAccount?" + window.authz + "&newname=" + encodeURIComponent(newname)).then(res => {
@@ -312,11 +342,16 @@ function renameAccount(taken_name) {
     }
 }
 
-function deleteAccount() {
+async function deleteAccount() {
     if (
-        window.confirm(
-            loc(localStorage.getItem("possessing") ? "code_deletePossessedAccountConfirm" : "code_deleteAccountConfirm")
-        )
+        await window.webuiComponents.confirm({
+            title: loc("navbar_deleteAccount"),
+            message: loc(
+                localStorage.getItem("possessing") ? "code_deletePossessedAccountConfirm" : "code_deleteAccountConfirm"
+            ),
+            variant: "danger",
+            icon: "bi-person-x"
+        })
     ) {
         revalidateAuthz().then(() => {
             fetch("/custom/deleteAccount?" + window.authz);
@@ -324,8 +359,11 @@ function deleteAccount() {
     }
 }
 
-function changeAccountPassword() {
-    const cur = window.prompt(loc("code_promptCurrentPassword"));
+async function changeAccountPassword() {
+    const cur = await window.webuiComponents.prompt({
+        title: loc("navbar_changePassword"),
+        message: loc("code_promptCurrentPassword")
+    });
     if (cur === null) {
         return;
     }
@@ -333,7 +371,10 @@ function changeAccountPassword() {
         toast(loc("settings_changeFailed"));
         return;
     }
-    const nw = window.prompt(loc("code_promptNewPassword"));
+    const nw = await window.webuiComponents.prompt({
+        title: loc("navbar_changePassword"),
+        message: loc("code_promptNewPassword")
+    });
     if (nw === null) {
         return;
     }
@@ -341,7 +382,10 @@ function changeAccountPassword() {
         toast(loc("settings_changeFailed"));
         return;
     }
-    const cf = window.prompt(loc("code_promptConfirmNewPassword"));
+    const cf = await window.webuiComponents.prompt({
+        title: loc("navbar_changePassword"),
+        message: loc("code_promptConfirmNewPassword")
+    });
     if (cf === null) {
         return;
     }
@@ -372,8 +416,11 @@ function changeAccountPassword() {
     });
 }
 
-function changeAccountEmail() {
-    const curPw = window.prompt(loc("code_promptCurrentPassword"));
+async function changeAccountEmail() {
+    const curPw = await window.webuiComponents.prompt({
+        title: loc("navbar_changeEmail"),
+        message: loc("code_promptCurrentPassword")
+    });
     if (curPw === null) {
         return;
     }
@@ -382,10 +429,11 @@ function changeAccountEmail() {
         return;
     }
     const currentHash = wp.encSync(curPw);
-    function promptAndSend(conflictEmail) {
-        const newEmailRaw = window.prompt(
-            `${conflictEmail ? loc("code_changeEmailRetry").replace("|EMAIL|", conflictEmail) + " " : ""}${loc("code_promptNewEmail")}`
-        );
+    async function promptAndSend(conflictEmail) {
+        const newEmailRaw = await window.webuiComponents.prompt({
+            title: loc("navbar_changeEmail"),
+            message: `${conflictEmail ? loc("code_changeEmailRetry").replace("|EMAIL|", conflictEmail) + " " : ""}${loc("code_promptNewEmail")}`
+        });
         if (newEmailRaw === null) {
             return;
         }
@@ -482,6 +530,7 @@ function updateLocElements() {
     });
     document.querySelectorAll("[data-loc-title]").forEach(elm => {
         elm.title = loc(elm.getAttribute("data-loc-title"));
+        if (elm.hasAttribute("aria-label")) elm.setAttribute("aria-label", elm.title);
     });
     $(".inventory-update-note").text(
         loc(window.have_game_ws ? "general_inventoryUpdateNoteGameWs" : "general_inventoryUpdateNote")
@@ -564,6 +613,7 @@ function setActiveLanguage(lang) {
         script.onload = function () {
             updateLocElements();
             updateTitle();
+            document.dispatchEvent(new CustomEvent("webui:translations-ready", { detail: { lang } }));
             resolve(window.dict);
         };
         script.onerror = function () {
@@ -1225,71 +1275,6 @@ function fetchItemList() {
 }
 fetchItemList();
 
-const globalAccountCheats = document.getElementById("global-account-cheats");
-const serverCheatsConfig = document.getElementById("server-cheats-config");
-if (globalAccountCheats && serverCheatsConfig) {
-    serverCheatsConfig.prepend(globalAccountCheats);
-}
-const accountCheats = document.querySelectorAll("#global-account-cheats input[id]");
-accountCheats.forEach(elm => {
-    elm.dataset.configId = `accountCheats.${elm.id}`;
-});
-
-let inventory_data;
-// Assumes that caller revalidates authz
-function getInventoryData() {
-    return new Promise((resolve, reject) => {
-        if (inventory_data) {
-            resolve(inventory_data);
-        } else {
-            $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1")
-                .done(data => {
-                    inventory_data = data;
-                    resolve(inventory_data);
-                })
-                .fail(reject);
-        }
-    });
-}
-
-// Assumes that caller revalidates authz
-function updateInventory() {
-    inventory_data = undefined;
-    if (
-        single.getCurrentPath() == "/webui/inventory" ||
-        single.getCurrentPath().startsWith("/webui/details") ||
-        single.getCurrentPath() == "/webui/mods" ||
-        single.getCurrentPath() == "/webui/cheats"
-    ) {
-        single.loadRoute(single.getCurrentPath());
-    }
-}
-
-const modularWeapons = [
-    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimary",
-    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryBeam",
-    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryLauncher",
-    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryShotgun",
-    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimarySniper",
-    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondary",
-    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryBeam",
-    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryShotgun",
-    "/Lotus/Weapons/Ostron/Melee/LotusModularWeapon",
-    "/Lotus/Weapons/Sentients/OperatorAmplifiers/OperatorAmpWeapon",
-    "/Lotus/Weapons/Sentients/OperatorAmplifiers/SentTrainingAmplifier/OperatorTrainingAmpWeapon",
-    "/Lotus/Types/Vehicles/Hoverboard/HoverboardSuit",
-    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetPowerSuit",
-    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetAPowerSuit",
-    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetBPowerSuit",
-    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetCPowerSuit",
-    "/Lotus/Types/Friendly/Pets/CreaturePets/VulpineInfestedCatbrowPetPowerSuit",
-    "/Lotus/Types/Friendly/Pets/CreaturePets/HornedInfestedCatbrowPetPowerSuit",
-    "/Lotus/Types/Friendly/Pets/CreaturePets/ArmoredInfestedCatbrowPetPowerSuit",
-    "/Lotus/Types/Friendly/Pets/CreaturePets/VizierPredatorKubrowPetPowerSuit",
-    "/Lotus/Types/Friendly/Pets/CreaturePets/PharaohPredatorKubrowPetPowerSuit",
-    "/Lotus/Types/Friendly/Pets/CreaturePets/MedjayPredatorKubrowPetPowerSuit"
-];
-
 async function populateInventoryRoute() {
     const [data, itemMap] = await Promise.all([awaitAuthz().then(getInventoryData), window.itemListPromise]);
 
@@ -1403,7 +1388,8 @@ async function populateInventoryRoute() {
                             unlockLevelCap(category, item.ItemId.$oid, (itemMap[item.ItemType].maxLevelCap - 30) / 2);
                         };
                         a.title = loc("code_unlockLevelCap");
-                        a.innerHTML = icons.graduationCap;
+                        a.setAttribute("aria-label", a.title);
+                        a.innerHTML = '<i class="bi bi-mortarboard" aria-hidden="true"></i>';
                         td.appendChild(a);
                     }
                     if (item.XP < maxXP || anyExaltedMissingXP) {
@@ -1439,14 +1425,17 @@ async function populateInventoryRoute() {
                             });
                         };
                         a.title = loc("code_maxRank");
-                        a.innerHTML = icons.arrowUp;
+                        a.setAttribute("aria-label", a.title);
+                        a.innerHTML = '<i class="bi bi-arrow-up" aria-hidden="true"></i>';
                         td.appendChild(a);
                     }
 
                     {
                         const a = document.createElement("a");
                         a.href = "/webui/details?productCategory=" + category + "&itemId=" + item.ItemId.$oid;
-                        a.innerHTML = icons.feather;
+                        a.title = loc("inventory_openDetails");
+                        a.setAttribute("aria-label", a.title);
+                        a.innerHTML = '<i class="bi bi-pencil-square" aria-hidden="true"></i>';
                         td.appendChild(a);
                     }
 
@@ -1458,7 +1447,8 @@ async function populateInventoryRoute() {
                             equipmentFeatures(category, item.ItemId.$oid, 8);
                         };
                         a.title = loc("code_gild");
-                        a.innerHTML = icons.star;
+                        a.setAttribute("aria-label", a.title);
+                        a.innerHTML = '<i class="bi bi-star" aria-hidden="true"></i>';
                         td.appendChild(a);
                     }
                     if (category == "KubrowPets") {
@@ -1470,25 +1460,31 @@ async function populateInventoryRoute() {
                         };
                         if (item.Details.IsPuppy) {
                             a.title = loc("code_mature");
-                            a.innerHTML = icons.person;
+                            a.setAttribute("aria-label", a.title);
+                            a.innerHTML = '<i class="bi bi-person-arms-up" aria-hidden="true"></i>';
                         } else {
                             a.title = loc("code_unmature");
-                            a.innerHTML = icons.childReaching;
+                            a.setAttribute("aria-label", a.title);
+                            a.innerHTML = '<i class="bi bi-person-walking" aria-hidden="true"></i>';
                         }
                         td.appendChild(a);
                     }
                     {
                         const a = document.createElement("a");
                         a.href = "#";
-                        a.onclick = function (event) {
+                        a.onclick = async function (event) {
                             event.preventDefault();
-                            const name = prompt(loc("code_renamePrompt"));
-                            if (name !== null) {
+                            const name = await window.webuiComponents.prompt({
+                                title: loc("code_rename"),
+                                confirmLabel: loc("ui_save")
+                            });
+                            if (name !== null && name.trim()) {
                                 renameGear(category, item.ItemId.$oid, name);
                             }
                         };
                         a.title = loc("code_rename");
-                        a.innerHTML = icons.tag;
+                        a.setAttribute("aria-label", a.title);
+                        a.innerHTML = '<i class="bi bi-tag" aria-hidden="true"></i>';
                         td.appendChild(a);
                     }
                     {
@@ -1510,7 +1506,8 @@ async function populateInventoryRoute() {
                             }
                         };
                         a.title = loc("code_remove");
-                        a.innerHTML = icons.trash;
+                        a.setAttribute("aria-label", a.title);
+                        a.innerHTML = '<i class="bi bi-trash3" aria-hidden="true"></i>';
                         td.appendChild(a);
                     }
                     tr.appendChild(td);
@@ -1869,290 +1866,6 @@ async function populateInventoryRoute() {
 }
 single.getRoute("/webui/inventory").on("beforeload", populateInventoryRoute);
 
-single.getRoute("/webui/mods").on("beforeload", async function () {
-    const [data, itemMap] = await Promise.all([awaitAuthz().then(getInventoryData), window.itemListPromise]);
-
-    document.getElementById("riven-list").innerHTML = "";
-    document.getElementById("mods-list").innerHTML = "";
-    data.Upgrades.forEach(item => {
-        if (item.ItemType.substr(0, 32) == "/Lotus/Upgrades/Mods/Randomized/") {
-            const rivenType = item.ItemType.substr(32);
-            const fingerprint = JSON.parse(item.UpgradeFingerprint);
-            if ("buffs" in fingerprint) {
-                // Riven has been revealed?
-                const tr = document.createElement("tr");
-                {
-                    const td = document.createElement("td");
-                    td.textContent = itemMap[fingerprint.compat]?.name ?? fingerprint.compat;
-                    td.textContent += " ";
-                    try {
-                        td.textContent += RivenParser.parseRiven(rivenType, fingerprint, 1).name;
-                    } catch (e) {
-                        console.warn("malformed riven", { rivenType, fingerprint });
-                        td.textContent += " [Malformed Riven]";
-                    }
-                    td.innerHTML +=
-                        " <span title='" + loc("code_buffsNumber") + "'>▲ " + fingerprint.buffs.length + "</span>";
-                    td.innerHTML +=
-                        " <span title='" + loc("code_cursesNumber") + "'>▼ " + fingerprint.curses.length + "</span>";
-                    td.innerHTML +=
-                        " <span title='" + loc("code_rerollsNumber") + "'>⟳ " + (fingerprint.rerolls ?? 0) + "</span>";
-                    tr.appendChild(td);
-                }
-                {
-                    const td = document.createElement("td");
-                    td.classList = "text-end text-nowrap";
-                    {
-                        const a = document.createElement("a");
-                        a.href =
-                            "riven-tool/#" +
-                            encodeURIComponent(
-                                JSON.stringify({
-                                    rivenType: rivenType,
-                                    omegaAttenuation: 1,
-                                    fingerprint: fingerprint
-                                })
-                            );
-                        a.target = "_blank";
-                        a.title = loc("code_viewStats");
-                        a.innerHTML = icons.chartSimple;
-                        td.appendChild(a);
-                    }
-                    {
-                        const a = document.createElement("a");
-                        a.href = "#";
-                        a.onclick = function (event) {
-                            event.preventDefault();
-                            document.getElementById("riven-list").removeChild(tr);
-                            disposeOfGear("Upgrades", item.ItemId.$oid);
-                        };
-                        a.title = loc("code_remove");
-                        a.innerHTML = icons.trash;
-                        td.appendChild(a);
-                    }
-                    tr.appendChild(td);
-                }
-                document.getElementById("riven-list").appendChild(tr);
-                return;
-            }
-        }
-        const tr = document.createElement("tr");
-        const rank = parseInt(JSON.parse(item.UpgradeFingerprint).lvl);
-        const maxRank = itemMap[item.ItemType]?.fusionLimit ?? 5;
-        {
-            const td = document.createElement("td");
-            td.textContent = itemMap[item.ItemType]?.name ?? item.ItemType;
-            if (itemMap[item.ItemType]?.badReason == "u5mod") {
-                if (item.UpgradeFingerprint) {
-                    const fingerprint = JSON.parse(item.UpgradeFingerprint);
-                    if (fingerprint.fits && itemMap[item.ItemType]?.fits.length > 1) {
-                        td.textContent = loc("code_U5Mod").replace(
-                            "|TYPE|",
-                            itemMap[fingerprint.fits]?.name ?? fingerprint.fits
-                        );
-                        td.textContent = loc("code_updateSuffix")
-                            .replace("|TYPE|", td.textContent)
-                            .replace("|VALUE|", "5");
-                        if (
-                            [
-                                "/Lotus/Upgrades/Modules/GrineerMeleeModule",
-                                "/Lotus/Upgrades/Modules/TennoSwordModule"
-                            ].includes(item.ItemType)
-                        ) {
-                            td.textContent += " [" + item.ItemType.split("/").pop() + "]";
-                        }
-                    }
-                }
-            } else if (itemMap[item.ItemType]?.badReason == "notraw") {
-                // Assuming this is a riven with a pending challenge, so rank would be N/A, but otherwise it's fine.
-            } else if (!Number.isNaN(rank)) {
-                td.innerHTML += " <span title='" + loc("code_rank") + "'>★ " + rank + "/" + maxRank + "</span>";
-            }
-            tr.appendChild(td);
-        }
-        {
-            const td = document.createElement("td");
-            td.classList = "text-end text-nowrap";
-            if (rank < maxRank) {
-                const a = document.createElement("a");
-                a.href = "#";
-                a.onclick = function (event) {
-                    event.preventDefault();
-                    setFingerprint(item.ItemType, item.ItemId, { lvl: maxRank });
-                };
-                a.title = loc("code_maxRank");
-                a.innerHTML = icons.arrowUp;
-                td.appendChild(a);
-            }
-            if (itemMap[item.ItemType]?.badReason == "u5mod") {
-                const a = document.createElement("a");
-                a.href = "/webui/details?productCategory=Upgrades&itemId=" + item.ItemId.$oid;
-                a.innerHTML = icons.feather;
-                td.appendChild(a);
-            }
-            {
-                const a = document.createElement("a");
-                a.href = "#";
-                a.onclick = function (event) {
-                    event.preventDefault();
-                    document.getElementById("mods-list").removeChild(tr);
-                    disposeOfGear("Upgrades", item.ItemId.$oid);
-                };
-                a.title = loc("code_remove");
-                a.innerHTML = icons.trash;
-                td.appendChild(a);
-            }
-            tr.appendChild(td);
-        }
-        document.getElementById("mods-list").appendChild(tr);
-    });
-    data.RawUpgrades.forEach(item => {
-        if (item.ItemCount > 0) {
-            const maxRank = itemMap[item.ItemType]?.fusionLimit ?? 5;
-            const tr = document.createElement("tr");
-            {
-                const td = document.createElement("td");
-                td.textContent = itemMap[item.ItemType]?.name ?? item.ItemType;
-                if (maxRank > 0) {
-                    td.innerHTML += " <span title='" + loc("code_rank") + "'>★ 0/" + maxRank + "</span>";
-                }
-                if (item.ItemCount > 1) {
-                    td.innerHTML +=
-                        " <span title='" + loc("code_count") + "'>🗍 " + parseInt(item.ItemCount) + "</span>";
-                }
-                tr.appendChild(td);
-            }
-            {
-                const td = document.createElement("td");
-                td.classList = "text-end text-nowrap";
-                if (maxRank != 0) {
-                    const a = document.createElement("a");
-                    a.href = "#";
-                    a.onclick = function (event) {
-                        event.preventDefault();
-                        setFingerprint(item.ItemType, item.LastAdded, { lvl: maxRank });
-                    };
-                    a.title = loc("code_maxRank");
-                    a.innerHTML = icons.arrowUp;
-                    td.appendChild(a);
-                }
-                {
-                    const a = document.createElement("a");
-                    a.href = "#";
-                    a.onclick = function (event) {
-                        event.preventDefault();
-                        document.getElementById("mods-list").removeChild(tr);
-                        disposeOfItems("Upgrades", item.ItemType, item.ItemCount);
-                    };
-                    a.title = loc("code_remove");
-                    a.innerHTML = icons.trash;
-                    td.appendChild(a);
-                }
-                tr.appendChild(td);
-            }
-            document.getElementById("mods-list").appendChild(tr);
-        }
-    });
-});
-
-dictPromise.then(() => {
-    const invenotryHeaders = document.querySelectorAll(".card-header[data-cardtype]");
-    invenotryHeaders.forEach(elm => {
-        elm.innerHTML = "";
-        elm.classList.remove(...elm.classList);
-        elm.classList.add("card-header", "d-flex", "justify-content-between", "align-items-center");
-
-        const cardType = elm.dataset.cardtype;
-
-        {
-            const h5 = document.createElement("h5");
-            h5.classList.add("mb-0");
-            const locStr = `inventory_${cardType.charAt(0).toLowerCase() + cardType.slice(1)}`;
-            h5.textContent = loc(locStr);
-            h5.setAttribute("data-loc", locStr);
-
-            elm.appendChild(h5);
-        }
-        {
-            const butDiv = document.createElement("div");
-            butDiv.classList.add("d-flex", "gap-2");
-
-            if (!["MoaPets", "Hoverboards", "Boosters"].includes(cardType)) {
-                const a = document.createElement("a");
-                a.href = "#";
-                a.onclick = function (event) {
-                    event.preventDefault();
-                    if (cardType == "EvolutionProgress") {
-                        debounce(addMissingEvolutionProgress);
-                    } else {
-                        debounce(addMissingEquipment, [cardType]);
-                    }
-                };
-                a.setAttribute("data-loc-title", "inventory_bulkAdd");
-                a.title = loc("inventory_bulkAdd");
-                a.innerHTML = icons.plus;
-                butDiv.appendChild(a);
-            }
-            if (!["QuestKeys", "Boosters", "FlavourItems", "ShipDecorations", "WeaponSkins"].includes(cardType)) {
-                const a = document.createElement("a");
-                a.href = "#";
-                a.onclick = function (event) {
-                    event.preventDefault();
-                    if (cardType == "EvolutionProgress") {
-                        debounce(maxRankAllEvolutions);
-                    } else {
-                        debounce(maxRankAllEquipment, [cardType]);
-                    }
-                };
-                a.setAttribute("data-loc-title", "inventory_bulkRankUp");
-                a.title = loc("inventory_bulkRankUp");
-                a.innerHTML = icons.arrowUp;
-                butDiv.appendChild(a);
-            }
-            if (cardType == "QuestKeys") {
-                {
-                    const a = document.createElement("a");
-                    a.href = "#";
-                    a.onclick = function (event) {
-                        event.preventDefault();
-                        doBulkQuestUpdate("completeAll");
-                    };
-                    a.setAttribute("data-loc-title", "inventory_bulkComplete");
-                    a.title = loc("inventory_bulkComplete");
-                    a.innerHTML = icons.check;
-                    butDiv.appendChild(a);
-                }
-                {
-                    const a = document.createElement("a");
-                    a.href = "#";
-                    a.onclick = function (event) {
-                        event.preventDefault();
-                        doBulkQuestUpdate("resetAll");
-                    };
-                    a.setAttribute("data-loc-title", "inventory_bulkReset");
-                    a.title = loc("inventory_bulkReset");
-                    a.innerHTML = icons.arrowRotateRight;
-                    butDiv.appendChild(a);
-                }
-            }
-            if (cardType != "Boosters") {
-                const a = document.createElement("a");
-                a.href = "#";
-                a.onclick = function (event) {
-                    event.preventDefault();
-                    removeItems(cardType);
-                };
-                a.setAttribute("data-loc-title", "inventory_bulkRemove");
-                a.title = loc("inventory_bulkRemove");
-                a.innerHTML = icons.trash;
-                butDiv.appendChild(a);
-            }
-
-            elm.appendChild(butDiv);
-        }
-    });
-});
-
 function updateGuild() {
     window.guild_data = null;
     window.guildPage?.reset();
@@ -2160,218 +1873,6 @@ function updateGuild() {
         single.loadRoute(single.getCurrentPath());
     }
 }
-
-function getKey(input) {
-    return document
-        .getElementById(input.getAttribute("list"))
-        .querySelector("[value='" + input.value.replaceAll("'", "\\'") + "']")
-        ?.getAttribute("data-key");
-}
-
-function doAcquireEquipment(category) {
-    const uniqueName = getKey(document.getElementById("acquire-type-" + category));
-    if (!uniqueName) {
-        $("#acquire-type-" + category)
-            .addClass("is-invalid")
-            .focus();
-        return;
-    }
-    revalidateAuthz().then(() => {
-        const req = $.post({
-            url: "/custom/addItems?" + window.authz,
-            contentType: "application/json",
-            data: JSON.stringify([
-                {
-                    ItemType: uniqueName,
-                    ItemCount: 1
-                }
-            ])
-        });
-        req.done(modifiedPaths => {
-            document.getElementById("acquire-type-" + category).value = "";
-            if (modifiedPaths.length) {
-                updateInventory();
-            } else {
-                toast(loc("code_nothingToDo"));
-            }
-        });
-    });
-}
-
-function removeCustomization(uniqueName) {
-    revalidateAuthz().then(() => {
-        const req = $.get("/custom/removeCustomization?" + window.authz + "&itemType=" + uniqueName);
-        req.done(() => {
-            inventory_data.FlavourItems.splice(
-                inventory_data.FlavourItems.findIndex(x => x.ItemType == uniqueName),
-                1
-            );
-        });
-    });
-}
-
-function removeIsNew() {
-    revalidateAuthz().then(() => {
-        $.get("/custom/removeIsNew?" + window.authz);
-    });
-}
-
-function getRequiredParts(category, WeaponType) {
-    switch (category) {
-        case "Hoverboards":
-            return ["HB_DECK", "HB_ENGINE", "HB_FRONT", "HB_JET"];
-
-        case "OperatorAmps":
-            return ["AMP_OCULUS", "AMP_CORE", "AMP_BRACE"];
-
-        case "Melee":
-            return ["BLADE", "HILT", "HILT_WEIGHT"];
-
-        case "LongGuns":
-            return ["GUN_BARREL", "GUN_PRIMARY_HANDLE", "GUN_CLIP"];
-
-        case "Pistols":
-            return ["GUN_BARREL", "GUN_SECONDARY_HANDLE", "GUN_CLIP"];
-
-        case "MoaPets":
-            return WeaponType === "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetPowerSuit"
-                ? ["MOA_ENGINE", "MOA_PAYLOAD", "MOA_HEAD", "MOA_LEG"]
-                : ["ZANUKA_BODY", "ZANUKA_HEAD", "ZANUKA_LEG", "ZANUKA_TAIL"];
-
-        case "KubrowPets": {
-            return WeaponType.endsWith("InfestedCatbrowPetPowerSuit")
-                ? ["CATBROW_ANTIGEN", "CATBROW_MUTAGEN"]
-                : ["KUBROW_ANTIGEN", "KUBROW_MUTAGEN"];
-        }
-    }
-}
-
-function doAcquireModularEquipment(category, WeaponType) {
-    if (category === "Hoverboards") WeaponType = "/Lotus/Types/Vehicles/Hoverboard/HoverboardSuit";
-    const requiredParts = getRequiredParts(category, WeaponType);
-    let Parts = [];
-
-    requiredParts.forEach(part => {
-        const partName = getKey(document.getElementById("acquire-type-" + category + "-" + part));
-        if (partName) {
-            Parts.push(partName);
-        }
-    });
-    if (Parts.length != requiredParts.length) {
-        let isFirstPart = true;
-        requiredParts.forEach(part => {
-            const partSelector = document.getElementById("acquire-type-" + category + "-" + part);
-            if (!getKey(partSelector)) {
-                if (isFirstPart) {
-                    isFirstPart = false;
-                    $("#acquire-type-" + category + "-" + part)
-                        .addClass("is-invalid")
-                        .focus();
-                } else {
-                    $("#acquire-type-" + category + "-" + part).addClass("is-invalid");
-                }
-            }
-        });
-    } else {
-        const mapping = {
-            LongGuns: {
-                "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelAPart":
-                    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryShotgun",
-                "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelEgg/InfModularBarrelEggPart":
-                    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryShotgun",
-                "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart":
-                    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimary",
-                "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelCPart":
-                    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimary",
-                "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart":
-                    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryBeam",
-                "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart":
-                    "/Lotus/Weapons/SolarisUnited/Primary/LotusModularPrimaryBeam"
-            },
-            Pistols: {
-                "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelAPart":
-                    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryShotgun",
-                "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelEgg/InfModularBarrelEggPart":
-                    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryShotgun",
-                "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart":
-                    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondary",
-                "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelCPart":
-                    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondary",
-                "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart":
-                    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryBeam",
-                "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart":
-                    "/Lotus/Weapons/SolarisUnited/Secondary/LotusModularSecondaryBeam"
-            },
-            MoaPets: {
-                "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadA":
-                    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetAPowerSuit",
-                "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadB":
-                    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetBPowerSuit",
-                "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadC":
-                    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetCPowerSuit"
-            }
-        };
-
-        Parts.forEach(part => {
-            const categoryMap = mapping[category];
-            if (categoryMap && categoryMap[part]) {
-                WeaponType = categoryMap[part];
-            }
-        });
-        if (category == "KubrowPets") Parts.unshift(WeaponType);
-        revalidateAuthz().then(() => {
-            const req = $.post({
-                url: "/api/modularWeaponCrafting.php?" + window.authz,
-                contentType: "application/octet-stream",
-                data: JSON.stringify({
-                    WeaponType,
-                    Parts,
-                    isWebUi: true
-                })
-            });
-            req.done(() => {
-                const mainInput = document.getElementById("acquire-type-" + category);
-                if (mainInput) {
-                    mainInput.value = "";
-                    if (category === "MoaPets") {
-                        document.getElementById("modular-MoaPets-Zanuka").classList.add("d-none");
-                        document.getElementById("modular-MoaPets-Moa").classList.add("d-none");
-                    } else if (category === "KubrowPets") {
-                        document.getElementById("modular-KubrowPets-Catbrow").classList.add("d-none");
-                        document.getElementById("modular-KubrowPets-Kubrow").classList.add("d-none");
-                    } else {
-                        document.getElementById("modular-" + category).classList.add("d-none");
-                    }
-                }
-                requiredParts.forEach(part => {
-                    document.getElementById("acquire-type-" + category + "-" + part).value = "";
-                });
-                updateInventory();
-            });
-        });
-    }
-}
-
-function doAcquireEvolution() {
-    const uniqueName = getKey(document.getElementById("acquire-type-EvolutionProgress"));
-    if (!uniqueName) {
-        $("#acquire-type-EvolutionProgress").addClass("is-invalid").focus();
-        return;
-    }
-    window.itemListPromise.then(itemMap => {
-        if (!document.querySelector("#EvolutionProgress-list [data-item-type='" + uniqueName + "']")) {
-            setEvolutionProgress([
-                { ItemType: uniqueName, Rank: itemMap[uniqueName]?.permanentEvolutionWeapon ? 0 : 1 }
-            ]);
-        } else {
-            toast(loc("code_nothingToDo"));
-        }
-    });
-}
-
-$(document).on("input", "input, textarea", function () {
-    $(this).removeClass("is-invalid");
-});
 
 function dispatchAddItemsRequestsBatch(requests) {
     return new Promise(resolve => {
@@ -2389,7 +1890,7 @@ function dispatchAddItemsRequestsBatch(requests) {
     });
 }
 
-function addMissingEquipment(categories) {
+async function addMissingEquipment(categories) {
     const requests = [];
     categories.forEach(category => {
         document.querySelectorAll("#datalist-" + category + " option").forEach(elm => {
@@ -2408,56 +1909,19 @@ function addMissingEquipment(categories) {
     });
     if (
         requests.length != 0 &&
-        window.confirm(
-            replacePluralForms(loc("code_addItemsConfirm"), {
-                COUNT: requests.length
-            })
-        )
+        (await window.webuiComponents.confirm({
+            title: loc("inventory_bulkAdd"),
+            message: replacePluralForms(loc("code_addItemsConfirm"), { COUNT: requests.length }),
+            variant: "primary",
+            icon: "bi-plus-circle"
+        }))
     ) {
         return dispatchAddItemsRequestsBatch(requests);
     }
 }
 
-function addMissingDangerRooms() {
-    revalidateAuthz().then(() => {
-        getInventoryData().then(data => {
-            const requests = [];
-            window.itemListPromise.then(itemMap => {
-                const allItemKeys = Object.entries(itemMap)
-                    .filter(([_key, item]) => item.parentName === "/Lotus/Types/Items/DangerRoom/DangerRoomTile")
-                    .map(([key]) => key);
-                allItemKeys.push("/Lotus/Types/Items/MiscItems/DangerRoomKey"); // also give access to the simulacrum itself
-                const existingItems = new Set(
-                    data.MiscItems.filter(item => item.ItemCount > 0).map(item => item.ItemType)
-                );
-                allItemKeys.forEach(item => {
-                    if (!existingItems.has(item)) {
-                        requests.push({ ItemType: item, ItemCount: 1 });
-                    }
-                });
-                if (requests.length == 0) {
-                    toast(loc("code_nothingToDo"));
-                } else if (
-                    window.confirm(
-                        replacePluralForms(loc("code_addItemsConfirm"), {
-                            COUNT: requests.length
-                        })
-                    )
-                ) {
-                    return dispatchAddItemsRequestsBatch(requests);
-                }
-            });
-        });
-    });
-}
-
-async function addMissingHelminthRecipes() {
-    await revalidateAuthz();
-    await fetch("/custom/addMissingHelminthBlueprints?" + window.authz);
-}
-
 function addMissingEvolutionProgress() {
-    window.itemListPromise.then(itemMap => {
+    window.itemListPromise.then(async itemMap => {
         const requests = [];
         document.querySelectorAll("#datalist-EvolutionProgress option").forEach(elm => {
             const uniqueName = elm.getAttribute("data-key");
@@ -2468,11 +1932,12 @@ function addMissingEvolutionProgress() {
         if (requests.length == 0) {
             toast(loc("code_nothingToDo"));
         } else if (
-            window.confirm(
-                replacePluralForms(loc("code_addItemsConfirm"), {
-                    COUNT: requests.length
-                })
-            )
+            await window.webuiComponents.confirm({
+                title: loc("inventory_bulkAdd"),
+                message: replacePluralForms(loc("code_addItemsConfirm"), { COUNT: requests.length }),
+                variant: "primary",
+                icon: "bi-plus-circle"
+            })
         ) {
             setEvolutionProgress(requests);
         }
@@ -2482,7 +1947,7 @@ function addMissingEvolutionProgress() {
 function maxRankAllEvolutions() {
     revalidateAuthz().then(() => {
         getInventoryData().then(data => {
-            window.itemListPromise.then(itemMap => {
+            window.itemListPromise.then(async itemMap => {
                 const requests = [];
 
                 data.EvolutionProgress.forEach(item => {
@@ -2842,1113 +2307,6 @@ function addItemByItemType() {
     }
 }
 
-function doAcquireRiven() {
-    let fingerprint;
-    try {
-        fingerprint = JSON.parse($("#addriven-fingerprint").val());
-        if (typeof fingerprint !== "object") {
-            fingerprint = JSON.parse(fingerprint);
-        }
-    } catch (e) {
-        /* empty */
-    }
-    if (
-        typeof fingerprint !== "object" ||
-        !("compat" in fingerprint) ||
-        !("pol" in fingerprint) ||
-        !("buffs" in fingerprint)
-    ) {
-        $("#addriven-fingerprint").addClass("is-invalid").focus();
-        return;
-    }
-    const uniqueName = "/Lotus/Upgrades/Mods/Randomized/" + $("#addriven-type").val();
-    revalidateAuthz().then(() => {
-        // Add riven type to inventory
-        $.post({
-            url: "/custom/addItems?" + window.authz,
-            contentType: "application/json",
-            data: JSON.stringify([
-                {
-                    ItemType: uniqueName,
-                    ItemCount: 1
-                }
-            ])
-        }).done(function () {
-            // Get riven's assigned id
-            $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1").done(data => {
-                for (const rawUpgrade of data.RawUpgrades) {
-                    if (rawUpgrade.ItemType === uniqueName) {
-                        // Add fingerprint to riven
-                        $.post({
-                            url: "/api/artifacts.php?" + window.authz,
-                            contentType: "text/plain",
-                            data: JSON.stringify({
-                                Upgrade: {
-                                    ItemType: uniqueName,
-                                    UpgradeFingerprint: JSON.stringify(fingerprint),
-                                    ItemId: rawUpgrade.LastAdded
-                                },
-                                LevelDiff: 0,
-                                Cost: 0,
-                                FusionPointCost: 0
-                            })
-                        }).done(function () {
-                            $("#addriven-fingerprint").val("");
-                            updateInventory();
-                        });
-                        break;
-                    }
-                }
-            });
-        });
-    });
-}
-
-function setFingerprint(ItemType, ItemId, fingerprint) {
-    revalidateAuthz().then(() => {
-        $.post({
-            url: "/api/artifacts.php?" + window.authz,
-            contentType: "text/plain",
-            data: JSON.stringify({
-                Upgrade: {
-                    ItemType,
-                    ItemId,
-                    UpgradeFingerprint: JSON.stringify(fingerprint)
-                },
-                LevelDiff: 0,
-                Cost: 0,
-                FusionPointCost: 0
-            })
-        }).done(function () {
-            updateInventory();
-        });
-    });
-}
-
-function doAcquireMod() {
-    const maxed = !!window.maxed;
-    window.maxed = false;
-    const uniqueName = getKey(document.getElementById("mod-to-acquire"));
-    if (!uniqueName) {
-        $("#mod-to-acquire").addClass("is-invalid").focus();
-        return;
-    }
-    const count = parseInt($("#mod-count").val());
-    if (count != 0 && !Number.isNaN(count)) {
-        Promise.all([window.itemListPromise, revalidateAuthz()]).then(([itemList]) => {
-            $.post({
-                url: "/custom/addItems?" + window.authz,
-                contentType: "application/json",
-                data: JSON.stringify([
-                    {
-                        ItemType: uniqueName,
-                        ItemCount: count,
-                        Fingerprint:
-                            maxed && (itemList[uniqueName].fusionLimit ?? 5) > 0
-                                ? JSON.stringify({ lvl: itemList[uniqueName].fusionLimit ?? 5 })
-                                : undefined
-                    }
-                ])
-            })
-                .done(function () {
-                    if (count > 0) {
-                        toast(loc("code_succAdded"));
-                    } else {
-                        toast(loc("code_succRemoved"));
-                    }
-                    updateInventory();
-                })
-                .fail(r => {
-                    toast(r.responseText);
-                });
-        });
-    }
-}
-
-function doAcquireModMax() {
-    const uniqueName = getKey(document.getElementById("mod-to-acquire"));
-    alert("doAcquireModMax: " + uniqueName);
-}
-
-// Cheats route
-
-const uiConfigElements = [...$(".config-form input[id], .config-form select[id], .config-form textarea[id]")];
-const uiConfigs = uiConfigElements.map(x => x.dataset.configId || x.id);
-
-for (const [index, id] of uiConfigs.entries()) {
-    const elm = uiConfigElements[index];
-    if (elm.tagName == "SELECT") {
-        elm.onchange = function () {
-            let value = this.value;
-            if (value == "true") {
-                value = true;
-            } else if (value == "false") {
-                value = false;
-            } else if (value == "null") {
-                value = null;
-            } else if (!isNaN(parseInt(value))) {
-                value = parseInt(value);
-            }
-            $.post({
-                url: "/custom/setConfig?" + window.authz,
-                contentType: "application/json",
-                data: JSON.stringify({ [id]: value })
-            }).done(function () {
-                config_data[id] = value;
-            });
-        };
-    } else if (elm.type == "checkbox") {
-        elm.onchange = function () {
-            const value = this.checked;
-            const isGlobalStarChart = id == "unlockAllMissionsForNewAccounts";
-            if (isGlobalStarChart) this.disabled = true;
-            const request = $.post({
-                url: "/custom/setConfig?" + window.authz,
-                contentType: "application/json",
-                data: JSON.stringify({ [id]: value })
-            }).done(function () {
-                config_data[id] = value;
-            });
-            if (isGlobalStarChart) {
-                request
-                    .fail(() => {
-                        config_data = undefined;
-                        getServerConfig().then(applyServerConfig);
-                        toast(loc("settings_changeFailed"));
-                    })
-                    .always(() => {
-                        elm.disabled = false;
-                    });
-            }
-        };
-    }
-}
-
-function updateVarziaRotationControls() {
-    const enabled = document.getElementById("worldState.varziaCustomRotationEnabled");
-    const mode = document.getElementById("worldState.varziaCustomRotationMode");
-    const days = document.getElementById("worldState.varziaCustomRotationDays");
-    if (!enabled || !mode || !days) return;
-    mode.disabled = !enabled.checked;
-    days.disabled = !enabled.checked || mode.value != "custom";
-}
-
-document.getElementById("worldState.varziaCustomRotationEnabled")?.addEventListener(
-    "change",
-    updateVarziaRotationControls
-);
-document.getElementById("worldState.varziaCustomRotationMode")?.addEventListener(
-    "change",
-    updateVarziaRotationControls
-);
-
-document.querySelectorAll(".config-form .input-group").forEach(grp => {
-    const input = grp.querySelector("input, select");
-    const btn = grp.querySelector("button");
-    if (!input || !btn) return;
-    input.oninput = input.onchange = function () {
-        btn.classList.remove("btn-secondary");
-        btn.classList.add("btn-primary");
-    };
-    btn.onclick = function () {
-        btn.classList.remove("btn-primary");
-        btn.classList.add("btn-secondary");
-    };
-});
-
-function doSaveConfigInt(id) {
-    const value = parseInt(document.getElementById(id).value);
-    $.post({
-        url: "/custom/setConfig?" + window.authz,
-        contentType: "application/json",
-        data: JSON.stringify({
-            [id]: value
-        })
-    }).done(function () {
-        config_data[id] = value;
-    });
-}
-
-function doSaveConfigFloat(id) {
-    const value = parseFloat(document.getElementById(id).value);
-    $.post({
-        url: "/custom/setConfig?" + window.authz,
-        contentType: "application/json",
-        data: JSON.stringify({
-            [id]: value
-        })
-    }).done(function () {
-        config_data[id] = value;
-    });
-}
-
-function doSaveConfigString(id) {
-    const value = document.getElementById(id).value.trim();
-    $.post({
-        url: "/custom/setConfig?" + window.authz,
-        contentType: "application/json",
-        data: JSON.stringify({
-            [id]: value
-        })
-    }).done(function () {
-        config_data[id] = value;
-    });
-}
-
-function doSaveConfigDateTime(id) {
-    const input = document.getElementById(id);
-    const date = input.value ? new Date(input.value) : undefined;
-    const value = date && Number.isFinite(date.getTime()) ? date.toISOString() : null;
-    $.post({
-        url: "/custom/setConfig?" + window.authz,
-        contentType: "application/json",
-        data: JSON.stringify({
-            [id]: value
-        })
-    }).done(function () {
-        config_data[id] = value;
-    });
-}
-
-function doSaveConfigStringArray(id) {
-    const value = document
-        .getElementById(id)
-        .getAttribute("data-tags-value")
-        .split(", ")
-        .filter(x => x);
-    $.post({
-        url: "/custom/setConfig?" + window.authz,
-        contentType: "application/json",
-        data: JSON.stringify({
-            [id]: value
-        })
-    }).done(function () {
-        config_data[id] = value;
-    });
-}
-
-// Assumes that caller revalidates authz
-function getServerConfig() {
-    return new Promise((resolve, reject) => {
-        if (window.is_admin === false) {
-            config_data = null;
-        }
-        if (config_data !== undefined) {
-            resolve(config_data);
-        } else {
-            $.post({
-                url: "/custom/getConfig?" + window.authz,
-                contentType: "application/json",
-                data: JSON.stringify(uiConfigs)
-            })
-                .done(json => {
-                    window.is_admin = !!json;
-                    config_data = json;
-                    resolve(config_data);
-                })
-                .fail(res => reject(res.responseText));
-        }
-    });
-}
-
-/**
- * Show the admin-only sections and fill every config input on the page from a /custom/getConfig
- * response. Inputs are matched by id, so a page only receives the ones it actually contains, and
- * every page that renders config controls must call this or its fields stay blank.
- *
- * @returns whether the caller is an administrator.
- */
-function applyServerConfig(json) {
-    if (!json) {
-        $(".admin-hide").removeClass("d-none");
-        $(".admin-show").addClass("d-none");
-        return false;
-    }
-    $(".admin-hide").addClass("d-none");
-    $(".admin-show").removeClass("d-none");
-    Object.entries(json).forEach(entry => {
-        const [key, value] = entry;
-        const elm =
-            document.getElementById(key) ||
-            [...document.querySelectorAll("[data-config-id]")].find(candidate => candidate.dataset.configId == key);
-        if (!elm) return;
-        if (elm.type == "checkbox") {
-            elm.checked = value;
-        } else if (elm.classList.contains("tags-input")) {
-            elm.value = (value ?? []).join(", ");
-            elm.oninput();
-        } else if (elm.type == "datetime-local") {
-            const date = value ? new Date(value) : undefined;
-            elm.value =
-                date && Number.isFinite(date.getTime())
-                    ? new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
-                    : "";
-        } else {
-            elm.value = value ?? elm.getAttribute("data-default");
-        }
-    });
-    updateVarziaRotationControls();
-    return true;
-}
-
-single.getRoute("/webui/cheats").on("beforeload", function () {
-    awaitAuthz().then(() => {
-        getInventoryData().then(data => {
-            document.getElementById("changeSyndicate").value = data.SupportedSyndicate ?? "";
-        });
-        getServerConfig().then(applyServerConfig);
-    });
-});
-
-function doUnlockAllFocusSchools() {
-    revalidateAuthz().then(() => {
-        getInventoryData().then(async data => {
-            const missingFocusUpgrades = {
-                "/Lotus/Upgrades/Focus/Attack/AttackFocusAbility": true,
-                "/Lotus/Upgrades/Focus/Tactic/TacticFocusAbility": true,
-                "/Lotus/Upgrades/Focus/Ward/WardFocusAbility": true,
-                "/Lotus/Upgrades/Focus/Defense/DefenseFocusAbility": true,
-                "/Lotus/Upgrades/Focus/Power/PowerFocusAbility": true
-            };
-            if (data.FocusUpgrades) {
-                for (const focusUpgrade of data.FocusUpgrades) {
-                    if (focusUpgrade.ItemType in missingFocusUpgrades) {
-                        delete missingFocusUpgrades[focusUpgrade.ItemType];
-                    }
-                }
-            }
-            for (const upgradeType of Object.keys(missingFocusUpgrades)) {
-                await unlockFocusSchool(upgradeType);
-            }
-            if (Object.keys(missingFocusUpgrades).length == 0) {
-                toast(loc("code_focusAllUnlocked"));
-            } else {
-                toast(
-                    replacePluralForms(loc("code_focusUnlocked"), {
-                        COUNT: Object.keys(missingFocusUpgrades).length
-                    })
-                );
-                if (ws_is_open) {
-                    window.ws.send(JSON.stringify({ sync_inventory: true }));
-                }
-            }
-        });
-    });
-}
-
-function unlockFocusSchool(upgradeType) {
-    return new Promise(resolve => {
-        // Deselect current FocusAbility so we will be able to unlock the way for free
-        $.post({
-            url: "/api/focus.php?" + window.authz + "&op=ActivateWay",
-            contentType: "text/plain",
-            data: JSON.stringify({ FocusType: null })
-        }).done(function () {
-            // Unlock the way now
-            $.post({
-                url: "/api/focus.php?" + window.authz + "&op=UnlockWay",
-                contentType: "text/plain",
-                data: JSON.stringify({
-                    FocusType: upgradeType
-                })
-            }).done(function () {
-                resolve();
-            });
-        });
-    });
-}
-
-function doHelminthUnlockAll() {
-    revalidateAuthz().then(() => {
-        $.post("/api/infestedFoundry.php?" + window.authz + "&mode=custom_unlockall");
-    });
-}
-
-function doIntrinsicsUnlockAll() {
-    revalidateAuthz().then(() => {
-        $.get("/custom/unlockAllIntrinsics?" + window.authz);
-    });
-}
-
-document.querySelectorAll("#global-account-cheats input[type=checkbox]").forEach(elm => {
-    elm.onchange = function () {
-        revalidateAuthz().then(() => {
-            const value = elm.checked;
-            $.post({
-                url: "/custom/setConfig?" + window.authz,
-                contentType: "application/json",
-                data: JSON.stringify({ [elm.dataset.configId]: value })
-            }).done(res => {
-                elm.checked = value;
-                if (config_data) config_data[elm.dataset.configId] = value;
-            });
-        });
-    };
-});
-
-document.querySelectorAll("#global-account-cheats .input-group").forEach(grp => {
-    const input = grp.querySelector("input");
-    const select = grp.querySelector("select");
-    const btn = grp.querySelector("button");
-    if (input) {
-        input.oninput = input.onchange = function () {
-            btn.classList.remove("btn-secondary");
-            btn.classList.add("btn-primary");
-        };
-    }
-    if (select) {
-        select.oninput = select.onchange = function () {
-            btn.classList.remove("btn-secondary");
-            btn.classList.add("btn-primary");
-        };
-    }
-    btn.onclick = function () {
-        btn.classList.remove("btn-primary");
-        btn.classList.add("btn-secondary");
-        const input = btn.closest(".input-group").querySelector('input[type="number"]');
-        if (!input) return;
-        revalidateAuthz().then(() => {
-            const value = Math.min(Number(input.value), Number(input.max));
-            const configId = input.dataset.configId;
-            $.post({
-                url: "/custom/setConfig?" + window.authz,
-                contentType: "application/json",
-                data: JSON.stringify({ [configId]: value })
-            }).done(() => {
-                input.value = value;
-                if (config_data) config_data[configId] = value;
-            });
-        });
-    };
-});
-
-// Mods route
-
-function doAddAllMods() {
-    let modsAll = new Set();
-    for (const child of document.getElementById("datalist-mods").children) {
-        modsAll.add(child.getAttribute("data-key"));
-    }
-
-    revalidateAuthz().then(() => {
-        getInventoryData().then(data => {
-            window.itemListPromise.then(itemMap => {
-                [
-                    "/Lotus/Upgrades/Mods/Fusers/CommonModFuser",
-                    "/Lotus/Upgrades/Mods/Fusers/UncommonModFuser",
-                    "/Lotus/Upgrades/Mods/Fusers/RareModFuser",
-                    "/Lotus/Upgrades/Mods/Fusers/LegendaryModFuser"
-                ].forEach(path => modsAll.delete(path));
-
-                for (const mod of modsAll) {
-                    if (itemMap[mod]?.badReason == "u5mod") {
-                        modsAll.delete(mod);
-                    }
-                }
-
-                for (const modOwned of data.RawUpgrades) {
-                    if ((modOwned.ItemCount ?? 1) > 0) {
-                        modsAll.delete(modOwned.ItemType);
-                    }
-                }
-
-                modsAll = Array.from(modsAll);
-                if (
-                    modsAll.length != 0 &&
-                    window.confirm(
-                        replacePluralForms(loc("code_addModsConfirm"), {
-                            COUNT: modsAll.length
-                        })
-                    )
-                ) {
-                    $.post({
-                        url: "/custom/addItems?" + window.authz,
-                        contentType: "application/json",
-                        data: JSON.stringify(
-                            modsAll.map(mod => {
-                                const fusionLimit = itemMap[mod]?.fusionLimit ?? 0;
-                                const isArcane = mod.startsWith("/Lotus/Upgrades/CosmeticEnhancers/");
-                                return {
-                                    ItemType: mod,
-                                    ItemCount: isArcane ? ((fusionLimit + 1) * (fusionLimit + 2)) / 2 : 1
-                                };
-                            })
-                        )
-                    }).done(function () {
-                        updateInventory();
-                    });
-                }
-            });
-        });
-    });
-}
-
-function doRemoveUnrankedMods() {
-    revalidateAuthz().then(() => {
-        getInventoryData().then(data => {
-            window.itemListPromise.then(itemMap => {
-                // Excluding unranked parazon mods and instead including ranked parazon mods because worse is better for them.
-                const upgradesToSell = data.RawUpgrades.filter(upgrade => !itemMap[upgrade.ItemType]?.parazon).map(
-                    upgrade => ({ String: upgrade.ItemType, Count: upgrade.ItemCount })
-                );
-                for (const upgrade of data.Upgrades) {
-                    if (itemMap[upgrade.ItemType]?.parazon) {
-                        upgradesToSell.push({ String: upgrade.ItemId.$oid, Count: 0 });
-                    }
-                }
-                $.post({
-                    url: "/api/sell.php?" + window.authz,
-                    contentType: "text/plain",
-                    data: JSON.stringify({
-                        SellCurrency: "SC_RegularCredits",
-                        SellPrice: 0,
-                        Items: {
-                            Upgrades: upgradesToSell
-                        }
-                    })
-                }).done(function () {
-                    updateInventory();
-                });
-            });
-        });
-    });
-}
-
-function doRemoveRankedMods() {
-    revalidateAuthz().then(() => {
-        getInventoryData().then(data => {
-            window.itemListPromise.then(itemMap => {
-                // Excluding ranked parazon mods and instead including unranked parazon mods because worse is better for them.
-                const upgradesToSell = data.Upgrades.filter(upgrade => !itemMap[upgrade.ItemType]?.parazon).map(
-                    upgrade => ({ String: upgrade.ItemId.$oid, Count: 0 })
-                );
-                for (const upgrade of data.RawUpgrades) {
-                    if (itemMap[upgrade.ItemType]?.parazon) {
-                        upgradesToSell.push({ String: upgrade.ItemType, Count: upgrade.ItemCount });
-                    }
-                }
-                $.post({
-                    url: "/api/sell.php?" + window.authz,
-                    contentType: "text/plain",
-                    data: JSON.stringify({
-                        SellCurrency: "SC_RegularCredits",
-                        SellPrice: 0,
-                        Items: {
-                            Upgrades: upgradesToSell
-                        }
-                    })
-                }).done(function () {
-                    updateInventory();
-                });
-            });
-        });
-    });
-}
-
-function doAddMissingMaxRankMods() {
-    revalidateAuthz().then(() => {
-        fetch("/custom/addMissingMaxRankMods?" + window.authz).then(() => {
-            updateInventory();
-        });
-    });
-}
-
-// DetailedView Route
-
-single.getRoute("#detailedView-route").on("beforeload", async function () {
-    if (!inventory_data) {
-        document.getElementById("detailedView-loading").classList.remove("d-none");
-        document.getElementById("detailedView-title").textContent = "";
-        document.querySelector("#detailedView-route .text-body-secondary").textContent = "";
-        document.getElementById("loadout-card").classList.add("d-none");
-        document.getElementById("archonShards-card").classList.add("d-none");
-        document.getElementById("edit-suit-invigorations-card").classList.add("d-none");
-        document.getElementById("umbraEchoes-card").classList.add("d-none");
-        document.getElementById("modularParts-card").classList.add("d-none");
-        document.getElementById("modularParts-form").innerHTML = "";
-        document.getElementById("valenceBonus-card").classList.add("d-none");
-        document.getElementById("u5ModEdit-card").classList.add("d-none");
-        document.getElementById("equipmentFeatures-card").classList.add("d-none");
-        document.getElementById("equipmentFeaturesButtons-card").innerHTML = "";
-    }
-    populateDetailedViewRoute();
-});
-
-async function populateDetailedViewRoute() {
-    const [data, itemMap] = await Promise.all([
-        inventory_data ? Promise.resolve(inventory_data) : awaitAuthz().then(getInventoryData),
-        window.itemListPromise
-    ]);
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const oid = urlParams.get("itemId");
-    const category = urlParams.get("productCategory");
-    const item = data[category].find(x => x.ItemId.$oid == oid);
-
-    if (item) {
-        document.getElementById("detailedView-loading").classList.add("d-none");
-        const itemName = itemMap[item.ItemType]?.name ?? item.ItemType;
-        if (item.ItemName) {
-            const pipeIndex = item.ItemName.indexOf("|");
-            if (pipeIndex != -1) {
-                $("#detailedView-title").text(item.ItemName.substr(1 + pipeIndex) + " " + itemName);
-                document.querySelector("#detailedView-route .text-body-secondary").textContent = "";
-            } else {
-                $("#detailedView-title").text(item.ItemName);
-                $("#detailedView-route .text-body-secondary").text(itemName);
-            }
-        } else {
-            $("#detailedView-title").text(itemName);
-            document.querySelector("#detailedView-route .text-body-secondary").textContent = "";
-        }
-
-        if (category != "Upgrades") {
-            document.getElementById("equipmentFeatures-card").classList.remove("d-none");
-            const buttonsCard = document.getElementById("equipmentFeaturesButtons-card");
-            buttonsCard.innerHTML = "";
-            item.Features ??= 0;
-            const bits = [];
-
-            if (category != "OperatorAmps") bits.push(1);
-            if (["Suits", "LongGuns", "Pistols", "Melee"].includes(category)) bits.push(2);
-            if (modularWeapons.includes(item.ItemType)) bits.push(8);
-            if (["LongGuns", "Pistols", "Melee", "SpaceGuns", "OperatorAmps"].includes(category)) bits.push(32);
-            if (category == "SpaceGuns") bits.push(4, 64);
-            if (
-                [item.ItemType, itemMap[item.ItemType]?.parentName].some(
-                    type => type && itemMap[type]?.evolutionWeapon && !itemMap[type]?.permanentEvolutionWeapon
-                )
-            )
-                bits.push(512);
-            if (
-                ["LongGuns", "Pistols", "Melee", "SpaceGuns", "SpaceMelee"].includes(category) &&
-                item.UpgradeFingerprint
-            )
-                bits.push(1024);
-            for (const bit of bits.sort((a, b) => a - b)) {
-                const wrapper = document.createElement("div");
-                wrapper.classList = "form-check";
-
-                const input = document.createElement("input");
-                input.classList = "form-check-input";
-                input.type = "checkbox";
-                input.id = `detailedView-feature-${bit}`;
-                input.checked = item.Features & bit;
-
-                const label = document.createElement("label");
-                label.classList = "form-check-label";
-                label.htmlFor = input.id;
-                let locString = `code_feature_${bit}`;
-                if (
-                    !["Suits", "SpaceSuits", "Hoverboards", "MechSuits", "Sentinels", "MoaPets", "KubrowPets"].includes(
-                        category
-                    ) &&
-                    bit === 1
-                ) {
-                    locString = `code_feature_${bit}_alt`;
-                }
-                label.innerHTML = loc(locString);
-                label.setAttribute("data-loc", locString);
-
-                input.onchange = function (event) {
-                    event.preventDefault();
-                    equipmentFeatures(category, oid, bit);
-                };
-                wrapper.appendChild(input);
-                wrapper.appendChild(label);
-                buttonsCard.appendChild(wrapper);
-            }
-        } else {
-            document.getElementById("equipmentFeatures-card").classList.add("d-none");
-            document.getElementById("equipmentFeaturesButtons-card").innerHTML = "";
-        }
-
-        if (category == "Suits") {
-            document.getElementById("archonShards-card").classList.remove("d-none");
-
-            const uniqueUpgrades = {};
-            (item.ArchonCrystalUpgrades ?? []).forEach(upgrade => {
-                if (upgrade && upgrade.UpgradeType) {
-                    uniqueUpgrades[upgrade.UpgradeType] ??= 0;
-                    uniqueUpgrades[upgrade.UpgradeType] += 1;
-                }
-            });
-
-            document.getElementById("crystals-list").innerHTML = "";
-            Object.entries(uniqueUpgrades).forEach(([upgradeType, count]) => {
-                const tr = document.createElement("tr");
-                {
-                    const td = document.createElement("td");
-                    td.textContent = count + "x " + (archonCrystalUpgrades[upgradeType] ?? upgradeType);
-                    tr.appendChild(td);
-                }
-                {
-                    const td = document.createElement("td");
-                    td.classList = "text-end text-nowrap";
-                    {
-                        const a = document.createElement("a");
-                        a.href = "#";
-                        a.onclick = function (event) {
-                            event.preventDefault();
-                            doPopArchonCrystalUpgrade(upgradeType);
-                        };
-                        a.title = loc("code_remove");
-                        a.innerHTML = icons.trash;
-                        td.appendChild(a);
-                    }
-                    tr.appendChild(td);
-                }
-                document.getElementById("crystals-list").appendChild(tr);
-            });
-
-            {
-                document.getElementById("edit-suit-invigorations-card").classList.remove("d-none");
-                document.getElementById("invigoration-offensive").value = item.OffensiveUpgrade || "";
-                document.getElementById("invigoration-defensive").value = item.DefensiveUpgrade || "";
-                document.getElementById("invigoration-expiry").value =
-                    formatDatetime("%Y-%m-%d %H:%M", Number(item.UpgradesExpiry?.$date.$numberLong)) || "";
-            }
-
-            if (item.ItemType != "/Lotus/Powersuits/Excalibur/ExcaliburUmbra") {
-                document.getElementById("umbraEchoes-card").classList.remove("d-none");
-                document.getElementById("umbraEchoes-expiry").value =
-                    formatDatetime("%Y-%m-%d %H:%M", Number(item.UmbraDate?.$date.$numberLong)) || "";
-            }
-
-            {
-                document.getElementById("loadout-card").classList.remove("d-none");
-                const maxModConfigNum = Math.min(2 + (item.ModSlotPurchases ?? 0), 5);
-
-                const configs = item.Configs ?? [];
-
-                const loadoutTabs = document.getElementById("loadoutTabs");
-                const loadoutTabsContent = document.getElementById("loadoutTabsContent");
-                loadoutTabs.innerHTML = "";
-                loadoutTabsContent.innerHTML = "";
-                for (let i = 0; i <= maxModConfigNum; i++) {
-                    const config = configs[i] ?? {};
-
-                    {
-                        const li = document.createElement("li");
-                        li.classList.add("nav-item");
-
-                        const button = document.createElement("button");
-                        button.classList.add("nav-link");
-                        if (i === 0) button.classList.add("active");
-                        button.id = `config${i}-tab`;
-                        button.setAttribute("data-bs-toggle", "tab");
-                        button.setAttribute("data-bs-target", `#config${i}`);
-                        button.innerHTML = config.Name?.trim() || String.fromCharCode(65 + i);
-
-                        li.appendChild(button);
-                        loadoutTabs.appendChild(li);
-                    }
-
-                    {
-                        const tabDiv = document.createElement("div");
-                        tabDiv.classList = "tab-pane";
-                        if (i === 0) tabDiv.classList.add("show", "active");
-
-                        tabDiv.id = `config${i}`;
-
-                        {
-                            const abilityOverrideForm = document.createElement("form");
-                            abilityOverrideForm.classList = "form-group mt-2";
-                            abilityOverrideForm.setAttribute(
-                                "onsubmit",
-                                `handleAbilityOverride(event, ${i});return false;`
-                            );
-
-                            const abilityOverrideFormLabel = document.createElement("label");
-                            abilityOverrideFormLabel.setAttribute("data-loc", "abilityOverride_label");
-                            abilityOverrideFormLabel.innerHTML = loc("abilityOverride_label");
-                            abilityOverrideFormLabel.classList = "form-label";
-                            abilityOverrideFormLabel.setAttribute("for", `abilityOverride-ability-config-${i}`);
-                            abilityOverrideForm.appendChild(abilityOverrideFormLabel);
-
-                            const abilityOverrideInputGroup = document.createElement("div");
-                            abilityOverrideInputGroup.classList = "input-group";
-                            abilityOverrideForm.appendChild(abilityOverrideInputGroup);
-
-                            const abilityOverrideInput = document.createElement("input");
-                            abilityOverrideInput.id = `abilityOverride-ability-config-${i}`;
-                            abilityOverrideInput.classList = "form-control";
-                            abilityOverrideInput.setAttribute("list", "datalist-Abilities");
-                            if (config.AbilityOverride) {
-                                const datalist = document.getElementById("datalist-Abilities");
-                                const options = Array.from(datalist.options);
-                                abilityOverrideInput.value =
-                                    options.find(
-                                        option => config.AbilityOverride.Ability == option.getAttribute("data-key")
-                                    )?.value || "";
-                            }
-                            abilityOverrideInputGroup.appendChild(abilityOverrideInput);
-
-                            const abilityOverrideOnSlot = document.createElement("span");
-                            abilityOverrideOnSlot.classList = "input-group-text";
-                            abilityOverrideOnSlot.setAttribute("data-loc", "abilityOverride_onSlot");
-                            abilityOverrideOnSlot.innerHTML = loc("abilityOverride_onSlot");
-                            abilityOverrideInputGroup.appendChild(abilityOverrideOnSlot);
-
-                            const abilityOverrideSecondInput = document.createElement("input");
-                            abilityOverrideSecondInput.id = `abilityOverride-ability-index-config-${i}`;
-                            abilityOverrideSecondInput.classList = "form-control";
-                            abilityOverrideSecondInput.setAttribute("type", "number");
-                            abilityOverrideSecondInput.setAttribute("min", "1");
-                            abilityOverrideSecondInput.setAttribute("max", "4");
-                            if (config.AbilityOverride)
-                                abilityOverrideSecondInput.value = config.AbilityOverride.Index + 1;
-                            abilityOverrideInputGroup.appendChild(abilityOverrideSecondInput);
-
-                            const abilityOverrideSetButton = document.createElement("button");
-                            abilityOverrideSetButton.classList = "btn btn-primary";
-                            abilityOverrideSetButton.setAttribute("type", "submit");
-                            abilityOverrideSetButton.setAttribute("value", "set");
-                            abilityOverrideSetButton.setAttribute("data-loc", "general_setButton");
-                            abilityOverrideSetButton.innerHTML = loc("general_setButton");
-                            abilityOverrideInputGroup.appendChild(abilityOverrideSetButton);
-
-                            const abilityOverrideRemoveButton = document.createElement("button");
-                            abilityOverrideRemoveButton.classList = "btn btn-danger";
-                            abilityOverrideRemoveButton.setAttribute("type", "submit");
-                            abilityOverrideRemoveButton.setAttribute("value", "remove");
-                            abilityOverrideRemoveButton.setAttribute("data-loc", "code_remove");
-                            abilityOverrideRemoveButton.innerHTML = loc("code_remove");
-                            abilityOverrideInputGroup.appendChild(abilityOverrideRemoveButton);
-
-                            abilityOverrideForm.appendChild(abilityOverrideInputGroup);
-
-                            tabDiv.appendChild(abilityOverrideForm);
-                        }
-
-                        loadoutTabsContent.appendChild(tabDiv);
-                    }
-                }
-            }
-        } else {
-            document.getElementById("loadout-card").classList.add("d-none");
-            document.getElementById("archonShards-card").classList.add("d-none");
-            document.getElementById("edit-suit-invigorations-card").classList.add("d-none");
-            document.getElementById("umbraEchoes-card").classList.add("d-none");
-        }
-
-        if (["LongGuns", "Pistols", "Melee", "SpaceGuns", "SpaceMelee"].includes(category)) {
-            document.getElementById("valenceBonus-card").classList.remove("d-none");
-            document.getElementById("valenceBonus-innateDamage").value = "";
-            document.getElementById("valenceBonus-procent").value = 25;
-
-            if (item.UpgradeFingerprint) {
-                const buff = JSON.parse(item.UpgradeFingerprint).buffs[0];
-                const buffValue = fromUpgradeFingerprintValue(buff.Value, 0.25);
-                document.getElementById("valenceBonus-innateDamage").value = buff.Tag ?? "";
-                document.getElementById("valenceBonus-procent").value = Math.round(buffValue * 1000) / 10;
-            }
-        } else {
-            document.getElementById("valenceBonus-card").classList.add("d-none");
-        }
-
-        if (itemMap[item.ItemType]?.badReason == "u5mod") {
-            document.getElementById("u5ModEdit-card").classList.remove("d-none");
-            const oldFitsSelect = document.getElementById("u5ModEdit-fits");
-            const fitsSelect = oldFitsSelect.cloneNode(false);
-            oldFitsSelect.parentNode.replaceChild(fitsSelect, oldFitsSelect);
-            const upgradeFields = document.getElementById("u5ModEdit-upgradeFields");
-            upgradeFields.innerHTML = "";
-            const fits = itemMap[item.ItemType].fits;
-            const fp = JSON.parse(item.UpgradeFingerprint);
-            // const statAtten = fits.find(fit => fit.type == fp.fits).statAtten || 1;
-            const statAtten = 1;
-
-            fits.forEach(fit => {
-                const option = document.createElement("option");
-                option.value = fit.type;
-                option.textContent = itemMap[fit.type]?.name ?? fit.type;
-                // + (fit.statAtten ? ` (${loc("code_statAtten")}: ${fit.statAtten || 1})` : "");
-                fitsSelect.appendChild(option);
-            });
-
-            fitsSelect.addEventListener("change", () => {
-                upgradeFields.querySelectorAll(".upgrade-group").forEach(group => {
-                    updateUpgradeInput(itemMap[item.ItemType], group);
-                });
-            });
-
-            upgradeFields.setAttribute("data-stat-atten", statAtten);
-            document.getElementById("u5ModEdit-reqLevel").value = fp.reqLevel ?? 0;
-            document.getElementById("u5ModEdit-fits").value = fp.fits ?? fits[0].type;
-
-            fp.upgrades.forEach(up => {
-                createUpgradeInput(upgradeFields, itemMap, item.ItemType, up);
-            });
-            createUpgradeInput(upgradeFields, itemMap, item.ItemType, null);
-        } else {
-            document.getElementById("u5ModEdit-card").classList.add("d-none");
-        }
-
-        if (modularWeapons.includes(item.ItemType)) {
-            document.getElementById("modularParts-card").classList.remove("d-none");
-            const form = document.getElementById("modularParts-form");
-            form.innerHTML = "";
-            const requiredParts = getRequiredParts(category, item.ItemType);
-
-            requiredParts.forEach(modularPart => {
-                const input = document.createElement("input");
-                input.classList.add("form-control");
-                input.id = "detailedView-modularPart-" + modularPart;
-                input.setAttribute("list", "datalist-ModularParts-" + modularPart);
-
-                const datalist = document.getElementById("datalist-ModularParts-" + modularPart);
-                const options = Array.from(datalist.options);
-
-                input.value =
-                    options.find(option => item.ModularParts.includes(option.getAttribute("data-key")))?.value || "";
-                form.appendChild(input);
-            });
-
-            const changeButton = document.createElement("button");
-            changeButton.classList.add("btn");
-            changeButton.classList.add("btn-primary");
-            changeButton.type = "submit";
-            changeButton.setAttribute("data-loc", "cheats_changeButton");
-            changeButton.innerHTML = loc("cheats_changeButton");
-            form.appendChild(changeButton);
-        } else {
-            document.getElementById("modularParts-card").classList.add("d-none");
-            document.getElementById("modularParts-form").innerHTML = "";
-        }
-    } else {
-        single.loadRoute("/webui/inventory");
-    }
-}
-
-function doPushArchonCrystalUpgrade() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const uniqueName = getKey(document.querySelector("[list='datalist-archonCrystalUpgrades']"));
-    if (!uniqueName) {
-        $("[list='datalist-archonCrystalUpgrades']").addClass("is-invalid").focus();
-        return;
-    }
-    revalidateAuthz().then(() => {
-        $.get(
-            `/custom/pushArchonCrystalUpgrade?${window.authz}&oid=${urlParams.get("itemId")}&type=${uniqueName}&count=${$("#archon-crystal-add-count").val()}`
-        ).done(function (updatedSuit) {
-            $("[list='datalist-archonCrystalUpgrades']").val("");
-
-            const index = inventory_data.Suits.findIndex(x => x.ItemId.$oid == urlParams.get("itemId"));
-            inventory_data.Suits[index] = updatedSuit;
-            populateDetailedViewRoute();
-        });
-    });
-}
-
-function doPopArchonCrystalUpgrade(type) {
-    const urlParams = new URLSearchParams(window.location.search);
-    revalidateAuthz().then(() => {
-        $.get(
-            "/custom/popArchonCrystalUpgrade?" + window.authz + "&oid=" + urlParams.get("itemId") + "&type=" + type
-        ).done(function (updatedSuit) {
-            const index = inventory_data.Suits.findIndex(x => x.ItemId.$oid == urlParams.get("itemId"));
-            inventory_data.Suits[index] = updatedSuit;
-            populateDetailedViewRoute();
-        });
-    });
-}
-
-function doImport() {
-    revalidateAuthz().then(() => {
-        try {
-            $.post({
-                url: "/custom/import?" + window.authz,
-                contentType: "application/json",
-                data: JSON.stringify({
-                    inventory: JSON.parse($("#import-inventory").val())
-                })
-            }).then(function (err) {
-                if (err) {
-                    toast(err == "noKnownKey" ? loc("code_nothingToDo") : err);
-                } else {
-                    toast(loc("code_succImport"));
-                }
-                updateInventory();
-            });
-        } catch (e) {
-            toast(e);
-            console.error(e);
-        }
-    });
-}
-
-function doExport() {
-    revalidateAuthz().then(() => {
-        $.get("/custom/export?" + window.authz)
-            .then(function (data) {
-                const blob = new Blob([JSON.stringify(data, null, "\t")], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-
-                link.href = url;
-                link.download = `sns-export-${window.accountId}.json`;
-                link.click();
-
-                URL.revokeObjectURL(url);
-            })
-            .catch(function (e) {
-                toast(e.responseText, "danger");
-                console.error(e);
-            });
-    });
-}
-
-function doChangeSupportedSyndicate() {
-    const uniqueName = document.getElementById("changeSyndicate").value;
-
-    revalidateAuthz().then(() => {
-        $.get("/api/setSupportedSyndicate.php?" + window.authz + "&syndicate=" + uniqueName).done(function () {
-            inventory_data.SupportedSyndicate = uniqueName;
-        });
-    });
-}
-
-async function doQuestUpdate(operation, itemType) {
-    await revalidateAuthz();
-    await new Promise(resolve => {
-        $.post({
-            url: "/custom/manageQuests?" + window.authz + "&operation=" + operation + "&itemType=" + itemType,
-            contentType: "application/json"
-        })
-            .then(function (didAnything) {
-                if (didAnything) {
-                    updateInventory();
-                } else {
-                    toast(loc("code_nothingToDo"));
-                }
-            })
-            .always(() => {
-                resolve();
-            });
-    });
-}
-
-async function doBulkQuestUpdate(operation) {
-    await revalidateAuthz();
-    await new Promise(resolve => {
-        $.post({
-            url: "/custom/manageQuests?" + window.authz + "&operation=" + operation,
-            contentType: "application/json"
-        })
-            .then(function (didAnything) {
-                if (didAnything) {
-                    updateInventory();
-                } else {
-                    toast(loc("code_nothingToDo"));
-                }
-            })
-            .always(() => {
-                resolve();
-            });
-    });
-}
-
 function toast(text, type = "primary") {
     const toast = document.createElement("div");
     toast.className = `toast align-items-center text-bg-${type} border-0`;
@@ -3964,132 +2322,6 @@ function toast(text, type = "primary") {
     div.appendChild(button);
     toast.appendChild(div);
     new bootstrap.Toast(document.querySelector(".toast-container").appendChild(toast)).show();
-}
-
-function handleModularSelection(category) {
-    const itemType = getKey(document.getElementById("acquire-type-" + category));
-
-    if (webUiModularWeapons.includes(itemType)) {
-        doAcquireModularEquipment(category, itemType);
-    } else {
-        doAcquireEquipment(category);
-    }
-}
-{
-    const supportedModularInventoryCategory = ["OperatorAmps", "Melee", "LongGuns", "Pistols", "MoaPets", "KubrowPets"];
-    supportedModularInventoryCategory.forEach(inventoryCategory => {
-        document.getElementById("acquire-type-" + inventoryCategory).addEventListener("input", function () {
-            const modularFields = document.getElementById("modular-" + inventoryCategory);
-            const modularFieldsMoa = document.getElementById("modular-MoaPets-Moa");
-            const modularFieldsZanuka = document.getElementById("modular-MoaPets-Zanuka");
-            const modularFieldsCatbrow = document.getElementById("modular-KubrowPets-Catbrow");
-            const modularFieldsKubrow = document.getElementById("modular-KubrowPets-Kubrow");
-            const key = getKey(this);
-
-            if (webUiModularWeapons.includes(key)) {
-                if (inventoryCategory === "MoaPets") {
-                    if (key === "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPowerSuit") {
-                        modularFieldsMoa.classList.add("d-none");
-                        modularFieldsZanuka.classList.remove("d-none");
-                    } else if (key === "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetPowerSuit") {
-                        modularFieldsMoa.classList.remove("d-none");
-                        modularFieldsZanuka.classList.add("d-none");
-                    }
-                } else if (inventoryCategory === "KubrowPets") {
-                    if (key.endsWith("InfestedCatbrowPetPowerSuit")) {
-                        modularFieldsCatbrow.classList.remove("d-none");
-                        modularFieldsKubrow.classList.add("d-none");
-                    } else if (key.endsWith("PredatorKubrowPetPowerSuit")) {
-                        modularFieldsCatbrow.classList.add("d-none");
-                        modularFieldsKubrow.classList.remove("d-none");
-                    } else {
-                        modularFieldsCatbrow.classList.add("d-none");
-                        modularFieldsKubrow.classList.add("d-none");
-                    }
-                } else {
-                    modularFields.classList.remove("d-none");
-                }
-            } else {
-                if (inventoryCategory === "MoaPets") {
-                    modularFieldsMoa.classList.add("d-none");
-                    modularFieldsZanuka.classList.add("d-none");
-                } else if (inventoryCategory === "KubrowPets") {
-                    modularFieldsCatbrow.classList.add("d-none");
-                    modularFieldsKubrow.classList.add("d-none");
-                } else {
-                    modularFields.classList.add("d-none");
-                }
-            }
-        });
-    });
-}
-
-function setBooster(ItemType, ExpiryDate) {
-    revalidateAuthz().then(() => {
-        $.post({
-            url: "/custom/setBooster?" + window.authz,
-            contentType: "application/json",
-            data: JSON.stringify([
-                {
-                    ItemType,
-                    ExpiryDate
-                }
-            ])
-        }).done(function (newBoosters) {
-            inventory_data.Boosters = newBoosters;
-            populateInventoryRoute();
-        });
-    });
-}
-
-function doAcquireBooster() {
-    const uniqueName = getKey(document.getElementById("acquire-type-Boosters"));
-    if (!uniqueName) {
-        $("#acquire-type-Boosters").addClass("is-invalid").focus();
-        return;
-    }
-    setBooster(uniqueName, Math.floor(Date.now() / 1000 + 3 * 24 * 60 * 60));
-    document.getElementById("acquire-type-Boosters").value = "";
-}
-
-function doChangeBoosterExpiry(ItemType, ExpiryDateInput) {
-    const ExpiryDate = Math.floor(new Date(ExpiryDateInput.value).getTime() / 1000);
-    if (isNaN(ExpiryDate)) {
-        ExpiryDateInput.addClass("is-invalid").focus();
-        return;
-    }
-    setBooster(ItemType, ExpiryDate);
-}
-
-function formatDatetime(fmt, date) {
-    if (typeof date === "number") date = new Date(date);
-    return fmt.replace(/(%[yY]|%m|%[Dd]|%H|%h|%M|%[Ss]|%[Pp])/g, match => {
-        switch (match) {
-            case "%Y":
-                return date.getFullYear().toString();
-            case "%y":
-                return date.getFullYear().toString().slice(-2);
-            case "%m":
-                return (date.getMonth() + 1).toString().padStart(2, "0");
-            case "%D":
-            case "%d":
-                return date.getDate().toString().padStart(2, "0");
-            case "%H":
-                return date.getHours().toString().padStart(2, "0");
-            case "%h":
-                return (date.getHours() % 12).toString().padStart(2, "0");
-            case "%M":
-                return date.getMinutes().toString().padStart(2, "0");
-            case "%S":
-            case "%s":
-                return date.getSeconds().toString().padStart(2, "0");
-            case "%P":
-            case "%p":
-                return date.getHours() < 12 ? "am" : "pm";
-            default:
-                return match;
-        }
-    });
 }
 
 function formatAdminDate(value) {
@@ -4112,62 +2344,6 @@ async function debounce(func, ...args) {
     } else {
         console.log("debouncing", callid);
     }
-}
-
-async function doMaxPlexus() {
-    if ((window.plexus?.xp ?? 0) < 900_000) {
-        await addGearExp("CrewShipHarnesses", window.plexus.id, 900_000 - window.plexus.xp);
-        window.plexus.xp = 900_000;
-        toast(loc("code_succRankUp"));
-    } else {
-        toast(loc("code_noEquipmentToRankUp"));
-    }
-}
-
-async function doUnlockAllScans() {
-    await revalidateAuthz();
-    await fetch("/custom/unlockAllScans?" + window.authz);
-    toast(loc("cheats_unlockSuccRelog"));
-}
-
-async function doUnlockAllShipFeatures() {
-    await revalidateAuthz();
-    await fetch("/custom/unlockAllShipFeatures?" + window.authz);
-    toast(loc(window.have_game_ws ? "code_succAdded" : "cheats_unlockSuccInventory"));
-}
-
-async function doUnlockAllCapturaScenes() {
-    await revalidateAuthz();
-    await fetch("/custom/unlockAllCapturaScenes?" + window.authz);
-    toast(loc(window.have_game_ws ? "code_succAdded" : "cheats_unlockSuccInventory"));
-}
-
-async function unlockAllMissions() {
-    await revalidateAuthz();
-    await fetch("/custom/completeAllMissions?" + window.authz);
-    toast(loc("cheats_unlockAllMissions_ok"));
-}
-
-async function unlockAllNormalMissions() {
-    await revalidateAuthz();
-    await fetch("/custom/completeAllMissions?" + window.authz + "&normalOnly=1");
-    toast(loc("cheats_unlockAllMissions_ok"));
-}
-
-async function unlockAllJobChainBounties() {
-    await revalidateAuthz();
-    await fetch("/custom/unlockAllJobChainBounties?" + window.authz);
-    toast(loc(window.have_game_ws ? "code_succAdded" : "cheats_unlockSuccInventory"));
-}
-
-async function unlockAllSimarisResearchEntries() {
-    await revalidateAuthz();
-    await fetch("/custom/unlockAllSimarisResearchEntries?" + window.authz);
-    toast(loc(window.have_game_ws ? "code_succAdded" : "cheats_unlockSuccInventory"));
-}
-
-function setImportSample(key) {
-    $("#import-inventory").val(JSON.stringify(importSamples[key], null, 2));
 }
 
 document.querySelectorAll(".tags-input").forEach(input => {
@@ -4214,707 +2390,33 @@ document.querySelectorAll(".tags-input").forEach(input => {
     input.oninput();
 });
 
-function fromUpgradeFingerprintValue(raw, min) {
-    const range = 0.6 - min;
-    return min + (raw * range) / 0x3fffffff;
-}
-
-function toUpgradeFingerprintValue(value, min) {
-    const range = 0.6 - min;
-    return Math.trunc(((value - min) * 0x3fffffff) / range);
-}
-
-function fromU5UpgradeFingerprintValue(raw, min, max) {
-    const range = max - min;
-    return min + range * raw;
-}
-
-function toU5UpgradeFingerprintValue(value, min, max) {
-    const range = max - min;
-    return (value - min) / range;
-}
-
-function handleValenceBonusChange(event) {
-    event.preventDefault();
-    const urlParams = new URLSearchParams(window.location.search);
-    const action = event.submitter.value;
-    const Tag = document.getElementById("valenceBonus-innateDamage").value;
-    const Value = toUpgradeFingerprintValue(document.getElementById("valenceBonus-procent").value / 100, 0.25);
-    revalidateAuthz().then(() => {
-        $.post({
-            url: "/custom/updateFingerprint?" + window.authz,
-            contentType: "application/json",
-            data: JSON.stringify({
-                category: urlParams.get("productCategory"),
-                oid: urlParams.get("itemId"),
-                action,
-                upgradeType: "/Lotus/Weapons/Grineer/KuvaLich/Upgrades/InnateDamageRandomMod",
-                upgradeFingerprint: {
-                    buffs: [
-                        {
-                            Tag,
-                            Value
-                        }
-                    ]
-                }
-            })
-        }).done(function () {
-            inventory_data = undefined; // UI is up-to-date now, but subsequent updates will need to grab new data
-        });
-    });
-}
-
-function handleU5ModEdit(event) {
-    event.preventDefault();
-    const urlParams = new URLSearchParams(window.location.search);
-    const action = event.submitter.value;
-    revalidateAuthz().then(() => {
-        const upgradeFields = document.getElementById("u5ModEdit-upgradeFields");
-        const upgradeGroups = Array.from(upgradeFields.children);
-        const upgrades = upgradeGroups
-            .map(group => {
-                const upgradeSelect = group.querySelector("#u5ModEdit-upgradeType");
-                const raritySelect = group.querySelector("#u5ModEdit-upgradeRarity");
-                const valueInput = group.querySelector("#u5ModEdit-upgradeValue");
-                const statAtten = parseFloat(group.parentNode.getAttribute("data-stat-atten"));
-                const value =
-                    valueInput.valueAsNumber == valueInput.min
-                        ? valueInput.valueAsNumber + 0.001
-                        : valueInput.valueAsNumber;
-                return {
-                    upgrade: upgradeSelect.value,
-                    valueRarity: raritySelect.value,
-                    value: Math.min(
-                        toU5UpgradeFingerprintValue(
-                            value / statAtten,
-                            valueInput.min / statAtten,
-                            valueInput.max / statAtten
-                        ),
-                        1
-                    )
-                };
-            })
-            .filter(item => {
-                return item.upgrade != "" && item.value != 0;
-            });
-        $.post({
-            url: "/custom/updateFingerprint?" + window.authz,
-            contentType: "application/json",
-            data: JSON.stringify({
-                category: urlParams.get("productCategory"),
-                oid: urlParams.get("itemId"),
-                action,
-                upgradeFingerprint: {
-                    reqLevel: Number(document.getElementById("u5ModEdit-reqLevel").value),
-                    fits: document.getElementById("u5ModEdit-fits").value,
-                    upgrades
-                }
-            })
-        }).done(function () {
-            toast(loc("code_succChange"));
-            updateInventory();
-        });
-    });
-}
-
-function createUpgradeInput(targetDiv, itemMap, itemType, upgrade) {
-    const meta = itemMap[itemType];
-    const statAtten = targetDiv.getAttribute("data-stat-atten") || 1;
-
-    const group = document.createElement("div");
-    group.classList.add("upgrade-group", "mb-2", "d-flex", "gap-2");
-
-    {
-        const select = document.createElement("select");
-        select.classList.add("form-control");
-        select.id = "u5ModEdit-upgradeType";
-        const optionNone = document.createElement("option");
-        select.appendChild(optionNone);
-        meta.upgrades.forEach(up => {
-            const option = document.createElement("option");
-            option.value = up.type;
-            const locType =
-                meta.fits[0].type == "/Lotus/Types/Game/LotusMeleeWeapon" && up.type == "WEAPON_FIRE_RATE"
-                    ? "WEAPON_MELEE_FIRE_RATE"
-                    : up.type;
-            if (
-                [
-                    "AVATAR_ABILITY_DURATION",
-                    "AVATAR_ABILITY_EFFICIENCY",
-                    "AVATAR_ABILITY_RANGE",
-                    "AVATAR_ABILITY_STRENGTH",
-                    "WEAPON_ARMOR_PIERCING_DAMAGE",
-                    "WEAPON_MELEE_CHARGE_RATE",
-                    "WEAPON_MELEE_HEAVY_DAMAGE",
-                    "WEAPON_STUN_CHANCE"
-                ].includes(locType)
-            ) {
-                option.textContent = loc(locType);
-            } else {
-                option.textContent = toTitleCase(itemMap["/Lotus/Language/Labels/" + locType]?.name) ?? locType;
-            }
-            select.appendChild(option);
-        });
-        if (upgrade) {
-            select.value = upgrade.upgrade;
-        }
-        select.addEventListener("change", () => {
-            updateUpgradeInput(meta, group);
-            checkAddOrDeleteUpgradeInput(itemMap, itemType);
-        });
-        group.appendChild(select);
-    }
-    {
-        const select = document.createElement("select");
-        select.classList.add("form-control");
-        select.id = "u5ModEdit-upgradeRarity";
-        ["COMMON", "UNCOMMON", "RARE"].forEach(rarity => {
-            const option = document.createElement("option");
-            option.value = rarity;
-            const locKey = itemMap["/Lotus/Language/Labels/" + rarity]?.name ?? rarity;
-            option.textContent = loc(locKey);
-            option.setAttribute("data-loc", locKey);
-            select.appendChild(option);
-        });
-        if (upgrade) {
-            select.value = upgrade.valueRarity ?? "COMMON";
-        } else {
-            select.value = "COMMON";
-        }
-        select.addEventListener("change", () => updateUpgradeInput(meta, group));
-        group.appendChild(select);
-    }
-    {
-        let valueRange = [0, 0];
-        let upgradeValue = 0;
-        let displayAsPercent = undefined;
-        if (upgrade) {
-            // U5.1 client just igrone Rare value ranges
-            const targetValueRarity = upgrade.valueRarity == "RARE" ? "UNCOMMON" : upgrade.valueRarity;
-            const upgradeMeta = meta.upgrades.find(up => up.type == upgrade.upgrade);
-            valueRange = [...(upgradeMeta.valueRarity[targetValueRarity] || [0, 0])];
-            const operation = upgradeMeta.operation;
-            displayAsPercent = upgradeMeta.displayAsPercent || operation == "MULTIPLY";
-            if (displayAsPercent) {
-                valueRange[0] = valueRange[0] * 100 - (operation == "MULTIPLY" ? 100 : 0);
-                valueRange[1] = valueRange[1] * 100 - (operation == "MULTIPLY" ? 100 : 0);
-            }
-            upgradeValue = +(
-                fromU5UpgradeFingerprintValue(upgrade.value, valueRange[0], valueRange[1]) * statAtten
-            ).toFixed(1);
-        }
-
-        const inputGroup = document.createElement("div");
-        inputGroup.classList.add("input-group", "d-flex", "flex-shrink-0");
-        inputGroup.style.flexBasis = "200px";
-
-        const input = document.createElement("input");
-        input.type = "number";
-        input.classList.add("form-control");
-        input.step = "0.1";
-        input.id = "u5ModEdit-upgradeValue";
-        input.min = valueRange[0] ? +(valueRange[0] * statAtten).toFixed(1) : 0;
-        input.max = valueRange[1] ? +(valueRange[1] * statAtten).toFixed(1) : 0;
-        input.value = upgradeValue;
-        input.title = loc("code_range").replace("|MIN|", input.min).replace("|MAX|", input.max);
-
-        const rangePrefix = document.createElement("span");
-        rangePrefix.textContent = "+";
-        rangePrefix.classList.add("input-group-text");
-
-        const rangeSuffix = document.createElement("span");
-        rangeSuffix.classList.add("input-group-text");
-        rangeSuffix.id = "u5ModEdit-upgradeValueSuffix";
-        rangeSuffix.textContent = displayAsPercent ? "%" : itemMap["/Lotus/Language/UiElements/PLACEMENT_METERS"].name;
-
-        inputGroup.appendChild(rangePrefix);
-        inputGroup.appendChild(input);
-
-        if (displayAsPercent != undefined) {
-            inputGroup.appendChild(rangeSuffix);
-        }
-
-        group.appendChild(inputGroup);
-    }
-    targetDiv.appendChild(group);
-}
-
-function updateUpgradeInput(meta, group) {
-    const fitsSelect = document.getElementById("u5ModEdit-fits");
-    const fit = meta.fits.find(f => f.type == fitsSelect.value);
-    const statAtten = fit?.statAtten || 1;
-
-    const upgradeSelect = group.querySelector("#u5ModEdit-upgradeType");
-    const raritySelect = group.querySelector("#u5ModEdit-upgradeRarity");
-    const input = group.querySelector("#u5ModEdit-upgradeValue");
-    let rangeSuffix = group.querySelector("#u5ModEdit-upgradeValueSuffix");
-
-    const upgradeMeta = meta.upgrades.find(up => up.type == upgradeSelect.value);
-    const targetValueRarity = raritySelect.value == "RARE" ? "UNCOMMON" : raritySelect.value;
-    let valueRange = [...(upgradeMeta?.valueRarity[targetValueRarity] || [0, 0])];
-    const operation = upgradeMeta?.operation;
-    const displayAsPercent = upgradeMeta?.displayAsPercent || operation == "MULTIPLY";
-    if (displayAsPercent) {
-        valueRange[0] = valueRange[0] * 100 - (operation == "MULTIPLY" ? 100 : 0);
-        valueRange[1] = valueRange[1] * 100 - (operation == "MULTIPLY" ? 100 : 0);
-    }
-    if (upgradeMeta && !rangeSuffix) {
-        rangeSuffix = document.createElement("span");
-        rangeSuffix.classList.add("input-group-text");
-        rangeSuffix.id = "u5ModEdit-upgradeValueSuffix";
-        input.parentNode.appendChild(rangeSuffix);
-    }
-    if (rangeSuffix) rangeSuffix.textContent = displayAsPercent ? "%" : "m";
-
-    const oldstatAtten = parseFloat(group.parentNode.getAttribute("data-stat-atten")) || 1;
-    const oldUpgradeValue = toU5UpgradeFingerprintValue(
-        input.valueAsNumber / oldstatAtten,
-        input.min / oldstatAtten,
-        input.max / oldstatAtten
-    );
-
-    input.min = valueRange[0] ? +(valueRange[0] * statAtten).toFixed(1) : 0;
-    input.max = valueRange[1] ? +(valueRange[1] * statAtten).toFixed(1) : 0;
-    input.title = loc("code_range").replace("|MIN|", input.min).replace("|MAX|", input.max);
-    group.parentNode.setAttribute("data-stat-atten", statAtten);
-
-    input.value =
-        +(fromU5UpgradeFingerprintValue(oldUpgradeValue, valueRange[0], valueRange[1]) * statAtten).toFixed(1) ||
-        input.max;
-    if (input.value < input.min) input.value = input.min;
-}
-
-function checkAddOrDeleteUpgradeInput(itemMap, itemType) {
-    const upgradeFields = document.getElementById("u5ModEdit-upgradeFields");
-    const upgradeGroups = Array.from(upgradeFields.children);
-
-    upgradeGroups.forEach((group, index) => {
-        const upgradeSelect = group.querySelector("#u5ModEdit-upgradeType");
-        if (!upgradeSelect.value && index !== upgradeGroups.length - 1) {
-            upgradeFields.removeChild(group);
-        }
-    });
-
-    const lastUpgradeSelect = upgradeGroups[upgradeGroups.length - 1].querySelector("#u5ModEdit-upgradeType");
-
-    if (lastUpgradeSelect.value) {
-        createUpgradeInput(upgradeFields, itemMap, itemType, null);
-    }
-}
-
 document.querySelectorAll("#sidebar .nav-link").forEach(function (elm) {
     elm.addEventListener("click", function () {
         window.scrollTo(0, 0);
     });
 });
 
-async function markAllAsRead() {
-    await revalidateAuthz();
-    const { Inbox } = await fetch("/api/inbox.php?" + window.authz).then(x => x.json());
-    let any = false;
-    for (const msg of Inbox) {
-        if (!msg.r) {
-            await fetch("/api/inbox.php?" + window.authz + "&messageId=" + msg.messageId.$oid);
-            any = true;
-        }
-    }
-    toast(loc(any ? "code_succRelog" : "code_nothingToDo"));
-}
-
-function handleModularPartsChange(event) {
-    event.preventDefault();
-    const urlParams = new URLSearchParams(window.location.search);
-    const form = document.getElementById("modularParts-form");
-    const inputs = form.querySelectorAll("input");
-    const modularParts = [];
-    inputs.forEach(input => {
-        const key = getKey(input);
-        if (!key) {
-            input.classList.add("is-invalid");
-        } else {
-            modularParts.push(key);
-        }
-    });
-
-    if (inputs.length == modularParts.length) {
-        revalidateAuthz().then(() => {
-            $.post({
-                url: "/custom/changeModularParts?" + window.authz,
-                contentType: "application/json",
-                data: JSON.stringify({
-                    category: urlParams.get("productCategory"),
-                    oid: urlParams.get("itemId"),
-                    modularParts
-                })
-            }).then(function () {
-                toast(loc("code_succChange"));
-                inventory_data = undefined; // UI is up-to-date now, but subsequent updates will need to grab new data
-            });
-        });
-    }
-}
-
-function submitInvigoration(event) {
-    event.preventDefault();
-    const OffensiveUpgrade = document.getElementById("invigoration-offensive").value;
-    const DefensiveUpgrade = document.getElementById("invigoration-defensive").value;
-    const expiry = document.getElementById("invigoration-expiry").value;
-
-    if (!OffensiveUpgrade || !DefensiveUpgrade) {
-        toast(loc("code_requiredInvigorationUpgrade"), "warning");
-        return;
-    }
-
-    setInvigoration({
-        OffensiveUpgrade,
-        DefensiveUpgrade,
-        UpgradesExpiry: expiry ? new Date(expiry).getTime() : Date.now() + 7 * 24 * 60 * 60 * 1000
-    });
-}
-
-function setInvigoration(data) {
-    const oid = new URLSearchParams(window.location.search).get("itemId");
-    $.post({
-        url: "/custom/setInvigoration?" + window.authz,
-        contentType: "application/json",
-        data: JSON.stringify({ oid, ...data })
-    }).done(function (updatedSuit) {
-        const index = inventory_data.Suits.findIndex(x => x.ItemId.$oid == oid);
-        inventory_data.Suits[index] = updatedSuit;
-        populateDetailedViewRoute();
-    });
-}
-
-function submitUmbraEchoes(event) {
-    event.preventDefault();
-    const expiry = document.getElementById("umbraEchoes-expiry").value;
-    setUmbraEchoes({
-        UmbraDate: expiry ? new Date(expiry).getTime() : Date.now() + 1 * 24 * 60 * 60 * 1000
-    });
-}
-
-function setUmbraEchoes(data) {
-    const oid = new URLSearchParams(window.location.search).get("itemId");
-    $.post({
-        url: "/custom/setUmbraEchoes?" + window.authz,
-        contentType: "application/json",
-        data: JSON.stringify({ oid, ...data })
-    }).done(function (updatedSuit) {
-        const index = inventory_data.Suits.findIndex(x => x.ItemId.$oid == oid);
-        inventory_data.Suits[index] = updatedSuit;
-        populateDetailedViewRoute();
-    });
-}
-
-function handleAbilityOverride(event, configIndex) {
-    event.preventDefault();
-    const urlParams = new URLSearchParams(window.location.search);
-    const action = event.submitter.value;
-    const Ability = getKey(document.getElementById(`abilityOverride-ability-config-${configIndex}`));
-    const input = document.getElementById(`abilityOverride-ability-index-config-${configIndex}`);
-    if (action == "set") {
-        if (!Ability) {
-            $(`#abilityOverride-ability-config-${configIndex}`).addClass("is-invalid").focus();
-            return;
-        }
-        if (!input.value) {
-            $(`#abilityOverride-ability-index-config-${configIndex}`).addClass("is-invalid").focus();
-            return;
-        }
-    }
-    const category = urlParams.get("productCategory");
-    const oid = urlParams.get("itemId");
-    const Index = input.value - 1;
-    revalidateAuthz().then(() => {
-        $.post({
-            url: "/custom/abilityOverride?" + window.authz,
-            contentType: "application/json",
-            data: JSON.stringify({
-                category,
-                oid,
-                configIndex,
-                action,
-                AbilityOverride: {
-                    Ability,
-                    Index
-                }
-            })
-        }).done(function (updatedItem) {
-            const index = inventory_data[category].findIndex(x => x.ItemId.$oid == oid);
-            inventory_data[category][index] = updatedItem;
-            if (action != "set") {
-                populateDetailedViewRoute();
-            }
-
-            toast(loc("code_succChange"));
-        });
-    });
-}
-
-function removeItems(category) {
-    revalidateAuthz().then(() => {
+async function removeItems(category) {
+    revalidateAuthz().then(async () => {
         const count = document.getElementById(category + "-list").getElementsByTagName("tr").length;
         let message = replacePluralForms(loc("code_bulkRemoveConfirm"), {
             COUNT: count
         });
         if (category === "Suits") message += "\n" + loc("code_bulkRemoveNote");
-        if (count != 0 && window.confirm(message)) {
+        if (
+            count != 0 &&
+            (await window.webuiComponents.confirm({
+                title: loc("inventory_bulkRemove"),
+                message,
+                variant: "danger",
+                icon: "bi-trash3"
+            }))
+        ) {
             $.get("/custom/removeItems?" + window.authz + "&category=" + category).done(function () {
                 updateInventory();
             });
         }
     });
-}
-
-single.getRoute("/webui/users").on("beforeload", function () {
-    awaitAuthz().then(() => {
-        if (window.is_admin === false) {
-            $(".admin-hide").removeClass("d-none");
-            $(".admin-show").addClass("d-none");
-            return;
-        }
-        $.get("/custom/getRegisteredLosers?" + window.authz)
-            .done(users => {
-                window.is_admin = true;
-                $(".admin-hide").addClass("d-none");
-                $(".admin-show").removeClass("d-none");
-                document.getElementById("registered-losers").innerHTML = "";
-                document.getElementById("datalist-usernames").innerHTML = "<option>all</option>";
-                for (const user of users) {
-                    const tr = document.createElement("tr");
-                    {
-                        const td = document.createElement("td");
-                        td.textContent = user.DisplayName;
-                        tr.appendChild(td);
-                    }
-                    {
-                        const td = document.createElement("td");
-                        td.innerHTML = `<code>${user.id}</code>`;
-                        tr.appendChild(td);
-                    }
-                    {
-                        const td = document.createElement("td");
-                        if (user.Banned) {
-                            const badge = document.createElement("span");
-                            badge.className = "badge text-bg-danger";
-                            badge.textContent = loc("admin_banned");
-                            td.appendChild(badge);
-                        } else if (user.IsAdministrator) {
-                            const badge = document.createElement("span");
-                            badge.className = "badge text-bg-secondary";
-                            badge.textContent = loc("admin_administrator");
-                            td.appendChild(badge);
-                        }
-                        tr.appendChild(td);
-                    }
-                    {
-                        const td = document.createElement("td");
-                        if (window.accountId != user.id) {
-                            const a = document.createElement("a");
-                            a.textContent = loc("admin_possess");
-                            a.setAttribute("data-loc", "admin_possess");
-                            a.href = "#";
-                            a.onclick = function () {
-                                localStorage.setItem("possessing", user.id);
-                                doAccountSwitch("/webui/inventory");
-                            };
-                            td.appendChild(a);
-                        }
-                        if (!user.IsAdministrator) {
-                            const button = document.createElement("button");
-                            button.type = "button";
-                            button.className = `btn btn-sm ms-2 ${user.Banned ? "btn-outline-success" : "btn-outline-danger"}`;
-                            button.textContent = loc(user.Banned ? "admin_unban" : "admin_ban");
-                            button.addEventListener("click", () => void toggleUserBan(user));
-                            td.appendChild(button);
-                        }
-                        tr.appendChild(td);
-                    }
-                    document.getElementById("registered-losers").appendChild(tr);
-
-                    const option = document.createElement("option");
-                    option.textContent = user.DisplayName;
-                    document.getElementById("datalist-usernames").appendChild(option);
-                }
-            })
-            .fail(res => {
-                if (res.responseText == "Log-in expired") {
-                    if (ws_is_open && !auth_pending) {
-                        console.warn("Credentials invalidated but the server didn't let us know");
-                        sendAuth();
-                    }
-                    revalidateAuthz().then(() => {
-                        if (single.getCurrentPath() == "/webui/users") {
-                            single.loadRoute("/webui/users");
-                        }
-                    });
-                } else {
-                    window.is_admin = false;
-                    $(".admin-hide").removeClass("d-none");
-                    $(".admin-show").addClass("d-none");
-                }
-            });
-    });
-});
-
-async function toggleUserBan(user) {
-    const banned = !user.Banned;
-    const prompt = loc(banned ? "admin_banConfirm" : "admin_unbanConfirm").replace("|TARGET|", user.DisplayName);
-    if (!window.confirm(prompt)) return;
-    try {
-        await window.suspicionApi.ban(user.id, banned);
-        toast(loc("admin_banDone").replace("|TARGET|", user.DisplayName), "success");
-        single.loadRoute("/webui/users");
-    } catch (error) {
-        toast(error.responseText || error.message || loc("settings_changeFailed"), "danger");
-    }
-}
-
-async function doAdminIrcAnnouncement(event) {
-    event.preventDefault();
-    const input = document.getElementById("admin-irc-message");
-    const notice = document.getElementById("admin-irc-notice");
-    const submit = document.getElementById("admin-irc-submit");
-    const message = input.value.trim();
-    const showNotice = (text, type) => {
-        notice.textContent = text;
-        notice.className = `alert alert-${type}`;
-    };
-
-    if (!message || /[\x00-\x1f\x7f]/.test(message) || new TextEncoder().encode(message).length > 400) {
-        showNotice(loc("admin_ircInvalid"), "danger");
-        input.focus();
-        return;
-    }
-    if (!window.confirm(loc("admin_ircConfirm"))) return;
-
-    submit.disabled = true;
-    notice.classList.add("d-none");
-    try {
-        await revalidateAuthz();
-        await awaitAuthz();
-        const response = await fetch("/custom/admin/irc-announcement?" + window.authz, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message })
-        });
-        if (!response.ok)
-            throw new Error(response.status === 502 ? loc("admin_ircUnavailable") : loc("admin_ircFailed"));
-        input.value = "";
-        showNotice(loc("admin_ircSent"), "success");
-    } catch (error) {
-        showNotice(error.message || loc("admin_ircFailed"), "danger");
-    } finally {
-        submit.disabled = false;
-    }
-}
-
-async function doAdminBroadcastInbox() {
-    await revalidateAuthz();
-    const sender = document.getElementById("admin-message-sender").value.trim();
-    const subject = document.getElementById("admin-message-subject").value.trim();
-    const body = document.getElementById("admin-message-body").value.trim();
-    const icon = document.getElementById("admin-message-icon").value.trim();
-    const attRaw = document.getElementById("admin-message-att").value;
-    const countedAttRaw = document.getElementById("admin-message-counted-att").value.trim();
-    const highPriority = document.getElementById("admin-message-high-priority").checked;
-    const submitButton = document.getElementById("admin-broadcast-submit");
-
-    if (!sender || !subject || !body) {
-        if (!sender) {
-            document.getElementById("admin-message-sender").classList.add("is-invalid");
-        }
-        if (!subject) {
-            document.getElementById("admin-message-subject").classList.add("is-invalid");
-        }
-        if (!body) {
-            document.getElementById("admin-message-body").classList.add("is-invalid");
-        }
-        return;
-    }
-
-    let countedAttachments;
-    if (countedAttRaw) {
-        try {
-            countedAttachments = JSON.parse(countedAttRaw);
-        } catch (_) {}
-        if (!Array.isArray(countedAttachments)) {
-            document.getElementById("admin-message-counted-att").classList.add("is-invalid");
-            document.getElementById("admin-message-counted-att").focus();
-            return;
-        }
-    }
-
-    const attachments = attRaw
-        .split("\n")
-        .map(x => x.trim())
-        .filter(x => x);
-
-    submitButton.disabled = true;
-    try {
-        const users = await $.get("/custom/getRegisteredLosers?" + window.authz);
-        document.getElementById("admin-message-target").oninput();
-        const targets = document
-            .getElementById("admin-message-target")
-            .getAttribute("data-tags-value")
-            .split(", ")
-            .filter(x => x);
-        let targetIds;
-        if (targets[0] == "all") {
-            targetIds = users.map(user => user.id);
-        } else {
-            targetIds = users.filter(user => targets.indexOf(user.DisplayName) != -1).map(user => user.id);
-        }
-        if (targetIds.length == 0) {
-            toast(loc("code_nothingToDo"));
-            return;
-        }
-
-        if (
-            !window.confirm(
-                replacePluralForms(loc("admin_sendConfirm"), {
-                    COUNT: targetIds.length
-                })
-            )
-        ) {
-            return;
-        }
-
-        const messages = [
-            {
-                sndr: sender,
-                sub: subject,
-                msg: body,
-                highPriority: highPriority
-            }
-        ];
-        if (icon) {
-            messages[0].icon = icon;
-        }
-        if (attachments.length > 0) {
-            messages[0].att = attachments;
-        }
-        if (countedAttachments && countedAttachments.length > 0) {
-            messages[0].countedAtt = countedAttachments;
-        }
-
-        await $.ajax({
-            url: "/custom/createMessage?" + window.authz,
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ targetIds, messages })
-        });
-
-        toast(
-            replacePluralForms(loc("admin_sendToAllSuccess"), {
-                COUNT: targetIds.length
-            })
-        );
-    } catch (error) {
-        alert(error);
-    } finally {
-        submitButton.disabled = false;
-    }
 }
 
 function normalizeText(str) {

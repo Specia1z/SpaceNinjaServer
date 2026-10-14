@@ -1,0 +1,141 @@
+<div id="detailedView-route" data-route="/webui/details, /webui/detailedView" data-title-tag="navbar_inventory">
+                <header class="details-hero">
+                    <div class="details-hero-copy">
+                        <span class="details-eyebrow" data-loc="navbar_inventory"></span>
+                        <h3 id="detailedView-loading" class="details-loading mb-0" data-loc="general_loading"></h3>
+                        <h3 id="detailedView-title" class="details-title mb-0"></h3>
+                        <p class="details-subtitle text-body-secondary"></p>
+                    </div>
+                    <div class="details-hero-mark" aria-hidden="true"><i class="bi bi-card-list"></i></div>
+                </header>
+                <div id="loadout-card" class="card mb-3 d-none">
+                    <h5 class="card-header" data-loc="detailedView_loadoutLabel"></h5>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="loadoutTabs"></ul>
+                        <div class="tab-content mt-3" id="loadoutTabsContent"></div>
+                    </div>
+                </div>
+                <div id="archonShards-card" class="card mb-3 d-none">
+                    <h5 class="card-header" data-loc="detailedView_archonShardsLabel"></h5>
+                    <div class="card-body">
+                        <p>
+                            <span data-loc="detailedView_archonShardsDescription"></span>
+                            <span data-loc="detailedView_archonShardsDescription2"></span>
+                        </p>
+                        <form class="input-group mb-3" onsubmit="doPushArchonCrystalUpgrade();return false;">
+                            <input type="number" id="archon-crystal-add-count" min="1" max="10000" value="1" class="form-control" />
+                            <span class="input-group-text">x</span>
+                            <input class="form-control" list="datalist-archonCrystalUpgrades" autocomplete="off" />
+                            <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                        </form>
+                        <table class="table table-hover w-100">
+                            <tbody id="crystals-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="edit-suit-invigorations-card" class="card mb-3 d-none">
+                    <h5 class="card-header" data-loc="detailedView_invigorationLabel"></h5>
+                    <div class="card-body">
+                        <form onsubmit="submitInvigoration(event)">
+                            <div class="mb-3">
+                                <label for="invigoration-offensive" class="form-label" data-loc="detailedView_invigorationOffensiveLabel"></label>
+                                <select class="form-select" id="invigoration-offensive">
+                                    <option value="" data-loc="general_none"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationPowerStrength" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarAbilityStrengthModDesc" data-loc-replace="+200"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationPowerRange" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarAbilityRangeModDesc" data-loc-replace="+100"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationPowerDuration" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarAbilityDurationModDesc" data-loc-replace="+100"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationMeleeDamage" data-loc-itemMap="/Lotus/Language/Upgrades/MeleeDamageBuffDesc" data-loc-replace="+250"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationPrimaryDamage" data-loc-itemMap="/Lotus/Language/Upgrades/PrimaryDamageBuffDesc" data-loc-replace="+250"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationSecondaryDamage" data-loc-itemMap="/Lotus/Language/Upgrades/SecondaryDamageBuffDesc" data-loc-replace="+250"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationMeleeCritChance" data-loc-itemMap="/Lotus/Language/Upgrades/MeleeCritChance" data-loc-replace="+200"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationPrimaryCritChance" data-loc-itemMap="/Lotus/Language/Upgrades/PrimaryCritChance" data-loc-replace="+200"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Offensive/OffensiveInvigorationSecondaryCritChance" data-loc-itemMap="/Lotus/Language/Upgrades/SecondaryCritChance" data-loc-replace="+200"></option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="invigoration-defensive" class="form-label" data-loc="detailedView_invigorationUtilityLabel"></label>
+                                <select class="form-select" id="invigoration-defensive">
+                                    <option value="" data-loc="general_none"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationPowerEfficiency" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarAbilityEfficiencyModDesc" data-loc-replace="+75"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationMovementSpeed" data-loc-itemMap="/Lotus/Language/Upgrades/SprintSpeedModDesc" data-loc-replace="+75"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationReloadSpeed" data-loc-itemMap="/Lotus/Language/Upgrades/WeaponReloadSpeedModDesc" data-loc-replace="+75"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationParkourSpeed" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarParkourBoostModDesc" data-loc-replace="+75"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationHealth" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarFlatHealthModDesc" data-loc-replace="+1000"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationEnergy" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarPowerMaxModDesc" data-loc-replace="+200"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationHealthRegen" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarHealRateModDesc" data-loc-replace="+25"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationEnergyRegen" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarPowerRateModDesc" data-loc-replace="+2"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationStatusResistance" data-loc-itemMap="/Lotus/Language/Upgrades/StatusImmuneDesc"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationArmor" data-loc-itemMap="/Lotus/Language/Upgrades/AvatarFlatArmourModDesc" data-loc-replace="+1000"></option>
+                                    <option value="/Lotus/Upgrades/Invigorations/Utility/UtilityInvigorationJumps" data-loc-itemMap="/Lotus/Language/Upgrades/JumpResetsDesc" data-loc-replace="+5"></option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="invigoration-expiry" class="form-label" data-loc="detailedView_invigorationExpiryLabel"></label>
+                                <input type="datetime-local" class="form-control" max="2038-01-19T03:14" id="invigoration-expiry" onblur="this.value=new Date(this.value)>new Date(this.max)?new Date(this.max).toISOString().slice(0,16):this.value"/>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" data-loc="general_setButton"></button>
+                                <button type="button" class="btn btn-danger" onclick="setInvigoration()" data-loc="code_remove"></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div id="umbraEchoes-card" class="card mb-3 d-none">
+                    <h5 class="card-header" data-loc="detailedView_umbraEchoesLabel"></h5>
+                    <div class="card-body">
+                        <p data-loc="detailedView_umbraEchoesDescription"></p>
+                        <form onsubmit="submitUmbraEchoes(event)">
+                            <div class="mb-3">
+                                <label for="umbraEchoes-expiry" class="form-label" data-loc="detailedView_umbraEchoesExpiryLabel"></label>
+                                <input type="datetime-local" class="form-control" max="2038-01-19T03:14" id="umbraEchoes-expiry" onblur="this.value=new Date(this.value)>new Date(this.max)?new Date(this.max).toISOString().slice(0,16):this.value"/>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" data-loc="general_setButton"></button>
+                                <button type="button" class="btn btn-danger" onclick="setUmbraEchoes()" data-loc="code_remove"></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div id="modularParts-card" class="card mb-3 d-none">
+                    <h5 class="card-header" data-loc="detailedView_modularPartsLabel"></h5>
+                    <div class="card-body">
+                        <form id="modularParts-form" class="input-group mb-3" onsubmit="handleModularPartsChange(event)"></form>
+                    </div>
+                </div>
+                <div id="valenceBonus-card" class="card mb-3 d-none">
+                    <h5 class="card-header" data-loc="detailedView_valenceBonusLabel"></h5>
+                    <div class="card-body">
+                        <p data-loc="detailedView_valenceBonusDescription"></p>
+                        <form class="input-group mb-3" onsubmit="handleValenceBonusChange(event)">
+                            <select class="form-control" id="valenceBonus-innateDamage"></select>
+                            <input type="number" id="valenceBonus-procent" min="25" max="60" step="0.1" class="form-control" />
+                            <button class="btn btn-primary" type="submit" value="set" data-loc="general_setButton"></button>
+                            <button class="btn btn-danger" type="submit" value="remove" data-loc="code_remove"></button>
+                        </form>
+                    </div>
+                </div>
+                <div id="equipmentFeatures-card" class="card mb-3 d-none">
+                    <h5 class="card-header" data-loc="detailedView_equipmentFeaturesLabel"></h5>
+                    <div id="equipmentFeaturesButtons-card" class="card-body d-flex flex-wrap gap-2"></div>
+                </div>
+                <div id="u5ModEdit-card" class="card mb-3 d-none">
+                    <h5 class="card-header" data-loc="detailedView_u5ModEditLabel"></h5>
+                    <div class="card-body">
+                        <p id="u5ModEdit-Description" data-loc="detailedView_u5ModEditDescription"></p>
+                        <form class="mb-3" onsubmit="handleU5ModEdit(event)">
+                            <div class="d-flex gap-2 align-items-end">
+                                <div class="mb-2">
+                                    <label for="u5ModEdit-fits" class="form-label" data-loc="detailedView_u5ModEditFits"></label>
+                                    <select id="u5ModEdit-fits" class="form-control"></select>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="u5ModEdit-reqLevel" class="form-label" data-loc="detailedView_u5ModEditReqLevel"></label>
+                                    <input type="number" id="u5ModEdit-reqLevel" min="0" max="30" step="1" class="form-control" />
+                                </div>
+                            </div>
+                            <div id="u5ModEdit-upgradeFields" class="mb-2"></div>
+                            <button class="btn btn-primary" type="submit" value="set" data-loc="general_setButton"></button>
+                        </form>
+                    </div>
+                </div>
+            </div>

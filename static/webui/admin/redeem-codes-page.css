@@ -1,0 +1,557 @@
+.redeem-codes-page,
+.redeem-codes-access {
+    margin-inline: auto;
+    max-width: 100rem;
+}
+
+.redeem-codes-access {
+    align-items: center;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-block: 3rem;
+    min-height: 14rem;
+    text-align: center;
+}
+
+.redeem-codes-access > i {
+    color: var(--bs-warning);
+    font-size: 2rem;
+}
+
+.redeem-codes-access p {
+    margin: 0;
+}
+
+.redeem-hero {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 90% 10%, color-mix(in srgb, var(--bs-primary) 15%, transparent), transparent 38%),
+        linear-gradient(128deg, color-mix(in srgb, var(--bs-primary) 5%, var(--bs-tertiary-bg)), var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 16%, var(--bs-border-color));
+    border-radius: 1.1rem;
+    box-shadow: 0 0.8rem 2rem color-mix(in srgb, var(--bs-emphasis-color) 4%, transparent);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    min-height: 8.5rem;
+    overflow: hidden;
+    padding: clamp(1.25rem, 3vw, 2.1rem);
+}
+
+.redeem-hero > div {
+    max-width: 58rem;
+}
+
+.redeem-eyebrow,
+.redeem-kicker {
+    color: var(--bs-primary);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+}
+
+.redeem-hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 750;
+    letter-spacing: -0.04em;
+    margin: 0 0 0.45rem;
+}
+
+.redeem-hero p {
+    color: var(--bs-secondary-color);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.redeem-hero-icon {
+    align-items: center;
+    color: color-mix(in srgb, var(--bs-primary) 52%, transparent);
+    display: flex;
+    flex: 0 0 auto;
+    font-size: clamp(3.5rem, 7vw, 5.5rem);
+    justify-content: center;
+    margin-inline: 2rem 0.75rem;
+    opacity: 0.72;
+}
+
+.redeem-summary {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 1.1rem;
+}
+
+.redeem-summary-card {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--bs-primary) 6%, transparent), transparent 50%),
+        var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    box-shadow: 0 0.45rem 1.2rem color-mix(in srgb, var(--bs-emphasis-color) 3%, transparent);
+    display: flex;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.85rem 1rem;
+}
+
+.redeem-summary-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 10%, var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 16%, var(--bs-border-color));
+    border-radius: 50%;
+    color: var(--bs-primary);
+    display: inline-flex;
+    flex: 0 0 2.55rem;
+    height: 2.55rem;
+    justify-content: center;
+    width: 2.55rem;
+}
+
+.redeem-summary-active .redeem-summary-icon {
+    background: color-mix(in srgb, var(--bs-success) 9%, var(--bs-tertiary-bg));
+    border-color: color-mix(in srgb, var(--bs-success) 17%, var(--bs-border-color));
+    color: var(--bs-success);
+}
+
+.redeem-summary-uses .redeem-summary-icon {
+    background: color-mix(in srgb, var(--bs-info) 10%, var(--bs-tertiary-bg));
+    border-color: color-mix(in srgb, var(--bs-info) 18%, var(--bs-border-color));
+    color: var(--bs-info-text-emphasis, var(--bs-info));
+}
+
+.redeem-summary-card > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.redeem-summary-card > div > span {
+    color: var(--bs-secondary-color);
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.redeem-summary-card strong {
+    font-size: 1.35rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    margin-top: 0.12rem;
+}
+
+.redeem-tabs {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 72%, transparent);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    padding: 0.35rem;
+}
+
+.redeem-tabs .nav-link {
+    align-items: center;
+    border-radius: 0.6rem;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.88rem;
+    font-weight: 650;
+    gap: 0.55rem;
+    padding: 0.65rem 0.85rem;
+    white-space: nowrap;
+}
+
+.redeem-tabs .nav-link:not(.active) {
+    color: var(--bs-secondary-color);
+}
+
+.redeem-tab-content,
+.redeem-tab-content > .tab-pane {
+    min-width: 0;
+}
+
+.redeem-panel {
+    border-color: var(--bs-border-color);
+    border-radius: 0.9rem;
+    box-shadow: 0 0.55rem 1.6rem color-mix(in srgb, var(--bs-emphasis-color) 4%, transparent);
+    margin-bottom: 1rem;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.redeem-panel-header {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 72%, transparent);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+}
+
+.redeem-panel-header > div {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.redeem-panel-header h2 {
+    font-size: 1.08rem;
+    font-weight: 720;
+    letter-spacing: -0.018em;
+    line-height: 1.3;
+    margin: 0 0 0.2rem;
+}
+
+.redeem-panel-header p {
+    color: var(--bs-secondary-color);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.redeem-panel-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 10%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 17%, var(--bs-border-color));
+    border-radius: 0.7rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    flex: 0 0 2.5rem;
+    font-size: 1.1rem;
+    height: 2.5rem;
+    justify-content: center;
+    width: 2.5rem;
+}
+
+.redeem-batch-icon {
+    background: color-mix(in srgb, var(--bs-warning) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-warning) 20%, var(--bs-border-color));
+    color: var(--bs-warning-text-emphasis, var(--bs-warning));
+}
+
+.redeem-list-icon {
+    background: color-mix(in srgb, var(--bs-success) 10%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-success) 18%, var(--bs-border-color));
+    color: var(--bs-success);
+}
+
+.redeem-kicker {
+    font-size: 0.62rem;
+    margin-bottom: 0.12rem;
+}
+
+.redeem-form {
+    display: grid;
+    gap: 1rem;
+    padding: clamp(0.9rem, 2.2vw, 1.35rem);
+}
+
+.redeem-form-grid,
+.redeem-generator-grid {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.redeem-generator-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.redeem-field,
+.redeem-reward-picker {
+    min-width: 0;
+}
+
+.redeem-field .form-label,
+.redeem-reward-picker .form-label {
+    font-size: 0.84rem;
+    font-weight: 650;
+    margin-bottom: 0.35rem;
+}
+
+.redeem-field .form-text,
+.redeem-reward-picker .form-text {
+    display: block;
+    line-height: 1.4;
+}
+
+.redeem-form-options {
+    align-items: end;
+}
+
+.redeem-enabled-check {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    margin: 0;
+    min-height: 2.5rem;
+}
+
+.redeem-enabled-check .form-check-input {
+    margin: 0;
+}
+
+.redeem-form-footer {
+    border-top: 1px solid var(--bs-border-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    padding-top: 0.9rem;
+}
+
+.redeem-form-footer .btn,
+.redeem-batch-result-heading .btn {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+.redeem-preview {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--bs-primary) 8%, transparent), transparent 48%),
+        color-mix(in srgb, var(--bs-primary) 4%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 18%, var(--bs-border-color));
+    border-radius: 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 0.9rem 1rem;
+}
+
+.redeem-preview-copy {
+    display: flex;
+    flex: 1 1 20rem;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.redeem-preview-copy code {
+    color: var(--bs-emphasis-color);
+    font-size: clamp(1rem, 2.3vw, 1.3rem);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.redeem-preview-copy .form-text {
+    color: var(--bs-secondary-color);
+}
+
+.redeem-preview-details {
+    display: flex;
+    flex: 1 1 15rem;
+    flex-direction: column;
+    font-size: 0.84rem;
+    gap: 0.25rem;
+    text-align: right;
+}
+
+.redeem-batch-result {
+    background: color-mix(in srgb, var(--bs-success) 7%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-success) 20%, var(--bs-border-color));
+    border-radius: 0.8rem;
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.85rem;
+}
+
+.redeem-batch-result-heading {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: space-between;
+}
+
+.redeem-batch-result textarea {
+    resize: vertical;
+}
+
+.redeem-list-header > .btn {
+    flex: 0 0 auto;
+}
+
+.redeem-list-toolbar {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 25%, transparent);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    gap: 0.7rem;
+    padding: 0.75rem 1rem;
+}
+
+.redeem-search {
+    max-width: 42rem;
+}
+
+.redeem-filter {
+    flex: 0 0 12rem;
+}
+
+.redeem-table-wrap {
+    position: relative;
+}
+
+.redeem-table {
+    margin-bottom: 0;
+    min-width: 66rem;
+}
+
+.redeem-table thead th {
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 42%, var(--bs-body-bg));
+    color: var(--bs-secondary-color);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    padding: 0.75rem 0.85rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.redeem-table tbody td {
+    font-size: 0.84rem;
+    padding: 0.7rem 0.85rem;
+    vertical-align: top;
+}
+
+.redeem-table tbody tr:last-child > * {
+    border-bottom-width: 0;
+}
+
+.redeem-empty {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    justify-content: center;
+    min-height: 8rem;
+    padding: 1rem;
+}
+
+.redeem-empty > i {
+    font-size: 1.6rem;
+    opacity: 0.75;
+}
+
+.redeem-list-footer {
+    border-top: 1px solid var(--bs-border-color);
+    color: var(--bs-secondary-color);
+    font-size: 0.82rem;
+    padding: 0.7rem 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .redeem-generator-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .redeem-summary {
+        gap: 0.55rem;
+    }
+
+    .redeem-summary-card {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.45rem;
+        padding: 0.7rem;
+    }
+
+    .redeem-summary-icon {
+        flex-basis: 2.1rem;
+        height: 2.1rem;
+        width: 2.1rem;
+    }
+
+    .redeem-summary-card > div > span {
+        font-size: 0.68rem;
+    }
+
+    .redeem-list-header {
+        flex-wrap: wrap;
+    }
+
+    .redeem-list-header > div {
+        flex-basis: calc(100% - 3.5rem);
+    }
+
+    .redeem-list-header > .btn {
+        margin-left: 3.35rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .redeem-hero {
+        min-height: 0;
+        padding: 1.1rem;
+    }
+
+    .redeem-hero-icon {
+        font-size: 2.6rem;
+        margin-inline: 0 0.1rem;
+    }
+
+    .redeem-summary-card {
+        align-items: center;
+        flex-direction: row;
+        min-height: 5.5rem;
+    }
+
+    .redeem-summary-icon {
+        flex-basis: 1.8rem;
+        height: 1.8rem;
+        width: 1.8rem;
+    }
+
+    .redeem-summary-card strong {
+        font-size: 1.1rem;
+    }
+
+    .redeem-panel-header {
+        align-items: flex-start;
+        gap: 0.6rem;
+        padding: 0.8rem;
+    }
+
+    .redeem-panel-icon {
+        flex-basis: 2.2rem;
+        font-size: 0.95rem;
+        height: 2.2rem;
+        width: 2.2rem;
+    }
+
+    .redeem-form-grid,
+    .redeem-generator-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .redeem-preview-details {
+        text-align: left;
+    }
+
+    .redeem-list-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 0.65rem;
+    }
+
+    .redeem-filter {
+        flex-basis: auto;
+    }
+}

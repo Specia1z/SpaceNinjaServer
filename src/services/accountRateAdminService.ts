@@ -13,6 +13,9 @@ import {
 import { config, type IAccountRateProfile, type IAccountFeatureProfile } from "./configService.ts";
 import { saveConfig } from "./configWriterService.ts";
 
+const hasCustomRateProfile = (id: string, displayName: string): boolean =>
+    Boolean(config.accountRateProfiles?.[id] || config.accountDropMultipliers?.[displayName]);
+
 export const listAccountRates = async (): Promise<{
     definitions: typeof ACCOUNT_RATE_DEFINITIONS;
     featureDefinitions: typeof ACCOUNT_FEATURE_DEFINITIONS;
@@ -37,11 +40,7 @@ export const listAccountRates = async (): Promise<{
             displayName: account.DisplayName,
             profile: getAccountRateProfile(account),
             featureProfile: getAccountFeatureProfile(account._id.toString()),
-            hasCustomProfile:
-                Boolean(
-                    config.accountRateProfiles?.[account._id.toString()] ||
-                    config.accountDropMultipliers?.[account.DisplayName]
-                ) || Object.values(config.accountFeatureProfiles?.[account._id.toString()] ?? {}).some(Boolean),
+            hasCustomProfile: hasCustomRateProfile(account._id.toString(), account.DisplayName),
             hasCustomFeatures: Object.values(config.accountFeatureProfiles?.[account._id.toString()] ?? {}).some(
                 Boolean
             )
@@ -62,6 +61,7 @@ export const saveAccountRates = async (
     displayName: string;
     profile: TResolvedAccountRateProfile;
     featureProfile: TResolvedAccountFeatureProfile;
+    hasCustomProfile: boolean;
     hasCustomFeatures: boolean;
 }> => {
     const id = account._id.toString();
@@ -84,6 +84,7 @@ export const saveAccountRates = async (
         displayName: account.DisplayName,
         profile: getAccountRateProfile(account),
         featureProfile: getAccountFeatureProfile(id),
+        hasCustomProfile: hasCustomRateProfile(id, account.DisplayName),
         hasCustomFeatures: Object.values(config.accountFeatureProfiles?.[id] ?? {}).some(Boolean)
     };
 };

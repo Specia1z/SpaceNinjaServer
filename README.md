@@ -112,21 +112,21 @@ Important settings include:
 - `hubServers`: the Hub service itself must be running and reachable on its configured UDP address, usually port `6952`. An optional `portPoolSize` assigns authenticated accounts stable ports starting at the configured address. The relay is only a transport layer and does not replace the Hub server.
 - `administratorNames`: accounts allowed to use administrator features.
 - `registrationRateLimit`: game auto-registration and WebUI signups share a rolling 24-hour quota (default: three attempts per client address, 100 account creations server-wide, and 1000 attempts including failed writes). Configure `windowMinutes`, `perAddress`, `global`, and `globalAttempts` in `config.json` (Docker: `docker-data/conf/config.json`). Existing-account logins are unaffected. Client-supplied `X-Forwarded-For` is ignored unless the connecting reverse proxy's exact IP is listed in `trustedProxies`; without that setting, users behind one proxy share a quota. Counters are process-local and reset on restart; multiple replicas need a shared store, and distributed abuse requires invitations or identity verification.
-- `accountDropMultipliers`: configure per-account resource pickup amount and mission Mod multipliers, keyed by the exact in-game display name. For example:
+- `accountRateProfiles`: configure per-account reward multipliers from the administrator-only Account Rates WebUI page. Profiles are keyed by the MongoDB account ID and support resource pickups, Mod quantities, mission credits, Warframe/weapon Affinity, Focus XP, syndicate and Nightwave standing, relic items and platinum, mission platinum, daily tribute, and optional enable/expiry controls. Related account-only inventory features are stored in `accountFeatureProfiles`. For example:
 
   ```json
   {
-    "accountDropMultipliers": {
-      "ExampleAccount": {
-        "resourceMultiplier": 5,
-        "modMultiplier": 10
+    "accountRateProfiles": {
+      "507f1f77bcf86cd799439011": {
+        "enabled": true,
+        "resourceDropMultiplier": 5,
+        "modDropMultiplier": 10
       }
     }
   }
   ```
 
-  Unconfigured accounts keep the normal behavior. Modern clients (39.1+) receive a signed, account-scoped world state with a resource pickup amount bonus, independent of the shared global setting; re-login after changing the rate. Older clients instead receive a final-settlement resource fallback. Mod quantities from reported pickups, mission rewards, and server-rolled drops are scaled at settlement, not in the in-mission pickup display. These legacy resource/Mod settings do not change fixed mission resource rewards, blueprints, or credits; configure mission credits separately in the account rate profile.
-- `accountRateProfiles`: account-ID-based multiplier profiles managed from the admin-only Account Rates WebUI page. The editor covers resource pickups, Mod quantities, mission credits, Warframe/weapon Affinity, separate Focus XP, syndicate and Nightwave standing, relic items and platinum, mission platinum, and daily tribute. Profiles support an optional expiry. Modern clients receive resource, credit, and Affinity boosts in signed account-scoped world state, compounded with global events; client-boosted cash pickups are not scaled again at settlement, while server-generated rewards still receive the account rate and any inventory Credit Booster. Older clients retain settlement fallbacks for resources and credits. Re-login after changing client-side rates. Existing display-name-based drop rates appear in the editor and are migrated to the ID-based profile when saved.
+   Unconfigured accounts keep the normal behavior. Modern clients (39.1+) receive signed, account-scoped resource, credit, and Affinity boosts; re-login after changing a client-side rate. Older clients retain final-settlement fallbacks for resources and credits. Client-boosted cash pickups are not scaled again at settlement, while server-generated rewards still receive the account rate and inventory Credit Booster. Expired or disabled profiles use 1x behavior while retaining their saved values. Existing `accountDropMultipliers` entries are read for compatibility and are migrated to the account-ID profile when saved; the old display-name-based setting should not be used for new configurations.
 - `tunables.metadataPatchBlacklist`: optional account ID list for accounts that must not receive any server metadata patches. The same list can be managed per account from the Metadata Patches WebUI page; changes are sent to connected bootstrapper clients immediately, while already loaded metadata requires a full game restart.
 - `tunables.playwfContent`: configure Pluto scripts for the OpenWF Bootstrapper. Each enabled `mods` entry needs a `scriptPath` such as `/PlayWF/example.pluto`; the server adds available scripts to `client.auto_start_scripts` and serves them from `static/PlayWF/` (or `PlayWF/`) at that path. Set `autoStart` to `false` to serve a script without starting it automatically, or provide inline `script` text for small scripts. `tunables.prohibitScripts` disables the automatic list.
 - `worldState.liveSync`: enables live world-state synchronization. The active fork configuration enables this by default; the vanilla template leaves it disabled.

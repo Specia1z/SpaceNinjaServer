@@ -15,6 +15,7 @@ import {
 import {
     clampMissionCompletes,
     isAntiCheatEnforcing,
+    isAntiCheatSanitizing,
     verifyClientInventoryUpdates,
     verifyMissionTimes,
     verifyRewardSeed,
@@ -101,19 +102,23 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         ? inventory.CompletedSorties.indexOf(missionReport.SortieId) == -1
         : false;
 
-    // 反作弊：先判定再落库。默认只记日志，enforce 关闭时这里不改变任何行为。
+    // 反作弊：先判定再落库。observe 只记录；sanitize 修正可安全限幅的字段；reject 丢弃整份可疑结算。
     const missionTimesOk = verifyMissionTimes(account, missionReport, antiCheatContext);
     const rewardSeedOk = await verifyRewardSeed(account, missionReport, inventory, antiCheatContext);
     const clientInventoryUpdatesOk = verifyClientInventoryUpdates(account, missionReport, antiCheatContext);
     const xpGainOk = verifyXpGain(account, missionReport, antiCheatContext);
-    clampMissionCompletes(account, missionReport, antiCheatContext);
+    const missionCompletesOk = clampMissionCompletes(account, missionReport, antiCheatContext);
 
-    if (isAntiCheatEnforcing() && (!missionTimesOk || !rewardSeedOk || !clientInventoryUpdatesOk || !xpGainOk)) {
+    if (
+        isAntiCheatEnforcing() &&
+        (!missionTimesOk || !rewardSeedOk || !clientInventoryUpdatesOk || !xpGainOk || !missionCompletesOk)
+    ) {
         const failedChecks = [
             !missionTimesOk && "missionTimes",
             !rewardSeedOk && "rewardSeed",
             !clientInventoryUpdatesOk && "clientInventoryUpdates",
-            !xpGainOk && "xpGain"
+            !xpGainOk && "xpGain",
+            !missionCompletesOk && "missionCompletes"
         ].filter((check): check is string => Boolean(check));
         // 拒绝整份报文：连客户端自带的 RegularCredits / MiscItems 也一并丢弃，不做部分入库。
         logger.warn(`[anti-cheat] settlementRejected`, {
@@ -122,6 +127,31 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
             displayName: account.DisplayName,
             buildLabel,
             failedChecks,
+            missionTag: missionReport.Missions?.Tag ?? missionReport.RewardInfo?.node,
+            sessionId: missionReport.sharedSessionId || undefined
+        });
+        if (missionReport.EndOfMatchUpload || missionReport.RJ) {
+            inventory.RewardSeed = generateRewardSeed();
+        }
+        await inventory.save();
+        const inventoryResponse = await getInventoryResponse(req, inventory, true, buildLabel);
+        res.json({
+            InventoryJson: JSON.stringify(inventoryResponse),
+            MissionRewards: []
+        });
+        sendWsBroadcastTo(account._id.toString(), { update_inventory: true });
+        return;
+    }
+
+    if (isAntiCheatSanitizing() && !missionTimesOk) {
+        // A failed-time report is sanitized as a failed mission. Skip every client-supplied delta here,
+        // including secondary progress fields that are unrelated to the usual reward and inventory lists.
+        logger.info(`[anti-cheat] settlementSanitized`, {
+            requestId,
+            account: account._id.toString(),
+            displayName: account.DisplayName,
+            buildLabel,
+            reason: "impossibleMissionTime",
             missionTag: missionReport.Missions?.Tag ?? missionReport.RewardInfo?.node,
             sessionId: missionReport.sharedSessionId || undefined
         });

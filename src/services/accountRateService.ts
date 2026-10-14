@@ -1,4 +1,4 @@
-import { config, type IAccountRateProfile } from "./configService.ts";
+import { config, type IAccountDropMultiplier, type IAccountRateProfile } from "./configService.ts";
 
 export type TAccountRateKey = Exclude<keyof IAccountRateProfile, "enabled" | "expiresAt">;
 export type TResolvedAccountRateProfile = Required<Omit<IAccountRateProfile, "expiresAt">> &
@@ -14,6 +14,7 @@ export interface IAccountRateDefinition {
     group: "mission" | "progress" | "special";
     labelKey: string;
     descriptionKey: string;
+    defaultValue: number;
     min: number;
     max: number;
     step: number;
@@ -25,6 +26,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "mission",
         labelKey: "accountRates_resourceDropMultiplier",
         descriptionKey: "accountRates_resourceDropMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -34,6 +36,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "mission",
         labelKey: "accountRates_modDropMultiplier",
         descriptionKey: "accountRates_modDropMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -43,6 +46,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "mission",
         labelKey: "accountRates_creditMultiplier",
         descriptionKey: "accountRates_creditMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -52,6 +56,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "mission",
         labelKey: "accountRates_affinityMultiplier",
         descriptionKey: "accountRates_affinityMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -61,6 +66,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "mission",
         labelKey: "accountRates_focusXpMultiplier",
         descriptionKey: "accountRates_focusXpMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -70,6 +76,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "progress",
         labelKey: "accountRates_standingMultiplier",
         descriptionKey: "accountRates_standingMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -79,6 +86,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "progress",
         labelKey: "accountRates_nightwaveStandingMultiplier",
         descriptionKey: "accountRates_nightwaveStandingMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -88,6 +96,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "progress",
         labelKey: "accountRates_relicRewardMultiplier",
         descriptionKey: "accountRates_relicRewardMultiplierHint",
+        defaultValue: 1,
         min: 1,
         max: 1000,
         step: 0.1
@@ -97,6 +106,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "special",
         labelKey: "accountRates_relicPlatinumMultiplier",
         descriptionKey: "accountRates_relicPlatinumMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -106,6 +116,7 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "special",
         labelKey: "accountRates_missionPlatinumMultiplier",
         descriptionKey: "accountRates_missionPlatinumMultiplierHint",
+        defaultValue: 1,
         min: 0,
         max: 1000,
         step: 0.1
@@ -115,17 +126,47 @@ export const ACCOUNT_RATE_DEFINITIONS: readonly IAccountRateDefinition[] = [
         group: "special",
         labelKey: "accountRates_dailyTributeMultiplier",
         descriptionKey: "accountRates_dailyTributeMultiplierHint",
+        defaultValue: 1,
         min: 1,
         max: 1000,
         step: 0.1
     }
 ];
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value == "object" && value != null && !Array.isArray(value);
+
+/** Normalize the old display-name-based config shape before exposing it as a rate profile. */
+export const normalizeLegacyAccountDropMultiplier = (value: unknown): IAccountDropMultiplier => {
+    if (!isRecord(value)) return {};
+
+    const normalized: IAccountDropMultiplier = {};
+    for (const [legacyKey, profileKey] of [
+        ["resourceMultiplier", "resourceDropMultiplier"],
+        ["modMultiplier", "modDropMultiplier"]
+    ] as const) {
+        const rawValue = value[legacyKey];
+        if (rawValue === undefined) continue;
+        const definition = ACCOUNT_RATE_DEFINITIONS.find(item => item.key == profileKey)!;
+        normalized[legacyKey] =
+            typeof rawValue == "number" && Number.isFinite(rawValue)
+                ? Math.min(definition.max, Math.max(definition.min, rawValue))
+                : definition.defaultValue;
+    }
+    return normalized;
+};
+
+const legacyDropMultiplierToProfile = (value: unknown): IAccountRateProfile => {
+    const legacy = normalizeLegacyAccountDropMultiplier(value);
+    return {
+        ...(legacy.resourceMultiplier === undefined ? {} : { resourceDropMultiplier: legacy.resourceMultiplier }),
+        ...(legacy.modMultiplier === undefined ? {} : { modDropMultiplier: legacy.modMultiplier })
+    };
+};
+
 export const normalizeAccountRateProfile = (value: unknown): IAccountRateProfile => {
     const profile: IAccountRateProfile = {};
-    if (typeof value != "object" || value == null || Array.isArray(value)) {
-        return profile;
-    }
+    if (!isRecord(value)) return profile;
 
     const raw = value as Record<string, unknown>;
     if (typeof raw.enabled == "boolean") {
@@ -172,34 +213,23 @@ export const parseAccountRateProfile = (value: unknown): IAccountRateProfile => 
     return normalizeAccountRateProfile(raw);
 };
 
-export const getDefaultAccountRateProfile = (): TResolvedAccountRateProfile => ({
-    enabled: true,
-    resourceDropMultiplier: 1,
-    modDropMultiplier: 1,
-    creditMultiplier: 1,
-    affinityMultiplier: 1,
-    focusXpMultiplier: 1,
-    standingMultiplier: 1,
-    nightwaveStandingMultiplier: 1,
-    relicRewardMultiplier: 1,
-    relicPlatinumMultiplier: 1,
-    missionPlatinumMultiplier: 1,
-    dailyTributeMultiplier: 1
-});
+export const getDefaultAccountRateProfile = (): TResolvedAccountRateProfile => {
+    const defaults = {} as TResolvedAccountRateProfile;
+    defaults.enabled = true;
+    for (const { key, defaultValue } of ACCOUNT_RATE_DEFINITIONS) {
+        defaults[key] = defaultValue;
+    }
+    return defaults;
+};
 
 export const getAccountRateProfile = (account: {
     _id: { toString(): string };
     DisplayName: string;
 }): TResolvedAccountRateProfile => {
     const defaults = getDefaultAccountRateProfile();
-    const legacy = config.accountDropMultipliers?.[account.DisplayName];
+    const legacy = legacyDropMultiplierToProfile(config.accountDropMultipliers?.[account.DisplayName]);
     const configured = config.accountRateProfiles?.[account._id.toString()];
-    const merged = normalizeAccountRateProfile({
-        ...defaults,
-        resourceDropMultiplier: legacy?.resourceMultiplier,
-        modDropMultiplier: legacy?.modMultiplier,
-        ...configured
-    });
+    const merged = normalizeAccountRateProfile({ ...legacy, ...configured });
     return {
         ...defaults,
         ...merged,
@@ -207,5 +237,11 @@ export const getAccountRateProfile = (account: {
     };
 };
 
-export const getEffectiveAccountRate = (profile: TResolvedAccountRateProfile, key: TAccountRateKey): number =>
-    profile.enabled && (!profile.expiresAt || Date.now() < Date.parse(profile.expiresAt)) ? profile[key] : 1;
+export const isAccountRateProfileActive = (profile: TResolvedAccountRateProfile, now = Date.now()): boolean =>
+    profile.enabled && (!profile.expiresAt || now < Date.parse(profile.expiresAt));
+
+export const getEffectiveAccountRate = (
+    profile: TResolvedAccountRateProfile,
+    key: TAccountRateKey,
+    now = Date.now()
+): number => (isAccountRateProfileActive(profile, now) ? profile[key] : 1);

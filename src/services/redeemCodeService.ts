@@ -1,25 +1,8 @@
-import { randomBytes } from "node:crypto";
 import { RedeemCode, type IRedeemCode } from "../models/redeemCodeModel.ts";
 import type { ITypeCount } from "../types/commonTypes.ts";
 
 // Codes are compared and stored uppercase so players can type them in any case.
 const normalizeCode = (code: string): string => code.trim().toUpperCase();
-
-// Unambiguous alphabet: no 0/O, 1/I/L, so a code read off a screen is hard to mistype.
-const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-
-export const generateCode = (length: number): string => {
-    let code = "";
-    // Rejection sampling keeps every character equally likely even though 256 is not a multiple of the alphabet size.
-    while (code.length < length) {
-        for (const byte of randomBytes(length)) {
-            if (byte >= Math.floor(256 / CODE_ALPHABET.length) * CODE_ALPHABET.length) continue;
-            code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
-            if (code.length == length) break;
-        }
-    }
-    return code;
-};
 
 // Codes live in Mongo so that a redemption survives a restart and cannot be replayed, but the hot redemption path
 // is a Map lookup rather than a query.
@@ -56,7 +39,10 @@ export const deleteRedeemCode = async (code: string): Promise<boolean> => {
 
 // Adds codes that are missing from the collection and leaves existing ones untouched, so re-running a batch
 // generation never invalidates codes that were already handed out.
-export const createRedeemCodes = async (specs: readonly IRedeemCode[], codeLength: number): Promise<IRedeemCode[]> => {
+export const createRedeemCodes = async (
+    specs: readonly IRedeemCode[],
+    generate: () => string
+): Promise<IRedeemCode[]> => {
     const taken = new Set(redeemCodes.keys());
     const created: IRedeemCode[] = [];
     for (const spec of specs) {
@@ -72,7 +58,7 @@ export const createRedeemCodes = async (specs: readonly IRedeemCode[], codeLengt
         // Retry in the (very unlikely) event of a collision with an existing code.
         let attempt = 0;
         for (;;) {
-            const code = generateCode(codeLength);
+            const code = normalizeCode(generate());
             if (taken.has(code) || (await RedeemCode.exists({ Code: code }))) {
                 if (++attempt > 20) throw new Error("Unable to generate a unique redeem code");
                 continue;

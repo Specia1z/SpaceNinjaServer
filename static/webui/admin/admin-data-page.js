@@ -1,12 +1,4 @@
 (() => {
-    const currencyLabels = {
-        RegularCredits: "currency_RegularCredits",
-        PremiumCredits: "currency_PremiumCredits",
-        PremiumCreditsFree: "currency_PremiumCreditsFree",
-        FusionPoints: "currency_FusionPoints",
-        CrewShipFusionPoints: "currency_CrewShipFusionPoints",
-        PrimeTokens: "currency_PrimeTokens"
-    };
     let storeOverrides = { items: [], page: 1, pageSize: 25, pageCount: 0, total: 0 };
     let storeOverrideRequest = 0;
     let storeOverrideSearch = "";
@@ -39,10 +31,7 @@
     };
 
     function itemDisplayLabel(uniqueName) {
-        if (!uniqueName) return "";
-        if (currencyLabels[uniqueName]) return loc(currencyLabels[uniqueName]);
-        const entry = (window.itemSearchIndex ?? []).find(item => item.uniqueName === uniqueName);
-        return entry?.name ? `${entry.name} (${uniqueName})` : uniqueName;
+        return window.adminItemCatalog?.getLabel(uniqueName) ?? uniqueName ?? "";
     }
 
     function appendSummaryLines(cell, values) {
@@ -56,76 +45,15 @@
     }
 
     function setupItemPicker(inputId, resolvedId) {
-        const input = document.getElementById(inputId);
-        if (!input || input.dataset.pickerReady) return;
-        input.dataset.pickerReady = "true";
-        const resolved = resolvedId ? document.getElementById(resolvedId) : null;
-        const list = document.createElement("div");
-        list.className = "list-group position-absolute w-100 shadow-sm d-none";
-        list.style.zIndex = "1050";
-        list.style.maxHeight = "18rem";
-        list.style.overflowY = "auto";
-        input.parentElement.classList.add("position-relative");
-        input.parentElement.append(list);
-
-        const updateResolved = () => {
-            if (!resolved) return;
-            const uniqueName = input.value.trim();
-            resolved.textContent = !uniqueName
-                ? ""
-                : currencyLabels[uniqueName]
-                  ? loc(currencyLabels[uniqueName])
-                  : (window.itemSearchIndex ?? []).find(item => item.uniqueName === uniqueName)?.name ||
-                    loc("admin_itemUnknownName");
-        };
-        const hideList = () => {
-            list.classList.add("d-none");
-            list.replaceChildren();
-        };
-        const renderMatches = () => {
-            const query = input.value.trim().toLowerCase();
-            if (!query) return hideList();
-            const matches = (window.itemSearchIndex ?? [])
-                .filter(item => item.searchName.includes(query) || item.uniqueName.toLowerCase().includes(query))
-                .sort((a, b) => {
-                    const rank = item =>
-                        item.uniqueName.toLowerCase() === query ? 0 : item.searchName.startsWith(query) ? 1 : 2;
-                    return rank(a) - rank(b) || a.name.localeCompare(b.name);
-                })
-                .slice(0, 50);
-            if (!matches.length) return hideList();
-            list.replaceChildren();
-            for (const item of matches) {
-                const option = document.createElement("button");
-                option.type = "button";
-                option.className = "list-group-item list-group-item-action py-1";
-                const name = document.createElement("div");
-                name.textContent = item.name;
-                const path = document.createElement("div");
-                path.className = "small text-body-secondary text-break font-monospace";
-                path.textContent = item.uniqueName;
-                option.append(name, path);
-                option.onmousedown = event => {
-                    event.preventDefault();
-                    input.value = item.uniqueName;
-                    updateResolved();
-                    hideList();
-                };
-                list.append(option);
-            }
-            list.classList.remove("d-none");
-        };
-        input.addEventListener("input", () => {
-            renderMatches();
-            updateResolved();
-        });
-        input.addEventListener("focus", renderMatches);
-        input.addEventListener("blur", () => setTimeout(hideList, 150));
-        updateResolved();
+        window.adminItemCatalog?.setupPicker(inputId, resolvedId);
     }
 
     async function loadItemDataStatus() {
         const status = await window.adminDataApi.itemDataStatus();
+        const catalogVersion = document.getElementById("admin-addable-items-version");
+        const catalogCount = document.getElementById("admin-addable-items-count");
+        if (catalogVersion) catalogVersion.textContent = status.packageVersion;
+        if (catalogCount) catalogCount.textContent = window.adminItemCatalog.items.length.toLocaleString();
         const select = document.getElementById("admin-game-version");
         const selected = localStorage.getItem("adminGameVersion") ?? "latest";
         select.replaceChildren();
@@ -142,7 +70,7 @@
         select.value = [...select.options].some(option => option.value == selected) ? selected : "latest";
         const counts = status.counts;
         const count = (fileName, legacyName) => counts[fileName] ?? counts[legacyName] ?? 0;
-        document.getElementById("admin-item-data-status").textContent = loc("admin_itemDataStatus")
+        const statusText = loc("admin_itemDataStatus")
             .replace("|SOURCE|", status.source)
             .replace("|VERSION|", status.packageVersion)
             .replace("|SYNCED_AT|", status.syncedAt ? new Date(status.syncedAt).toLocaleString() : loc("admin_never"))
@@ -155,6 +83,40 @@
             .replace("|RESOURCES|", count("ExportResources", "resources"))
             .replace("|RECIPES|", count("ExportRecipes", "recipes"))
             .replace("|RELICS|", count("ExportRelics", "relics"));
+        const statusElement = document.getElementById("admin-item-data-status");
+        const segments = statusText.split(" · ");
+        const metadata = document.createElement("div");
+        metadata.className = "admin-data-meta";
+        segments.slice(0, 4).forEach(segment => {
+            const item = document.createElement("span");
+            item.className = "admin-data-meta-item";
+            item.textContent = segment;
+            metadata.append(item);
+        });
+
+        const metrics = document.createElement("div");
+        metrics.className = "admin-data-metrics";
+        segments.slice(4).forEach((segment, index) => {
+            const separator = segment.includes("：") ? "：" : ": ";
+            const separatorIndex = segment.indexOf(separator);
+            const metric = document.createElement("div");
+            metric.className = `admin-data-metric${index === 0 ? " admin-data-metric-total" : ""}`;
+            const label = document.createElement("span");
+            label.className = "admin-data-metric-label";
+            const value = document.createElement("strong");
+            value.className = "admin-data-metric-value";
+            if (separatorIndex < 0) {
+                label.textContent = segment;
+            } else {
+                label.textContent = segment.slice(0, separatorIndex);
+                value.textContent = segment.slice(separatorIndex + separator.length);
+            }
+            metric.append(label);
+            if (value.textContent) metric.append(value);
+            metrics.append(metric);
+        });
+        statusElement.className = "admin-data-status";
+        statusElement.replaceChildren(metadata, metrics);
         document.getElementById("admin-item-sync").disabled = status.running;
     }
 
@@ -164,7 +126,7 @@
         try {
             await window.adminDataApi.syncItemData();
             fetchItemList();
-            await window.itemListPromise;
+            await Promise.all([window.itemListPromise, window.adminItemCatalog.load(window.lang, true)]);
             await loadItemDataStatus();
             toast(loc("admin_syncComplete"), "success");
         } catch (error) {
@@ -371,9 +333,20 @@
     }
 
     async function deleteStoreOverride(typeName) {
-        if (!confirm(loc("admin_deleteOverrideConfirm").replace("|ITEM|", typeName))) return;
-        await window.adminDataApi.deleteStoreOverride(typeName);
-        await loadStoreOverrides();
+        const confirmed = await window.webuiComponents.confirm({
+            title: loc("admin_delete"),
+            message: loc("admin_deleteOverrideConfirm").replace("|ITEM|", typeName),
+            variant: "danger",
+            icon: "bi-trash"
+        });
+        if (!confirmed) return;
+        try {
+            await window.adminDataApi.deleteStoreOverride(typeName);
+            await loadStoreOverrides();
+            toast(loc("admin_storeOverrideDeleted"), "success");
+        } catch (error) {
+            toast(error.responseText || loc("settings_changeFailed"), "danger");
+        }
     }
 
     document.getElementById("admin-store-override-search")?.addEventListener("input", event => {
@@ -465,6 +438,25 @@
         }
     }
 
+    const bind = (id, event, callback) => document.getElementById(id)?.addEventListener(event, callback);
+    bind("admin-item-sync", "click", () => void syncItemData());
+    bind("admin-item-status-refresh", "click", () => void loadItemDataStatus());
+    bind("admin-game-version", "change", setGameVersion);
+    bind("admin-crafting-form", "submit", event => {
+        event.preventDefault();
+        void saveCraftingConfig();
+    });
+    bind("admin-crafting-speed", "change", updateCraftingFormState);
+    bind("admin-crafting-rush-cost", "change", updateCraftingFormState);
+    bind("admin-crafting-reset", "click", resetCraftingConfig);
+    bind("admin-store-form", "submit", event => {
+        event.preventDefault();
+        void saveStoreOverride();
+    });
+    bind("admin-store-reset", "click", resetStoreForm);
+    bind("admin-store-override-previous", "click", () => changeStoreOverridePage(-1));
+    bind("admin-store-override-next", "click", () => changeStoreOverridePage(1));
+
     const exports = {
         formatDate,
         optionalDate,
@@ -502,8 +494,14 @@
                 storeOverrideSearch = "";
                 document.getElementById("admin-store-override-search").value = "";
                 document.getElementById("admin-store-override-page-size").value = storeOverrides.pageSize;
-                await Promise.all([loadItemDataStatus(), loadStoreOverrides(), loadCraftingConfig()]);
-                window.itemListPromise.then(() => setupItemPicker("admin-store-type", "admin-store-type-resolved"));
+                const [catalog] = await Promise.all([
+                    window.adminItemCatalog.load(window.lang),
+                    loadItemDataStatus(),
+                    loadStoreOverrides(),
+                    loadCraftingConfig()
+                ]);
+                document.getElementById("admin-addable-items-count").textContent = catalog.length.toLocaleString();
+                setupItemPicker("admin-store-type", "admin-store-type-resolved");
             } catch (error) {
                 toast(error.responseText || loc("settings_changeFailed"), "danger");
             }

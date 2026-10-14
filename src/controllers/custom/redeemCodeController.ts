@@ -8,7 +8,6 @@ import {
 import {
     createRedeemCodes,
     deleteRedeemCode,
-    generateCode,
     listRedeemCodes,
     saveRedeemCode,
     redeemCode
@@ -17,6 +16,11 @@ import { MAX_REDEEM_CODE_LENGTH, MAX_REDEEM_CODE_USES, type IRedeemCode } from "
 import { addItems, getInventory, isCurrencyItemName } from "../../services/inventoryService.ts";
 import { broadcastInventoryUpdate } from "../../services/wsService.ts";
 import type { ITypeCount } from "../../types/commonTypes.ts";
+import {
+    generateRedeemCode,
+    normalizeRedeemCodeFormat,
+    type IRedeemCodeFormatInput
+} from "../../services/redeemCodeFormat.ts";
 
 const getAdministrator = async (req: Parameters<RequestHandler>[0]): Promise<TAccountDocument> => {
     const account = await getAccountForRequest(req);
@@ -120,30 +124,30 @@ export const saveRedeemCodeController: RequestHandler = async (req, res) => {
 
 export const generateRedeemCodesController: RequestHandler = async (req, res) => {
     const account = await getAdministrator(req);
-    const body = req.body as Partial<IRedeemCode> & { Count?: unknown; CodeLength?: unknown; Prefix?: unknown };
+    const body = req.body as IRedeemCodeFormatInput & {
+        Count?: unknown;
+        Label?: unknown;
+        Rewards?: unknown;
+        ExpiresAt?: unknown;
+        MaxUses?: unknown;
+        Enabled?: unknown;
+    };
 
     const count = body.Count ?? 1;
     if (typeof count != "number" || !Number.isInteger(count) || count < 1 || count > MAX_BATCH_REDEEM_CODES) {
         throw new Error(`Count must be a whole number between 1 and ${MAX_BATCH_REDEEM_CODES}`);
     }
-    const codeLength = body.CodeLength ?? 16;
-    if (
-        typeof codeLength != "number" ||
-        !Number.isInteger(codeLength) ||
-        codeLength < MIN_CODE_LENGTH ||
-        codeLength > MAX_REDEEM_CODE_LENGTH
-    ) {
-        throw new Error(`CodeLength must be a whole number between ${MIN_CODE_LENGTH} and ${MAX_REDEEM_CODE_LENGTH}`);
+    const codeFormat = normalizeRedeemCodeFormat(body);
+    if (body.Label !== undefined && body.Label !== null && body.Label !== "" && typeof body.Label != "string") {
+        throw new Error("Invalid Label");
     }
-    const prefix = typeof body.Prefix == "string" ? body.Prefix.trim().toUpperCase() : "";
-    if (prefix && !/^[A-Z0-9-]{1,24}$/.test(prefix)) {
-        throw new Error("Prefix may only contain letters, digits, and hyphens");
-    }
+    const label = typeof body.Label == "string" ? body.Label.trim() : "";
+    if (label.length > 200) throw new Error("Invalid Label");
 
     const template: IRedeemCode = {
         // Empty Code tells the service to generate a random one.
         Code: "",
-        Label: typeof body.Label == "string" && body.Label ? body.Label : undefined,
+        Label: label || undefined,
         Rewards: parseRewards(body.Rewards),
         ExpiresAt: parseExpiresAt(body.ExpiresAt),
         MaxUses: parseMaxUses(body.MaxUses),
@@ -153,12 +157,8 @@ export const generateRedeemCodesController: RequestHandler = async (req, res) =>
         CreatedBy: account.DisplayName
     };
 
-    const specs: IRedeemCode[] = [];
-    for (let i = 0; i < count; i++) {
-        // The service owns the alphabet, so a prefixed code is built from the same generator rather than a copy.
-        specs.push({ ...template, Code: prefix ? `${prefix}${generateCode(codeLength)}` : "" });
-    }
-    res.json({ codes: await createRedeemCodes(specs, codeLength) });
+    const specs = Array.from({ length: count }, () => ({ ...template, Code: "" }));
+    res.json({ codes: await createRedeemCodes(specs, () => generateRedeemCode(codeFormat)) });
 };
 
 export const deleteRedeemCodeController: RequestHandler = async (req, res) => {

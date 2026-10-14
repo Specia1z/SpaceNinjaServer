@@ -1,0 +1,170 @@
+<div data-route="/webui/metadata-patches" data-title-tag="navbar_metadataPatches">
+    <div class="d-none admin-hide">
+        <p data-loc="cheats_administratorRequirement"></p>
+    </div>
+    <main class="metadata-patches-page d-none admin-show">
+        <header class="metadata-patches-hero">
+            <div class="metadata-patches-hero-copy">
+                <span class="metadata-patches-eyebrow" data-loc="metadataPatches_eyebrow"></span>
+                <h1 data-loc="metadataPatches_title"></h1>
+                <p data-loc="metadataPatches_description"></p>
+            </div>
+            <div class="metadata-patches-hero-actions">
+                <div class="metadata-patches-save-state" id="metadata-patches-save-state" aria-live="polite">
+                    <span class="metadata-patches-save-dot"></span>
+                    <span id="metadata-patches-save-status" data-loc="metadataPatches_savedStatus"></span>
+                </div>
+                <button class="btn btn-primary" id="metadata-patches-save" type="button" disabled>
+                    <i class="bi bi-cloud-check" aria-hidden="true"></i>
+                    <span data-loc="metadataPatches_save"></span>
+                </button>
+            </div>
+        </header>
+
+        <div class="alert alert-warning metadata-patches-restart-hint" role="note">
+            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+            <span data-loc="metadataPatches_restartHint"></span>
+        </div>
+
+        <section class="metadata-patches-panel card" aria-labelledby="metadata-patches-global-heading">
+            <div class="metadata-patches-panel-header">
+                <div class="metadata-patches-panel-heading">
+                    <span class="metadata-patches-panel-icon metadata-patches-global-icon"><i class="bi bi-globe2" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="metadata-patches-global-heading" data-loc="metadataPatches_globalTitle"></h2>
+                        <p data-loc="metadataPatches_globalHint"></p>
+                    </div>
+                </div>
+                <div class="metadata-patches-panel-actions">
+                    <span class="badge text-bg-secondary" id="metadata-patches-global-count"></span>
+                    <button class="btn btn-outline-secondary" id="metadata-patches-global-import" type="button">
+                        <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                        <span data-loc="metadataPatches_importButton"></span>
+                    </button>
+                    <button class="btn btn-outline-primary" id="metadata-patches-global-add" type="button">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span data-loc="metadataPatches_add"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="metadata-patches-panel-body">
+                <div id="metadata-patches-list" class="metadata-patches-list"></div>
+            </div>
+        </section>
+
+        <section class="metadata-patches-panel card" aria-labelledby="metadata-patches-account-heading">
+            <div class="metadata-patches-panel-header">
+                <div class="metadata-patches-panel-heading">
+                    <span class="metadata-patches-panel-icon metadata-patches-account-icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="metadata-patches-account-heading" data-loc="metadataPatches_accountTitle"></h2>
+                        <p data-loc="metadataPatches_accountDescription"></p>
+                    </div>
+                </div>
+                <div class="metadata-patches-panel-actions">
+                    <button class="btn btn-outline-secondary" id="metadata-patches-account-import" type="button">
+                        <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                        <span data-loc="metadataPatches_importButton"></span>
+                    </button>
+                    <button class="btn btn-outline-primary" id="metadata-patches-account-add" type="button">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span data-loc="metadataPatches_add"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="metadata-patches-account-layout">
+                <aside class="metadata-patches-account-sidebar">
+                    <label class="visually-hidden" for="metadata-patches-account-search" data-loc="metadataPatches_accountSearch"></label>
+                    <div class="metadata-patches-search">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input class="form-control" id="metadata-patches-account-search" type="search" data-loc-placeholder="metadataPatches_accountSearch" autocomplete="off" />
+                    </div>
+                    <div id="metadata-patches-account-list" class="metadata-patches-account-list"></div>
+                </aside>
+                <div class="metadata-patches-account-editor">
+                    <div id="metadata-patches-account-empty" class="metadata-patches-account-empty">
+                        <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+                        <p data-loc="metadataPatches_accountNoSelection"></p>
+                    </div>
+                    <div id="metadata-patches-account-form" class="d-none">
+                        <div class="metadata-patches-account-toolbar">
+                            <div class="metadata-patches-account-identity">
+                                <h3 id="metadata-patches-account-name"></h3>
+                                <code id="metadata-patches-account-id"></code>
+                            </div>
+                            <div class="metadata-patches-account-controls">
+                                <span class="badge text-bg-secondary" id="metadata-patches-account-count"></span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" id="metadata-patches-account-blacklist" type="checkbox" />
+                                    <label class="form-check-label" for="metadata-patches-account-blacklist" data-loc="metadataPatches_blacklist"></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="metadata-patches-blacklist-note" class="metadata-patches-blacklist-note d-none">
+                            <i class="bi bi-shield-slash" aria-hidden="true"></i>
+                            <span data-loc="metadataPatches_blacklistHint"></span>
+                        </div>
+                        <div id="metadata-patches-account-list-editor" class="metadata-patches-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="metadata-patches-panel metadata-patches-preview-panel card" aria-labelledby="metadata-patches-preview-heading">
+            <div class="metadata-patches-panel-header">
+                <div class="metadata-patches-panel-heading">
+                    <span class="metadata-patches-panel-icon metadata-patches-preview-icon"><i class="bi bi-braces" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="metadata-patches-preview-heading" data-loc="metadataPatches_preview"></h2>
+                        <p data-loc="metadataPatches_previewHint"></p>
+                    </div>
+                </div>
+                <div class="metadata-patches-preview-actions">
+                    <code id="metadata-patches-revision"></code>
+                    <button class="btn btn-sm btn-outline-secondary" id="metadata-patches-copy" type="button">
+                        <i class="bi bi-clipboard" aria-hidden="true"></i>
+                        <span data-loc="metadataPatches_copy"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="metadata-patches-preview-layout">
+                <pre class="metadata-patches-preview" id="metadata-patches-preview"></pre>
+                <div class="metadata-patches-source-panel">
+                    <h3 data-loc="metadataPatches_sources"></h3>
+                    <div id="metadata-patches-sources" class="metadata-patches-sources"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="modal fade" id="metadata-patches-import-modal" tabindex="-1" aria-labelledby="metadata-patches-import-title" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h2 class="modal-title fs-5" id="metadata-patches-import-title" data-loc="metadataPatches_importLabel"></h2>
+                            <p class="text-body-secondary small mb-0 mt-1" data-loc="metadataPatches_importHint"></p>
+                        </div>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" data-loc-title="ui_cancel" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label" for="metadata-patches-import-target" data-loc="metadataPatches_importTarget"></label>
+                        <select class="form-select mb-3" id="metadata-patches-import-target">
+                            <option value="global" data-loc="metadataPatches_globalTitle"></option>
+                            <option value="account" data-loc="metadataPatches_selectedAccount"></option>
+                        </select>
+                        <label class="form-label" for="metadata-patches-import-text" data-loc="metadataPatches_importLabel"></label>
+                        <textarea class="form-control metadata-patches-import-text" id="metadata-patches-import-text" rows="12" spellcheck="false" data-loc-placeholder="metadataPatches_importPlaceholder"></textarea>
+                        <div class="invalid-feedback" id="metadata-patches-import-error" role="alert"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal" data-loc="ui_cancel"></button>
+                        <button class="btn btn-primary" id="metadata-patches-import-submit" type="button">
+                            <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                            <span data-loc="metadataPatches_import"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

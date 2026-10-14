@@ -1,0 +1,464 @@
+.guild-page {
+    margin-inline: auto;
+    max-width: 116rem;
+}
+
+.guild-state {
+    align-items: center;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: clamp(1rem, 7vh, 5rem) auto;
+    max-width: 44rem;
+    min-height: 15rem;
+    padding: clamp(1.5rem, 5vw, 3rem);
+    text-align: center;
+}
+
+.guild-loading {
+    background: transparent;
+    border-color: transparent;
+    flex-direction: row;
+    gap: 0.85rem;
+    margin-block: 2rem;
+    min-height: 6rem;
+}
+
+.guild-loading h2 {
+    color: var(--bs-secondary-color);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.guild-state-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 12%, var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 20%, var(--bs-border-color));
+    border-radius: 1rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    font-size: 2rem;
+    height: 4.5rem;
+    justify-content: center;
+    margin-bottom: 1.1rem;
+    width: 4.5rem;
+}
+
+.guild-empty-state h2 {
+    font-size: clamp(1.35rem, 3vw, 1.8rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin: 0 0 0.5rem;
+}
+
+.guild-empty-state p {
+    color: var(--bs-secondary-color);
+    line-height: 1.55;
+    margin: 0;
+    max-width: 30rem;
+}
+
+.guild-content {
+    min-width: 0;
+}
+
+.guild-hero {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 86% 12%, color-mix(in srgb, var(--bs-primary) 22%, transparent), transparent 38%),
+        linear-gradient(130deg, color-mix(in srgb, var(--bs-primary) 8%, var(--bs-tertiary-bg)), var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 17%, var(--bs-border-color));
+    border-radius: 1.2rem;
+    box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.1rem;
+    min-height: 10rem;
+    overflow: hidden;
+    padding: clamp(1.3rem, 3vw, 2.2rem);
+    position: relative;
+}
+
+.guild-hero-copy {
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.guild-eyebrow,
+.guild-card-kicker {
+    color: var(--bs-primary);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+}
+
+.guild-hero h1 {
+    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    font-weight: 750;
+    letter-spacing: -0.05em;
+    line-height: 1.1;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.guild-meta {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1rem;
+    margin-top: 0.85rem;
+}
+
+.guild-meta-item {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.45rem;
+    line-height: 1.35;
+}
+
+.guild-meta-item > .bi {
+    color: var(--bs-primary);
+}
+
+.guild-alliance-name {
+    color: var(--bs-secondary-color);
+    font-size: 0.9rem;
+    margin: 0.45rem 0 0;
+}
+
+.guild-alliance-name:empty {
+    display: none;
+}
+
+.guild-hero-mark {
+    align-items: center;
+    color: color-mix(in srgb, var(--bs-primary) 52%, transparent);
+    display: flex;
+    flex: 0 0 auto;
+    font-size: clamp(4.5rem, 10vw, 8rem);
+    justify-content: center;
+    line-height: 1;
+    margin-inline: 2rem 1rem;
+    opacity: 0.72;
+    transform: rotate(-8deg);
+}
+
+.guild-currency-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 1.1rem;
+}
+
+.guild-card {
+    border-color: var(--bs-border-color);
+    border-radius: 0.9rem;
+    box-shadow: 0 0.65rem 1.8rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.guild-currency-card {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--bs-primary) 8%, transparent), transparent 44%),
+        var(--bs-body-bg);
+    display: flex;
+    gap: 1rem;
+    min-height: 8rem;
+    padding: 1rem 1.2rem;
+}
+
+.guild-currency-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 11%, var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 20%, var(--bs-border-color));
+    border-radius: 0.85rem;
+    color: var(--bs-primary);
+    display: flex;
+    flex: 0 0 3.2rem;
+    font-size: 1.45rem;
+    height: 3.2rem;
+    justify-content: center;
+}
+
+.guild-currency-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.guild-card-kicker {
+    color: var(--bs-secondary-color);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25rem;
+}
+
+.guild-currency-value {
+    font-size: clamp(1.1rem, 2.5vw, 1.45rem);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+
+.guild-currency-value.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.guild-currency-card .input-group {
+    margin-top: 0.55rem;
+    max-width: 26rem;
+}
+
+.guild-dashboard {
+    align-items: stretch;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.guild-projects-card,
+.guild-deco-recipes-card,
+.guild-vault-card,
+.guild-decorations-card,
+.guild-members-card,
+.guild-alliance-card {
+    grid-column: span 6;
+}
+
+.guild-cheats-card {
+    grid-column: 1 / -1;
+}
+
+#guild-route .guild-card-header,
+#guild-route .guild-static-card-header {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 78%, transparent);
+    border-bottom-color: var(--bs-border-color);
+    display: flex;
+    gap: 0.7rem;
+    justify-content: space-between;
+    min-height: 3.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.guild-card-header h5,
+.guild-static-card-header {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.guild-card-header > div {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.3rem;
+}
+
+.guild-card-header a {
+    align-items: center;
+    border-radius: 0.45rem;
+    color: var(--bs-secondary-color);
+    display: inline-flex;
+    height: 2rem;
+    justify-content: center;
+    text-decoration: none;
+    transition:
+        background-color 140ms ease,
+        color 140ms ease;
+    width: 2rem;
+}
+
+.guild-card-header a:hover,
+.guild-card-header a:focus-visible {
+    background: color-mix(in srgb, var(--bs-primary) 12%, var(--bs-tertiary-bg));
+    color: var(--bs-primary);
+    outline: 0;
+}
+
+.guild-static-card-header {
+    justify-content: flex-start !important;
+}
+
+.guild-static-card-header > .bi {
+    color: var(--bs-primary);
+    font-size: 1.05rem;
+}
+
+.guild-list-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 21rem;
+}
+
+.guild-list-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0.75rem 1rem;
+}
+
+.guild-add-form {
+    flex: 0 0 auto;
+    margin-bottom: 0.65rem;
+}
+
+.guild-add-form .form-control {
+    min-width: 0;
+}
+
+.guild-count-input {
+    flex: 0 0 6.25rem !important;
+    max-width: 7rem;
+}
+
+.guild-list-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.guild-table {
+    margin: 0;
+}
+
+.guild-table tr > td:first-child {
+    overflow-wrap: anywhere;
+}
+
+.guild-table tr > td:last-child {
+    white-space: nowrap;
+    width: 1%;
+}
+
+.guild-table td {
+    vertical-align: middle;
+}
+
+.guild-table td.text-end > a {
+    align-items: center;
+    border-radius: 0.4rem;
+    display: inline-flex;
+    justify-content: center;
+    min-height: 2rem;
+    min-width: 2rem;
+    text-decoration: none;
+}
+
+.guild-table td.text-end > a:hover,
+.guild-table td.text-end > a:focus-visible {
+    background: var(--bs-tertiary-bg);
+    outline: 0;
+}
+
+.guild-cheats-grid {
+    display: grid;
+    gap: 0.6rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 1rem;
+}
+
+.guild-cheats-grid .form-check {
+    align-items: flex-start;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--bs-border-color) 75%, transparent);
+    border-radius: 0.65rem;
+    margin: 0;
+    min-height: 2.75rem;
+    padding: 0.65rem 0.75rem 0.65rem 2.15rem;
+}
+
+.guild-cheats-grid .form-check-input {
+    margin-left: -1.4rem;
+    margin-top: 0.18rem;
+}
+
+.guild-cheats-grid .form-check-label {
+    line-height: 1.4;
+}
+
+@media (max-width: 1099.98px) {
+    .guild-cheats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .guild-dashboard {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .guild-projects-card,
+    .guild-deco-recipes-card,
+    .guild-vault-card,
+    .guild-decorations-card,
+    .guild-members-card,
+    .guild-alliance-card,
+    .guild-cheats-card {
+        grid-column: 1;
+    }
+
+    .guild-list-card {
+        min-height: 18rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .guild-hero {
+        min-height: 0;
+        padding: 1.15rem;
+    }
+
+    .guild-hero-mark {
+        font-size: 3.2rem;
+        margin-inline: 0 0.1rem;
+    }
+
+    .guild-currency-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .guild-currency-card {
+        min-height: 7rem;
+        padding: 0.85rem;
+    }
+
+    .guild-cheats-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #guild-route .guild-card-header {
+        align-items: flex-start;
+    }
+
+    .guild-card-header h5 {
+        line-height: 1.35;
+    }
+}
+
+@media (max-width: 390px) {
+    .guild-hero-mark {
+        display: none;
+    }
+
+    .guild-add-form .btn {
+        padding-inline: 0.65rem;
+    }
+
+    .guild-count-input {
+        flex-basis: 4.5rem !important;
+        max-width: 4.75rem;
+    }
+}

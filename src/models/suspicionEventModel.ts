@@ -18,6 +18,7 @@ const suspicionKinds = [
 ] as const;
 
 export type TSuspicionKind = (typeof suspicionKinds)[number];
+export type TSuspicionResponse = "observed" | "sanitized" | "corrected" | "clamped" | "rejected";
 
 export interface ISuspicionEvent {
     // 触发判定的账号。
@@ -27,6 +28,12 @@ export interface ISuspicionEvent {
     DisplayName: string;
 
     Kind: TSuspicionKind;
+
+    // Stable per-rule contribution used to prioritize recent suspicious activity without auto-banning.
+    RiskScore?: number;
+
+    // Describes whether the report was only observed or had a value repaired/clamped/rejected.
+    Response?: TSuspicionResponse;
 
     // 判定所依据的数值证据，原样存下，便于人工复核。
     Details: Record<string, unknown>;
@@ -56,6 +63,8 @@ const suspicionEventSchema = new Schema<ISuspicionEvent>({
     AccountId: { type: Schema.Types.ObjectId, required: true },
     DisplayName: { type: String, required: true },
     Kind: { type: String, required: true, enum: suspicionKinds },
+    RiskScore: { type: Number, min: 0, max: 100 },
+    Response: { type: String, enum: ["observed", "sanitized", "corrected", "clamped", "rejected"] },
     Details: { type: Schema.Types.Mixed, required: true },
     RequestId: String,
     BuildLabel: String,

@@ -1,5 +1,7 @@
 window.adminDataApi = {
     itemDataStatus: () => $.get("/custom/admin/item-data/status?" + window.authz),
+    loadAddableItemLists: language =>
+        $.get("/custom/getItemLists?lang=" + encodeURIComponent(language) + "&gameVersion=latest"),
     syncItemData: () =>
         $.post({
             url: "/custom/admin/item-data/sync?" + window.authz,

@@ -14,10 +14,7 @@
 
     const find = id => document.getElementById(id);
 
-    const itemDisplayLabel = typeName => {
-        const entry = (window.itemSearchIndex ?? []).find(item => item.uniqueName === typeName);
-        return entry?.name ? `${entry.name} (${typeName})` : typeName;
-    };
+    const itemDisplayLabel = typeName => window.adminItemCatalog?.getLabel(typeName) ?? typeName;
 
     const optionalPrice = id => {
         const value = find(id).value;
@@ -116,6 +113,8 @@
         }
 
         const pageCount = state.bundles.pageCount;
+        find("admin-store-bundle-total").textContent = state.bundles.total.toLocaleString();
+        find("admin-store-bundle-empty").classList.toggle("d-none", state.bundles.items.length > 0);
         find("admin-store-bundle-page-status").textContent = loc("admin_storeBundlePageStatus")
             .replace("|PAGE|", state.bundles.pageCount ? state.bundles.page : 0)
             .replace("|PAGES|", pageCount)
@@ -197,7 +196,13 @@
     };
 
     const deleteStoreBundle = async typeName => {
-        if (!confirm(loc("admin_storeBundleDeleteConfirm").replace("|ITEM|", typeName))) return;
+        const confirmed = await window.webuiComponents.confirm({
+            title: loc("admin_delete"),
+            message: loc("admin_storeBundleDeleteConfirm").replace("|ITEM|", typeName),
+            variant: "danger",
+            icon: "bi-trash"
+        });
+        if (!confirmed) return;
         try {
             await window.adminStorePriceApi.deleteBundle(typeName);
             await loadBundles();
@@ -242,6 +247,8 @@
         }
 
         const pageCount = state.data.pageCount;
+        find("admin-store-price-total").textContent = state.data.total.toLocaleString();
+        find("admin-store-price-empty").classList.toggle("d-none", state.data.items.length > 0);
         find("admin-store-price-page-status").textContent = loc("admin_storePricePageStatus")
             .replace("|PAGE|", state.data.pageCount ? state.data.page : 0)
             .replace("|PAGES|", pageCount)
@@ -252,6 +259,13 @@
 
     const loadCatalog = async () => {
         const request = ++state.request;
+        const tbody = find("admin-store-price-catalog");
+        tbody.replaceChildren();
+        const loadingRow = tbody.insertRow();
+        const loadingCell = loadingRow.insertCell();
+        loadingCell.colSpan = 6;
+        loadingCell.className = "text-center text-body-secondary";
+        loadingCell.textContent = loc("general_loading");
         try {
             const data = await window.adminStorePriceApi.list(state);
             if (request != state.request) return;
@@ -260,7 +274,11 @@
             state.pageSize = data.pageSize;
             renderCatalog();
         } catch (error) {
-            if (request == state.request) toast(error.responseText || loc("settings_changeFailed"), "danger");
+            if (request == state.request) {
+                toast(error.responseText || loc("settings_changeFailed"), "danger");
+                state.data = { items: [], page: 1, pageSize: state.pageSize, pageCount: 0, total: 0 };
+                renderCatalog();
+            }
         }
     };
 
@@ -297,7 +315,13 @@
     };
 
     const deleteSupplementalPrice = async typeName => {
-        if (!confirm(loc("admin_supplementalPriceDeleteConfirm").replace("|ITEM|", typeName))) return;
+        const confirmed = await window.webuiComponents.confirm({
+            title: loc("admin_delete"),
+            message: loc("admin_supplementalPriceDeleteConfirm").replace("|ITEM|", typeName),
+            variant: "danger",
+            icon: "bi-trash"
+        });
+        if (!confirmed) return;
         try {
             await window.adminStorePriceApi.delete(typeName);
             await loadCatalog();
@@ -308,7 +332,13 @@
     };
 
     const syncStorePrices = async () => {
-        if (!confirm(loc("admin_storePriceSyncConfirm"))) return;
+        const confirmed = await window.webuiComponents.confirm({
+            title: loc("admin_syncStorePrices"),
+            message: loc("admin_storePriceSyncConfirm"),
+            variant: "primary",
+            icon: "bi-arrow-repeat"
+        });
+        if (!confirmed) return;
         const button = find("admin-store-price-sync");
         button.disabled = true;
         try {
@@ -343,6 +373,24 @@
         state.bundlePage = nextPage;
         void loadBundles();
     };
+
+    const bind = (id, event, callback) => find(id)?.addEventListener(event, callback);
+    bind("admin-store-bundle-form", "submit", event => {
+        event.preventDefault();
+        void saveStoreBundle();
+    });
+    bind("admin-store-bundle-add-component", "click", () => addBundleComponent());
+    bind("admin-store-bundle-reset", "click", resetBundleForm);
+    bind("admin-supplemental-price-form", "submit", event => {
+        event.preventDefault();
+        void saveSupplementalPrice();
+    });
+    bind("admin-supplemental-price-reset", "click", resetForm);
+    bind("admin-store-price-sync", "click", () => void syncStorePrices());
+    bind("admin-store-price-previous", "click", () => changePage(-1));
+    bind("admin-store-price-next", "click", () => changePage(1));
+    bind("admin-store-bundle-previous", "click", () => changeBundlePage(-1));
+    bind("admin-store-bundle-next", "click", () => changeBundlePage(1));
 
     find("admin-store-price-search")?.addEventListener("input", event => {
         state.search = event.target.value.trim();
@@ -382,14 +430,23 @@
             find("admin-store-price-search").value = "";
             find("admin-store-bundle-page-size").value = state.bundlePageSize;
             resetForm();
-            resetBundleForm();
-            await Promise.all([loadCatalog(), loadBundles()]);
-            window.itemListPromise?.then(() => {
-                window.adminDataPage?.setupItemPicker(
+            try {
+                const [items, dataStatus] = await Promise.all([
+                    window.adminItemCatalog.load(window.lang),
+                    window.adminDataApi.itemDataStatus()
+                ]);
+                find("admin-store-catalog-version").textContent = dataStatus.packageVersion;
+                find("admin-store-catalog-item-count").textContent = items.length.toLocaleString();
+                window.adminDataPage.setupItemPicker("admin-store-bundle-type");
+                window.adminDataPage.setupItemPicker(
                     "admin-supplemental-price-type",
                     "admin-supplemental-price-type-resolved"
                 );
-            });
+                resetBundleForm();
+                await Promise.all([loadCatalog(), loadBundles()]);
+            } catch (error) {
+                toast(error.responseText || loc("settings_changeFailed"), "danger");
+            }
         });
     });
 })();

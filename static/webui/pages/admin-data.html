@@ -1,0 +1,230 @@
+<div class="admin-data-route" data-route="/webui/admin-data" data-title-tag="navbar_adminData">
+    <section class="admin-data-access d-none admin-hide" role="status">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <p data-loc="cheats_administratorRequirement"></p>
+    </section>
+
+    <main class="admin-data-page admin-show d-none">
+        <header class="admin-data-hero">
+            <div class="admin-data-hero-copy">
+                <span class="admin-data-eyebrow" data-loc="admin_itemData"></span>
+                <h1 data-loc="navbar_adminData"></h1>
+                <p data-loc="admin_itemDataDescription"></p>
+            </div>
+            <span class="admin-data-hero-mark" aria-hidden="true"><i class="bi bi-database-gear"></i></span>
+        </header>
+
+        <ul class="nav nav-pills admin-data-tabs" role="tablist" aria-label="Data settings sections">
+            <li class="nav-item" role="presentation"><button class="nav-link active" id="admin-data-tab-items" data-bs-toggle="tab" data-bs-target="#admin-data-pane-items" type="button" role="tab" aria-controls="admin-data-pane-items" aria-selected="true"><i class="bi bi-database" aria-hidden="true"></i><span data-loc="admin_itemData"></span></button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="admin-data-tab-crafting" data-bs-toggle="tab" data-bs-target="#admin-data-pane-crafting" type="button" role="tab" aria-controls="admin-data-pane-crafting" aria-selected="false"><i class="bi bi-hammer" aria-hidden="true"></i><span data-loc="admin_crafting"></span></button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="admin-data-tab-store" data-bs-toggle="tab" data-bs-target="#admin-data-pane-store" type="button" role="tab" aria-controls="admin-data-pane-store" aria-selected="false"><i class="bi bi-bag-check" aria-hidden="true"></i><span data-loc="admin_storeOverrides"></span></button></li>
+        </ul>
+
+        <div class="tab-content admin-data-tab-content">
+        <div class="tab-pane fade show active" id="admin-data-pane-items" role="tabpanel" aria-labelledby="admin-data-tab-items" tabindex="0">
+        <section class="card admin-data-section" id="admin-item-data-section">
+            <header class="admin-data-section-header">
+                <span class="admin-data-section-icon"><i class="bi bi-database" aria-hidden="true"></i></span>
+                <div>
+                    <span class="admin-data-kicker" data-loc="admin_itemData"></span>
+                    <h2 data-loc="admin_itemData"></h2>
+                    <p data-loc="admin_itemDataDescription"></p>
+                </div>
+            </header>
+            <div class="card-body admin-data-section-body">
+                <div class="admin-data-toolbar">
+                    <div class="admin-data-version-control">
+                        <label class="form-label" for="admin-game-version" data-loc="admin_gameVersion"></label>
+                        <select class="form-select" id="admin-game-version"></select>
+                    </div>
+                    <div class="admin-data-actions">
+                        <button class="btn btn-primary" id="admin-item-sync" type="button">
+                            <i class="bi bi-arrow-repeat" aria-hidden="true"></i><span data-loc="admin_syncNow"></span>
+                        </button>
+                        <button class="btn btn-outline-secondary" id="admin-item-status-refresh" type="button">
+                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><span data-loc="admin_refreshStatus"></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-catalog-source" role="status">
+                    <span class="admin-catalog-source-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <div>
+                        <strong><span data-loc="admin_storeItems"></span> <span id="admin-addable-items-count">0</span></strong>
+                        <span class="admin-catalog-source-note">Public Export <span id="admin-addable-items-version">0.6.12</span> · <span data-loc="admin_latestVersion"></span></span>
+                    </div>
+                </div>
+                <div id="admin-item-data-status" aria-live="polite" aria-busy="true"></div>
+            </div>
+        </section>
+
+        </div>
+        <div class="tab-pane fade" id="admin-data-pane-crafting" role="tabpanel" aria-labelledby="admin-data-tab-crafting" tabindex="0">
+        <section class="card admin-data-section" id="admin-crafting-section">
+            <header class="admin-data-section-header">
+                <span class="admin-data-section-icon admin-data-icon-crafting"><i class="bi bi-hammer" aria-hidden="true"></i></span>
+                <div>
+                    <span class="admin-data-kicker" data-loc="admin_crafting"></span>
+                    <h2 data-loc="admin_crafting"></h2>
+                    <p data-loc="admin_craftingDescription"></p>
+                </div>
+            </header>
+            <div class="card-body admin-data-section-body">
+                <form id="admin-crafting-form">
+                    <div class="admin-crafting-grid">
+                        <div class="admin-data-field">
+                            <label class="form-label" for="admin-crafting-speed" data-loc="admin_buildSpeed"></label>
+                            <select class="form-select" id="admin-crafting-speed">
+                                <option value="default" data-loc="admin_speedDefault"></option>
+                                <option value="instant" data-loc="admin_speedInstant"></option>
+                                <option value="custom" data-loc="admin_speedCustom"></option>
+                            </select>
+                        </div>
+                        <div class="admin-data-field">
+                            <label class="form-label" for="admin-crafting-seconds" data-loc="admin_buildSeconds"></label>
+                            <input class="form-control" id="admin-crafting-seconds" type="number" min="0" max="31536000" step="1" />
+                            <span class="form-text" data-loc="admin_buildSecondsHint"></span>
+                        </div>
+                        <div class="admin-data-field">
+                            <label class="form-label" for="admin-crafting-multiplier" data-loc="admin_costMultiplier"></label>
+                            <input class="form-control" id="admin-crafting-multiplier" type="number" min="0" max="100" step="0.1" value="1" required />
+                            <span class="form-text" data-loc="admin_costMultiplierHint"></span>
+                        </div>
+                        <div class="admin-data-field">
+                            <label class="form-label" for="admin-crafting-rush-cost" data-loc="admin_rushCost"></label>
+                            <select class="form-select" id="admin-crafting-rush-cost">
+                                <option value="stock" data-loc="admin_rushCostStock"></option>
+                                <option value="free" data-loc="admin_rushCostFree"></option>
+                                <option value="custom" data-loc="admin_rushCostCustom"></option>
+                            </select>
+                            <span class="form-text" data-loc="admin_rushCostHint"></span>
+                        </div>
+                        <div class="admin-data-field">
+                            <label class="form-label" for="admin-crafting-rush-platinum" data-loc="admin_rushCostPlatinum"></label>
+                            <input class="form-control" id="admin-crafting-rush-platinum" type="number" min="0" max="1000000" step="1" />
+                            <span class="form-text" data-loc="admin_rushCostPlatinumHint"></span>
+                        </div>
+                        <label class="admin-data-checkbox">
+                            <input class="form-check-input" id="admin-crafting-keep-blueprints" type="checkbox" />
+                            <span><strong data-loc="admin_keepBlueprints"></strong><small data-loc="admin_keepBlueprintsHint"></small></span>
+                        </label>
+                    </div>
+                    <div class="admin-data-form-footer">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i><span data-loc="admin_saveOverride"></span></button>
+                            <button class="btn btn-outline-secondary" id="admin-crafting-reset" type="button"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span data-loc="admin_resetCrafting"></span></button>
+                        </div>
+                        <div class="admin-crafting-effective alert alert-info d-none" id="admin-crafting-effective" aria-live="polite"></div>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        </div>
+        <div class="tab-pane fade" id="admin-data-pane-store" role="tabpanel" aria-labelledby="admin-data-tab-store" tabindex="0">
+        <section class="card admin-data-section" id="admin-store-overrides-section">
+            <header class="admin-data-section-header">
+                <span class="admin-data-section-icon admin-data-icon-store"><i class="bi bi-bag-check" aria-hidden="true"></i></span>
+                <div>
+                    <span class="admin-data-kicker" data-loc="admin_storeOverrides"></span>
+                    <h2 data-loc="admin_storeOverrides"></h2>
+                    <p data-loc="admin_storeOverridesDescription"></p>
+                </div>
+            </header>
+            <div class="card-body admin-data-section-body">
+                <form id="admin-store-form" class="admin-store-form">
+                    <div class="admin-store-field-main">
+                        <label class="form-label" for="admin-store-type" data-loc="admin_storeItem"></label>
+                        <input class="form-control" id="admin-store-type" required autocomplete="off" placeholder="/Lotus/Weapons/..." />
+                        <div class="form-text" id="admin-store-type-resolved" aria-live="polite"></div>
+                        <div class="form-text" data-loc="admin_storeItemHint"></div>
+                    </div>
+                    <div class="admin-store-form-columns">
+                        <fieldset class="admin-store-fieldset">
+                            <legend data-loc="admin_storeState"></legend>
+                            <div class="admin-store-switches">
+                                <label class="admin-data-checkbox"><input class="form-check-input" id="admin-store-enabled" type="checkbox" checked /><span data-loc="admin_overrideEnabled"></span></label>
+                                <label class="admin-data-checkbox"><input class="form-check-input" id="admin-store-listed" type="checkbox" checked /><span data-loc="admin_storeListed"></span></label>
+                                <label class="admin-data-checkbox"><input class="form-check-input" id="admin-store-purchasable" type="checkbox" checked /><span data-loc="admin_storePurchasable"></span></label>
+                            </div>
+                            <div class="admin-data-field mt-3">
+                                <label class="form-label" for="admin-store-category" data-loc="admin_storeCategory"></label>
+                                <select class="form-select" id="admin-store-category">
+                                    <option value="" data-loc="admin_storeCategoryAuto"></option>
+                                    <option value="NEW_PLAYER" data-loc="admin_storeCategoryNewPlayer"></option>
+                                    <option value="NEW" data-loc="admin_storeCategoryNew"></option>
+                                    <option value="POPULAR" data-loc="admin_storeCategoryPopular"></option>
+                                    <option value="SEASONAL" data-loc="admin_storeCategorySeasonal"></option>
+                                    <option value="COMMUNITY" data-loc="admin_storeCategoryCommunity"></option>
+                                    <option value="HEIRLOOM" data-loc="admin_storeCategoryHeirloom"></option>
+                                    <option value="TENNOGEN" data-loc="admin_storeCategoryTennoGen"></option>
+                                    <option value="SALE" data-loc="admin_storeCategorySale"></option>
+                                    <option value="WISH_LIST" data-loc="admin_storeCategoryWishlist"></option>
+                                    <option value="QUICK_BUY" data-loc="admin_storeCategoryQuickBuy"></option>
+                                </select>
+                            </div>
+                        </fieldset>
+                        <fieldset class="admin-store-fieldset">
+                            <legend data-loc="admin_storePricing"></legend>
+                            <div class="admin-store-price-grid">
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-discount" data-loc="admin_discountPercent"></label><input class="form-control" id="admin-store-discount" type="number" min="0" max="100" step="0.1" /></div>
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-premium" data-loc="admin_premiumPrice"></label><input class="form-control" id="admin-store-premium" type="number" min="0" step="1" /></div>
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-regular" data-loc="admin_regularPrice"></label><input class="form-control" id="admin-store-regular" type="number" min="0" step="1" /></div>
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-purchase-mode" data-loc="admin_storePurchaseMode"></label><select class="form-select" id="admin-store-purchase-mode"><option value="" data-loc="admin_storeGameDefault"></option><option value="platinum" data-loc="admin_storePlatinum"></option><option value="steam" data-loc="admin_storeSteam"></option></select></div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="admin-store-fieldset">
+                            <legend data-loc="admin_storeGiftingBonus"></legend>
+                            <div class="admin-data-field"><label class="form-label" for="admin-store-giftable" data-loc="admin_storeGiftable"></label><select class="form-select" id="admin-store-giftable"><option value="" data-loc="admin_storeGameDefault"></option><option value="true" data-loc="admin_storeGiftAllowed"></option><option value="false" data-loc="admin_storeGiftDenied"></option></select></div>
+                            <div class="admin-data-field mt-3"><label class="form-label" for="admin-store-gifting-bonus" data-loc="admin_storeGiftingBonus"></label><input class="form-control font-monospace" id="admin-store-gifting-bonus" type="text" /></div>
+                        </fieldset>
+                        <fieldset class="admin-store-fieldset">
+                            <legend data-loc="admin_storeFeatured"></legend>
+                            <div class="admin-store-flags-grid">
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-supporter" data-loc="admin_storeSupporterPack"></label><select class="form-select" id="admin-store-supporter"><option value="" data-loc="admin_storeGameDefault"></option><option value="true" data-loc="admin_storeEnabled"></option><option value="false" data-loc="admin_storeDisabled"></option></select></div>
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-featured" data-loc="admin_storeFeatured"></label><select class="form-select" id="admin-store-featured"><option value="" data-loc="admin_storeGameDefault"></option><option value="true" data-loc="admin_storeEnabled"></option><option value="false" data-loc="admin_storeDisabled"></option></select></div>
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-popular" data-loc="admin_storePopular"></label><select class="form-select" id="admin-store-popular"><option value="" data-loc="admin_storeGameDefault"></option><option value="true" data-loc="admin_storeEnabled"></option><option value="false" data-loc="admin_storeDisabled"></option></select></div>
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-banner-index" data-loc="admin_storeBannerIndex"></label><input class="form-control" id="admin-store-banner-index" type="number" min="0" step="1" /></div>
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-bogo-buy" data-loc="admin_storeBogoBuy"></label><input class="form-control" id="admin-store-bogo-buy" type="number" min="0" step="1" /></div>
+                                <div class="admin-data-field"><label class="form-label" for="admin-store-bogo-get" data-loc="admin_storeBogoGet"></label><input class="form-control" id="admin-store-bogo-get" type="number" min="0" step="1" /></div>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <fieldset class="admin-store-fieldset admin-store-schedule">
+                        <legend data-loc="admin_storeSchedule"></legend>
+                        <div class="admin-store-schedule-grid">
+                            <div class="admin-data-field"><label class="form-label" for="admin-store-start" data-loc="admin_promotionStartDate"></label><input class="form-control" id="admin-store-start" type="datetime-local" /></div>
+                            <div class="admin-data-field"><label class="form-label" for="admin-store-end" data-loc="admin_promotionEndDate"></label><input class="form-control" id="admin-store-end" type="datetime-local" /></div>
+                            <div class="admin-data-field"><label class="form-label" for="admin-store-product-expiry" data-loc="admin_productExpiryDate"></label><input class="form-control" id="admin-store-product-expiry" type="datetime-local" /></div>
+                            <div class="admin-data-field"><label class="form-label" for="admin-store-category-start" data-loc="admin_categoryStartDate"></label><input class="form-control" id="admin-store-category-start" type="datetime-local" /></div>
+                            <div class="admin-data-field"><label class="form-label" for="admin-store-category-end" data-loc="admin_categoryEndDate"></label><input class="form-control" id="admin-store-category-end" type="datetime-local" /></div>
+                        </div>
+                    </fieldset>
+                    <div class="admin-data-form-footer admin-store-form-footer">
+                        <span class="text-body-secondary" data-loc="admin_storeOverridesDescription"></span>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i><span data-loc="admin_saveOverride"></span></button>
+                            <button class="btn btn-outline-secondary" id="admin-store-reset" type="button"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span data-loc="admin_clearForm"></span></button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="admin-store-list-heading">
+                    <div><h3 data-loc="admin_storeOverrides"></h3><p data-loc="admin_storeOverridesDescription"></p></div>
+                    <div class="admin-store-list-filters">
+                        <input class="form-control" id="admin-store-override-search" type="search" data-loc-placeholder="admin_storePriceSearchPlaceholder" />
+                        <select class="form-select" id="admin-store-override-page-size" aria-label="Page size"><option value="25" selected>25</option><option value="50">50</option><option value="100">100</option></select>
+                    </div>
+                </div>
+                <div class="table-responsive admin-data-table-wrap">
+                    <table class="table table-hover align-middle admin-data-table">
+                        <thead><tr><th data-loc="admin_storeItem"></th><th data-loc="admin_storeState"></th><th data-loc="admin_storePricing"></th><th data-loc="admin_storeSchedule"></th><th data-loc="admin_actions"></th></tr></thead>
+                        <tbody id="admin-store-overrides"></tbody>
+                    </table>
+                </div>
+                <div class="admin-data-pagination"><span class="text-body-secondary" id="admin-store-override-page-status"></span><div class="btn-group" role="group"><button class="btn btn-outline-secondary" id="admin-store-override-previous" type="button" data-loc="admin_previousPage"></button><button class="btn btn-outline-secondary" id="admin-store-override-next" type="button" data-loc="admin_nextPage"></button></div></div>
+            </div>
+        </section>
+        </div>
+        </div>
+    </main>
+</div>

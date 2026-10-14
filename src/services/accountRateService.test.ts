@@ -3,8 +3,10 @@ import { after, before, test } from "node:test";
 import { config } from "./configService.ts";
 import {
     ACCOUNT_RATE_DEFINITIONS,
+    getDefaultAccountRateProfile,
     getAccountRateProfile,
     getEffectiveAccountRate,
+    normalizeLegacyAccountDropMultiplier,
     parseAccountRateProfile
 } from "./accountRateService.ts";
 
@@ -75,4 +77,18 @@ void test("save validation accepts supported rates and rejects malformed values"
         new Set(ACCOUNT_RATE_DEFINITIONS.map(definition => definition.key)).size,
         ACCOUNT_RATE_DEFINITIONS.length
     );
+});
+
+void test("rate defaults are sourced from the definitions and legacy values are normalized", () => {
+    const defaults = getDefaultAccountRateProfile();
+    for (const definition of ACCOUNT_RATE_DEFINITIONS) {
+        assert.equal(defaults[definition.key], definition.defaultValue);
+    }
+    assert.deepEqual(normalizeLegacyAccountDropMultiplier({ resourceMultiplier: 5000, modMultiplier: -2 }), {
+        resourceMultiplier: 1000,
+        modMultiplier: 0
+    });
+    assert.deepEqual(normalizeLegacyAccountDropMultiplier({ resourceMultiplier: "5", unknown: 3 }), {
+        resourceMultiplier: 1
+    });
 });

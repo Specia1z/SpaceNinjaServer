@@ -1,0 +1,153 @@
+<div class="player-presence-route" data-route="/webui/player-presence" data-title-tag="navbar_playerPresence">
+    <section class="player-presence-access d-none admin-hide" role="status">
+        <span class="player-presence-access-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+        <h1 data-loc="cheats_administratorRequirement"></h1>
+    </section>
+
+    <div class="d-none admin-show player-presence-page">
+        <header class="player-presence-hero">
+            <div class="player-presence-hero-copy">
+                <span class="player-presence-eyebrow" data-loc="navbar_playerPresence"></span>
+                <h1 data-loc="admin_playerPresence"></h1>
+                <p data-loc="admin_playerPresenceDescription"></p>
+            </div>
+            <div class="player-presence-hero-actions">
+                <div class="player-presence-live-indicator">
+                    <span class="player-presence-live-dot" aria-hidden="true"></span>
+                    <span data-loc="admin_playerPresenceLive"></span>
+                </div>
+                <span class="badge player-presence-summary" id="admin-presence-summary">
+                    <i class="bi bi-people-fill" aria-hidden="true"></i>
+                    <span id="admin-presence-summary-value">0 / 0</span>
+                </span>
+                <button class="btn btn-primary" id="admin-presence-refresh" type="button">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    <span data-loc="admin_refreshStatus"></span>
+                </button>
+            </div>
+        </header>
+
+        <section class="player-presence-stats" aria-live="polite">
+            <article class="card player-presence-stat-card player-presence-stat-online">
+                <span class="player-presence-stat-icon"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+                <div>
+                    <span class="player-presence-stat-label" data-loc="admin_playerPresenceActiveOnline"></span>
+                    <strong class="player-presence-stat-value" id="admin-presence-online">0</strong>
+                </div>
+            </article>
+            <article class="card player-presence-stat-card">
+                <span class="player-presence-stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                <div>
+                    <span class="player-presence-stat-label" data-loc="admin_playerPresenceTracked"></span>
+                    <strong class="player-presence-stat-value" id="admin-presence-total">0</strong>
+                </div>
+            </article>
+            <article class="card player-presence-stat-card">
+                <span class="player-presence-stat-icon"><i class="bi bi-controller" aria-hidden="true"></i></span>
+                <div>
+                    <span class="player-presence-stat-label" data-loc="admin_playerPresenceInMission"></span>
+                    <strong class="player-presence-stat-value" id="admin-presence-mission">0</strong>
+                </div>
+            </article>
+            <article class="card player-presence-stat-card">
+                <span class="player-presence-stat-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                <div>
+                    <span class="player-presence-stat-label" data-loc="admin_playerPresenceInSession"></span>
+                    <strong class="player-presence-stat-value" id="admin-presence-sessions">0</strong>
+                </div>
+            </article>
+        </section>
+
+        <section class="card player-presence-panel player-presence-directory-panel">
+            <header class="player-presence-panel-header">
+                <div class="player-presence-panel-heading">
+                    <span class="player-presence-panel-icon"><i class="bi bi-person-lines-fill" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 data-loc="admin_playerPresenceDirectory"></h2>
+                        <p data-loc="admin_playerPresenceDirectoryDescription"></p>
+                    </div>
+                </div>
+                <span class="player-presence-filter-summary" id="admin-presence-filter-summary">0 / 0</span>
+            </header>
+
+            <div class="player-presence-toolbar">
+                <div class="player-presence-search">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <label class="visually-hidden" for="admin-presence-search" data-loc="admin_playerPresenceSearch"></label>
+                    <input class="form-control" id="admin-presence-search" type="search" data-loc-placeholder="admin_playerPresenceSearch" autocomplete="off" />
+                </div>
+                <div class="player-presence-state-filter">
+                    <i class="bi bi-funnel" aria-hidden="true"></i>
+                    <label class="visually-hidden" for="admin-presence-state" data-loc="admin_playerPresenceState"></label>
+                    <select class="form-select" id="admin-presence-state">
+                        <option value="" data-loc="admin_playerPresenceAllStates"></option>
+                        <option value="online" data-loc="admin_playerPresenceOnline"></option>
+                        <option value="mission" data-loc="admin_playerPresenceMission"></option>
+                        <option value="lobby" data-loc="admin_playerPresenceLobby"></option>
+                        <option value="offline" data-loc="admin_playerPresenceOffline"></option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-responsive player-presence-table-wrap">
+                <table class="table table-hover align-middle player-presence-table">
+                    <thead>
+                        <tr>
+                            <th data-loc="admin_account"></th>
+                            <th data-loc="admin_playerPresenceState"></th>
+                            <th data-loc="admin_playerPresenceLocation"></th>
+                            <th data-loc="admin_playerPresenceSession"></th>
+                            <th data-loc="admin_playerPresenceMission"></th>
+                            <th data-loc="admin_playerPresenceClient"></th>
+                            <th data-loc="admin_playerPresenceLastSeen"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-presence-players"></tbody>
+                </table>
+            </div>
+            <div class="player-presence-empty d-none" id="admin-presence-empty">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <span data-loc="admin_playerPresenceEmpty"></span>
+            </div>
+        </section>
+
+        <section class="card player-presence-panel player-presence-history-panel" id="admin-presence-history-panel">
+            <header class="player-presence-panel-header">
+                <div class="player-presence-panel-heading">
+                    <span class="player-presence-panel-icon player-presence-history-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>
+                            <span data-loc="admin_playerPresenceHistory"></span>
+                            <span class="player-presence-history-name" id="admin-presence-history-name"></span>
+                        </h2>
+                        <p data-loc="admin_playerPresenceSelectHint"></p>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" id="admin-presence-clear-history" type="button" disabled>
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    <span data-loc="admin_playerPresenceClearSelection"></span>
+                </button>
+            </header>
+            <div class="table-responsive player-presence-table-wrap">
+                <table class="table table-hover align-middle player-presence-table player-presence-history-table">
+                    <thead>
+                        <tr>
+                            <th data-loc="admin_playerPresenceTime"></th>
+                            <th data-loc="admin_playerPresenceEvent"></th>
+                            <th data-loc="admin_playerPresenceLocation"></th>
+                            <th data-loc="admin_playerPresenceMission"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-presence-history"></tbody>
+                </table>
+            </div>
+            <div class="player-presence-empty d-none" id="admin-presence-history-empty">
+                <i class="bi bi-clock" aria-hidden="true"></i>
+                <span data-loc="admin_playerPresenceNoHistory"></span>
+            </div>
+        </section>
+
+        <div class="alert alert-danger d-none player-presence-error" id="admin-presence-error" role="alert"></div>
+        <p class="player-presence-refresh-time" id="admin-presence-refresh-time"></p>
+    </div>
+</div>

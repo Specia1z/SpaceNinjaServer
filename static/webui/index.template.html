@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <title>PlayWF WebUI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/webui/libs/bootstrap.min.css" />
+    <link rel="stylesheet" href="/webui/libs/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="/webui/style.css" />
+    <link rel="stylesheet" href="/webui/components/bootstrap-ui.css" />
+    <link rel="stylesheet" href="/webui/inventory/page.css" />
+    <link rel="stylesheet" href="/webui/details/page.css" />
+    <link rel="stylesheet" href="/webui/mods/page.css" />
+    <link rel="stylesheet" href="/webui/cheats/page.css" />
+    <link rel="stylesheet" href="/webui/import/page.css" />
+    <link rel="stylesheet" href="/webui/guild/page.css" />
+    <link rel="stylesheet" href="/webui/admin/users-page.css" />
+    <link rel="stylesheet" href="/webui/admin/admin-data-page.css" />
+    <link rel="stylesheet" href="/webui/admin/store-price-page.css" />
+    <link rel="stylesheet" href="/webui/admin/redeem-codes-page.css" />
+    <link rel="stylesheet" href="/webui/admin/suspicion-page.css" />
+    <link rel="stylesheet" href="/webui/admin/reward-stats-page.css" />
+    <link rel="stylesheet" href="/webui/account-rates/page.css" />
+    <link rel="stylesheet" href="/webui/admin/player-presence-page.css" />
+    <link rel="stylesheet" href="/webui/admin/metadata-patches-page.css" />
+    <link rel="stylesheet" href="/webui/admin/world-activities-page.css" />
+    <link rel="stylesheet" href="/webui/world-state/page.css" />
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg sticky-top bg-body-tertiary">
+        <div class="container">
+            <button class="navbar-toggler d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Toggle sidebar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand">PlayWF WebUI</a>
+            <div class="ms-auto nav-item dropdown">
+                <button id="active-lang-name" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item active" href="#" data-lang="en" onclick="event.preventDefault();setLanguage('en');">English</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="de" onclick="event.preventDefault();setLanguage('de');">Deutsch</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="es" onclick="event.preventDefault();setLanguage('es');">Español</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="fr" onclick="event.preventDefault();setLanguage('fr');">Français</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="it" onclick="event.preventDefault();setLanguage('it');">Italiano</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="ja" onclick="event.preventDefault();setLanguage('ja');">日本語</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="ko" onclick="event.preventDefault();setLanguage('ko');">한국어</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="pl" onclick="event.preventDefault();setLanguage('pl');">Polski</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="pt" onclick="event.preventDefault();setLanguage('pt');">Português</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="ru" onclick="event.preventDefault();setLanguage('ru');">Русский</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="tr" onclick="event.preventDefault();setLanguage('tr');">Türkçe</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="uk" onclick="event.preventDefault();setLanguage('uk');">Українська</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="zh" onclick="event.preventDefault();setLanguage('zh');">简体中文</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="tc" onclick="event.preventDefault();setLanguage('tc');">繁體中文</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="th" onclick="event.preventDefault();setLanguage('th');">แบบไทย</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item active" href="#" data-loc="theme_dark" data-theme="dark" onclick="event.preventDefault();setTheme('dark');"></a></li>
+                    <li><a class="dropdown-item" href="#" data-loc="theme_light" data-theme="light" onclick="event.preventDefault();setTheme('light');"></a></li>
+                </ul>
+            </div>
+            <div class="nav-item dropdown user-dropdown">
+                <button class="nav-link dropdown-toggle displayname" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault();doLogout();" data-loc="navbar_logout"></a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault();changeAccountPassword();" data-loc="navbar_changePassword"></a></li>
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault();changeAccountEmail();" data-loc="navbar_changeEmail"></a></li>
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault();renameAccount();" data-loc="navbar_renameAccount"></a></li>
+                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault();deleteAccount();" data-loc="navbar_deleteAccount"></a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container pt-3 pb-3" id="main-view">
+        <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="sidebarLabel">PlayWF WebUI</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <div class="navbar p-0">
+                    <ul class="navbar-nav justify-content-end">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/inventory" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_inventory"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/mods" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_mods"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/cheats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_cheats"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/import" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_import"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/clan" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_guildView"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/users" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="admin_users"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/admin-data" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_adminData"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/store-prices" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_storePrices"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/redeem-codes" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_redeemCodes"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/anti-cheat" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_antiCheat"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/account-rates" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_accountRates"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/reward-stats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_rewardStats"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/player-presence" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_playerPresence"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/metadata-patches" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_metadataPatches"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/bootstrapper-version" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_bootstrapperVersion"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/client-config" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Client Configuration</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/world-activities" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_worldActivities"></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/webui/world-state" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="worldState"></a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="main-content" class="w-100">
+            <!-- WEBUI_ROUTES -->
+        </div>
+        <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+    </div>
+    <datalist id="datalist-Suits"></datalist>
+    <datalist id="datalist-SpaceSuits"></datalist>
+    <datalist id="datalist-LongGuns"></datalist>
+    <datalist id="datalist-Pistols"></datalist>
+    <datalist id="datalist-Melee"></datalist>
+    <datalist id="datalist-SpaceGuns"></datalist>
+    <datalist id="datalist-SpaceMelee"></datalist>
+    <datalist id="datalist-SentinelWeapons"></datalist>
+    <datalist id="datalist-Sentinels"></datalist>
+    <datalist id="datalist-MechSuits"></datalist>
+    <datalist id="datalist-MoaPets"></datalist>
+    <datalist id="datalist-KubrowPets"></datalist>
+    <datalist id="datalist-QuestKeys"></datalist>
+    <!-- WEBUI_INVENTORY_DATALISTS --><datalist id="datalist-usernames"></datalist>
+    <script src="/webui/libs/bootstrap.bundle.min.js"></script>
+    <script src="/webui/libs/chart.umd.min.js"></script>
+    <script src="/webui/libs/jquery-3.6.0.min.js"></script>
+    <script src="/webui/libs/whirlpool-js.min.js"></script>
+    <script src="/webui/libs/single.js"></script>
+    <script src="/webui/riven-tool/RivenParser.js"></script>
+    <script src="/webui/config.js"></script>
+    <script src="/webui/components/bootstrap-ui.js"></script>
+    <script src="/webui/inventory/api.js"></script>
+    <script src="/webui/inventory/acquire.js"></script>
+    <script src="/webui/inventory/utility-actions.js"></script>
+    <script src="/webui/admin/metadata-text.js"></script>
+    <script src="/webui/script.js"></script>
+    <script src="/webui/import/samples.js"></script>
+    <script src="/webui/import/page.js"></script>
+    <script src="/webui/details/page.js"></script>
+    <script src="/webui/mods/actions.js"></script>
+    <script src="/webui/mods/page.js"></script>
+    <script src="/webui/inventory/page.js"></script>
+    <script src="/webui/cheats/page.js"></script>
+    <script src="/webui/admin/config-api.js"></script>
+    <script src="/webui/world-state/page.js"></script>
+    <script src="/webui/admin/metadata-api.js"></script>
+    <script src="/webui/admin/metadata-page.js"></script>
+    <script src="/webui/admin/bootstrapper-version-page.js"></script>
+    <script src="/webui/admin/client-config-page.js"></script>
+    <script src="/webui/admin/world-activities-page.js"></script>
+    <script src="/webui/admin/admin-data-api.js"></script>
+    <script src="/webui/admin/item-catalog.js"></script>
+    <script src="/webui/admin/admin-data-page.js"></script>
+    <script src="/webui/admin/store-price-api.js"></script>
+    <script src="/webui/admin/store-price-page.js"></script>
+    <script src="/webui/admin/redeem-codes-api.js"></script>
+    <script src="/webui/admin/redeem-codes-page.js"></script>
+    <script src="/webui/guild/api.js"></script>
+    <script src="/webui/guild/page.js"></script>
+    <script src="/webui/currency/api.js"></script>
+    <script src="/webui/currency/page.js"></script>
+    <script src="/webui/account-rates/api.js"></script>
+    <script src="/webui/account-rates/page.js"></script>
+    <script src="/webui/admin/suspicion-api.js"></script>
+    <script src="/webui/admin/users-api.js"></script>
+    <script src="/webui/admin/users-page.js"></script>
+    <script src="/webui/admin/suspicion-page.js"></script>
+    <script src="/webui/admin/player-presence-api.js"></script>
+    <script src="/webui/admin/player-presence-page.js"></script>
+    <script src="/webui/admin/reward-stats-api.js"></script>
+    <script src="/webui/admin/reward-stats-page.js"></script>
+    <script>
+        setTimeout(function() {
+            if (location.protocol == "file:") {
+                document.write("You can access the WebUI via http://localhost/ when SpaceNinjaServer is running.");
+            }
+        }, 1);
+    </script>
+</body>
+</html>

@@ -47,7 +47,8 @@ const { Inventory } = await import("../build/src/models/inventoryModels/inventor
 const { Session } = await import("../build/src/models/sessionModel.js");
 const { missionInventoryUpdateController } =
     await import("../build/src/controllers/api/missionInventoryUpdateController.js");
-const { verifyRewardSeed } = await import("../build/src/services/antiCheatService.js");
+const { clampMissionCompletes, getAntiCheatResponseMode, verifyRewardSeed } =
+    await import("../build/src/services/antiCheatService.js");
 const { SuspicionEvent } = await import("../build/src/models/suspicionEventModel.js");
 const {
     clearSuspicionEventsController,
@@ -234,11 +235,14 @@ const waitForEvents = async (accountId, expected) => {
 
 const antiCheatConfig = {
     enabled: true,
+    responseMode: "observe",
     enforce: false,
     minMissionTimeSec: 20,
     maxMissionCompletesPerReport: 10,
     maxXpPerMissionSecond: 100000,
-    maxClientItemCountPerReport: 10000
+    maxClientItemCountPerReport: 10000,
+    maxClientInventoryEntriesPerReport: 250,
+    maxClientCreditsPerReport: 10000000
 };
 const setConfig = patch => {
     config.antiCheat = { ...antiCheatConfig, ...patch };
@@ -263,7 +267,17 @@ drainWarnings();
     assert(flagged.length === 0, `enabled=false suppresses all checks (got ${flagged.length})`);
 }
 
-STEP("reward seed mismatch is detected (enforce off keeps the settlement intact)");
+STEP("legacy enforce remains supported when responseMode is absent");
+{
+    config.antiCheat = { ...antiCheatConfig, enforce: true };
+    delete config.antiCheat.responseMode;
+    assert(getAntiCheatResponseMode() === "reject", "legacy enforce=true maps to reject mode");
+    config.antiCheat.enforce = false;
+    assert(getAntiCheatResponseMode() === "observe", "legacy enforce=false maps to observe mode");
+    setConfig({});
+}
+
+STEP("reward seed mismatch is detected (observe mode keeps the settlement intact)");
 setConfig({});
 drainWarnings();
 {
@@ -274,12 +288,12 @@ drainWarnings();
     assert(flagged[0].message === "[anti-cheat] rewardSeedMismatch", `kind is rewardSeedMismatch`);
     assert(flagged[0].metadata.sessionSeed === SESSION_SEED, `metadata carries the session seed`);
     assert(flagged[0].metadata.reported === TAMPERED_SEED, `metadata carries the reported seed`);
-    assert(Array.isArray(payload.MissionRewards), "rewards are still granted when enforce is off");
+    assert(Array.isArray(payload.MissionRewards), "rewards are still granted in observe mode");
     assert(rewardPathRan, "the settlement still went through the normal reward path");
 }
 
-STEP("reward seed mismatch with enforce on rewrites the report back to the server-issued seed");
-setConfig({ enforce: true });
+STEP("sanitize mode corrects a mismatched reward seed to the server-issued seed");
+setConfig({ responseMode: "sanitize" });
 drainWarnings();
 {
     // The controller parses the body internally, so drive the check on an already-parsed report to
@@ -320,7 +334,7 @@ drainWarnings();
     assert(rewardPathRan, "the settlement went through the normal reward path");
 }
 
-STEP("impossible mission time is detected (enforce off keeps the settlement intact)");
+STEP("impossible mission time is detected (observe mode keeps the settlement intact)");
 setConfig({});
 drainWarnings();
 {
@@ -330,12 +344,40 @@ drainWarnings();
     assert(flagged.length === 1, `exactly one warning (got ${flagged.length})`);
     assert(flagged[0].message === "[anti-cheat] impossibleMissionTime", "kind is impossibleMissionTime");
     assert(flagged[0].metadata.missionTime === 9, "metadata carries the reported mission time");
-    assert(Array.isArray(payload.MissionRewards), "rewards are still granted when enforce is off");
+    assert(Array.isArray(payload.MissionRewards), "rewards are still granted in observe mode");
     assert(rewardPathRan, "the settlement still went through the normal reward path");
 }
 
-STEP("enforce on rejects the whole report, including client-supplied credits");
-setConfig({ enforce: true });
+STEP("sanitize mode fails an impossible-time report without applying client updates");
+setConfig({ responseMode: "sanitize" });
+await Inventory.updateOne(
+    { accountOwnerId: account._id },
+    { $set: { RegularCredits: 0, MiscItems: [], Missions: [], CompletedSorties: [] } }
+);
+drainWarnings();
+{
+    const payload = await callController(
+        buildReportText({
+            MissionTime: 9,
+            AliveTime: 9,
+            RegularCredits: 5000,
+            MiscItems: [{ ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 5 }],
+            SortieId: "anti-cheat-test-sortie"
+        })
+    );
+    const flagged = drainAntiCheatWarnings();
+    assert(flagged.length === 1, `the time check was recorded once (got ${flagged.length})`);
+    assert(flagged[0].metadata.response === "sanitized", "the event reports the sanitize response");
+    assert(payload.MissionRewards.length === 0, "the failed settlement grants no mission rewards");
+    const after = await readInventory();
+    assert(after.RegularCredits === 0, "client credits were not applied");
+    assert(after.MiscItems.length === 0, "client inventory updates were not applied");
+    assert(after.Missions.length === 0, "mission completion updates were not applied");
+    assert(!after.CompletedSorties.includes("anti-cheat-test-sortie"), "secondary sortie progress was not applied");
+}
+
+STEP("reject mode rejects the whole report, including client-supplied credits");
+setConfig({ responseMode: "reject" });
 await Inventory.updateOne({ accountOwnerId: account._id }, { $set: { RegularCredits: 0 } });
 drainWarnings();
 {
@@ -362,8 +404,23 @@ drainWarnings();
     assert(flagged[0].metadata.reason === "aliveTimeExceedsMissionTime", "reason identifies the inconsistency");
 }
 
-STEP("excessive mission completes are clamped even when enforce is off");
-setConfig({});
+STEP("observe mode records excessive mission completes without modifying the report");
+setConfig({ responseMode: "observe" });
+drainWarnings();
+{
+    const report = JSONParse(buildReportText({ Missions: { Tag: "SolNode1", Completes: 9999, Tier: 0 } }));
+    const ok = clampMissionCompletes(account, report, {
+        requestId: "SNS-observe-completes",
+        buildLabel: account.BuildLabel
+    });
+    const flagged = drainAntiCheatWarnings();
+    assert(ok === false, "the check reports excessive mission completes");
+    assert(report.Missions.Completes === 9999, "observe mode leaves the reported completion count unchanged");
+    assert(flagged[0].metadata.response === "observed", "the event is marked observed");
+}
+
+STEP("sanitize mode clamps excessive mission completes");
+setConfig({ responseMode: "sanitize" });
 await Inventory.updateOne({ accountOwnerId: account._id }, { $set: { Missions: [] } });
 drainWarnings();
 {
@@ -375,6 +432,23 @@ drainWarnings();
     const entry = inventory.Missions.find(m => m.Tag === "SolNode1");
     assert(entry != undefined, "the mission entry was recorded");
     assert(entry.Completes === 10, `completes clamped to the configured cap (got ${entry.Completes})`);
+}
+
+STEP("reject mode discards a report with excessive mission completes");
+setConfig({ responseMode: "reject" });
+await Inventory.updateOne({ accountOwnerId: account._id }, { $set: { Missions: [] } });
+drainWarnings();
+{
+    const payload = await callController(buildReportText({ Missions: { Tag: "SolNode1", Completes: 9999, Tier: 0 } }));
+    const flagged = drainAntiCheatWarnings();
+    assert(flagged.length === 2, `one detection warning and one rejection summary (got ${flagged.length})`);
+    assert(
+        flagged.some(entry => entry.message.includes("settlementRejected")),
+        "the rejecting path ran"
+    );
+    assert(payload.MissionRewards.length === 0, "no mission rewards were granted");
+    const inventory = await readInventory();
+    assert(!inventory.Missions.some(mission => mission.Tag === "SolNode1"), "the reported completion was not stored");
 }
 
 STEP("excessive xp rate is detected");
@@ -395,8 +469,8 @@ drainWarnings();
     assert(flagged[0].metadata.xpPerSecond === 3_333_333, `xp/s derived from mission time`);
 }
 
-STEP("enforce on rejects excessive xp before it reaches inventory");
-setConfig({ enforce: true });
+STEP("reject mode blocks excessive xp before it reaches inventory");
+setConfig({ responseMode: "reject" });
 await Inventory.updateOne(
     { accountOwnerId: account._id },
     {
@@ -424,12 +498,9 @@ drainWarnings();
     assert(after.XPInfo[0].XP === 0, `reported XPInfo was discarded (got ${after.XPInfo[0].XP})`);
 }
 
-STEP("enforce on rejects an oversized client item delta");
-setConfig({ enforce: true });
-await Inventory.updateOne(
-    { accountOwnerId: account._id },
-    { $set: { MiscItems: [], RegularCredits: 0 } }
-);
+STEP("reject mode blocks an oversized client item delta");
+setConfig({ responseMode: "reject" });
+await Inventory.updateOne({ accountOwnerId: account._id }, { $set: { MiscItems: [], RegularCredits: 0 } });
 drainWarnings();
 {
     const payload = await callController(
@@ -444,6 +515,28 @@ drainWarnings();
     const after = await readInventory();
     assert(after.MiscItems.length === 0, "the oversized client item delta was discarded");
     assert(after.RegularCredits === 0, "client credits were discarded with the report");
+}
+
+STEP("sanitize mode caps client inventory and credits deltas");
+setConfig({ responseMode: "sanitize" });
+await Inventory.updateOne({ accountOwnerId: account._id }, { $set: { MiscItems: [], RegularCredits: 0 } });
+drainWarnings();
+{
+    await callController(
+        buildReportText({
+            MissionFailed: true,
+            MissionStatus: "GS_FAILURE",
+            MiscItems: [{ ItemType: "/Lotus/Types/Items/MiscItems/Ferrite", ItemCount: 999_999 }],
+            RegularCredits: 20_000_000
+        })
+    );
+    const flagged = drainAntiCheatWarnings();
+    assert(flagged.length === 1, `the combined inventory-cap event was recorded (got ${flagged.length} warnings)`);
+    assert(flagged[0].metadata.response === "sanitized", "the cap event reports sanitized response");
+    const after = await readInventory();
+    const ferrite = after.MiscItems.find(item => item.ItemType === "/Lotus/Types/Items/MiscItems/Ferrite");
+    assert(ferrite?.ItemCount === 10000, `the inventory delta was capped at 10000 (got ${ferrite?.ItemCount})`);
+    assert(after.RegularCredits === 10000000, `the client credits delta was capped (got ${after.RegularCredits})`);
 }
 
 STEP("the inventory seed still gives a verdict when the session is gone");
@@ -484,6 +577,8 @@ drainWarnings();
     );
     const seedEvent = events.find(event => event.Kind == "rewardSeedMismatch");
     assert(seedEvent.DisplayName == account.DisplayName, "the event carries the display name");
+    assert(seedEvent.RiskScore === 60, "the event stores its rule risk score");
+    assert(seedEvent.Response === "observed", "the event stores the observe-mode response");
     assert(seedEvent.Details.reported == TAMPERED_SEED, "the reported seed is kept as evidence");
     assert(seedEvent.Details.sessionSeed == SESSION_SEED, "the session seed is kept as evidence");
     assert(seedEvent.Details.inventorySeed != undefined, "the inventory seed is kept as evidence");
@@ -517,6 +612,8 @@ STEP("the panel aggregates events per account");
     );
     assert(entry.Total == 3, `three events counted (got ${entry.Total})`);
     assert(entry.Counts.rewardSeedMismatch == 1, "per-kind counts are reported");
+    assert(entry.RiskScore === 100, "the account risk score combines recent evidence and is capped at 100");
+    assert(entry.LastResponse === "observed", "the account summary carries its latest response mode result");
     assert(entry.Banned == false, "the account is not banned yet");
     assert(payload.TotalEvents == 3, `the summary total matches (got ${payload.TotalEvents})`);
 }
@@ -575,7 +672,7 @@ STEP("clearing removes the recorded events");
 
 STEP("the anti-cheat settings round-trip through the config controllers");
 {
-    // The panel's six controls are addressed by config path, exactly like the existing cheats page.
+    // The panel controls are addressed by config path, exactly like the existing cheats page.
     // configPath is the throwaway copy this script redirected the run to.
     assert(
         configPath.replaceAll("\\", "/").endsWith(VERIFY_CONFIG),
@@ -583,15 +680,20 @@ STEP("the anti-cheat settings round-trip through the config controllers");
     );
     const ids = [
         "antiCheat.enabled",
-        "antiCheat.enforce",
+        "antiCheat.responseMode",
         "antiCheat.minMissionTimeSec",
         "antiCheat.maxMissionCompletesPerReport",
         "antiCheat.maxXpPerMissionSecond",
-        "antiCheat.maxClientItemCountPerReport"
+        "antiCheat.maxClientItemCountPerReport",
+        "antiCheat.maxClientInventoryEntriesPerReport",
+        "antiCheat.maxClientCreditsPerReport"
     ];
     const before = await callPanel(getConfigController, { body: ids });
     assert(before["antiCheat.enabled"] === true, `enabled reads back (got ${before["antiCheat.enabled"]})`);
-    assert(before["antiCheat.enforce"] === false, `enforce reads back (got ${before["antiCheat.enforce"]})`);
+    assert(
+        before["antiCheat.responseMode"] === "observe",
+        `responseMode reads back (got ${before["antiCheat.responseMode"]})`
+    );
     assert(
         before["antiCheat.minMissionTimeSec"] === 20,
         `minMissionTimeSec reads back (got ${before["antiCheat.minMissionTimeSec"]})`
@@ -608,19 +710,37 @@ STEP("the anti-cheat settings round-trip through the config controllers");
         before["antiCheat.maxClientItemCountPerReport"] === 10000,
         `maxClientItemCountPerReport reads back (got ${before["antiCheat.maxClientItemCountPerReport"]})`
     );
+    assert(
+        before["antiCheat.maxClientInventoryEntriesPerReport"] === 250,
+        `maxClientInventoryEntriesPerReport reads back (got ${before["antiCheat.maxClientInventoryEntriesPerReport"]})`
+    );
+    assert(
+        before["antiCheat.maxClientCreditsPerReport"] === 10000000,
+        `maxClientCreditsPerReport reads back (got ${before["antiCheat.maxClientCreditsPerReport"]})`
+    );
 
     await callPanel(setConfigController, {
-        body: { "antiCheat.minMissionTimeSec": 45, "antiCheat.enforce": true }
+        body: {
+            "antiCheat.minMissionTimeSec": 45,
+            "antiCheat.responseMode": "sanitize",
+            "antiCheat.maxClientInventoryEntriesPerReport": 75,
+            "antiCheat.maxClientCreditsPerReport": 500000
+        }
     });
     assert(config.antiCheat.minMissionTimeSec === 45, "the number reaches the live config");
-    assert(config.antiCheat.enforce === true, "the checkbox reaches the live config");
+    assert(config.antiCheat.responseMode === "sanitize", "the response mode reaches the live config");
+    assert(
+        config.antiCheat.maxClientInventoryEntriesPerReport === 75,
+        "the inventory-entry cap reaches the live config"
+    );
+    assert(config.antiCheat.maxClientCreditsPerReport === 500000, "the credits cap reaches the live config");
 
     const after = await callPanel(getConfigController, { body: ids });
     assert(
         after["antiCheat.minMissionTimeSec"] === 45,
         `the written number reads back (got ${after["antiCheat.minMissionTimeSec"]})`
     );
-    assert(after["antiCheat.enforce"] === true, "the written checkbox reads back");
+    assert(after["antiCheat.responseMode"] === "sanitize", "the written response mode reads back");
     assert(
         fs.readFileSync(configPath, "utf8").includes('"minMissionTimeSec": 45'),
         "the value was persisted to the config file"
@@ -628,7 +748,12 @@ STEP("the anti-cheat settings round-trip through the config controllers");
 
     // Put the live config back so the remaining steps run against the documented defaults.
     await callPanel(setConfigController, {
-        body: { "antiCheat.minMissionTimeSec": 20, "antiCheat.enforce": false }
+        body: {
+            "antiCheat.minMissionTimeSec": 20,
+            "antiCheat.responseMode": "observe",
+            "antiCheat.maxClientInventoryEntriesPerReport": 250,
+            "antiCheat.maxClientCreditsPerReport": 10000000
+        }
     });
     setConfig({});
 }
@@ -648,13 +773,15 @@ STEP("every config control in the page markup resolves on the server");
         ids.sort().join(",") ===
             [
                 "antiCheat.enabled",
-                "antiCheat.enforce",
+                "antiCheat.maxClientCreditsPerReport",
+                "antiCheat.maxClientInventoryEntriesPerReport",
                 "antiCheat.maxClientItemCountPerReport",
                 "antiCheat.maxMissionCompletesPerReport",
                 "antiCheat.maxXpPerMissionSecond",
-                "antiCheat.minMissionTimeSec"
+                "antiCheat.minMissionTimeSec",
+                "antiCheat.responseMode"
             ].join(","),
-        `the page exposes exactly the six documented controls (got ${ids.join(", ")})`
+        `the page exposes exactly the eight documented controls (got ${ids.join(", ")})`
     );
     assert(page.includes('class="config-form"'), "the controls live inside a .config-form container");
 

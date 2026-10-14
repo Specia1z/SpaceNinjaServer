@@ -1,0 +1,60 @@
+.webui-confirm-modal .modal-content {
+    background: var(--bs-body-bg);
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 16%, var(--bs-border-color));
+    border-radius: 1rem;
+    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 28%);
+    overflow: hidden;
+}
+
+.webui-confirm-modal .modal-header {
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.25rem 1.25rem 0;
+}
+
+.webui-confirm-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-danger) 12%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-danger) 22%, var(--bs-border-color));
+    border-radius: 0.8rem;
+    color: var(--bs-danger);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 2.65rem;
+    justify-content: center;
+    width: 2.65rem;
+}
+
+.webui-confirm-icon i {
+    font-size: 1.15rem;
+}
+
+.webui-confirm-modal .modal-title {
+    font-weight: 650;
+    letter-spacing: -0.02em;
+}
+
+.webui-confirm-modal .modal-body {
+    color: var(--bs-secondary-color);
+    line-height: 1.65;
+    padding-inline: 1.25rem;
+}
+
+.webui-confirm-message {
+    white-space: pre-line;
+}
+
+.webui-confirm-modal .modal-footer {
+    gap: 0.6rem;
+    padding: 0 1.25rem 1.25rem;
+}
+
+.webui-confirm-modal .modal-footer .btn {
+    border-radius: 0.7rem;
+    min-width: 6rem;
+}
+
+.modal-backdrop.show {
+    backdrop-filter: blur(4px);
+    opacity: 0.64;
+}

@@ -1,0 +1,185 @@
+#detailedView-route.route-visible {
+    --details-gap: 1rem;
+    display: grid;
+    gap: var(--details-gap);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    margin-inline: auto;
+    max-width: 96rem;
+}
+
+#detailedView-route > .details-hero {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 86% 12%, color-mix(in srgb, var(--bs-primary) 22%, transparent), transparent 38%),
+        linear-gradient(130deg, color-mix(in srgb, var(--bs-primary) 8%, var(--bs-tertiary-bg)), var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 17%, var(--bs-border-color));
+    border-radius: 1.1rem;
+    box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+    min-height: 9rem;
+    overflow: hidden;
+    padding: clamp(1.25rem, 3vw, 2.25rem);
+    position: relative;
+}
+
+.details-hero-copy {
+    max-width: 56rem;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.details-eyebrow {
+    color: var(--bs-primary);
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+}
+
+.details-title,
+.details-loading {
+    font-size: clamp(1.7rem, 3.5vw, 2.5rem);
+    font-weight: 750;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.details-subtitle {
+    line-height: 1.5;
+    margin: 0.45rem 0 0;
+}
+
+.details-hero-mark {
+    align-items: center;
+    color: color-mix(in srgb, var(--bs-primary) 52%, transparent);
+    display: flex;
+    flex: 0 0 auto;
+    font-size: clamp(4rem, 9vw, 7rem);
+    justify-content: center;
+    line-height: 1;
+    margin-inline: 2rem 1rem;
+    opacity: 0.72;
+    transform: rotate(-8deg);
+}
+
+#detailedView-route > .card {
+    border-color: var(--bs-border-color);
+    border-radius: 0.9rem;
+    box-shadow: 0 0.65rem 1.8rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    grid-column: span 6;
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+}
+
+#detailedView-route > #loadout-card,
+#detailedView-route > #equipmentFeatures-card,
+#detailedView-route > #u5ModEdit-card {
+    grid-column: 1 / -1;
+}
+
+#detailedView-route > .card > .card-header {
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 78%, transparent);
+    border-bottom-color: var(--bs-border-color);
+    padding: 0.85rem 1rem;
+}
+
+#detailedView-route > .card > .card-body {
+    min-width: 0;
+    padding: clamp(0.85rem, 2vw, 1.25rem);
+}
+
+#detailedView-route #loadoutTabs {
+    border-bottom-color: var(--bs-border-color);
+    gap: 0.35rem;
+}
+
+#detailedView-route #loadoutTabs .nav-link {
+    border-radius: 0.6rem 0.6rem 0 0;
+    color: var(--bs-secondary-color);
+    font-weight: 600;
+    padding: 0.7rem 1rem;
+}
+
+#detailedView-route #loadoutTabs .nav-link.active {
+    background: var(--bs-body-bg);
+    border-color: var(--bs-border-color) var(--bs-border-color) var(--bs-body-bg);
+    color: var(--bs-primary);
+}
+
+#detailedView-route #archon-crystal-add-count,
+#detailedView-route #valenceBonus-procent,
+#detailedView-route #u5ModEdit-reqLevel {
+    max-width: 100px;
+}
+
+#detailedView-route #modularParts-form {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+}
+
+#detailedView-route #modularParts-form > .form-control {
+    min-width: 0;
+}
+
+#detailedView-route #u5ModEdit-upgradeFields .input-group {
+    flex-basis: 200px;
+}
+
+#detailedView-route #u5ModEdit-upgradeFields .upgrade-group {
+    flex-wrap: wrap;
+}
+
+#detailedView-route #equipmentFeaturesButtons-card {
+    align-content: start;
+}
+
+@media (max-width: 767.98px) {
+    #detailedView-route {
+        --details-gap: 0.8rem;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #detailedView-route > .card,
+    #detailedView-route > #loadout-card,
+    #detailedView-route > #equipmentFeatures-card,
+    #detailedView-route > #u5ModEdit-card {
+        grid-column: 1;
+    }
+
+    .details-hero-mark {
+        font-size: 3.5rem;
+        margin-inline: 0 0.25rem;
+    }
+
+    #detailedView-route #u5ModEdit-card form > .d-flex {
+        flex-wrap: wrap;
+    }
+
+    #detailedView-route #u5ModEdit-upgradeFields .upgrade-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #detailedView-route #u5ModEdit-upgradeFields .upgrade-group > .input-group {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 420px) {
+    .details-hero-mark {
+        display: none;
+    }
+
+    #detailedView-route #modularParts-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

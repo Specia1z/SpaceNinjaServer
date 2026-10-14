@@ -1,0 +1,429 @@
+.admin-suspicion-page {
+    margin-inline: auto;
+    max-width: 105rem;
+}
+
+.admin-suspicion-hero {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 90% 10%, color-mix(in srgb, var(--bs-danger) 14%, transparent), transparent 38%),
+        linear-gradient(128deg, color-mix(in srgb, var(--bs-primary) 5%, var(--bs-tertiary-bg)), var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 16%, var(--bs-border-color));
+    border-radius: 1.1rem;
+    box-shadow: 0 0.8rem 2rem color-mix(in srgb, var(--bs-emphasis-color) 4%, transparent);
+    display: flex;
+    gap: 1.25rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    min-height: 8.5rem;
+    overflow: hidden;
+    padding: clamp(1.2rem, 3vw, 2rem);
+}
+
+.admin-suspicion-hero-copy {
+    max-width: 62rem;
+}
+
+.admin-suspicion-eyebrow,
+.admin-suspicion-kicker {
+    color: var(--bs-primary);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+}
+
+.admin-suspicion-hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 750;
+    letter-spacing: -0.04em;
+    margin: 0 0 0.4rem;
+}
+
+.admin-suspicion-hero p {
+    color: var(--bs-secondary-color);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.admin-suspicion-hero-mark {
+    align-items: center;
+    color: color-mix(in srgb, var(--bs-danger) 50%, transparent);
+    display: flex;
+    flex: 0 0 auto;
+    font-size: clamp(3.2rem, 7vw, 5rem);
+    justify-content: center;
+    margin-inline: 1.5rem 0.5rem;
+    opacity: 0.72;
+}
+
+.admin-suspicion-summary {
+    color: var(--bs-secondary-color);
+    font-size: 0.85rem;
+    margin: 0 0 0.75rem;
+}
+
+.admin-suspicion-tabs {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 72%, transparent);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    padding: 0.35rem;
+}
+
+.admin-suspicion-tabs .nav-link {
+    align-items: center;
+    border-radius: 0.6rem;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.88rem;
+    font-weight: 650;
+    gap: 0.5rem;
+    padding: 0.65rem 0.8rem;
+    white-space: nowrap;
+}
+
+.admin-suspicion-tabs .nav-link:not(.active) {
+    color: var(--bs-secondary-color);
+}
+
+.admin-suspicion-tab-content,
+.admin-suspicion-tab-content > .tab-pane {
+    min-width: 0;
+}
+
+.admin-suspicion-card {
+    border-color: var(--bs-border-color);
+    border-radius: 0.9rem;
+    box-shadow: 0 0.55rem 1.6rem color-mix(in srgb, var(--bs-emphasis-color) 4%, transparent);
+    margin-bottom: 1rem;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.admin-suspicion-card-header {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 72%, transparent);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+}
+
+.admin-suspicion-card-header > div {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.admin-suspicion-card-header h2 {
+    font-size: 1.08rem;
+    font-weight: 720;
+    letter-spacing: -0.018em;
+    line-height: 1.3;
+    margin: 0 0 0.2rem;
+}
+
+.admin-suspicion-card-header p {
+    color: var(--bs-secondary-color);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.admin-suspicion-card-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 10%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 17%, var(--bs-border-color));
+    border-radius: 0.7rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    flex: 0 0 2.5rem;
+    font-size: 1.1rem;
+    height: 2.5rem;
+    justify-content: center;
+    width: 2.5rem;
+}
+
+.admin-suspicion-card-icon-danger {
+    background: color-mix(in srgb, var(--bs-danger) 10%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-danger) 18%, var(--bs-border-color));
+    color: var(--bs-danger);
+}
+
+.admin-suspicion-card-icon-success {
+    background: color-mix(in srgb, var(--bs-success) 10%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-success) 18%, var(--bs-border-color));
+    color: var(--bs-success);
+}
+
+.admin-suspicion-kicker {
+    font-size: 0.6rem;
+    margin-bottom: 0.1rem;
+}
+
+.admin-suspicion-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    min-width: 15rem;
+}
+
+.admin-suspicion-toolbar {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 25%, transparent);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    padding: 0.75rem 1rem;
+}
+
+.admin-suspicion-search {
+    flex: 1 1 18rem;
+    max-width: 40rem;
+}
+
+.admin-suspicion-filter {
+    flex: 0 0 13rem;
+}
+
+.admin-suspicion-table-wrap {
+    position: relative;
+}
+
+.admin-suspicion-table {
+    margin-bottom: 0;
+    min-width: 68rem;
+}
+
+.admin-suspicion-table thead th {
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 42%, var(--bs-body-bg));
+    color: var(--bs-secondary-color);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.72rem 0.8rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.admin-suspicion-table tbody td {
+    font-size: 0.83rem;
+    padding: 0.68rem 0.8rem;
+    vertical-align: middle;
+}
+
+.admin-suspicion-table tbody tr.selected > * {
+    background: color-mix(in srgb, var(--bs-primary) 7%, var(--bs-body-bg));
+}
+
+.admin-suspicion-account {
+    font-weight: 650;
+    min-width: 9rem;
+}
+
+.admin-suspicion-risk {
+    min-width: 7.5rem;
+}
+
+.admin-suspicion-risk .progress {
+    background: var(--bs-tertiary-bg);
+    height: 0.42rem;
+    margin-top: 0.35rem;
+}
+
+.admin-suspicion-risk .progress-bar {
+    background: var(--bs-warning);
+}
+
+.admin-suspicion-risk.high .progress-bar {
+    background: var(--bs-danger);
+}
+
+.admin-suspicion-empty {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    justify-content: center;
+    min-height: 8rem;
+    padding: 1rem;
+}
+
+.admin-suspicion-empty > i {
+    font-size: 1.6rem;
+    opacity: 0.75;
+}
+
+.admin-suspicion-detail-layout {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: 1rem;
+}
+
+.admin-suspicion-detail-card {
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 30%, var(--bs-body-bg));
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    min-width: 0;
+    padding: 0.75rem;
+}
+
+.admin-suspicion-detail-card-wide {
+    grid-column: 1 / -1;
+}
+
+.admin-suspicion-detail-card h3 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin: 0 0 0.55rem;
+}
+
+.admin-suspicion-detail-card pre {
+    font-size: 0.75rem;
+    margin: 0;
+    max-height: 19rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.admin-suspicion-detail-placeholder {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: center;
+    min-height: 8rem;
+    text-align: center;
+}
+
+.admin-suspicion-config-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 1rem;
+}
+
+.admin-suspicion-config-grid > .form-check {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    margin: 0;
+    min-width: 0;
+    padding: 0.8rem 0.8rem 0.8rem 2.5rem;
+}
+
+.admin-suspicion-config-grid > .form-check .form-check-input {
+    margin-left: -1.7rem;
+}
+
+.admin-suspicion-mode-grid {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 0.55rem;
+}
+
+.admin-suspicion-mode-option {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    gap: 0.5rem;
+    min-height: 4rem;
+    padding: 0.65rem;
+}
+
+.admin-suspicion-mode-option:has(input:checked) {
+    background: color-mix(in srgb, var(--bs-primary) 8%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-primary) 55%, var(--bs-border-color));
+}
+
+.admin-suspicion-config-item {
+    min-width: 0;
+}
+
+.admin-suspicion-config-item .form-text {
+    min-height: 2.5rem;
+}
+
+.admin-suspicion-config-item .input-group {
+    margin-top: 0.45rem;
+}
+
+.admin-suspicion-config-footer {
+    border-top: 1px solid var(--bs-border-color);
+    color: var(--bs-secondary-color);
+    font-size: 0.8rem;
+    padding: 0.75rem 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .admin-suspicion-config-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .admin-suspicion-card-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .admin-suspicion-actions {
+        flex: 1 0 100%;
+        min-width: 0;
+    }
+
+    .admin-suspicion-hero {
+        min-height: 0;
+    }
+
+    .admin-suspicion-hero-mark {
+        font-size: 2.8rem;
+        margin-inline: 0 0.1rem;
+    }
+
+    .admin-suspicion-detail-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-suspicion-detail-placeholder {
+        grid-column: auto;
+    }
+
+    .admin-suspicion-mode-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .admin-suspicion-hero {
+        padding: 1.1rem;
+    }
+
+    .admin-suspicion-hero h1 {
+        font-size: 1.7rem;
+    }
+
+    .admin-suspicion-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 0.65rem;
+    }
+
+    .admin-suspicion-search,
+    .admin-suspicion-filter {
+        flex-basis: auto;
+        max-width: none;
+    }
+}

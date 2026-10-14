@@ -68,7 +68,12 @@ export const saveAccountRatesController: RequestHandler = async (req, res) => {
         return;
     }
     const saved = await saveAccountRates(account, profile, features);
-    sendWsBroadcastToGame(account._id.toString(), { sync_inventory: true });
+    if (profile !== undefined) {
+        sendWsBroadcastToGame(account._id.toString(), { sync_world_state: true });
+    }
+    if (features !== undefined) {
+        sendWsBroadcastToGame(account._id.toString(), { sync_inventory: true });
+    }
     sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
     res.json(saved);
 };
@@ -87,6 +92,7 @@ export const deleteAccountRatesController: RequestHandler = async (req, res) => 
         return;
     }
     await deleteAccountRates(account);
+    sendWsBroadcastToGame(account._id.toString(), { sync_world_state: true });
     sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
     res.end();
 };

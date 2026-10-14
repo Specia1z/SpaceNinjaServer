@@ -28,6 +28,8 @@ interface ISuspicionAccountSummary {
     Total: number;
     LastSeenAt: Date;
     Counts: Record<string, number>;
+    RiskScore: number;
+    LastResponse?: string;
 }
 
 export const listSuspicionEventsController: RequestHandler = async (req, res) => {
@@ -38,13 +40,18 @@ export const listSuspicionEventsController: RequestHandler = async (req, res) =>
         _id: { AccountId: Types.ObjectId; Kind: string };
         DisplayName: string;
         Count: number;
+        RiskScore: number;
+        LastResponse?: string;
         LastSeenAt: Date;
     }>([
+        { $sort: { CreatedAt: -1 } },
         {
             $group: {
                 _id: { AccountId: "$AccountId", Kind: "$Kind" },
                 DisplayName: { $first: "$DisplayName" },
                 Count: { $sum: 1 },
+                RiskScore: { $sum: { $ifNull: ["$RiskScore", 0] } },
+                LastResponse: { $first: "$Response" },
                 LastSeenAt: { $max: "$CreatedAt" }
             }
         },
@@ -62,18 +69,24 @@ export const listSuspicionEventsController: RequestHandler = async (req, res) =>
                 Banned: false,
                 Total: 0,
                 LastSeenAt: row.LastSeenAt,
-                Counts: {}
+                Counts: {},
+                RiskScore: 0,
+                LastResponse: row.LastResponse
             };
             byAccount.set(id, summary);
         }
         summary.Total += row.Count;
+        summary.RiskScore = Math.min(100, summary.RiskScore + row.RiskScore);
+        summary.LastResponse ??= row.LastResponse;
         summary.Counts[row._id.Kind] = (summary.Counts[row._id.Kind] ?? 0) + row.Count;
         if (row.LastSeenAt > summary.LastSeenAt) {
             summary.LastSeenAt = row.LastSeenAt;
         }
     }
 
-    const summaries = [...byAccount.values()].sort((a, b) => b.LastSeenAt.getTime() - a.LastSeenAt.getTime());
+    const summaries = [...byAccount.values()].sort(
+        (a, b) => b.RiskScore - a.RiskScore || b.LastSeenAt.getTime() - a.LastSeenAt.getTime()
+    );
 
     // 账号当前的显示名与封禁状态以账号表为准；事件里存的名字只作兜底（改名后旧记录仍是旧名）。
     const accounts = await Account.find(
@@ -119,6 +132,8 @@ export const getSuspicionEventsForAccountController: RequestHandler = async (req
             Enforced: event.Enforced,
             MissionTag: event.MissionTag,
             SessionId: event.SessionId,
+            RiskScore: event.RiskScore,
+            Response: event.Response,
             CreatedAt: event.CreatedAt
         }))
     });

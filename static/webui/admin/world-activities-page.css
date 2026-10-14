@@ -1,0 +1,613 @@
+.world-activities-page {
+    margin-inline: auto;
+    max-width: 112rem;
+}
+
+.world-activities-hero {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 86% 8%, color-mix(in srgb, var(--bs-danger) 17%, transparent), transparent 38%),
+        linear-gradient(130deg, color-mix(in srgb, var(--bs-danger) 7%, var(--bs-tertiary-bg)), var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-danger) 20%, var(--bs-border-color));
+    border-radius: 1.15rem;
+    box-shadow: 0 0.9rem 2.3rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    display: flex;
+    gap: 1.5rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    min-height: 9rem;
+    overflow: hidden;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    position: relative;
+}
+
+.world-activities-hero::after {
+    border: 1px solid color-mix(in srgb, var(--bs-danger) 18%, transparent);
+    border-radius: 50%;
+    content: "";
+    height: 17rem;
+    position: absolute;
+    right: -6rem;
+    top: -9rem;
+    width: 17rem;
+}
+
+.world-activities-hero-copy,
+.world-activities-hero-actions {
+    position: relative;
+    z-index: 1;
+}
+
+.world-activities-hero-copy {
+    max-width: 67rem;
+}
+
+.world-activities-eyebrow {
+    color: var(--bs-danger);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+}
+
+.world-activities-hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.65rem);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    margin: 0 0 0.45rem;
+}
+
+.world-activities-hero p {
+    color: var(--bs-secondary-color);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.world-activities-hero-actions,
+.world-activities-updated,
+.world-activities-invasion-tools {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.world-activities-hero-actions {
+    justify-content: flex-end;
+}
+
+.world-activities-hero-actions .btn {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.45rem;
+}
+
+.world-activities-hero-actions .btn.is-loading i {
+    animation: world-activities-spin 0.8s linear infinite;
+}
+
+@keyframes world-activities-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.world-activities-updated {
+    color: var(--bs-secondary-color);
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.world-activities-notice {
+    line-height: 1.45;
+    margin-bottom: 1rem;
+}
+
+.world-activities-stats {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 1rem;
+}
+
+.world-activities-stat {
+    align-items: center;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.9rem;
+    display: flex;
+    gap: 0.8rem;
+    min-width: 0;
+    padding: 0.9rem 1rem;
+}
+
+.world-activities-stat-active {
+    border-color: color-mix(in srgb, var(--bs-danger) 32%, var(--bs-border-color));
+}
+
+.world-activities-stat-completed {
+    border-color: color-mix(in srgb, var(--bs-success) 30%, var(--bs-border-color));
+}
+
+.world-activities-stat-icon,
+.world-activities-panel-icon,
+.world-activities-time-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-danger) 12%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-danger) 20%, var(--bs-border-color));
+    border-radius: 0.75rem;
+    color: var(--bs-danger);
+    display: inline-flex;
+    flex: 0 0 2.65rem;
+    font-size: 1.15rem;
+    height: 2.65rem;
+    justify-content: center;
+    width: 2.65rem;
+}
+
+.world-activities-stat-completed .world-activities-stat-icon {
+    background: color-mix(in srgb, var(--bs-success) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-success) 22%, var(--bs-border-color));
+    color: var(--bs-success);
+}
+
+.world-activities-stat-mode .world-activities-stat-icon {
+    background: color-mix(in srgb, var(--bs-primary) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-primary) 22%, var(--bs-border-color));
+    color: var(--bs-primary);
+}
+
+.world-activities-stat-source .world-activities-stat-icon {
+    background: color-mix(in srgb, var(--bs-info) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-info) 22%, var(--bs-border-color));
+    color: var(--bs-info);
+}
+
+.world-activities-stat-label {
+    color: var(--bs-secondary-color);
+    display: block;
+    font-size: 0.74rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.world-activities-stat strong {
+    display: block;
+    font-size: clamp(1.1rem, 2vw, 1.45rem);
+    line-height: 1.25;
+    margin-top: 0.16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.world-activities-dashboard {
+    align-items: stretch;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(19rem, 0.75fr) minmax(0, 1.6fr);
+    margin-bottom: 1rem;
+}
+
+.world-activities-panel {
+    border-color: var(--bs-border-color);
+    border-radius: 0.95rem;
+    box-shadow: 0 0.65rem 1.8rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.world-activities-panel-header {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 72%, transparent);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    justify-content: space-between;
+    padding: 1rem 1.1rem;
+}
+
+.world-activities-panel-heading {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.world-activities-panel-icon {
+    background: color-mix(in srgb, var(--bs-primary) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-primary) 20%, var(--bs-border-color));
+    color: var(--bs-primary);
+}
+
+.world-activities-invasions-icon {
+    background: color-mix(in srgb, var(--bs-danger) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-danger) 20%, var(--bs-border-color));
+    color: var(--bs-danger);
+}
+
+.world-activities-settings-icon {
+    background: color-mix(in srgb, var(--bs-info) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-info) 20%, var(--bs-border-color));
+    color: var(--bs-info);
+}
+
+.world-activities-panel-heading h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+}
+
+.world-activities-panel-heading p {
+    color: var(--bs-secondary-color);
+    font-size: 0.78rem;
+    line-height: 1.4;
+    margin: 0.25rem 0 0;
+}
+
+.world-activities-source-badge {
+    font-size: 0.75rem;
+    padding: 0.48rem 0.65rem;
+}
+
+.world-activities-source-badge.is-local {
+    background: color-mix(in srgb, var(--bs-info) 18%, var(--bs-body-bg)) !important;
+    color: var(--bs-info-text-emphasis, var(--bs-info)) !important;
+}
+
+.world-activities-runtime-details {
+    display: grid;
+    gap: 0.8rem;
+    padding: 1.1rem;
+}
+
+.world-activities-time-item {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.world-activities-time-icon {
+    background: color-mix(in srgb, var(--bs-success) 11%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-success) 20%, var(--bs-border-color));
+    color: var(--bs-success);
+    flex-basis: 2.35rem;
+    font-size: 1rem;
+    height: 2.35rem;
+    width: 2.35rem;
+}
+
+.world-activities-time-next {
+    background: color-mix(in srgb, var(--bs-warning) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-warning) 22%, var(--bs-border-color));
+    color: var(--bs-warning);
+}
+
+.world-activities-time-item span:not(.world-activities-time-icon) {
+    color: var(--bs-secondary-color);
+    display: block;
+    font-size: 0.75rem;
+}
+
+.world-activities-time-item strong {
+    display: block;
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+    margin-top: 0.15rem;
+}
+
+.world-activities-runtime-footer {
+    align-items: center;
+    border-top: 1px solid var(--bs-border-color);
+    color: var(--bs-secondary-color);
+    display: flex;
+    font-size: 0.78rem;
+    justify-content: space-between;
+    padding: 0.85rem 1.1rem;
+}
+
+.world-activities-runtime-footer span {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.4rem;
+}
+
+.world-activities-runtime-footer strong {
+    color: var(--bs-body-color);
+    font-variant-numeric: tabular-nums;
+}
+
+.world-activities-invasion-tools {
+    justify-content: flex-end;
+}
+
+.world-activities-search {
+    min-width: min(15rem, 45vw);
+    position: relative;
+}
+
+.world-activities-search > i {
+    color: var(--bs-secondary-color);
+    left: 0.75rem;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.world-activities-search .form-control {
+    padding-left: 2.2rem;
+}
+
+.world-activities-filter {
+    min-width: 8.5rem;
+}
+
+.world-activities-table-wrap {
+    min-height: 16rem;
+}
+
+.world-activities-table {
+    table-layout: fixed;
+}
+
+.world-activities-table th,
+.world-activities-table td {
+    border-color: var(--bs-border-color);
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.world-activities-table th {
+    color: var(--bs-secondary-color);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.world-activities-table th:nth-child(1) {
+    width: 25%;
+}
+
+.world-activities-table th:nth-child(2) {
+    width: 36%;
+}
+
+.world-activities-table th:nth-child(3) {
+    width: 24%;
+}
+
+.world-activities-table th:nth-child(4) {
+    width: 15%;
+}
+
+.world-activities-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.world-activities-table tbody tr:hover {
+    background: color-mix(in srgb, var(--bs-primary) 5%, transparent);
+}
+
+.world-activities-node {
+    font-weight: 650;
+}
+
+.world-activities-node strong,
+.world-activities-node small {
+    display: block;
+}
+
+.world-activities-node small {
+    color: var(--bs-secondary-color);
+    font-size: 0.7rem;
+    font-weight: 400;
+    margin-top: 0.18rem;
+}
+
+.world-activities-factions {
+    color: var(--bs-secondary-color);
+    font-size: 0.82rem;
+    overflow-wrap: anywhere;
+}
+
+.world-activities-progress {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+}
+
+.world-activities-progress .progress {
+    background: var(--bs-tertiary-bg);
+    flex: 1 1 7rem;
+    height: 0.42rem;
+    min-width: 3rem;
+}
+
+.world-activities-progress .progress-bar {
+    background: var(--bs-danger);
+}
+
+.world-activities-progress-value {
+    flex: 0 0 2.7rem;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.world-activities-status {
+    white-space: nowrap;
+}
+
+.world-activities-status i {
+    margin-right: 0.3rem;
+}
+
+.world-activities-empty {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 16rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.world-activities-empty > i {
+    color: var(--bs-danger);
+    font-size: 2rem;
+    margin-bottom: 0.65rem;
+}
+
+.world-activities-empty p {
+    margin: 0;
+}
+
+.world-activities-settings {
+    margin-bottom: 1rem;
+}
+
+.world-activities-settings-body {
+    padding: 1.1rem;
+}
+
+.world-activities-setting-grid {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.world-activities-setting-card {
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 45%, transparent);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    min-width: 0;
+    padding: 0.9rem;
+}
+
+.world-activities-setting-card .form-label {
+    font-size: 0.8rem;
+    font-weight: 650;
+}
+
+.world-activities-setting-card .form-text {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    margin-bottom: 0;
+}
+
+.world-activities-settings-hint {
+    align-items: flex-start;
+    color: var(--bs-secondary-color);
+    display: flex;
+    font-size: 0.8rem;
+    gap: 0.5rem;
+    line-height: 1.45;
+    margin: 1rem 0 0;
+}
+
+.world-activities-settings-hint > i {
+    color: var(--bs-info);
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
+}
+
+@media (max-width: 1000px) {
+    .world-activities-dashboard {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .world-activities-runtime-details {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .world-activities-hero {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .world-activities-hero-actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .world-activities-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .world-activities-panel-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .world-activities-invasion-tools {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .world-activities-search {
+        flex: 1 1 12rem;
+        min-width: 0;
+    }
+
+    .world-activities-filter {
+        flex: 0 1 10rem;
+    }
+
+    .world-activities-setting-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 520px) {
+    .world-activities-stats {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .world-activities-runtime-details {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .world-activities-invasion-tools {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .world-activities-search,
+    .world-activities-filter {
+        width: 100%;
+    }
+
+    .world-activities-table th,
+    .world-activities-table td {
+        padding-inline: 0.7rem;
+    }
+
+    .world-activities-table th:nth-child(2),
+    .world-activities-table td:nth-child(2) {
+        display: none;
+    }
+
+    .world-activities-table th:nth-child(1) {
+        width: 38%;
+    }
+
+    .world-activities-table th:nth-child(3) {
+        width: 38%;
+    }
+
+    .world-activities-table th:nth-child(4) {
+        width: 24%;
+    }
+}

@@ -1,0 +1,453 @@
+<div class="world-state-page" data-route="/webui/world-state" data-title-tag="worldState">
+    <section class="world-state-access-state d-none admin-hide" role="status">
+        <span class="world-state-access-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+        <h1 data-loc="cheats_administratorRequirement"></h1>
+    </section>
+
+    <div class="d-none admin-show" id="world-state-admin">
+        <header class="world-state-hero">
+            <div class="world-state-hero-copy">
+                <span class="world-state-eyebrow" data-loc="worldState"></span>
+                <h1 data-loc="worldState"></h1>
+                <p data-loc="worldState_liveSync"></p>
+            </div>
+            <span class="world-state-hero-mark" aria-hidden="true"><i class="bi bi-globe2"></i></span>
+        </header>
+
+        <section class="world-state-stats" aria-live="polite">
+            <article class="card world-state-stat-card world-state-stat-active">
+                <span class="world-state-stat-icon"><i class="bi bi-lightning-charge" aria-hidden="true"></i></span>
+                <div>
+                    <span class="world-state-stat-label" data-loc="worldState_activeOverrides"></span>
+                    <strong class="world-state-stat-value" id="world-state-active-count">0</strong>
+                </div>
+            </article>
+            <article class="card world-state-stat-card">
+                <span class="world-state-stat-icon"><i class="bi bi-grid" aria-hidden="true"></i></span>
+                <div>
+                    <span class="world-state-stat-label" data-loc="worldState_configSections"></span>
+                    <strong class="world-state-stat-value" id="world-state-section-count">0</strong>
+                </div>
+            </article>
+            <article class="card world-state-stat-card">
+                <span class="world-state-stat-icon"><i class="bi bi-sliders" aria-hidden="true"></i></span>
+                <div>
+                    <span class="world-state-stat-label" data-loc="worldState_visibleSettings"></span>
+                    <strong class="world-state-stat-value" id="world-state-visible-count">0</strong>
+                </div>
+            </article>
+            <article class="card world-state-stat-card world-state-stat-sync">
+                <span class="world-state-stat-icon"><i class="bi bi-broadcast" aria-hidden="true"></i></span>
+                <div>
+                    <span class="world-state-stat-label" data-loc="worldState_liveSyncStatus"></span>
+                    <strong class="world-state-stat-value" id="world-state-sync-status">-</strong>
+                </div>
+            </article>
+        </section>
+
+        <div class="world-state-toolbar">
+            <div class="world-state-filter-wrap">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <label class="visually-hidden" for="world-state-filter" data-loc="worldState_filter"></label>
+                <input class="form-control" id="world-state-filter" type="search" autocomplete="off" data-loc-placeholder="worldState_filterPlaceholder" />
+            </div>
+            <div class="world-state-toolbar-actions">
+                <button class="btn btn-outline-secondary" id="world-state-expand-all" type="button">
+                    <i class="bi bi-chevron-double-down" aria-hidden="true"></i>
+                    <span data-loc="worldState_expandAll"></span>
+                </button>
+                <button class="btn btn-outline-secondary" id="world-state-collapse-all" type="button">
+                    <i class="bi bi-chevron-double-up" aria-hidden="true"></i>
+                    <span data-loc="worldState_collapseAll"></span>
+                </button>
+            </div>
+        </div>
+
+        <section id="world-state-card" class="config-form world-state-config" aria-label="World State">
+            <div class="world-state-section-grid">
+                <details class="card world-state-section" data-world-state-section="runtime" open>
+                    <summary class="world-state-section-summary">
+                        <span class="world-state-section-icon"><i class="bi bi-broadcast" aria-hidden="true"></i></span>
+                        <span class="world-state-section-copy">
+                            <span class="world-state-section-title" data-loc="worldState_sectionRuntime"></span>
+                            <span class="world-state-section-description" data-loc="worldState_sectionRuntimeDesc"></span>
+                        </span>
+                        <span class="world-state-section-meta">
+                            <span class="world-state-section-count" data-section-count>0</span>
+                            <span data-loc="worldState_settings"></span>
+                            <i class="bi bi-chevron-down world-state-section-chevron" aria-hidden="true"></i>
+                        </span>
+                    </summary>
+                    <div class="card-body world-state-section-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.liveSync" />
+                    <label class="form-check-label" for="worldState.liveSync" data-loc="worldState_liveSync"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.tennoLiveRelay" />
+                    <label class="form-check-label" for="worldState.tennoLiveRelay" data-loc="worldState_tennoLiveRelay"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.baroTennoConRelay" />
+                    <label class="form-check-label" for="worldState.baroTennoConRelay" data-loc="worldState_baroTennoConRelay"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.baroAlwaysAvailable" />
+                    <label class="form-check-label" for="worldState.baroAlwaysAvailable" data-loc="cheats_baroAlwaysAvailable"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.baroFullyStocked" />
+                    <label class="form-check-label" for="worldState.baroFullyStocked" data-loc="cheats_baroFullyStocked"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.varziaFullyStocked" />
+                    <label class="form-check-label" for="worldState.varziaFullyStocked" data-loc="worldState_varziaFullyStocked"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.varziaCustomRotationEnabled" />
+                    <label class="form-check-label" for="worldState.varziaCustomRotationEnabled" data-loc="worldState_varziaCustomRotationEnabled"></label>
+                </div>
+                <div class="form-group mt-2">
+                    <label class="form-label" for="worldState.varziaCustomRotationMode" data-loc="worldState_varziaCustomRotationMode"></label>
+                    <select class="form-control" id="worldState.varziaCustomRotationMode" data-default="weekly">
+                        <option value="daily" data-loc="worldState_varziaRotationDaily"></option>
+                        <option value="weekly" data-loc="worldState_varziaRotationWeekly"></option>
+                        <option value="monthly" data-loc="worldState_varziaRotationMonthly"></option>
+                        <option value="custom" data-loc="worldState_varziaRotationCustom"></option>
+                    </select>
+                </div>
+                <form class="form-group mt-2" onsubmit="doSaveConfigInt('worldState.varziaCustomRotationDays'); return false;">
+                    <label class="form-label" for="worldState.varziaCustomRotationDays" data-loc="worldState_varziaCustomRotationDays"></label>
+                    <div class="input-group">
+                        <input id="worldState.varziaCustomRotationDays" class="form-control" type="number" min="1" max="3650" step="1" data-default="28" />
+                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                    </div>
+                </form>
+                <div class="form-text mt-2" data-loc="worldState_varziaRotationHint"></div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.vanguardVaultRelics" />
+                    <label class="form-check-label" for="worldState.vanguardVaultRelics" data-loc="worldState_vanguardVaultRelics"></label>
+                </div>
+                    </div>
+                </details>
+
+                <details class="card world-state-section" data-world-state-section="events" open>
+                    <summary class="world-state-section-summary">
+                        <span class="world-state-section-icon"><i class="bi bi-calendar-event" aria-hidden="true"></i></span>
+                        <span class="world-state-section-copy">
+                            <span class="world-state-section-title" data-loc="worldState_sectionEvents"></span>
+                            <span class="world-state-section-description" data-loc="worldState_sectionEventsDesc"></span>
+                        </span>
+                        <span class="world-state-section-meta">
+                            <span class="world-state-section-count" data-section-count>0</span>
+                            <span data-loc="worldState_settings"></span>
+                            <i class="bi bi-chevron-down world-state-section-chevron" aria-hidden="true"></i>
+                        </span>
+                    </summary>
+                    <div class="card-body world-state-section-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="unfaithfulBugFixes.useAnniversaryTagForOldGoals" />
+                    <label class="form-check-label" for="unfaithfulBugFixes.useAnniversaryTagForOldGoals" data-loc="worldState_useAnniversaryTagForOldGoals"></label>
+                    <abbr class="world-state-info" data-loc-inc="worldState_anniversary" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.bloodOfPerita" />
+                    <label class="form-check-label" for="worldState.bloodOfPerita" data-loc-itemMap="/Lotus/Language/TauPrequel/TauPrequelFinal/TauPrequelEventAlertTitle"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.scarletSpear" />
+                    <label class="form-check-label" for="worldState.scarletSpear" data-loc-itemMap="/Lotus/Language/G1Quests/FlotillaOperation"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.orphixVenom" />
+                    <label class="form-check-label" for="worldState.orphixVenom" data-loc-itemMap="/Lotus/Language/Events/MechSurvivalName"></label>
+                    <abbr class="world-state-info" data-loc-inc="/Lotus/Language/Events/GalleonRobberyEventMissionTitle|/Lotus/Language/Alerts/WolfAlert|/Lotus/Language/Alerts/TacAlertProxyRebellion|worldState_anniversary" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.longShadow" />
+                    <label class="form-check-label" for="worldState.longShadow" data-loc-itemMap="/Lotus/Language/G1Quests/ProjectNightwatchTacAlertTitle"></label>
+                    <abbr class="world-state-info" data-loc-inc="worldState_anniversary" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.hallowedFlame" />
+                    <label class="form-check-label" for="worldState.hallowedFlame" data-loc-itemMap-tc="/Lotus/Language/Events/TacAlertHalloweenLantern"></label>
+                    <abbr class="world-state-info" data-loc-inc="/Lotus/Language/G1Quests/TacAlertHalloweenTitle|/Lotus/Language/Alerts/TacAlertWaterFight|worldState_anniversary" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.qtccAlerts" />
+                    <label class="form-check-label" for="worldState.qtccAlerts" data-loc="worldState_qtccAlerts"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.destiny2TributeAlert" />
+                    <label class="form-check-label" for="worldState.destiny2TributeAlert" data-loc="worldState_destiny2TributeAlert"></label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="worldState.snowdayShowdown" />
+                    <label class="form-check-label" for="worldState.snowdayShowdown" data-loc-itemMap="/Lotus/Language/G1Quests/TacAlertSnowballFightTitle"></label>
+                </div>
+                <div class="world-state-wide form-group mt-2">
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="worldState.breedingGrounds" />
+                            <label class="form-check-label" for="worldState.breedingGrounds" data-loc-itemMap="/Lotus/Language/G1Quests/InfestedCorpusHiveEventName"></label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="unfaithfulBugFixes.giveBreedingGroundsRewardsAtSum" />
+                            <label class="form-check-label" for="unfaithfulBugFixes.giveBreedingGroundsRewardsAtSum" data-loc="worldState_giveBreedingGroundsRewardsAtSum"></label>
+                            <abbr class="world-state-info" data-loc-title="worldState_giveBreedingGroundsRewardsAtSumDesc" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                        </div>
+                    </div>
+                </div>
+                <div class="world-state-wide form-group mt-2">
+                    <label class="form-label" data-loc="worldState_voidCorruption" data-loc-replace="2025"></label>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.voidCorruption2025Week1" /><label class="form-check-label" for="worldState.voidCorruption2025Week1" data-loc="worldState_week" data-loc-replace="1"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.voidCorruption2025Week2" /><label class="form-check-label" for="worldState.voidCorruption2025Week2" data-loc="worldState_week" data-loc-replace="2"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.voidCorruption2025Week3" /><label class="form-check-label" for="worldState.voidCorruption2025Week3" data-loc="worldState_week" data-loc-replace="3"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.voidCorruption2025Week4" /><label class="form-check-label" for="worldState.voidCorruption2025Week4" data-loc="worldState_week" data-loc-replace="4"></label></div>
+                    </div>
+                </div>
+                <div class="world-state-wide form-group mt-2">
+                    <label class="form-label" data-loc="worldState_dagathAlerts" data-loc-replace="2026"></label>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.dagathAlerts2026Week1" /><label class="form-check-label" for="worldState.dagathAlerts2026Week1" data-loc="worldState_week" data-loc-replace="1"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.dagathAlerts2026Week2" /><label class="form-check-label" for="worldState.dagathAlerts2026Week2" data-loc="worldState_week" data-loc-replace="2"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.dagathAlerts2026Week3" /><label class="form-check-label" for="worldState.dagathAlerts2026Week3" data-loc="worldState_week" data-loc-replace="3"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.dagathAlerts2026Week4" /><label class="form-check-label" for="worldState.dagathAlerts2026Week4" data-loc="worldState_week" data-loc-replace="4"></label></div>
+                    </div>
+                </div>
+                <div class="world-state-wide form-group mt-2">
+                    <label class="form-label" data-loc="worldState_starDaysAlerts" data-loc-replace="2026"></label>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.starDaysAlerts2026Week1" /><label class="form-check-label" for="worldState.starDaysAlerts2026Week1" data-loc="worldState_week" data-loc-replace="1"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.starDaysAlerts2026Week2" /><label class="form-check-label" for="worldState.starDaysAlerts2026Week2" data-loc="worldState_week" data-loc-replace="2"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.starDaysAlerts2026Week3" /><label class="form-check-label" for="worldState.starDaysAlerts2026Week3" data-loc="worldState_week" data-loc-replace="3"></label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" id="worldState.starDaysAlerts2026Week4" /><label class="form-check-label" for="worldState.starDaysAlerts2026Week4" data-loc="worldState_week" data-loc-replace="4"></label></div>
+                    </div>
+                </div>
+
+                    </div>
+                </details>
+
+                <details class="card world-state-section" data-world-state-section="economy" open>
+                    <summary class="world-state-section-summary">
+                        <span class="world-state-section-icon"><i class="bi bi-graph-up" aria-hidden="true"></i></span>
+                        <span class="world-state-section-copy">
+                            <span class="world-state-section-title" data-loc="worldState_sectionEconomy"></span>
+                            <span class="world-state-section-description" data-loc="worldState_sectionEconomyDesc"></span>
+                        </span>
+                        <span class="world-state-section-meta">
+                            <span class="world-state-section-count" data-section-count>0</span>
+                            <span data-loc="worldState_settings"></span>
+                            <i class="bi bi-chevron-down world-state-section-chevron" aria-hidden="true"></i>
+                        </span>
+                    </summary>
+                    <div class="card-body world-state-section-body">
+
+                <form class="form-group mt-2" onsubmit="doSaveConfigInt('worldState.creditBoostMultiplier'); return false;">
+                    <label class="form-label" for="worldState.creditBoostMultiplier" data-loc="worldState_creditBoostMultiplier"></label>
+                    <div class="input-group"><input id="worldState.creditBoostMultiplier" class="form-control" type="number" min="0" max="1000000" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div>
+                </form>
+                <form class="form-group mt-2" onsubmit="doSaveConfigInt('worldState.affinityBoostMultiplier'); return false;">
+                    <label class="form-label" for="worldState.affinityBoostMultiplier" data-loc="worldState_affinityBoostMultiplier"></label>
+                    <div class="input-group"><input id="worldState.affinityBoostMultiplier" class="form-control" type="number" min="0" max="1000000" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div>
+                </form>
+                <form class="form-group mt-2" onsubmit="doSaveConfigInt('worldState.resourceBoostMultiplier'); return false;">
+                    <label class="form-label" for="worldState.resourceBoostMultiplier" data-loc="worldState_resourceBoostMultiplier"></label>
+                    <abbr class="world-state-info" data-loc-title="worldState_resourceBoostMultiplierDesc" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                    <div class="input-group"><input id="worldState.resourceBoostMultiplier" class="form-control" type="number" min="0" max="1000000" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div>
+                </form>
+                <form class="form-group mt-2" onsubmit="doSaveConfigDateTime('worldState.boostExpiresAt'); return false;">
+                    <label class="form-label" for="worldState.boostExpiresAt" data-loc="worldState_boostExpiresAt"></label>
+                    <div class="input-group"><input id="worldState.boostExpiresAt" class="form-control" type="datetime-local" max="2038-01-19T03:14" data-default="" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div>
+                </form>
+                <div class="form-group mt-2">
+                    <label class="form-label" for="worldState.baroRelayOverride" data-loc="worldState_baroRelayOverride"></label>
+                    <select class="form-control" id="worldState.baroRelayOverride" data-default="0">
+                        <option value="0" data-loc="disabled"></option>
+                        <option value="1" data-loc-itemMap="EarthHUB" data-loc-replace="1"></option>
+                        <option value="2" data-loc-itemMap="MercuryHUB" data-loc-replace="2"></option>
+                        <option value="3" data-loc-itemMap="SaturnHUB" data-loc-replace="3"></option>
+                        <option value="4" data-loc-itemMap="PlutoHUB" data-loc-replace="4"></option>
+                    </select>
+                </div>
+                <div class="form-group mt-2">
+                    <label class="form-label" for="worldState.evilBaroStage" data-loc="worldState_evilBaroStage"></label>
+                    <select class="form-control" id="worldState.evilBaroStage" data-default="0">
+                        <option value="0" data-loc="disabled"></option>
+                        <option value="1" data-loc="worldState_week" data-loc-replace="1"></option>
+                        <option value="2" data-loc="worldState_week" data-loc-replace="2"></option>
+                        <option value="3" data-loc="worldState_week" data-loc-replace="3"></option>
+                        <option value="4" data-loc="worldState_week" data-loc-replace="4"></option>
+                    </select>
+                </div>
+                <div class="form-group mt-2">
+                    <label class="form-label" for="worldState.wolfHunt" data-loc-itemMap="/Lotus/Language/Alerts/WolfAlert"></label>
+                    <abbr class="world-state-info" data-loc-inc="/Lotus/Language/Events/GalleonRobberyEventMissionTitle|/Lotus/Language/Events/MechSurvivalName|worldState_anniversary" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                    <select class="form-control" id="worldState.wolfHunt" data-default="null">
+                        <option value="null" data-loc="disabled"></option>
+                        <option value="1" data-loc="worldState_from_year" data-loc-replace="2025"></option>
+                        <option value="0" data-loc="worldState_from_year" data-loc-replace="2019"></option>
+                    </select>
+                </div>
+                    </div>
+                </details>
+
+                <details class="card world-state-section" data-world-state-section="seasonal" open>
+                    <summary class="world-state-section-summary">
+                        <span class="world-state-section-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                        <span class="world-state-section-copy">
+                            <span class="world-state-section-title" data-loc="worldState_sectionSeasonal"></span>
+                            <span class="world-state-section-description" data-loc="worldState_sectionSeasonalDesc"></span>
+                        </span>
+                        <span class="world-state-section-meta">
+                            <span class="world-state-section-count" data-section-count>0</span>
+                            <span data-loc="worldState_settings"></span>
+                            <i class="bi bi-chevron-down world-state-section-chevron" aria-hidden="true"></i>
+                        </span>
+                    </summary>
+                    <div class="card-body world-state-section-body">
+
+                <div class="world-state-wide form-group mt-2 d-flex gap-2">
+                    <div class="flex-fill">
+                        <label class="form-label" for="worldState.hallowedNightmares" data-loc-itemMap="/Lotus/Language/G1Quests/TacAlertHalloweenTitle"></label>
+                        <abbr class="world-state-info" data-loc-inc="/Lotus/Language/Events/TacAlertHalloweenLantern|/Lotus/Language/Alerts/TacAlertWaterFight|worldState_anniversary" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                        <select class="form-control" id="worldState.hallowedNightmares" data-default="false"><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select>
+                    </div>
+                    <div class="flex-fill">
+                        <label class="form-label" for="worldState.hallowedNightmaresRewardsOverride" data-loc="worldState_hallowedNightmaresRewards"></label>
+                        <select class="form-control" id="worldState.hallowedNightmaresRewardsOverride" data-default="0">
+                            <option value="0" data-loc="worldState_from_year" data-loc-replace="2018"></option>
+                            <option value="1" data-loc="worldState_from_year" data-loc-replace="2016"></option>
+                            <option value="2" data-loc="worldState_from_year" data-loc-replace="2015"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group mt-2">
+                    <label class="form-label" for="worldState.naberusNightsOverride" data-loc-itemMap="/Lotus/Language/Events/HalloweenNaberusName"></label>
+                    <select class="form-control" id="worldState.naberusNightsOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select>
+                </div>
+                <div class="world-state-wide form-group mt-2 d-flex gap-2">
+                    <div class="flex-fill">
+                        <label class="form-label" for="worldState.proxyRebellion" data-loc-itemMap="/Lotus/Language/Alerts/TacAlertProxyRebellion"></label>
+                        <abbr class="world-state-info" data-loc-inc="worldState_anniversary|/Lotus/Language/Events/MechSurvivalName" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                        <select class="form-control" id="worldState.proxyRebellion" data-default="false"><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select>
+                    </div>
+                    <div class="flex-fill">
+                        <label class="form-label" for="worldState.proxyRebellionRewardsOverride" data-loc="worldState_proxyRebellionRewards"></label>
+                        <select class="form-control" id="worldState.proxyRebellionRewardsOverride" data-default="0"><option value="0" data-loc="worldState_from_year" data-loc-replace="2019"></option><option value="1" data-loc="worldState_from_year" data-loc-replace="2018"></option></select>
+                    </div>
+                </div>
+                <div class="form-group mt-2">
+                    <label class="form-label" for="worldState.galleonOfGhouls" data-loc-itemMap="/Lotus/Language/Events/GalleonRobberyEventMissionTitle"></label>
+                    <abbr class="world-state-info" data-loc-inc="/Lotus/Language/Alerts/WolfAlert|worldState_anniversary|/Lotus/Language/Events/MechSurvivalName" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                    <select class="form-control" id="worldState.galleonOfGhouls" data-default="0"><option value="0" data-loc="disabled"></option><option value="1" data-loc="worldState_we1"></option><option value="2" data-loc="worldState_we2"></option><option value="3" data-loc="worldState_we3"></option></select>
+                </div>
+                <div class="form-group mt-2">
+                    <label class="form-label" for="worldState.anniversary" data-loc="worldState_anniversary"></label>
+                    <abbr class="world-state-info" data-loc-inc="worldState_useAnniversaryTagForOldGoals|/Lotus/Language/Alerts/WolfAlert|/Lotus/Language/Events/GalleonRobberyEventMissionTitle|/Lotus/Language/G1Quests/TacAlertHalloweenTitle|/Lotus/Language/Events/TacAlertHalloweenLantern|/Lotus/Language/Alerts/TacAlertWaterFight|/Lotus/Language/Alerts/TacAlertProxyRebellion|/Lotus/Language/G1Quests/ProjectNightwatchTacAlertTitle|/Lotus/Language/Events/MechSurvivalName" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr>
+                    <select class="form-control" id="worldState.anniversary" data-default="null">
+                        <option value="null" data-loc="disabled"></option>
+                        <option value="0" data-loc="worldState_week" data-loc-replace="1"></option>
+                        <option value="1" data-loc="worldState_week" data-loc-replace="2"></option>
+                        <option value="2" data-loc="worldState_week" data-loc-replace="3"></option>
+                        <option value="3" data-loc="worldState_week" data-loc-replace="4"></option>
+                        <option value="4" data-loc="worldState_week" data-loc-replace="5"></option>
+                        <option value="5" data-loc="worldState_week" data-loc-replace="6"></option>
+                        <option value="6" data-loc="worldState_week" data-loc-replace="7"></option>
+                        <option value="7" data-loc="worldState_week" data-loc-replace="8"></option>
+                    </select>
+                </div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.ghoulEmergenceOverride" data-loc-itemMap-tc="/Lotus/Language/GameModes/RecurringGhoulAlert"></label><select class="form-control" id="worldState.ghoulEmergenceOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.plagueStarOverride" data-loc-itemMap-tc="/Lotus/Language/InfestedPlainsEvent/InfestedPlainsBountyName"></label><select class="form-control" id="worldState.plagueStarOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.starDaysOverride" data-loc-itemMap="/Lotus/Language/Events/ValentinesFortunaName"></label><select class="form-control" id="worldState.starDaysOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.saintPatrickOverride" data-loc="worldState_saintPatrick"></label><select class="form-control" id="worldState.saintPatrickOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.xmasOverride" data-loc="worldState_xmas"></label><select class="form-control" id="worldState.xmasOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.prideOverride" data-loc="worldState_prideOverride"></label><select class="form-control" id="worldState.prideOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                <div class="form-group mt-2">
+                    <label class="form-label" for="worldState.lunarNewYear" data-loc-itemMap="/Lotus/Language/Store/LunarNewYearSearchTag"></label>
+                    <select class="form-control" id="worldState.lunarNewYear" data-default="null"><option value="null" data-loc="disabled"></option><option value="all" data-loc="worldState_allAtOnce"></option><option value="2019" data-loc="worldState_lunarNewYearEntry" data-loc-replace="2019"></option><option value="2020" data-loc="worldState_lunarNewYearEntry" data-loc-replace="2020"></option><option value="2021" data-loc="worldState_lunarNewYearEntry" data-loc-replace="2021"></option><option value="2022" data-loc="worldState_lunarNewYearEntry" data-loc-replace="2022"></option><option value="2023" data-loc="worldState_lunarNewYearEntry" data-loc-replace="2023"></option><option value="2024" data-loc="worldState_lunarNewYearEntry" data-loc-replace="2024"></option><option value="2025" data-loc="worldState_lunarNewYearEntry" data-loc-replace="2025"></option><option value="2026" data-loc="worldState_lunarNewYearEntry" data-loc-replace="2026"></option></select>
+                </div>
+
+                    </div>
+                </details>
+
+                <details class="card world-state-section" data-world-state-section="progress" open>
+                    <summary class="world-state-section-summary">
+                        <span class="world-state-section-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></span>
+                        <span class="world-state-section-copy">
+                            <span class="world-state-section-title" data-loc="worldState_sectionProgress"></span>
+                            <span class="world-state-section-description" data-loc="worldState_sectionProgressDesc"></span>
+                        </span>
+                        <span class="world-state-section-meta">
+                            <span class="world-state-section-count" data-section-count>0</span>
+                            <span data-loc="worldState_settings"></span>
+                            <i class="bi bi-chevron-down world-state-section-chevron" aria-hidden="true"></i>
+                        </span>
+                    </summary>
+                    <div class="card-body world-state-section-body">
+
+                <div class="world-state-wide form-group mt-2 d-flex gap-2">
+                    <div class="flex-fill"><label class="form-label" for="worldState.dogDaysOverride" data-loc-itemMap="/Lotus/Language/Alerts/TacAlertWaterFight"></label><abbr class="world-state-info" data-loc-inc="/Lotus/Language/Events/TacAlertHalloweenLantern|/Lotus/Language/G1Quests/TacAlertHalloweenTitle|worldState_anniversary" aria-label="info"><i class="bi bi-info-circle" aria-hidden="true"></i></abbr><select class="form-control" id="worldState.dogDaysOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                    <div class="flex-fill"><label class="form-label" for="worldState.dogDaysRewardsOverride" data-loc="worldState_dogDaysRewards"></label><select class="form-control" id="worldState.dogDaysRewardsOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="4" data-loc="worldState_from_year" data-loc-replace="2026"></option><option value="3" data-loc="worldState_from_year" data-loc-replace="2025"></option><option value="2" data-loc="worldState_from_year" data-loc-replace="2024"></option><option value="1" data-loc="worldState_from_year" data-loc-replace="2023"></option><option value="0" data-loc="worldState_pre_year" data-loc-replace="2023"></option></select></div>
+                </div>
+                <div class="world-state-wide form-group mt-2 d-flex gap-2">
+                    <div class="flex-fill"><label class="form-label" for="worldState.operationAtramentum" data-loc-itemMap="/Lotus/Language/Shadowgrapher/ShadowgrapherEventName"></label><select class="form-control" id="worldState.operationAtramentum" data-default="false"><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                    <form class="flex-fill" onsubmit="doSaveConfigInt('worldState.operationAtramentumProgressOverride'); return false;"><label class="form-label" for="worldState.operationAtramentumProgressOverride" data-loc="worldState_operationAtramentumProgressOverride"></label><div class="input-group"><input id="worldState.operationAtramentumProgressOverride" class="form-control" type="number" min="0" max="100" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div></form>
+                </div>
+                <div class="world-state-wide form-group mt-2 d-flex gap-2">
+                    <div class="flex-fill"><label class="form-label" for="worldState.bellyOfTheBeast" data-loc-itemMap="/Lotus/Language/JadeShadows/EventAlertTitle"></label><select class="form-control" id="worldState.bellyOfTheBeast" data-default="false"><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                    <form class="flex-fill" onsubmit="doSaveConfigInt('worldState.bellyOfTheBeastProgressOverride'); return false;"><label class="form-label" for="worldState.bellyOfTheBeastProgressOverride" data-loc="worldState_bellyOfTheBeastProgressOverride"></label><div class="input-group"><input id="worldState.bellyOfTheBeastProgressOverride" class="form-control" type="number" min="0" max="100" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div></form>
+                </div>
+                <div class="world-state-wide form-group mt-2 d-flex gap-2">
+                    <div class="flex-fill"><label class="form-label" for="worldState.eightClaw" data-loc-itemMap="/Lotus/Language/Isleweaver/Event"></label><select class="form-control" id="worldState.eightClaw" data-default="false"><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                    <form class="flex-fill" onsubmit="doSaveConfigInt('worldState.eightClawProgressOverride'); return false;"><label class="form-label" for="worldState.eightClawProgressOverride" data-loc="worldState_eightClawProgressOverride"></label><div class="input-group"><input id="worldState.eightClawProgressOverride" class="form-control" type="number" min="0" max="100" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div></form>
+                </div>
+                <div class="world-state-wide form-group mt-2 d-flex gap-2">
+                    <div class="flex-fill"><label class="form-label" for="worldState.thermiaFracturesOverride" data-loc-itemMap-tc="/Lotus/Language/G1Quests/HeatFissuresEventName"></label><select class="form-control" id="worldState.thermiaFracturesOverride" data-default="null"><option value="null" data-loc="normal"></option><option value="true" data-loc="enabled"></option><option value="false" data-loc="disabled"></option></select></div>
+                    <form class="flex-fill" onsubmit="doSaveConfigInt('worldState.thermiaFracturesProgressOverride'); return false;"><label class="form-label" for="worldState.thermiaFracturesProgressOverride" data-loc="worldState_thermiaFracturesProgressOverride"></label><div class="input-group"><input id="worldState.thermiaFracturesProgressOverride" class="form-control" type="number" min="0" max="100" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div></form>
+                </div>
+                <div class="world-state-wide form-group mt-2 d-flex gap-2">
+                    <div class="flex-fill"><label class="form-label" for="worldState.nightwaveOverride" data-loc="worldState_nightwaveOverride"></label><select class="form-control" id="worldState.nightwaveOverride" data-default=""></select></div>
+                    <form class="flex-fill" onsubmit="doSaveConfigInt('worldState.nightwaveEpisode'); return false;"><label class="form-label" for="worldState.nightwaveEpisode" data-loc="worldState_nightwaveEpisode"></label><div class="input-group"><input id="worldState.nightwaveEpisode" class="form-control" type="number" min="1" max="5" data-default="1" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div></form>
+                </div>
+
+                    </div>
+                </details>
+
+                <details class="card world-state-section" data-world-state-section="activities" open>
+                    <summary class="world-state-section-summary">
+                        <span class="world-state-section-icon"><i class="bi bi-globe2" aria-hidden="true"></i></span>
+                        <span class="world-state-section-copy">
+                            <span class="world-state-section-title" data-loc="worldState_sectionActivities"></span>
+                            <span class="world-state-section-description" data-loc="worldState_sectionActivitiesDesc"></span>
+                        </span>
+                        <span class="world-state-section-meta">
+                            <span class="world-state-section-count" data-section-count>0</span>
+                            <span data-loc="worldState_settings"></span>
+                            <i class="bi bi-chevron-down world-state-section-chevron" aria-hidden="true"></i>
+                        </span>
+                    </summary>
+                    <div class="card-body world-state-section-body">
+
+                <div class="form-group mt-2"><label class="form-label" for="worldState.eidolonOverride" data-loc="worldState_eidolonOverride"></label><select class="form-control" id="worldState.eidolonOverride" data-default=""><option value="" data-loc="disabled"></option><option value="day" data-loc="worldState_day"></option><option value="night" data-loc="worldState_night"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.vallisOverride" data-loc="worldState_vallisOverride"></label><select class="form-control" id="worldState.vallisOverride" data-default=""><option value="" data-loc="disabled"></option><option value="warm" data-loc-itemMap="/Lotus/Language/Game/TimeOfDay_Warm"></option><option value="cold" data-loc-itemMap="/Lotus/Language/Game/TimeOfDay_Cold"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.duviriOverride" data-loc="worldState_duviriOverride"></label><select class="form-control" id="worldState.duviriOverride" data-default=""><option value="" data-loc="disabled"></option><option value="joy" data-loc-itemMap="/Lotus/Language/Duviri/HappyMoodTitleShort"></option><option value="anger" data-loc-itemMap="/Lotus/Language/Duviri/AngryMoodTitleShort"></option><option value="envy" data-loc-itemMap="/Lotus/Language/Duviri/JealousMoodTitleShort"></option><option value="sorrow" data-loc-itemMap="/Lotus/Language/Duviri/SadMoodTitleShort"></option><option value="fear" data-loc-itemMap="/Lotus/Language/Duviri/ScaredMoodTitleShort"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.allTheFissures" data-loc="worldState_fissures"></label><select class="form-control" id="worldState.allTheFissures" data-default=""><option value="" data-loc="normal"></option><option value="normal" data-loc="worldState_allAtOnceNormal"></option><option value="hard" data-loc="worldState_allAtOnceSteelPath"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.classicAlerts" data-loc="worldState_classicAlerts"></label><select class="form-control" id="worldState.classicAlerts" data-default="null"><option value="null" data-loc="worldState_classicAlertsUpTo"></option><option value="true" data-loc="worldState_classicAlertsOnAllVersions"></option><option value="false" data-loc="disabled"></option></select></div>
+                <div class="form-group mt-2"><label class="form-label" for="worldState.varziaOverride" data-loc="worldState_varziaOverride"></label><select class="form-control" id="worldState.varziaOverride" data-default=""></select></div>
+                <form class="world-state-wide form-group mt-2" onsubmit="doSaveConfigStringArray('worldState.circuitGameModes'); return false;">
+                    <label class="form-label" for="worldState.circuitGameModes" data-loc="worldState_theCircuitOverride"></label>
+                    <div class="input-group"><input id="worldState.circuitGameModes" type="text" class="form-control tags-input" list="datalist-circuitGameModes" autocomplete="off" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div>
+                </form>
+                <form class="world-state-wide form-group mt-2" onsubmit="doSaveConfigFloat('worldState.darvoStockMultiplier'); return false;"><label class="form-label" for="worldState.darvoStockMultiplier" data-loc="worldState_darvoStockMultiplier"></label><div class="input-group"><input id="worldState.darvoStockMultiplier" class="form-control" type="number" step="0.01" data-default="1" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div></form>
+                <form class="world-state-wide form-group mt-2" onsubmit="doSaveConfigInt('worldState.communitySynthesisTarget'); return false;"><label class="form-label" for="worldState.communitySynthesisTarget" data-loc="worldState_communitySynthesisTarget"></label><div class="input-group"><input id="worldState.communitySynthesisTarget" class="form-control" type="number" min="0" max="10" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div></form>
+                <form class="world-state-wide form-group mt-2" onsubmit="doSaveConfigFloat('worldState.communitySynthesisProgress'); return false;"><label class="form-label" for="worldState.communitySynthesisProgress" data-loc="worldState_communitySynthesisProgress"></label><div class="input-group"><input id="worldState.communitySynthesisProgress" class="form-control" type="number" min="0" max="100" step="0.1" data-default="0" /><button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button></div></form>
+                    </div>
+                </details>
+            </div>
+            <p id="world-state-no-results" class="world-state-no-results d-none" data-loc="worldState_noMatches"></p>
+        </section>
+    </div>
+</div>

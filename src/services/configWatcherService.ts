@@ -26,7 +26,7 @@ import {
 import varzia from "../constants/varzia.ts";
 import { getTunablesForClient } from "./tunablesService.ts";
 import { normalizeAccountFeatureProfile } from "./accountFeatureService.ts";
-import { normalizeAccountRateProfile } from "./accountRateService.ts";
+import { normalizeAccountRateProfile, normalizeLegacyAccountDropMultiplier } from "./accountRateService.ts";
 import { Account } from "../models/loginModel.ts";
 import { Inbox } from "../models/inboxModel.ts";
 import { createMessage } from "./inboxService.ts";
@@ -41,6 +41,8 @@ chokidar.watch(configPath).on("change", () => {
         const prevWorldState = JSON.stringify(config.worldState);
         const prevTunables = JSON.stringify(config.tunables);
         const prevInventoryConfig = JSON.stringify(inventoryAffectingConfigKeys.map(key => config[key]));
+        const prevLegacyAccountDropMultipliers = JSON.stringify(config.accountDropMultipliers);
+        const prevAccountRateProfiles = JSON.stringify(config.accountRateProfiles);
         const prevAccountFeatureProfiles = JSON.stringify(config.accountFeatureProfiles);
         const prevWebParams = JSON.stringify(getWebServerParams());
         const prevUdpRelayParams = getUdpRelayParams();
@@ -98,6 +100,14 @@ chokidar.watch(configPath).on("change", () => {
         if (JSON.stringify(config.accountFeatureProfiles) != prevAccountFeatureProfiles) {
             logger.debug(`account feature profiles changed, informing clients`);
             sendWsBroadcastToGame(undefined, { sync_inventory: true });
+        }
+
+        if (
+            JSON.stringify(config.accountDropMultipliers) != prevLegacyAccountDropMultipliers ||
+            JSON.stringify(config.accountRateProfiles) != prevAccountRateProfiles
+        ) {
+            logger.debug(`account rate profiles changed, informing clients`);
+            sendWsBroadcastToGame(undefined, { sync_world_state: true });
         }
 
         if (JSON.stringify(getWebServerParams()) != prevWebParams) {
@@ -242,20 +252,14 @@ export const validateConfig = (): void => {
             modified = true;
         } else {
             const accountDropMultipliers = rawAccountDropMultipliers as Record<string, unknown>;
-            for (const [accountName, rawMultipliers] of Object.entries(accountDropMultipliers)) {
-                if (typeof rawMultipliers != "object" || rawMultipliers == null || Array.isArray(rawMultipliers)) {
-                    delete config.accountDropMultipliers[accountName];
-                    modified = true;
-                    continue;
-                }
-                const multipliers = rawMultipliers as Record<string, unknown>;
-                for (const key of ["resourceMultiplier", "modMultiplier"] as const) {
-                    const value = multipliers[key];
-                    if (value !== undefined && (typeof value != "number" || !Number.isFinite(value) || value < 0)) {
-                        multipliers[key] = 1;
-                        modified = true;
-                    }
-                }
+            const normalizedMultipliers = Object.fromEntries(
+                Object.entries(accountDropMultipliers)
+                    .filter(([, value]) => typeof value == "object" && value != null && !Array.isArray(value))
+                    .map(([accountName, value]) => [accountName, normalizeLegacyAccountDropMultiplier(value)])
+            );
+            if (JSON.stringify(normalizedMultipliers) != JSON.stringify(rawAccountDropMultipliers)) {
+                config.accountDropMultipliers = normalizedMultipliers;
+                modified = true;
             }
         }
     }
@@ -483,14 +487,24 @@ export const validateConfig = (): void => {
         // 老配置里没有这一段：补上默认值，让这些开关在 config.json 里可见可调。
         config.antiCheat = {
             enabled: true,
+            responseMode: "observe",
             enforce: false,
             minMissionTimeSec: 20,
             maxMissionCompletesPerReport: 10,
             maxXpPerMissionSecond: 100000,
-            maxClientItemCountPerReport: 10000
+            maxClientItemCountPerReport: 10000,
+            maxClientInventoryEntriesPerReport: 250,
+            maxClientCreditsPerReport: 10000000
         };
         modified = true;
     } else {
+        if (
+            config.antiCheat.responseMode !== undefined &&
+            !["observe", "sanitize", "reject"].includes(config.antiCheat.responseMode)
+        ) {
+            config.antiCheat.responseMode = "observe";
+            modified = true;
+        }
         if (
             config.antiCheat.minMissionTimeSec !== undefined &&
             (!Number.isInteger(config.antiCheat.minMissionTimeSec) || config.antiCheat.minMissionTimeSec < 0)
@@ -523,6 +537,30 @@ export const validateConfig = (): void => {
         }
         if (config.antiCheat.maxClientItemCountPerReport === undefined) {
             config.antiCheat.maxClientItemCountPerReport = 10000;
+            modified = true;
+        }
+        if (
+            config.antiCheat.maxClientInventoryEntriesPerReport !== undefined &&
+            (!Number.isInteger(config.antiCheat.maxClientInventoryEntriesPerReport) ||
+                config.antiCheat.maxClientInventoryEntriesPerReport < 0)
+        ) {
+            config.antiCheat.maxClientInventoryEntriesPerReport = 250;
+            modified = true;
+        }
+        if (config.antiCheat.maxClientInventoryEntriesPerReport === undefined) {
+            config.antiCheat.maxClientInventoryEntriesPerReport = 250;
+            modified = true;
+        }
+        if (
+            config.antiCheat.maxClientCreditsPerReport !== undefined &&
+            (!Number.isInteger(config.antiCheat.maxClientCreditsPerReport) ||
+                config.antiCheat.maxClientCreditsPerReport < 0)
+        ) {
+            config.antiCheat.maxClientCreditsPerReport = 10000000;
+            modified = true;
+        }
+        if (config.antiCheat.maxClientCreditsPerReport === undefined) {
+            config.antiCheat.maxClientCreditsPerReport = 10000000;
             modified = true;
         }
     }

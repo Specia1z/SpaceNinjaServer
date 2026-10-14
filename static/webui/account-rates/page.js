@@ -44,7 +44,10 @@ window.accountRatesPage = (() => {
     function renderList() {
         const list = find("#account-rates-accounts");
         const query = find("#account-rates-search").value.trim().toLocaleLowerCase();
-        const accounts = state.accounts.filter(account => account.displayName.toLocaleLowerCase().includes(query));
+        const accounts = state.accounts.filter(
+            account => !query || `${account.displayName} ${account.id}`.toLocaleLowerCase().includes(query)
+        );
+        find("#account-rates-visible-count").textContent = String(accounts.length);
         list.replaceChildren();
         if (!accounts.length) {
             const empty = document.createElement("p");
@@ -66,8 +69,9 @@ window.accountRatesPage = (() => {
             name.className = "account-rate-account-name";
             name.textContent = account.displayName;
             const badge = document.createElement("span");
-            badge.className = `badge ${account.hasCustomProfile ? "text-bg-primary" : "text-bg-secondary"}`;
-            badge.textContent = account.hasCustomProfile ? loc("accountRates_custom") : "1x";
+            const hasCustomSettings = account.hasCustomProfile || account.hasCustomFeatures;
+            badge.className = `badge ${hasCustomSettings ? "text-bg-primary" : "text-bg-secondary"}`;
+            badge.textContent = hasCustomSettings ? loc("accountRates_custom") : "1x";
             button.append(name, badge);
             list.append(button);
         }
@@ -99,8 +103,8 @@ window.accountRatesPage = (() => {
                 input.type = "number";
                 input.min = definition.min;
                 input.max = definition.max;
-                input.step = "any";
-                input.value = state.draft[definition.key] ?? 1;
+                input.step = definition.step ?? "any";
+                input.value = state.draft[definition.key] ?? definition.defaultValue ?? 1;
                 input.disabled = state.busy;
                 input.addEventListener("input", () => {
                     state.draft[definition.key] = input.value.trim() === "" ? NaN : Number(input.value);
@@ -148,8 +152,12 @@ window.accountRatesPage = (() => {
 
     function render() {
         const selected = selectedAccount();
-        find("#account-rates-summary").textContent =
-            `${state.accounts.filter(a => a.hasCustomProfile).length}/${state.accounts.length} ${loc("accountRates_configured")}`;
+        const configuredCount = state.accounts.filter(
+            account => account.hasCustomProfile || account.hasCustomFeatures
+        ).length;
+        find("#account-rates-total").textContent = String(state.accounts.length);
+        find("#account-rates-configured-count").textContent = String(configuredCount);
+        find("#account-rates-summary").textContent = `${configuredCount}/${state.accounts.length}`;
         find("#account-rates-refresh").disabled = state.busy;
         renderList();
         find("#account-rates-empty").classList.toggle("d-none", Boolean(selected));
@@ -157,6 +165,12 @@ window.accountRatesPage = (() => {
         if (!selected) return;
         find("#account-rates-selected-name").textContent = selected.displayName;
         find("#account-rates-selected-id").textContent = selected.id;
+        const hasCustomSettings = selected.hasCustomProfile || selected.hasCustomFeatures;
+        const profileStatus = find("#account-rates-profile-status");
+        profileStatus.className = `badge rounded-pill account-rates-profile-status ${
+            hasCustomSettings ? "text-bg-primary" : "text-bg-secondary"
+        }`;
+        profileStatus.textContent = hasCustomSettings ? loc("accountRates_custom") : "1x";
         const enabled = find("#account-rates-enabled");
         enabled.checked = state.draft.enabled !== false;
         enabled.disabled = state.busy;
@@ -167,6 +181,10 @@ window.accountRatesPage = (() => {
         } else {
             expiry.value = "";
         }
+        find(".account-rates-expiry-panel").classList.toggle(
+            "is-expired",
+            Boolean(state.draft.expiresAt && Date.parse(state.draft.expiresAt) <= Date.now())
+        );
         expiry.disabled = state.busy;
         for (const id of ["account-rates-save", "account-rates-reset", "account-rates-delete"]) {
             find(`#${id}`).disabled = state.busy;
@@ -268,7 +286,7 @@ window.accountRatesPage = (() => {
             () => window.accountRatesApi.save(account.id, profile),
             saved => {
                 account.profile = saved.profile;
-                account.hasCustomProfile = true;
+                account.hasCustomProfile = saved.hasCustomProfile;
                 state.draft = { ...saved.profile };
                 updateDirty();
                 notice(loc("accountRates_saved"), "success");
@@ -282,10 +300,8 @@ window.accountRatesPage = (() => {
         void mutate(
             () => window.accountRatesApi.saveFeatures(account.id, { ...state.featureDraft }),
             saved => {
-                account.profile = saved.profile;
                 account.featureProfile = saved.featureProfile;
                 account.hasCustomFeatures = saved.hasCustomFeatures;
-                account.hasCustomProfile = Boolean(account.hasCustomProfile || saved.hasCustomFeatures);
                 state.featureDraft = { ...saved.featureProfile };
                 updateDirty();
                 notice(loc("accountRates_featuresSaved"), "success");
@@ -299,8 +315,11 @@ window.accountRatesPage = (() => {
         void mutate(
             () => window.accountRatesApi.remove(account.id),
             () => {
-                account.profile = Object.fromEntries([["enabled", true], ...state.definitions.map(d => [d.key, 1])]);
-                account.hasCustomProfile = account.hasCustomFeatures;
+                account.profile = Object.fromEntries([
+                    ["enabled", true],
+                    ...state.definitions.map(definition => [definition.key, definition.defaultValue ?? 1])
+                ]);
+                account.hasCustomProfile = false;
                 state.draft = { ...account.profile };
                 updateDirty();
                 notice(loc("accountRates_deleted"), "success");
@@ -340,8 +359,10 @@ window.accountRatesPage = (() => {
     find("#account-rates-features-save").addEventListener("click", saveFeatures);
     find("#account-rates-delete").addEventListener("click", remove);
     find("#account-rates-reset").addEventListener("click", () => {
-        state.draft = Object.fromEntries([["enabled", true], ...state.definitions.map(d => [d.key, 1])]);
-        state.featureDraft = Object.fromEntries(state.featureDefinitions.map(d => [d.key, false]));
+        state.draft = Object.fromEntries([
+            ["enabled", true],
+            ...state.definitions.map(definition => [definition.key, definition.defaultValue ?? 1])
+        ]);
         updateDirty();
         clearNotice();
         render();

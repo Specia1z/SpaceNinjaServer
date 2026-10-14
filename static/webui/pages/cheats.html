@@ -1,0 +1,507 @@
+<div class="cheats-page" data-route="/webui/cheats, /webui/settings" data-title-tag="navbar_cheats">
+                <header class="cheats-hero">
+                    <div class="cheats-hero-copy">
+                        <span class="cheats-eyebrow" data-loc="cheats_account"></span>
+                        <h1 data-loc="navbar_cheats"></h1>
+                    </div>
+                    <div class="cheats-hero-mark" aria-hidden="true"><i class="bi bi-sliders"></i></div>
+                </header>
+
+                <div class="cheats-layout row g-3">
+                    <div class="col-md-6 cheats-column cheats-account-column">
+                        <div id="account-cheats-card" class="card cheats-card cheats-account-card">
+                            <h5 class="card-header" data-loc="cheats_account"></h5>
+                            <div class="card-body" id="account-cheats">
+                                <div id="global-account-cheats">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="skipAllDialogue" data-enabling-permission="toggleCheat.skipAllDialogue" />
+                                    <label class="form-check-label" for="skipAllDialogue" data-loc="cheats_skipAllDialogue"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="skipAllPopups" data-enabling-permission="toggleCheat.skipAllPopups" />
+                                    <label class="form-check-label" for="skipAllPopups" data-loc="cheats_skipAllPopups"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractPurchaseCreditCost" data-enabling-permission="toggleCheat.dontSubtractPurchaseCreditCost" />
+                                    <label class="form-check-label" for="dontSubtractPurchaseCreditCost" data-loc="cheats_dontSubtractPurchaseCreditCost"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractPurchasePlatinumCost" data-enabling-permission="toggleCheat.dontSubtractPurchasePlatinumCost" />
+                                    <label class="form-check-label" for="dontSubtractPurchasePlatinumCost" data-loc="cheats_dontSubtractPurchasePlatinumCost"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractRushPlatinumCost" data-enabling-permission="toggleCheat.dontSubtractRushPlatinumCost" />
+                                    <label class="form-check-label" for="dontSubtractRushPlatinumCost" data-loc="cheats_dontSubtractRushPlatinumCost"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractPurchaseItemCost" data-enabling-permission="toggleCheat.dontSubtractPurchaseItemCost" />
+                                    <label class="form-check-label" for="dontSubtractPurchaseItemCost" data-loc="cheats_dontSubtractPurchaseItemCost"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractPurchaseStandingCost" data-enabling-permission="toggleCheat.dontSubtractPurchaseStandingCost" />
+                                    <label class="form-check-label" for="dontSubtractPurchaseStandingCost" data-loc="cheats_dontSubtractPurchaseStandingCost"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractKuvaForRivens" data-enabling-permission="toggleCheat.dontSubtractKuvaForRivens" />
+                                    <label class="form-check-label" for="dontSubtractKuvaForRivens" data-loc="cheats_dontSubtractKuvaForRivens"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractVoidTraces" data-enabling-permission="toggleCheat.dontSubtractVoidTraces" />
+                                    <label class="form-check-label" for="dontSubtractVoidTraces" data-loc="cheats_dontSubtractVoidTraces"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractConsumables" data-enabling-permission="toggleCheat.dontSubtractConsumables" />
+                                    <label class="form-check-label" for="dontSubtractConsumables" data-loc="cheats_dontSubtractConsumables"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dontSubtractKeys" data-enabling-permission="toggleCheat.dontSubtractKeys" />
+                                    <label class="form-check-label" for="dontSubtractKeys" data-loc="cheats_dontSubtractKeys"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="infiniteCredits" data-enabling-permission="toggleCheat.infiniteCredits" />
+                                    <label class="form-check-label" for="infiniteCredits" data-loc="cheats_infiniteCredits"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="infinitePlatinum" data-enabling-permission="toggleCheat.infinitePlatinum" />
+                                    <label class="form-check-label" for="infinitePlatinum" data-loc="cheats_infinitePlatinum"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="infiniteRegalAya" data-enabling-permission="toggleCheat.infiniteRegalAya" />
+                                    <label class="form-check-label" for="infiniteRegalAya" data-loc="cheats_infiniteRegalAya"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="infiniteEndo" data-enabling-permission="toggleCheat.infiniteEndo" />
+                                    <label class="form-check-label" for="infiniteEndo" data-loc="cheats_infiniteEndo"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="infiniteDirac" data-enabling-permission="toggleCheat.infiniteDirac" />
+                                    <label class="form-check-label" for="infiniteDirac" data-loc="cheats_infiniteDirac"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="infiniteRevives" data-enabling-permission="toggleCheat.infiniteRevives" />
+                                    <label class="form-check-label" for="infiniteRevives" data-loc="cheats_infiniteRevives"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="infiniteTrades" data-enabling-permission="toggleCheat.infiniteTrades" />
+                                    <label class="form-check-label" for="infiniteTrades" data-loc="cheats_infiniteTrades"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="infiniteGifts" data-enabling-permission="toggleCheat.infiniteGifts" />
+                                    <label class="form-check-label" for="infiniteGifts" data-loc="cheats_infiniteGifts"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="alertsRepeatable" data-enabling-permission="toggleCheat.alertsRepeatable" />
+                                    <label class="form-check-label" for="alertsRepeatable" data-loc="cheats_alertsRepeatable"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="syndicateMissionsRepeatable" data-enabling-permission="toggleCheat.syndicateMissionsRepeatable" />
+                                    <label class="form-check-label" for="syndicateMissionsRepeatable" data-loc="cheats_syndicateMissionsRepeatable"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="instantFinishRivenChallenge" data-enabling-permission="toggleCheat.instantFinishRivenChallenge" />
+                                    <label class="form-check-label" for="instantFinishRivenChallenge" data-loc="cheats_instantFinishRivenChallenge"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noDailyStandingLimits" data-enabling-permission="toggleCheat.noDailyStandingLimits" />
+                                    <label class="form-check-label" for="noDailyStandingLimits" data-loc="cheats_noDailyStandingLimits"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noDailyFocusLimit" data-enabling-permission="toggleCheat.noDailyFocusLimit" />
+                                    <label class="form-check-label" for="noDailyFocusLimit" data-loc="cheats_noDailyFocusLimit"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noArgonCrystalDecay" data-enabling-permission="toggleCheat.noArgonCrystalDecay" />
+                                    <label class="form-check-label" for="noArgonCrystalDecay" data-loc="cheats_noArgonCrystalDecay"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noVendorPurchaseLimits" data-enabling-permission="toggleCheat.noVendorPurchaseLimits" />
+                                    <label class="form-check-label" for="noVendorPurchaseLimits" data-loc="cheats_noVendorPurchaseLimits"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noNodeEntryFees" data-enabling-permission="toggleCheat.noNodeEntryFees" />
+                                    <label class="form-check-label" for="noNodeEntryFees" data-loc="cheats_noNodeEntryFees"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noDeathMarks" data-enabling-permission="toggleCheat.noDeathMarks" />
+                                    <label class="form-check-label" for="noDeathMarks" data-loc="cheats_noDeathMarks"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noNemesis" data-enabling-permission="toggleCheat.noNemesis" />
+                                    <label class="form-check-label" for="noNemesis" data-loc="cheats_noNemesis"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noKimCooldowns" data-enabling-permission="toggleCheat.noKimCooldowns" />
+                                    <label class="form-check-label" for="noKimCooldowns" data-loc="cheats_noKimCooldowns"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noBlessingCooldown" data-enabling-permission="toggleCheat.noBlessingCooldown" />
+                                    <label class="form-check-label" for="noBlessingCooldown" data-loc="cheats_noBlessingCooldown"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="noResourceExtractorDronesDamage" data-enabling-permission="toggleCheat.noResourceExtractorDronesDamage" />
+                                    <label class="form-check-label" for="noResourceExtractorDronesDamage" data-loc="cheats_noResourceExtractorDronesDamage"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="instantResourceExtractorDrones" data-enabling-permission="toggleCheat.instantResourceExtractorDrones" />
+                                    <label class="form-check-label" for="instantResourceExtractorDrones" data-loc="cheats_instantResourceExtractorDrones"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="claimingBlueprintRefundsIngredients" data-enabling-permission="toggleCheat.claimingBlueprintRefundsIngredients" />
+                                    <label class="form-check-label" for="claimingBlueprintRefundsIngredients" data-loc="cheats_claimingBlueprintRefundsIngredients"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="missionsCanGiveAllRelics" data-enabling-permission="toggleCheat.missionsCanGiveAllRelics" />
+                                    <label class="form-check-label" for="missionsCanGiveAllRelics" data-loc="cheats_missionsCanGiveAllRelics"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="exceptionalRelicsAlwaysGiveBronzeReward" data-enabling-permission="toggleCheat.exceptionalRelicsAlwaysGiveBronzeReward" />
+                                    <label class="form-check-label" for="exceptionalRelicsAlwaysGiveBronzeReward" data-loc="cheats_exceptionalRelicsAlwaysGiveBronzeReward"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="flawlessRelicsAlwaysGiveSilverReward" data-enabling-permission="toggleCheat.flawlessRelicsAlwaysGiveSilverReward" />
+                                    <label class="form-check-label" for="flawlessRelicsAlwaysGiveSilverReward" data-loc="cheats_flawlessRelicsAlwaysGiveSilverReward"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="radiantRelicsAlwaysGiveGoldReward" data-enabling-permission="toggleCheat.radiantRelicsAlwaysGiveGoldReward" />
+                                    <label class="form-check-label" for="radiantRelicsAlwaysGiveGoldReward" data-loc="cheats_radiantRelicsAlwaysGiveGoldReward"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="disableDailyTribute" data-enabling-permission="toggleCheat.disableDailyTribute" />
+                                    <label class="form-check-label" for="disableDailyTribute" data-loc="cheats_disableDailyTribute"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="incrementDailyTributeBy50" data-enabling-permission="toggleCheat.incrementDailyTributeBy50" />
+                                    <label class="form-check-label" for="incrementDailyTributeBy50" data-loc="cheats_incrementDailyTributeBy50"></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="finishInvasionsInOneMission" data-enabling-permission="toggleCheat.finishInvasionsInOneMission" />
+                                    <label class="form-check-label" for="finishInvasionsInOneMission" data-loc="cheats_finishInvasionsInOneMission"></label>
+                                </div>
+                                <form class="form-group mt-2" onsubmit="doChangeSupportedSyndicate(); return false;">
+                                    <label class="form-label" for="changeSyndicate" data-loc="cheats_changeSupportedSyndicate"></label>
+                                    <div class="input-group">
+                                        <select class="form-control" id="changeSyndicate"></select>
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_changeButton"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="spoofMasteryRank" data-loc="cheats_spoofMasteryRank"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="spoofMasteryRank" type="number" min="-1" max="65535" data-default="-1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="nemesisHenchmenKillsMultiplierGrineer" data-loc="cheats_nemesisHenchmenKillsMultiplierGrineer"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="nemesisHenchmenKillsMultiplierGrineer" type="number" min="0" max="65535" data-default="1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="nemesisHenchmenKillsMultiplierCorpus" data-loc="cheats_nemesisHenchmenKillsMultiplierCorpus"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="nemesisHenchmenKillsMultiplierCorpus" type="number" min="0" max="65535" data-default="1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="nemesisAntivirusGainMultiplier" data-loc="cheats_nemesisAntivirusGainMultiplier"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="nemesisAntivirusGainMultiplier" type="number" min="0" max="65535" data-default="1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="nemesisHintProgressMultiplierGrineer" data-loc="cheats_nemesisHintProgressMultiplierGrineer"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="nemesisHintProgressMultiplierGrineer" type="number" min="0" max="65535" data-default="1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="nemesisHintProgressMultiplierCorpus" data-loc="cheats_nemesisHintProgressMultiplierCorpus"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="nemesisHintProgressMultiplierCorpus" type="number" min="0" max="65535" data-default="1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="nemesisTaxRateReductionPercent" data-loc="cheats_nemesisTaxRateReductionPercent"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="nemesisTaxRateReductionPercent" type="number" min="0" max="100" data-default="0" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="nemesisExtraWeapon" data-loc="cheats_nemesisExtraWeapon"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="nemesisExtraWeapon" type="number" min="0" max="65535" data-default="0" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="dailyTributeRewardMultiplier" data-loc="cheats_dailyTributeRewardMultiplier"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="dailyTributeRewardMultiplier" type="number" min="1" max="1000000" data-default="1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="relicRewardItemCountMultiplier" data-loc="cheats_relicRewardItemCountMultiplier"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="relicRewardItemCountMultiplier" type="number" min="1" max="1000000" data-default="1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="teralystCapturePlatinumBonus" data-loc="cheats_teralystCapturePlatinumBonus"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="teralystCapturePlatinumBonus" type="number" min="0" max="1000000" data-default="0" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="gantulystCapturePlatinumBonus" data-loc="cheats_gantulystCapturePlatinumBonus"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="gantulystCapturePlatinumBonus" type="number" min="0" max="1000000" data-default="0" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="hydrolystCapturePlatinumBonus" data-loc="cheats_hydrolystCapturePlatinumBonus"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="hydrolystCapturePlatinumBonus" type="number" min="0" max="1000000" data-default="0" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                <form class="form-group mt-2">
+                                    <label class="form-label" for="nightwaveStandingMultiplier" data-loc="cheats_nightwaveStandingMultiplier"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="nightwaveStandingMultiplier" type="number" min="1" max="1000000" data-default="1" />
+                                        <button class="btn btn-secondary" type="button" data-loc="cheats_save"></button>
+                                    </div>
+                                </form>
+                                </div>
+                                <div class="cheats-action-grid mt-2 mb-2 d-flex flex-wrap gap-2">
+                                    <button class="btn btn-primary" onclick="debounce(doUnlockAllShipFeatures);" data-loc="cheats_unlockAllShipFeatures"></button>
+                                    <button class="btn btn-primary" onclick="debounce(unlockAllNormalMissions);" data-loc="cheats_unlockAllNormalMissions"></button>
+                                    <button class="btn btn-primary" onclick="debounce(unlockAllMissions);" data-loc="cheats_unlockAllMissions"></button>
+                                    <button class="btn btn-primary" onclick="debounce(markAllAsRead);" data-loc="cheats_markAllAsRead"></button>
+                                    <button class="btn btn-primary" onclick="debounce(doUnlockAllScans);" data-loc="cheats_unlockAllScans"></button>
+                                    <button class="btn btn-primary" onclick="debounce(doUnlockAllCapturaScenes);" data-loc="cheats_unlockAllCapturaScenes"></button>
+                                    <button class="btn btn-primary" onclick="doUnlockAllFocusSchools();" data-loc="cheats_unlockAllFocusSchools"></button>
+                                    <button class="btn btn-primary" onclick="doHelminthUnlockAll();" data-loc="cheats_helminthUnlockAll"></button>
+                                    <button class="btn btn-primary" onclick="debounce(addMissingHelminthRecipes);" data-loc="cheats_addMissingSubsumedAbilities"></button>
+                                    <button class="btn btn-primary" onclick="doIntrinsicsUnlockAll();" data-loc="cheats_intrinsicsUnlockAll"></button>
+                                    <button class="btn btn-primary" onclick="debounce(doMaxPlexus);" data-loc="cheats_maxPlexus"></button>
+                                    <button class="btn btn-primary" onclick="debounce(unlockAllJobChainBounties);" data-loc="cheats_unlockAllJobChainBounties"></button>
+                                    <button class="btn btn-primary" onclick="debounce(unlockAllSimarisResearchEntries);" data-loc="cheats_unlockAllSimarisResearchEntries"></button>
+                                    <button class="btn btn-primary" onclick="debounce(addMissingDangerRooms);" data-loc="cheats_addMissingDangerRooms"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 cheats-column cheats-server-column">
+                        <div id="server-cheats-card" class="card mb-3 cheats-card cheats-server-card">
+                            <h5 class="card-header" data-loc="cheats_server"></h5>
+                            <div class="card-body">
+                                <div class="d-none admin-hide">
+                                    <p class="card-text" data-loc="cheats_administratorRequirement"></p>
+                                </div>
+                                <div id="server-cheats-config" class="d-none admin-show config-form">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skipTutorial" />
+                                        <label class="form-check-label" for="skipTutorial" data-loc="cheats_skipTutorial"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="skipClanKeyCrafting" />
+                                        <label class="form-check-label" for="skipClanKeyCrafting" data-loc="cheats_skipClanKeyCrafting"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="fullyStockedVendors" />
+                                        <label class="form-check-label" for="fullyStockedVendors" data-loc="cheats_fullyStockedVendors"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="infiniteHelminthMaterials" />
+                                        <label class="form-check-label" for="infiniteHelminthMaterials" data-loc="cheats_infiniteHelminthMaterials"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="universalPolarityEverywhere" />
+                                        <label class="form-check-label" for="universalPolarityEverywhere" data-loc="cheats_universalPolarityEverywhere"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="unlockDoubleCapacityPotatoesEverywhere" />
+                                        <label class="form-check-label" for="unlockDoubleCapacityPotatoesEverywhere" data-loc="cheats_unlockDoubleCapacityPotatoesEverywhere"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="unlockExilusEverywhere" />
+                                        <label class="form-check-label" for="unlockExilusEverywhere" data-loc="cheats_unlockExilusEverywhere"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="unlockArcanesEverywhere" />
+                                        <label class="form-check-label" for="unlockArcanesEverywhere" data-loc="cheats_unlockArcanesEverywhere"></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="noHubDiscrimination" />
+                                        <label class="form-check-label" for="noHubDiscrimination" data-loc="cheats_noHubDiscrimination"></label>
+                                    </div>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="autoCompleteQuestsForNewAccounts" />
+                                        <label class="form-check-label" for="autoCompleteQuestsForNewAccounts" data-loc="cheats_autoCompleteQuestsForNewAccounts"></label>
+                                    </div>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="unlockAllMissionsForNewAccounts" />
+                                        <label class="form-check-label" for="unlockAllMissionsForNewAccounts" data-loc="cheats_unlockAllMissionsForNewAccounts"></label>
+                                    </div>
+                                    <div class="form-text mb-2" data-loc="cheats_unlockAllMissionsForNewAccountsHint"></div>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="newAccountStarterPack" />
+                                        <label class="form-check-label" for="newAccountStarterPack" data-loc="cheats_newAccountStarterPack"></label>
+                                    </div>
+                                    <h6 class="mt-4" data-loc="cheats_registrationRateLimit"></h6>
+                                    <div class="form-text mb-2" data-loc="cheats_registrationRateLimitHint"></div>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('registrationRateLimit.windowMinutes'); return false;">
+                                        <label class="form-label" for="registrationRateLimit.windowMinutes" data-loc="cheats_registrationWindowMinutes"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="registrationRateLimit.windowMinutes" type="number" min="1" max="525600" step="1" data-default="1440" required />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('registrationRateLimit.perAddress'); return false;">
+                                        <label class="form-label" for="registrationRateLimit.perAddress" data-loc="cheats_registrationPerAddress"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="registrationRateLimit.perAddress" type="number" min="1" max="1000000" step="1" data-default="3" required />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('registrationRateLimit.global'); return false;">
+                                        <label class="form-label" for="registrationRateLimit.global" data-loc="cheats_registrationGlobal"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="registrationRateLimit.global" type="number" min="1" max="1000000" step="1" data-default="100" required />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('registrationRateLimit.globalAttempts'); return false;">
+                                        <label class="form-label" for="registrationRateLimit.globalAttempts" data-loc="cheats_registrationGlobalAttempts"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="registrationRateLimit.globalAttempts" type="number" min="1" max="10000000" step="1" data-default="1000" required />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="noMasteryRankUpCooldown" />
+                                        <label class="form-check-label" for="noMasteryRankUpCooldown" data-loc="cheats_noMasteryRankUpCooldown"></label>
+                                    </div>
+                                    <form class="form-group mt-3" onsubmit="doSaveConfigInt('relicPlatinumReward.common'); return false;">
+                                        <label class="form-label" for="relicPlatinumReward.common" data-loc="cheats_relicPlatinumRewardCommon"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="relicPlatinumReward.common" type="number" min="0" step="1" data-default="0" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('relicPlatinumReward.uncommon'); return false;">
+                                        <label class="form-label" for="relicPlatinumReward.uncommon" data-loc="cheats_relicPlatinumRewardUncommon"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="relicPlatinumReward.uncommon" type="number" min="0" step="1" data-default="0" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('relicPlatinumReward.rare'); return false;">
+                                        <label class="form-label" for="relicPlatinumReward.rare" data-loc="cheats_relicPlatinumRewardRare"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="relicPlatinumReward.rare" type="number" min="0" step="1" data-default="0" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_relicPlatinumRewardHint"></div>
+                                    </form>
+                                    <h6 class="mt-4" data-loc="cheats_missionAyaReward"></h6>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionAyaRewardMin'); return false;">
+                                        <label class="form-label" for="missionAyaRewardMin" data-loc="cheats_missionAyaRewardMin"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardMin" type="number" min="0" step="1" data-default="1" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionAyaRewardMax'); return false;">
+                                        <label class="form-label" for="missionAyaRewardMax" data-loc="cheats_missionAyaRewardMax"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardMax" type="number" min="0" step="1" data-default="2" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigFloat('missionAyaRewardChance'); return false;">
+                                        <label class="form-label" for="missionAyaRewardChance" data-loc="cheats_missionAyaRewardChance"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardChance" type="number" min="0" max="100" step="0.1" data-default="8" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionAyaRewardChanceHint"></div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionAyaRewardDailyCap'); return false;">
+                                        <label class="form-label" for="missionAyaRewardDailyCap" data-loc="cheats_missionAyaRewardDailyCap"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardDailyCap" type="number" min="0" step="1" data-default="3" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionRewardDailyCapHint"></div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionAyaRewardPityCompletions'); return false;">
+                                        <label class="form-label" for="missionAyaRewardPityCompletions" data-loc="cheats_missionAyaRewardPityCompletions"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionAyaRewardPityCompletions" type="number" min="0" step="1" data-default="12" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionRewardPityHint"></div>
+                                    </form>
+                                    <h6 class="mt-4" data-loc="cheats_missionPlatinumReward"></h6>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionPlatinumRewardMin'); return false;">
+                                        <label class="form-label" for="missionPlatinumRewardMin" data-loc="cheats_missionPlatinumRewardMin"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionPlatinumRewardMin" type="number" min="0" step="1" data-default="1" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionPlatinumRewardMax'); return false;">
+                                        <label class="form-label" for="missionPlatinumRewardMax" data-loc="cheats_missionPlatinumRewardMax"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionPlatinumRewardMax" type="number" min="0" step="1" data-default="2" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigFloat('missionPlatinumRewardChance'); return false;">
+                                        <label class="form-label" for="missionPlatinumRewardChance" data-loc="cheats_missionPlatinumRewardChance"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionPlatinumRewardChance" type="number" min="0" max="100" step="0.1" data-default="1" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionPlatinumRewardChanceHint"></div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionPlatinumRewardDailyCap'); return false;">
+                                        <label class="form-label" for="missionPlatinumRewardDailyCap" data-loc="cheats_missionPlatinumRewardDailyCap"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionPlatinumRewardDailyCap" type="number" min="0" step="1" data-default="2" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionRewardDailyCapHint"></div>
+                                    </form>
+                                    <form class="form-group mt-2" onsubmit="doSaveConfigInt('missionPlatinumRewardPityCompletions'); return false;">
+                                        <label class="form-label" for="missionPlatinumRewardPityCompletions" data-loc="cheats_missionPlatinumRewardPityCompletions"></label>
+                                        <div class="input-group">
+                                            <input class="form-control" id="missionPlatinumRewardPityCompletions" type="number" min="0" step="1" data-default="30" />
+                                            <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                        </div>
+                                        <div class="form-text" data-loc="cheats_missionRewardPityHint"></div>
+                                    </form>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" id="missionPlatinumRewardSendMail" />
+                                        <label class="form-check-label" for="missionPlatinumRewardSendMail" data-loc="cheats_missionPlatinumRewardSendMail"></label>
+                                        <div class="form-text" data-loc="cheats_missionPlatinumRewardSendMailHint"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>

@@ -1,0 +1,285 @@
+<div data-route="/webui/anti-cheat" data-title-tag="navbar_antiCheat">
+    <div class="d-none admin-hide">
+        <p class="card-text" data-loc="cheats_administratorRequirement"></p>
+    </div>
+    <div class="d-none admin-show admin-suspicion-page">
+        <header class="admin-suspicion-hero">
+            <div class="admin-suspicion-hero-copy">
+                <span class="admin-suspicion-eyebrow" data-loc="admin_antiCheatEyebrow"></span>
+                <h1 data-loc="admin_antiCheat"></h1>
+                <p data-loc="admin_antiCheatDescription"></p>
+            </div>
+            <div class="admin-suspicion-hero-mark" aria-hidden="true">
+                <i class="bi bi-shield-check"></i>
+            </div>
+        </header>
+
+        <p class="admin-suspicion-summary" id="admin-anti-cheat-summary"></p>
+
+        <ul class="nav nav-pills admin-suspicion-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link active"
+                    id="admin-anti-cheat-tab-overview"
+                    type="button"
+                    role="tab"
+                    data-bs-toggle="pill"
+                    data-bs-target="#admin-anti-cheat-pane-overview"
+                    aria-controls="admin-anti-cheat-pane-overview"
+                    aria-selected="true"
+                >
+                    <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                    <span data-loc="admin_antiCheatOverview"></span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link"
+                    id="admin-anti-cheat-tab-detail"
+                    type="button"
+                    role="tab"
+                    data-bs-toggle="pill"
+                    data-bs-target="#admin-anti-cheat-pane-detail"
+                    aria-controls="admin-anti-cheat-pane-detail"
+                    aria-selected="false"
+                >
+                    <i class="bi bi-list-check" aria-hidden="true"></i>
+                    <span data-loc="admin_antiCheatDetail"></span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button
+                    class="nav-link"
+                    id="admin-anti-cheat-tab-config"
+                    type="button"
+                    role="tab"
+                    data-bs-toggle="pill"
+                    data-bs-target="#admin-anti-cheat-pane-config"
+                    aria-controls="admin-anti-cheat-pane-config"
+                    aria-selected="false"
+                >
+                    <i class="bi bi-sliders" aria-hidden="true"></i>
+                    <span data-loc="admin_antiCheatConfig"></span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content admin-suspicion-tab-content">
+            <section class="tab-pane fade show active" id="admin-anti-cheat-pane-overview" role="tabpanel" tabindex="0">
+                <div class="card admin-suspicion-card">
+                    <div class="admin-suspicion-card-header">
+                        <span class="admin-suspicion-card-icon admin-suspicion-card-icon-danger" aria-hidden="true">
+                            <i class="bi bi-activity"></i>
+                        </span>
+                        <div>
+                            <span class="admin-suspicion-kicker" data-loc="admin_antiCheatLiveKicker"></span>
+                            <h2 data-loc="admin_antiCheatAccounts"></h2>
+                            <p data-loc="admin_antiCheatAccountsHint"></p>
+                        </div>
+                        <div class="admin-suspicion-actions">
+                            <button
+                                class="btn btn-outline-secondary btn-sm"
+                                id="admin-anti-cheat-refresh"
+                                type="button"
+                                data-suspicion-action
+                            >
+                                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                                <span data-loc="admin_refreshStatus"></span>
+                            </button>
+                            <button
+                                class="btn btn-outline-danger btn-sm"
+                                id="admin-anti-cheat-clear-all"
+                                type="button"
+                                data-suspicion-action
+                            >
+                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                <span data-loc="admin_antiCheatClearAll"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="admin-suspicion-toolbar">
+                        <div class="input-group input-group-sm admin-suspicion-search">
+                            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                            <input
+                                class="form-control"
+                                id="admin-anti-cheat-search"
+                                type="search"
+                                autocomplete="off"
+                                data-loc-placeholder="admin_antiCheatSearch"
+                            />
+                        </div>
+                        <select class="form-select form-select-sm admin-suspicion-filter" id="admin-anti-cheat-kind-filter">
+                            <option value="" data-loc="admin_antiCheatAllChecks"></option>
+                        </select>
+                    </div>
+                    <div class="table-responsive admin-suspicion-table-wrap">
+                        <table class="table table-sm table-hover align-middle admin-suspicion-table">
+                            <thead>
+                                <tr>
+                                    <th data-loc="admin_account"></th>
+                                    <th data-loc="admin_antiCheatRisk"></th>
+                                    <th data-loc="admin_antiCheatTotal"></th>
+                                    <th data-loc="admin_antiCheatKinds"></th>
+                                    <th data-loc="admin_antiCheatResponse"></th>
+                                    <th data-loc="admin_antiCheatLastSeen"></th>
+                                    <th data-loc="admin_storeState"></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-anti-cheat-accounts"></tbody>
+                        </table>
+                    </div>
+                    <div class="admin-suspicion-empty d-none" id="admin-anti-cheat-empty">
+                        <i class="bi bi-shield-check" aria-hidden="true"></i>
+                        <span data-loc="admin_antiCheatEmpty"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tab-pane fade" id="admin-anti-cheat-pane-detail" role="tabpanel" tabindex="0">
+                <div class="card admin-suspicion-card">
+                    <div class="admin-suspicion-card-header">
+                        <span class="admin-suspicion-card-icon" aria-hidden="true">
+                            <i class="bi bi-fingerprint"></i>
+                        </span>
+                        <div>
+                            <span class="admin-suspicion-kicker" data-loc="admin_antiCheatDetailKicker"></span>
+                            <h2>
+                                <span data-loc="admin_antiCheatDetail"></span>
+                                <span class="text-body-secondary" id="admin-anti-cheat-detail-name"></span>
+                            </h2>
+                            <p data-loc="admin_antiCheatDetailHint"></p>
+                        </div>
+                        <span class="badge rounded-pill text-bg-secondary d-none" id="admin-anti-cheat-detail-risk"></span>
+                    </div>
+                    <div class="admin-suspicion-detail-layout">
+                        <div class="admin-suspicion-detail-card admin-suspicion-detail-card-wide">
+                            <h3 data-loc="admin_antiCheatEvents"></h3>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover align-middle admin-suspicion-table">
+                                    <thead>
+                                        <tr>
+                                            <th data-loc="admin_antiCheatTime"></th>
+                                            <th data-loc="admin_antiCheatKind"></th>
+                                            <th data-loc="admin_antiCheatRisk"></th>
+                                            <th data-loc="admin_antiCheatResponse"></th>
+                                            <th data-loc="admin_antiCheatMission"></th>
+                                            <th data-loc="admin_antiCheatEvidence"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-anti-cheat-events"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="admin-suspicion-detail-card">
+                            <h3 data-loc="admin_antiCheatEvidenceTitle"></h3>
+                            <pre class="text-body-secondary" id="admin-anti-cheat-evidence-placeholder" data-loc="admin_antiCheatEvidenceHint"></pre>
+                        </div>
+                        <div class="admin-suspicion-detail-card">
+                            <h3 data-loc="admin_antiCheatReviewTitle"></h3>
+                            <p class="text-body-secondary small mb-0" data-loc="admin_antiCheatReviewHint"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tab-pane fade" id="admin-anti-cheat-pane-config" role="tabpanel" tabindex="0">
+                <div class="card admin-suspicion-card">
+                    <div class="admin-suspicion-card-header">
+                        <span class="admin-suspicion-card-icon admin-suspicion-card-icon-success" aria-hidden="true">
+                            <i class="bi bi-sliders2"></i>
+                        </span>
+                        <div>
+                            <span class="admin-suspicion-kicker" data-loc="admin_antiCheatPolicyKicker"></span>
+                            <h2 data-loc="admin_antiCheatConfig"></h2>
+                            <p data-loc="admin_antiCheatConfigHint"></p>
+                        </div>
+                    </div>
+                    <div class="config-form">
+                        <div class="admin-suspicion-config-grid">
+                            <div class="admin-suspicion-config-item">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="antiCheat.enabled" />
+                                    <label class="form-check-label" for="antiCheat.enabled" data-loc="admin_antiCheatEnabled"></label>
+                                    <div class="form-text" data-loc="admin_antiCheatEnabledHint"></div>
+                                </div>
+                            </div>
+                            <div class="admin-suspicion-config-item">
+                                <label class="form-label" for="antiCheat.responseMode" data-loc="admin_antiCheatResponseMode"></label>
+                                <select class="form-select" id="antiCheat.responseMode">
+                                    <option value="observe" data-loc="admin_antiCheatModeObserve"></option>
+                                    <option value="sanitize" data-loc="admin_antiCheatModeSanitize"></option>
+                                    <option value="reject" data-loc="admin_antiCheatModeReject"></option>
+                                </select>
+                                <div class="form-text" id="admin-anti-cheat-mode-hint"></div>
+                            </div>
+                        </div>
+                        <div class="admin-suspicion-config-grid">
+                            <div class="admin-suspicion-config-item">
+                                <form onsubmit="doSaveConfigInt('antiCheat.minMissionTimeSec'); return false;">
+                                    <label class="form-label" for="antiCheat.minMissionTimeSec" data-loc="admin_antiCheatMinMissionTime"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="antiCheat.minMissionTimeSec" type="number" min="0" step="1" data-default="20" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                    <div class="form-text" data-loc="admin_antiCheatMinMissionTimeHint"></div>
+                                </form>
+                            </div>
+                            <div class="admin-suspicion-config-item">
+                                <form onsubmit="doSaveConfigInt('antiCheat.maxMissionCompletesPerReport'); return false;">
+                                    <label class="form-label" for="antiCheat.maxMissionCompletesPerReport" data-loc="admin_antiCheatMaxCompletes"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="antiCheat.maxMissionCompletesPerReport" type="number" min="0" step="1" data-default="10" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                    <div class="form-text" data-loc="admin_antiCheatMaxCompletesHint"></div>
+                                </form>
+                            </div>
+                            <div class="admin-suspicion-config-item">
+                                <form onsubmit="doSaveConfigInt('antiCheat.maxXpPerMissionSecond'); return false;">
+                                    <label class="form-label" for="antiCheat.maxXpPerMissionSecond" data-loc="admin_antiCheatMaxXp"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="antiCheat.maxXpPerMissionSecond" type="number" min="0" step="1" data-default="100000" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                    <div class="form-text" data-loc="admin_antiCheatMaxXpHint"></div>
+                                </form>
+                            </div>
+                            <div class="admin-suspicion-config-item">
+                                <form onsubmit="doSaveConfigInt('antiCheat.maxClientItemCountPerReport'); return false;">
+                                    <label class="form-label" for="antiCheat.maxClientItemCountPerReport" data-loc="admin_antiCheatMaxClientItemCount"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="antiCheat.maxClientItemCountPerReport" type="number" min="0" step="1" data-default="10000" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                    <div class="form-text" data-loc="admin_antiCheatMaxClientItemCountHint"></div>
+                                </form>
+                            </div>
+                            <div class="admin-suspicion-config-item">
+                                <form onsubmit="doSaveConfigInt('antiCheat.maxClientInventoryEntriesPerReport'); return false;">
+                                    <label class="form-label" for="antiCheat.maxClientInventoryEntriesPerReport" data-loc="admin_antiCheatMaxInventoryEntries"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="antiCheat.maxClientInventoryEntriesPerReport" type="number" min="0" step="1" data-default="250" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                    <div class="form-text" data-loc="admin_antiCheatMaxInventoryEntriesHint"></div>
+                                </form>
+                            </div>
+                            <div class="admin-suspicion-config-item">
+                                <form onsubmit="doSaveConfigInt('antiCheat.maxClientCreditsPerReport'); return false;">
+                                    <label class="form-label" for="antiCheat.maxClientCreditsPerReport" data-loc="admin_antiCheatMaxCredits"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="antiCheat.maxClientCreditsPerReport" type="number" min="0" step="1" data-default="10000000" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                    <div class="form-text" data-loc="admin_antiCheatMaxCreditsHint"></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-suspicion-config-footer" data-loc="admin_antiCheatLegacyHint"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

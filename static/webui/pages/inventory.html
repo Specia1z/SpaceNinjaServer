@@ -1,0 +1,559 @@
+<div class="inventory-page" data-route="/webui/inventory" data-title-tag="navbar_inventory">
+                <header class="inventory-hero">
+                    <div class="inventory-hero-copy">
+                        <span class="inventory-eyebrow" data-loc="navbar_inventory"></span>
+                        <h1 data-loc="navbar_inventory"></h1>
+                        <p class="inventory-update-note"></p>
+                    </div>
+                    <div class="inventory-hero-mark" aria-hidden="true"><i class="bi bi-boxes"></i></div>
+                </header>
+                <div class="card inventory-add-panel mb-4">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs">
+                            <li class="nav-item">
+                                <button class="nav-link" id="miscItems-tab" data-bs-toggle="tab" data-bs-target="#miscItems-tab-content" data-loc="inventory_addItems"></button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" id="typeName-tab" data-bs-toggle="tab" data-bs-target="#typeName-tab-content" data-loc="inventory_addItemByItemType"></button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <div class="tab-pane" id="miscItems-tab-content">
+                                <form class="card-body input-group" onsubmit="doAcquireCountItems('miscitems');return false;">
+                                    <input class="form-control" id="miscitems-count" type="number" value="1" />
+                                    <input class="form-control w-50" id="acquire-type-miscitems" list="datalist-miscitems" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                            </div>
+                            <div class="tab-pane" id="typeName-tab-content">
+                                <form class="card-body" onsubmit="addItemByItemType();return false;">
+                                    <p data-loc="inventory_addItemByItemType_warning"></p>
+                                    <div class="input-group">
+                                        <input class="form-control" id="typeName-count" type="number" value="1" />
+                                        <input class="form-control w-50" id="typeName-type" />
+                                        <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="inventory-currency-grid">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <h5 class="card-header" data-loc-itemMap="/Lotus/Language/Menu/Store_BuyWithCredits"></h5>
+                            <div class="card-body">
+                                <p class="card-text" id="RegularCredits-owned"></p>
+                                <form class="input-group" onsubmit="doAddCurrency('RegularCredits');return false;">
+                                    <input class="form-control" id="RegularCredits-delta" type="number" value="1000000" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addCredits"></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <h5 class="card-header" data-loc-itemMap="/Lotus/Language/Dojo/TradeTypePlatinum"></h5>
+                            <div class="card-body">
+                                <p class="card-text" id="PremiumCredits-owned"></p>
+                                <form class="input-group" onsubmit="doAddCurrency('PremiumCredits');return false;">
+                                    <input class="form-control" id="PremiumCredits-delta" type="number" value="100" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addPlatinum"></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <h5 class="card-header" data-loc-itemMap="/Lotus/Language/PrimeStore/Store_PrimeTokens"></h5>
+                            <div class="card-body">
+                                <p class="card-text" id="PrimeTokens-owned"></p>
+                                <form class="input-group" onsubmit="doAddCurrency('PrimeTokens');return false;">
+                                    <input class="form-control" id="PrimeTokens-delta" type="number" value="1" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addRegalAya"></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <h5 class="card-header" data-loc-itemMap="/Lotus/Language/Items/FusionBundle"></h5>
+                            <div class="card-body">
+                                <p class="card-text" id="FusionPoints-owned"></p>
+                                <form class="input-group" onsubmit="doAddCurrency('FusionPoints');return false;">
+                                    <input class="form-control" id="FusionPoints-delta" type="number" value="1000" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addEndo"></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <h5 class="card-header" data-loc-itemMap-norm="/Lotus/Language/Menu/CrewShipFusionPointsName"></h5>
+                            <div class="card-body">
+                                <p class="card-text" id="CrewShipFusionPoints-owned"></p>
+                                <form class="input-group" onsubmit="doAddCurrency('CrewShipFusionPoints');return false;">
+                                    <input class="form-control" id="CrewShipFusionPoints-delta" type="number" value="1000" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addDirac"></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <section class="inventory-overview-grid" aria-label="Inventory overview">
+                    <div class="inventory-summary-grid">
+                        <article class="card inventory-summary-card inventory-summary-total">
+                            <div class="card-body">
+                                <span class="inventory-summary-icon"><i class="bi bi-box-seam"></i></span>
+                                <span class="inventory-summary-label" data-loc="inventory_totalEntries"></span>
+                                <strong class="inventory-summary-value" id="inventory-total-entries">0</strong>
+                            </div>
+                        </article>
+                        <article class="card inventory-summary-card">
+                            <div class="card-body">
+                                <span class="inventory-summary-icon"><i class="bi bi-grid-3x3-gap"></i></span>
+                                <span class="inventory-summary-label" data-loc="inventory_activeCategories"></span>
+                                <strong class="inventory-summary-value" id="inventory-active-categories">0</strong>
+                            </div>
+                        </article>
+                        <article class="card inventory-summary-card">
+                            <div class="card-body">
+                                <span class="inventory-summary-icon"><i class="bi bi-trophy"></i></span>
+                                <span class="inventory-summary-label" data-loc="inventory_topCategory"></span>
+                                <strong class="inventory-summary-value inventory-top-category" id="inventory-top-category">—</strong>
+                            </div>
+                        </article>
+                    </div>
+                    <article class="card inventory-chart-card">
+                        <div class="card-header">
+                            <span class="inventory-chart-icon"><i class="bi bi-bar-chart-line"></i></span>
+                            <h2 class="h6 mb-0" data-loc="inventory_chartTitle"></h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="inventory-chart-wrap">
+                                <canvas id="inventory-category-chart" role="img"></canvas>
+                                <p class="inventory-chart-empty d-none" id="inventory-chart-empty" data-loc="general_none"></p>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+                <section class="inventory-category-browser mb-3">
+                    <div class="inventory-browser-heading">
+                        <div>
+                            <h2 class="h4 mb-1"><i class="bi bi-collection me-2" aria-hidden="true"></i><span data-loc="inventory_browseCategories"></span></h2>
+                            <p class="text-body-secondary mb-0" data-loc="inventory_browserDescription"></p>
+                        </div>
+                        <div class="inventory-search-wrap">
+                            <label class="visually-hidden" for="inventory-category-search" data-loc="inventory_searchPlaceholder"></label>
+                            <div class="input-group inventory-search-input">
+                                <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                                <input class="form-control" id="inventory-category-search" type="search" data-loc-placeholder="inventory_searchPlaceholder" />
+                                <button class="btn btn-outline-secondary" type="button" id="inventory-category-search-clear" data-loc-title="inventory_clearSearch"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inventory-category-filters" id="inventory-category-filters" role="group">
+                        <button class="btn btn-sm btn-primary rounded-pill inventory-filter-chip active" type="button" data-inventory-category="all" aria-pressed="true" data-loc="inventory_allCategories"></button>
+                    </div>
+                </section>
+                <div class="inventory-category-grid">
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="Suits"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('Suits');return false;">
+                                    <input class="form-control" id="acquire-type-Suits" list="datalist-Suits" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="Suits-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="LongGuns"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="handleModularSelection('LongGuns');return false;">
+                                    <input class="form-control" id="acquire-type-LongGuns" list="datalist-LongGuns" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <form class="input-group mb-3 d-none" id="modular-LongGuns">
+                                    <input class="form-control" id="acquire-type-LongGuns-GUN_BARREL" list="datalist-ModularParts-GUN_BARREL" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-LongGuns-GUN_PRIMARY_HANDLE" list="datalist-ModularParts-GUN_PRIMARY_HANDLE" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-LongGuns-GUN_CLIP" list="datalist-ModularParts-GUN_CLIP" autocomplete="off" />
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="LongGuns-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="Pistols"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="handleModularSelection('Pistols');return false;">
+                                    <input class="form-control" id="acquire-type-Pistols" list="datalist-Pistols" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <form class="input-group mb-3 d-none" id="modular-Pistols">
+                                    <input class="form-control" id="acquire-type-Pistols-GUN_BARREL" list="datalist-ModularParts-GUN_BARREL" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-Pistols-GUN_SECONDARY_HANDLE" list="datalist-ModularParts-GUN_SECONDARY_HANDLE" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-Pistols-GUN_CLIP" list="datalist-ModularParts-GUN_CLIP" autocomplete="off" />
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="Pistols-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="Melee"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="handleModularSelection('Melee');return false;">
+                                    <input class="form-control" id="acquire-type-Melee" list="datalist-Melee" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <form class="input-group mb-3 d-none" id="modular-Melee">
+                                    <input class="form-control" id="acquire-type-Melee-BLADE" list="datalist-ModularParts-BLADE" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-Melee-HILT" list="datalist-ModularParts-HILT" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-Melee-HILT_WEIGHT" list="datalist-ModularParts-HILT_WEIGHT" autocomplete="off" />
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="Melee-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="SpaceSuits"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('SpaceSuits');return false;">
+                                    <input class="form-control" id="acquire-type-SpaceSuits" list="datalist-SpaceSuits" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="SpaceSuits-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="SpaceGuns"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('SpaceGuns');return false;">
+                                    <input class="form-control" id="acquire-type-SpaceGuns" list="datalist-SpaceGuns" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="SpaceGuns-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="SpaceMelee"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('SpaceMelee');return false;">
+                                    <input class="form-control" id="acquire-type-SpaceMelee" list="datalist-SpaceMelee" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="SpaceMelee-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="MechSuits"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('MechSuits');return false;">
+                                    <input class="form-control" id="acquire-type-MechSuits" list="datalist-MechSuits" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="MechSuits-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="Sentinels"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('Sentinels');return false;">
+                                    <input class="form-control" id="acquire-type-Sentinels" list="datalist-Sentinels" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="Sentinels-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="MoaPets"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="handleModularSelection('MoaPets');return false;">
+                                    <input class="form-control" id="acquire-type-MoaPets" list="datalist-MoaPets" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <form class="input-group mb-3 d-none" id="modular-MoaPets-Moa">
+                                    <input class="form-control" id="acquire-type-MoaPets-MOA_ENGINE" list="datalist-ModularParts-MOA_ENGINE" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-MoaPets-MOA_PAYLOAD" list="datalist-ModularParts-MOA_PAYLOAD" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-MoaPets-MOA_HEAD" list="datalist-ModularParts-MOA_HEAD" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-MoaPets-MOA_LEG" list="datalist-ModularParts-MOA_LEG" autocomplete="off" />
+                                </form>
+                                <form class="input-group mb-3 d-none" id="modular-MoaPets-Zanuka">
+                                    <input class="form-control" id="acquire-type-MoaPets-ZANUKA_HEAD" list="datalist-ModularParts-ZANUKA_HEAD" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-MoaPets-ZANUKA_BODY" list="datalist-ModularParts-ZANUKA_BODY" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-MoaPets-ZANUKA_LEG" list="datalist-ModularParts-ZANUKA_LEG" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-MoaPets-ZANUKA_TAIL" list="datalist-ModularParts-ZANUKA_TAIL" autocomplete="off" />
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="MoaPets-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="KubrowPets"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="handleModularSelection('KubrowPets');return false;">
+                                    <input class="form-control" id="acquire-type-KubrowPets" list="datalist-KubrowPets" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <form class="input-group mb-3 d-none" id="modular-KubrowPets-Catbrow">
+                                    <input class="form-control" id="acquire-type-KubrowPets-CATBROW_ANTIGEN" list="datalist-ModularParts-CATBROW_ANTIGEN" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-KubrowPets-CATBROW_MUTAGEN" list="datalist-ModularParts-CATBROW_MUTAGEN" autocomplete="off" />
+                                </form>
+                                <form class="input-group mb-3 d-none" id="modular-KubrowPets-Kubrow">
+                                    <input class="form-control" id="acquire-type-KubrowPets-KUBROW_ANTIGEN" list="datalist-ModularParts-KUBROW_ANTIGEN" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-KubrowPets-KUBROW_MUTAGEN" list="datalist-ModularParts-KUBROW_MUTAGEN" autocomplete="off" />
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="KubrowPets-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="SentinelWeapons"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('SentinelWeapons');return false;">
+                                    <input class="form-control" id="acquire-type-SentinelWeapons" list="datalist-SentinelWeapons" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="SentinelWeapons-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="OperatorAmps"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="handleModularSelection('OperatorAmps');return false;">
+                                    <input class="form-control" id="acquire-type-OperatorAmps" list="datalist-OperatorAmps" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <form class="input-group mb-3 d-none" id="modular-OperatorAmps">
+                                    <input class="form-control" id="acquire-type-OperatorAmps-AMP_OCULUS" list="datalist-ModularParts-AMP_OCULUS" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-OperatorAmps-AMP_CORE" list="datalist-ModularParts-AMP_CORE" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-OperatorAmps-AMP_BRACE" list="datalist-ModularParts-AMP_BRACE" autocomplete="off" />
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="OperatorAmps-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="Hoverboards"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireModularEquipment('Hoverboards');return false;">
+                                    <input class="form-control" id="acquire-type-Hoverboards-HB_DECK" list="datalist-ModularParts-HB_DECK" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-Hoverboards-HB_ENGINE" list="datalist-ModularParts-HB_ENGINE" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-Hoverboards-HB_FRONT" list="datalist-ModularParts-HB_FRONT" autocomplete="off" />
+                                    <input class="form-control" id="acquire-type-Hoverboards-HB_JET" list="datalist-ModularParts-HB_JET" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="Hoverboards-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="QuestKeys"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('QuestKeys');return false;">
+                                    <input class="form-control" id="acquire-type-QuestKeys" list="datalist-QuestKeys" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="QuestKeys-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="EvolutionProgress"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEvolution();return false;">
+                                    <input class="form-control" id="acquire-type-EvolutionProgress" list="datalist-EvolutionProgress" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="EvolutionProgress-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="Boosters"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireBooster();return false;">
+                                    <input class="form-control" id="acquire-type-Boosters" list="datalist-Boosters" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="Boosters-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                           <div class="card-header" data-cardType="FlavourItems"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('FlavourItems');return false;">
+                                    <input class="form-control" id="acquire-type-FlavourItems" list="datalist-FlavourItems" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="FlavourItems-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="ShipDecorations"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireCountItems('ShipDecorations');return false;">
+                                    <input class="form-control" id="ShipDecorations-count" type="number" value="1" />
+                                    <input class="form-control w-50" id="acquire-type-ShipDecorations" list="datalist-ShipDecorations" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="ShipDecorations-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card" style="height: 400px;">
+                            <div class="card-header" data-cardType="WeaponSkins"></div>
+                            <div class="card-body d-flex flex-column">
+                                <form class="input-group mb-3" onsubmit="doAcquireEquipment('WeaponSkins');return false;">
+                                    <input class="form-control" id="acquire-type-WeaponSkins" list="datalist-WeaponSkins" autocomplete="off" />
+                                    <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                </form>
+                                <div class="overflow-auto">
+                                    <table class="table table-hover w-100">
+                                        <tbody id="WeaponSkins-list"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <div class="card">
+                    <h5 class="card-header" data-loc="general_bulkActions"></h5>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-primary" onclick="removeIsNew();" data-loc="inventory_removeIsNew"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>

@@ -1,0 +1,98 @@
+<div class="mods-page" data-route="/webui/mods" data-title-tag="navbar_mods">
+                <header class="mods-hero">
+                    <div class="mods-hero-copy">
+                        <span class="mods-eyebrow" data-loc="navbar_mods"></span>
+                        <h1 data-loc="navbar_mods"></h1>
+                        <p class="mods-inventory-note inventory-update-note"></p>
+                    </div>
+                    <div class="mods-hero-mark" aria-hidden="true"><i class="bi bi-layers"></i></div>
+                </header>
+
+                <div class="mods-layout">
+                    <section class="card mods-card mods-owned-card">
+                        <div class="card-header mods-card-header">
+                            <div>
+                                <span class="mods-card-kicker" data-loc="navbar_mods"></span>
+                                <h2 class="mods-card-title" data-loc="mods_mods"></h2>
+                            </div>
+                            <span class="mods-count" id="mods-count">0</span>
+                        </div>
+                        <div class="card-body mods-table-body">
+                            <form class="mods-add-form" onsubmit="doAcquireMod();return false;">
+                                <label class="visually-hidden" for="mod-count" data-loc="code_count"></label>
+                                <input class="form-control mods-count-input" id="mod-count" type="number" value="1" />
+                                <label class="visually-hidden" for="mod-to-acquire" data-loc="mods_mods"></label>
+                                <input class="form-control mods-name-input" id="mod-to-acquire" list="datalist-mods" autocomplete="off" data-loc-placeholder="mods_mods" />
+                                <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                <button class="btn btn-success" type="submit" onclick="window.maxed=true" data-loc="mods_addMax" data-enabling-permission="addItems"></button>
+                            </form>
+                            <div class="mods-table-wrap mods-owned-table-wrap table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <tbody id="mods-list"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card mods-card mods-create-card">
+                        <div class="card-header mods-card-header">
+                            <div>
+                                <span class="mods-card-kicker" data-loc="mods_rivens"></span>
+                                <h2 class="mods-card-title" data-loc="mods_addRiven"></h2>
+                            </div>
+                            <span class="mods-card-icon" aria-hidden="true"><i class="bi bi-magic"></i></span>
+                        </div>
+                        <form class="card-body mods-riven-form" onsubmit="doAcquireRiven();return false;">
+                            <label class="form-label" for="addriven-type" data-loc="mods_rivens"></label>
+                            <select class="form-select mb-3" id="addriven-type">
+                                <option value="LotusArchgunRandomModRare">LotusArchgunRandomModRare</option>
+                                <option value="LotusModularMeleeRandomModRare">LotusModularMeleeRandomModRare</option>
+                                <option value="LotusModularPistolRandomModRare">LotusModularPistolRandomModRare</option>
+                                <option value="LotusPistolRandomModRare">LotusPistolRandomModRare</option>
+                                <option value="LotusRifleRandomModRare" selected>LotusRifleRandomModRare</option>
+                                <option value="LotusShotgunRandomModRare">LotusShotgunRandomModRare</option>
+                                <option value="PlayerMeleeWeaponRandomModRare">PlayerMeleeWeaponRandomModRare</option>
+                            </select>
+                            <label class="form-label" for="addriven-fingerprint" data-loc="mods_fingerprint"></label>
+                            <textarea id="addriven-fingerprint" class="form-control mods-fingerprint-input mb-3" data-loc-placeholder="mods_fingerprint"></textarea>
+                            <div class="mods-form-actions">
+                                <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                                <a class="mods-help-link" href="riven-tool/" target="_blank" rel="noopener" data-loc="mods_fingerprintHelp"></a>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="card mods-card mods-bulk-card">
+                        <div class="card-header mods-card-header">
+                            <div>
+                                <span class="mods-card-kicker" data-loc="mods_mods"></span>
+                                <h2 class="mods-card-title" data-loc="general_bulkActions"></h2>
+                            </div>
+                            <span class="mods-card-icon" aria-hidden="true"><i class="bi bi-lightning-charge"></i></span>
+                        </div>
+                        <div class="card-body mods-bulk-actions">
+                            <button class="btn btn-primary" onclick="doAddAllMods();" data-loc="mods_addMissingUnrankedMods" data-enabling-permission="addItems"></button>
+                            <button class="btn btn-outline-danger" onclick="doRemoveUnrankedMods();" data-loc="mods_removeUnranked"></button>
+                            <button class="btn btn-primary" onclick="doAddMissingMaxRankMods();" data-loc="mods_addMissingMaxRankMods" data-enabling-permission="addItems"></button>
+                            <button class="btn btn-outline-danger" onclick="doRemoveRankedMods();" data-loc="mods_removeRanked"></button>
+                        </div>
+                    </section>
+
+                    <section class="card mods-card mods-rivens-card">
+                        <div class="card-header mods-card-header">
+                            <div>
+                                <span class="mods-card-kicker" data-loc="navbar_mods"></span>
+                                <h2 class="mods-card-title" data-loc="mods_rivens"></h2>
+                            </div>
+                            <span class="mods-count" id="riven-count">0</span>
+                        </div>
+                        <div class="card-body mods-table-body">
+                            <div class="mods-table-wrap table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <tbody id="riven-list"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>

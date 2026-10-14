@@ -1,0 +1,315 @@
+.import-page {
+    margin-inline: auto;
+    max-width: 116rem;
+}
+
+.import-hero {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 86% 12%, color-mix(in srgb, var(--bs-primary) 22%, transparent), transparent 38%),
+        linear-gradient(130deg, color-mix(in srgb, var(--bs-primary) 8%, var(--bs-tertiary-bg)), var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 17%, var(--bs-border-color));
+    border-radius: 1.2rem;
+    box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    min-height: 9rem;
+    overflow: hidden;
+    padding: clamp(1.25rem, 3vw, 2.25rem);
+    position: relative;
+}
+
+.import-hero-copy {
+    max-width: 58rem;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.import-eyebrow,
+.import-card-kicker {
+    color: var(--bs-primary);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    margin-bottom: 0.45rem;
+    text-transform: uppercase;
+}
+
+.import-hero h1 {
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    font-weight: 750;
+    letter-spacing: -0.045em;
+    margin: 0 0 0.55rem;
+}
+
+.import-hero-description {
+    color: var(--bs-secondary-color);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.import-hero-mark {
+    align-items: center;
+    color: color-mix(in srgb, var(--bs-primary) 52%, transparent);
+    display: flex;
+    flex: 0 0 auto;
+    font-size: clamp(4rem, 9vw, 7rem);
+    justify-content: center;
+    line-height: 1;
+    margin-inline: 2rem 1rem;
+    opacity: 0.72;
+    transform: rotate(-9deg);
+}
+
+.import-warning {
+    align-items: start;
+    background: color-mix(in srgb, var(--bs-warning) 9%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-warning) 33%, var(--bs-border-color));
+    border-radius: 0.8rem;
+    color: var(--bs-body-color);
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    margin-bottom: 1.1rem;
+    padding: 0.9rem 1rem;
+}
+
+.import-warning > .bi {
+    color: var(--bs-warning-text-emphasis, var(--bs-warning));
+    font-size: 1.15rem;
+    margin-top: 0.12rem;
+}
+
+.import-warning > p {
+    line-height: 1.5;
+    margin: 0;
+}
+
+.import-layout {
+    align-items: stretch;
+    display: grid;
+    gap: 1.1rem;
+    grid-template-columns: minmax(0, 1.85fr) minmax(18rem, 0.85fr);
+}
+
+.import-card {
+    border-color: var(--bs-border-color);
+    border-radius: 0.95rem;
+    box-shadow: 0 0.65rem 1.8rem color-mix(in srgb, var(--bs-emphasis-color) 5%, transparent);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.import-card-header {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 78%, transparent);
+    border-bottom-color: var(--bs-border-color);
+    display: flex;
+    justify-content: space-between;
+    min-height: 4.25rem;
+    padding: 0.75rem 1rem;
+}
+
+.import-card-header > div {
+    min-width: 0;
+}
+
+.import-card-kicker {
+    font-size: 0.64rem;
+    margin-bottom: 0.2rem;
+}
+
+.import-card-header h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin: 0;
+}
+
+.import-editor-icon,
+.import-samples-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 12%, var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 20%, var(--bs-border-color));
+    border-radius: 0.7rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    flex: 0 0 2.6rem;
+    font-size: 1.15rem;
+    height: 2.6rem;
+    justify-content: center;
+}
+
+.import-editor-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: clamp(0.85rem, 2vw, 1.25rem);
+}
+
+.import-editor-card {
+    display: flex;
+    flex-direction: column;
+    min-height: min(70vh, 58rem);
+}
+
+.import-json-editor {
+    background-color: color-mix(in srgb, var(--bs-tertiary-bg) 43%, var(--bs-body-bg));
+    font-family: var(--bs-font-monospace);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    min-height: 28rem;
+    resize: vertical;
+    tab-size: 2;
+    white-space: pre;
+}
+
+.import-json-editor:focus {
+    background-color: var(--bs-body-bg);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--bs-primary) 18%, transparent);
+}
+
+.import-editor-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.import-editor-actions .btn {
+    min-height: 2.75rem;
+    min-width: 8rem;
+}
+
+.import-submit-button {
+    font-weight: 650;
+}
+
+.import-export-note {
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.import-samples-body {
+    padding: 0.65rem;
+}
+
+.import-sample-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.import-sample-button {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.7rem;
+    color: var(--bs-body-color);
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: 2.35rem minmax(0, 1fr) auto;
+    min-height: 3.25rem;
+    padding: 0.45rem 0.65rem;
+    text-align: left;
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease,
+        transform 140ms ease;
+    width: 100%;
+}
+
+.import-sample-button:hover {
+    background: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    transform: translateX(2px);
+}
+
+.import-sample-button:focus-visible {
+    border-color: var(--bs-primary);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--bs-primary) 25%, transparent);
+}
+
+.import-sample-button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--bs-primary) 10%, var(--bs-tertiary-bg));
+    border-color: color-mix(in srgb, var(--bs-primary) 40%, var(--bs-border-color));
+    color: var(--bs-primary-text-emphasis, var(--bs-body-color));
+}
+
+.import-sample-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 10%, var(--bs-tertiary-bg));
+    border-radius: 0.55rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    font-size: 1rem;
+    height: 2.25rem;
+    justify-content: center;
+    width: 2.25rem;
+}
+
+.import-sample-button > span:nth-child(2) {
+    font-size: 0.9rem;
+    font-weight: 550;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.import-sample-chevron {
+    color: var(--bs-secondary-color);
+    font-size: 0.75rem;
+}
+
+@media (max-width: 991.98px) {
+    .import-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .import-editor-card {
+        min-height: 65vh;
+    }
+
+    .import-sample-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .import-hero {
+        min-height: 0;
+        padding: 1.15rem;
+    }
+
+    .import-hero-mark {
+        font-size: 3.2rem;
+        margin-inline: 0 0.1rem;
+    }
+
+    .import-editor-card {
+        min-height: 0;
+    }
+
+    .import-json-editor {
+        min-height: 52vh;
+    }
+
+    .import-sample-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .import-editor-actions .btn {
+        flex: 1 1 8rem;
+    }
+}
+
+@media (max-width: 390px) {
+    .import-hero-mark {
+        display: none;
+    }
+}

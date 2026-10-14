@@ -1,4 +1,4 @@
-window.importSamples = {
+window.webuiImportSamples = {
     maxFocus3: {
         FocusUpgrades: [
             {

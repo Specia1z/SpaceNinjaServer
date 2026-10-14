@@ -36,6 +36,7 @@
         document.getElementById("Alliance-list").innerHTML = "";
         document.getElementById("guildView-alliance").textContent = "";
         document.getElementById("Members-list").innerHTML = "";
+        document.getElementById("guild-content").classList.add("d-none");
         $("#guild-route > .row").addClass("d-none");
     }
 
@@ -52,6 +53,8 @@
             "VaultMiscItems-bulkRemove"
         ].forEach(id => document.getElementById(id).classList.add("d-none"));
         document.getElementById("guildView-loading").classList.add("d-none");
+        document.getElementById("guild-empty-state").classList.add("d-none");
+        document.getElementById("guild-content").classList.remove("d-none");
         $("#guild-route > .row").removeClass("d-none");
 
         document.getElementById("guildView-title").textContent = guildData.Name;
@@ -280,32 +283,38 @@
             document.getElementById("guildView-loading").classList.remove("d-none");
             document.getElementById("guildView-na").classList.add("d-none");
             document.getElementById("guildView-naDescription").classList.add("d-none");
+            document.getElementById("guild-empty-state").classList.add("d-none");
             clearView();
         }
-        awaitAuthz().then(() => {
-            getGuildData().then(guildData => {
+        return (async () => {
+            try {
+                await awaitAuthz();
+                const guildData = await getGuildData();
                 if (!guildData) {
                     document.getElementById("guildView-loading").classList.add("d-none");
+                    document.getElementById("guild-empty-state").classList.remove("d-none");
                     document.getElementById("guildView-na").classList.remove("d-none");
                     document.getElementById("guildView-naDescription").classList.remove("d-none");
                     clearView();
                     return;
                 }
-                window.itemListPromise.then(itemMap => {
-                    const { userGuildMember, userGuildPermissions } = renderOverview(guildData, itemMap);
-                    renderInventoryLists(guildData, itemMap, userGuildMember, userGuildPermissions);
-                    renderMembers(guildData, itemMap, userGuildMember, userGuildPermissions);
-                    renderAlliance(guildData, itemMap, userGuildMember);
-                });
-            });
-        });
+                const itemMap = await window.itemListPromise;
+                const { userGuildMember, userGuildPermissions } = renderOverview(guildData, itemMap);
+                renderInventoryLists(guildData, itemMap, userGuildMember, userGuildPermissions);
+                renderMembers(guildData, itemMap, userGuildMember, userGuildPermissions);
+                renderAlliance(guildData, itemMap, userGuildMember);
+            } catch (error) {
+                document.getElementById("guildView-loading").classList.add("d-none");
+                console.error("Failed to load clan page", error);
+            }
+        })();
     }
 
     function initializeHeaders() {
         document.querySelectorAll(".card-header[data-guildCardType]").forEach(header => {
             header.innerHTML = "";
             header.classList.remove(...header.classList);
-            header.classList.add("card-header", "d-flex", "justify-content-between", "align-items-center");
+            header.classList.add("card-header", "guild-card-header", "d-flex", "justify-content-between", "align-items-center");
             const cardType = header.dataset.guildcardtype;
             const heading = document.createElement("h5");
             heading.classList.add("mb-0");
@@ -359,6 +368,27 @@
                     });
                 });
             };
+        });
+    }
+
+    function bindGuildForms() {
+        document.querySelectorAll("[data-guild-currency]").forEach(form => {
+            form.addEventListener("submit", event => {
+                event.preventDefault();
+                window.doAddCurrency(form.dataset.guildCurrency);
+            });
+        });
+        document.querySelectorAll("[data-guild-project-form]").forEach(form => {
+            form.addEventListener("submit", event => {
+                event.preventDefault();
+                addGuildTechProject();
+            });
+        });
+        document.querySelectorAll("[data-guild-vault-form]").forEach(form => {
+            form.addEventListener("submit", event => {
+                event.preventDefault();
+                addVaultItem(form.dataset.guildVaultForm);
+            });
         });
     }
 
@@ -584,4 +614,5 @@
     single.getRoute("#guild-route").on("beforeload", loadGuildRoute);
     window.dictPromise.then(initializeHeaders);
     bindGuildCheats();
+    bindGuildForms();
 })();

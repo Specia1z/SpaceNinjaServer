@@ -1,0 +1,561 @@
+.store-price-page,
+.store-price-access {
+    margin-inline: auto;
+    max-width: 100rem;
+}
+
+.store-price-access {
+    align-items: center;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-block: 3rem;
+    min-height: 14rem;
+    text-align: center;
+}
+
+.store-price-access > i {
+    color: var(--bs-warning);
+    font-size: 2rem;
+}
+
+.store-price-access p {
+    margin: 0;
+}
+
+.store-price-hero {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 90% 10%, color-mix(in srgb, var(--bs-success) 14%, transparent), transparent 38%),
+        linear-gradient(128deg, color-mix(in srgb, var(--bs-primary) 5%, var(--bs-tertiary-bg)), var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 16%, var(--bs-border-color));
+    border-radius: 1.1rem;
+    box-shadow: 0 0.8rem 2rem color-mix(in srgb, var(--bs-emphasis-color) 4%, transparent);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    min-height: 8.5rem;
+    overflow: hidden;
+    padding: clamp(1.25rem, 3vw, 2.1rem);
+}
+
+.store-price-hero > div {
+    max-width: 58rem;
+}
+
+.store-price-eyebrow,
+.store-price-kicker {
+    color: var(--bs-primary);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+}
+
+.store-price-hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 750;
+    letter-spacing: -0.04em;
+    margin: 0 0 0.45rem;
+}
+
+.store-price-hero p {
+    color: var(--bs-secondary-color);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.store-price-hero-icon {
+    align-items: center;
+    color: color-mix(in srgb, var(--bs-primary) 52%, transparent);
+    display: flex;
+    flex: 0 0 auto;
+    font-size: clamp(3.5rem, 7vw, 5.5rem);
+    justify-content: center;
+    margin-inline: 2rem 0.75rem;
+    opacity: 0.72;
+}
+
+.store-price-summary {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 1.15rem;
+}
+
+.store-price-summary-card {
+    align-items: center;
+    background:
+        radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--bs-primary) 6%, transparent), transparent 50%),
+        var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    box-shadow: 0 0.45rem 1.2rem color-mix(in srgb, var(--bs-emphasis-color) 3%, transparent);
+    display: flex;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.85rem 1rem;
+}
+
+.store-price-summary-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 10%, var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 16%, var(--bs-border-color));
+    border-radius: 50%;
+    color: var(--bs-primary);
+    display: inline-flex;
+    flex: 0 0 2.55rem;
+    height: 2.55rem;
+    justify-content: center;
+    width: 2.55rem;
+}
+
+.store-price-summary-bundles .store-price-summary-icon {
+    background: color-mix(in srgb, var(--bs-success) 9%, var(--bs-tertiary-bg));
+    border-color: color-mix(in srgb, var(--bs-success) 17%, var(--bs-border-color));
+    color: var(--bs-success);
+}
+
+.store-price-summary-data .store-price-summary-icon {
+    background: color-mix(in srgb, var(--bs-info) 10%, var(--bs-tertiary-bg));
+    border-color: color-mix(in srgb, var(--bs-info) 18%, var(--bs-border-color));
+    color: var(--bs-info-text-emphasis, var(--bs-info));
+}
+
+.store-price-summary-card > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.store-price-summary-card > div > span {
+    color: var(--bs-secondary-color);
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.store-price-summary-card strong {
+    font-size: 1.35rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    margin-top: 0.12rem;
+}
+
+.store-price-summary-data strong {
+    font-size: 1.1rem;
+}
+
+.store-price-summary-card small {
+    color: var(--bs-secondary-color);
+    font-size: 0.72rem;
+    line-height: 1.35;
+    margin-top: 0.1rem;
+}
+
+.store-price-tabs {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 72%, transparent);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    padding: 0.35rem;
+}
+
+.store-price-tabs .nav-link {
+    align-items: center;
+    border-radius: 0.6rem;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.88rem;
+    font-weight: 650;
+    gap: 0.55rem;
+    padding: 0.65rem 0.85rem;
+    white-space: nowrap;
+}
+
+.store-price-tabs .nav-link:not(.active) {
+    color: var(--bs-secondary-color);
+}
+
+.store-price-tab-content,
+.store-price-tab-content > .tab-pane {
+    min-width: 0;
+}
+
+.store-price-editor-grid {
+    align-items: start;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1.2fr) minmax(19rem, 0.8fr);
+    margin-bottom: 1rem;
+}
+
+.store-price-editor-grid-single {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 65rem;
+}
+
+.store-price-card {
+    border-color: var(--bs-border-color);
+    border-radius: 0.9rem;
+    box-shadow: 0 0.55rem 1.6rem color-mix(in srgb, var(--bs-emphasis-color) 4%, transparent);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.store-price-card-header {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 72%, transparent);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+}
+
+.store-price-card-header > div {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.store-price-card-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-primary) 10%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 17%, var(--bs-border-color));
+    border-radius: 0.7rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    flex: 0 0 2.5rem;
+    font-size: 1.1rem;
+    height: 2.5rem;
+    justify-content: center;
+    width: 2.5rem;
+}
+
+.store-price-manual-icon {
+    background: color-mix(in srgb, var(--bs-warning) 12%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-warning) 20%, var(--bs-border-color));
+    color: var(--bs-warning-text-emphasis, var(--bs-warning));
+}
+
+.store-price-official-icon {
+    background: color-mix(in srgb, var(--bs-success) 10%, var(--bs-body-bg));
+    border-color: color-mix(in srgb, var(--bs-success) 18%, var(--bs-border-color));
+    color: var(--bs-success);
+}
+
+.store-price-kicker {
+    font-size: 0.61rem;
+    margin-bottom: 0.12rem;
+}
+
+.store-price-card-header h2 {
+    font-size: 1.05rem;
+    font-weight: 720;
+    letter-spacing: -0.018em;
+    line-height: 1.3;
+    margin: 0 0 0.2rem;
+}
+
+.store-price-card-header p {
+    color: var(--bs-secondary-color);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.store-price-form {
+    display: grid;
+    gap: 0.9rem;
+    padding: 1rem;
+}
+
+.store-price-field {
+    min-width: 0;
+}
+
+.store-price-field .form-label {
+    font-size: 0.84rem;
+    font-weight: 650;
+    margin-bottom: 0.35rem;
+}
+
+.store-price-field .form-text {
+    display: block;
+    line-height: 1.4;
+}
+
+.store-price-field .form-text + .form-text {
+    margin-top: 0.15rem;
+}
+
+.store-price-components-heading {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.store-price-components-heading .form-label {
+    font-size: 0.86rem;
+    font-weight: 650;
+    margin: 0;
+}
+
+.store-price-components-heading .btn {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.store-price-components {
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 30%, var(--bs-body-bg));
+    border: 1px dashed var(--bs-border-color);
+    border-radius: 0.75rem;
+    min-height: 3rem;
+    padding: 0.7rem;
+}
+
+.store-price-components:empty::before {
+    color: var(--bs-secondary-color);
+    content: "";
+    display: block;
+    min-height: 1rem;
+}
+
+.store-price-components .row {
+    margin-inline: 0;
+}
+
+.store-price-components .row > * {
+    min-width: 0;
+}
+
+.store-price-components .admin-store-bundle-component-type {
+    font-size: 0.8rem;
+}
+
+.store-price-components .btn {
+    font-size: 0.75rem;
+    padding-inline: 0.45rem;
+}
+
+.store-price-prices-grid {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.store-price-form-footer {
+    border-top: 1px solid var(--bs-border-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.15rem;
+    padding-top: 0.85rem;
+}
+
+.store-price-list-card {
+    margin-bottom: 1rem;
+    scroll-margin-top: 5.5rem;
+}
+
+.store-price-list-header {
+    min-height: 4.4rem;
+}
+
+.store-price-page-size {
+    flex: 0 0 6.25rem;
+    width: auto;
+}
+
+.store-price-toolbar {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 25%, transparent);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    gap: 0.7rem;
+    padding: 0.75rem 1rem;
+}
+
+.store-price-search {
+    max-width: 38rem;
+}
+
+.store-price-table-wrap {
+    position: relative;
+}
+
+.store-price-table {
+    margin-bottom: 0;
+    min-width: 56rem;
+}
+
+.store-price-table thead th {
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 42%, var(--bs-body-bg));
+    color: var(--bs-secondary-color);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.045em;
+    padding: 0.75rem 0.85rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.store-price-table tbody td {
+    font-size: 0.84rem;
+    padding: 0.7rem 0.85rem;
+    vertical-align: top;
+}
+
+.store-price-table tbody tr:last-child > * {
+    border-bottom-width: 0;
+}
+
+.store-price-empty {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    justify-content: center;
+    min-height: 7rem;
+    padding: 1rem;
+}
+
+.store-price-empty > i {
+    font-size: 1.5rem;
+    opacity: 0.75;
+}
+
+.store-price-pagination {
+    align-items: center;
+    border-top: 1px solid var(--bs-border-color);
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .store-price-editor-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .store-price-summary {
+        gap: 0.55rem;
+    }
+
+    .store-price-summary-card {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.45rem;
+        padding: 0.7rem;
+    }
+
+    .store-price-summary-icon {
+        flex-basis: 2.1rem;
+        height: 2.1rem;
+        width: 2.1rem;
+    }
+
+    .store-price-summary-card > div > span {
+        font-size: 0.68rem;
+    }
+
+    .store-price-card-header {
+        align-items: flex-start;
+    }
+
+    .store-price-list-header {
+        flex-wrap: wrap;
+    }
+
+    .store-price-list-header > div {
+        flex-basis: calc(100% - 3.5rem);
+    }
+
+    .store-price-list-header > .btn,
+    .store-price-list-header > .store-price-page-size {
+        margin-left: 3.35rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .store-price-hero {
+        min-height: 0;
+        padding: 1.1rem;
+    }
+
+    .store-price-hero-icon {
+        font-size: 2.6rem;
+        margin-inline: 0 0.1rem;
+    }
+
+    .store-price-summary-card {
+        align-items: center;
+        flex-direction: row;
+        min-height: 5.5rem;
+    }
+
+    .store-price-summary-icon {
+        flex-basis: 1.8rem;
+        height: 1.8rem;
+        width: 1.8rem;
+    }
+
+    .store-price-summary-card strong {
+        font-size: 1.1rem;
+    }
+
+    .store-price-summary-data strong {
+        font-size: 0.95rem;
+    }
+
+    .store-price-summary-card small {
+        font-size: 0.65rem;
+    }
+
+    .store-price-card-header {
+        gap: 0.6rem;
+        padding: 0.8rem;
+    }
+
+    .store-price-card-icon {
+        flex-basis: 2.2rem;
+        font-size: 0.95rem;
+        height: 2.2rem;
+        width: 2.2rem;
+    }
+
+    .store-price-toolbar {
+        align-items: stretch;
+        padding: 0.65rem;
+    }
+
+    .store-price-search {
+        min-width: 0;
+    }
+
+    .store-price-toolbar .store-price-page-size {
+        flex-basis: 5rem;
+    }
+
+    .store-price-pagination {
+        padding: 0.65rem;
+    }
+}

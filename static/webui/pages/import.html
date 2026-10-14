@@ -1,0 +1,115 @@
+<div id="import-route" class="import-page" data-route="/webui/import" data-title-tag="navbar_import">
+    <header class="import-hero">
+        <div class="import-hero-copy">
+            <span class="import-eyebrow" data-loc="import_samples"></span>
+            <h1 data-loc="navbar_import"></h1>
+            <p class="import-hero-description" data-loc="import_importNote"></p>
+        </div>
+        <div class="import-hero-mark" aria-hidden="true"><i class="bi bi-arrow-down-up"></i></div>
+    </header>
+
+    <div class="import-warning" role="note">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <p data-loc="import_importNote2"></p>
+    </div>
+
+    <div class="import-layout">
+        <section class="card import-card import-editor-card" aria-labelledby="import-editor-heading">
+            <header class="card-header import-card-header">
+                <div>
+                    <span class="import-card-kicker" data-loc="import_submit"></span>
+                    <h2 id="import-editor-heading" data-loc="navbar_import"></h2>
+                </div>
+                <span class="import-editor-icon" aria-hidden="true"><i class="bi bi-braces"></i></span>
+            </header>
+            <form id="import-form" class="card-body import-editor-body">
+                <label class="visually-hidden" for="import-inventory" data-loc="import_importNote"></label>
+                <textarea
+                    class="form-control import-json-editor"
+                    id="import-inventory"
+                    name="inventory"
+                    spellcheck="false"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    aria-describedby="import-export-note"
+                ></textarea>
+                <div class="import-editor-actions">
+                    <button
+                        class="btn btn-primary import-submit-button"
+                        type="submit"
+                        data-import-action="import"
+                        data-loc="import_submit"
+                        data-enabling-permission="import"
+                    ></button>
+                    <button
+                        class="btn btn-success"
+                        type="button"
+                        data-import-action="export"
+                        data-loc="import_export"
+                        data-enabling-permission="export"
+                    ></button>
+                </div>
+                <p id="import-export-note" class="import-export-note" data-loc="import_importNote3"></p>
+            </form>
+        </section>
+
+        <aside class="card import-card import-samples-card" aria-labelledby="import-samples-heading">
+            <header class="card-header import-card-header">
+                <div>
+                    <span class="import-card-kicker" data-loc="navbar_import"></span>
+                    <h2 id="import-samples-heading" data-loc="import_samples"></h2>
+                </div>
+                <span class="import-samples-icon" aria-hidden="true"><i class="bi bi-collection"></i></span>
+            </header>
+            <div class="card-body import-samples-body">
+                <div class="import-sample-list">
+                    <button type="button" class="import-sample-button" data-import-sample="maxFocus3" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_maxFocus" data-loc-replace="3.0"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="import-sample-button" data-import-sample="maxFocus2" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_maxFocus" data-loc-replace="2.0"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="import-sample-button" data-import-sample="maxFocus1" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_maxFocus" data-loc-replace="1.0"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="import-sample-button" data-import-sample="accolades" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-award" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_accolades"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="import-sample-button" data-import-sample="maxStratos" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-patch-check" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_maxStratos"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="import-sample-button" data-import-sample="resetSortieCompletion" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_resetSortieCompletion"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="import-sample-button" data-import-sample="clearWishlist" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-heartbreak" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_clearWishlist"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="import-sample-button" data-import-sample="clearLocPins" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-geo" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_clearLocPins"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="import-sample-button" data-import-sample="eidolonLocPins" aria-pressed="false">
+                        <span class="import-sample-icon"><i class="bi bi-compass" aria-hidden="true"></i></span>
+                        <span data-loc="import_samples_eidolonLocPins"></span>
+                        <i class="bi bi-chevron-right import-sample-chevron" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>

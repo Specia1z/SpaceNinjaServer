@@ -1,0 +1,170 @@
+<div data-route="/webui/world-activities" data-title-tag="navbar_worldActivities">
+    <div class="d-none admin-hide">
+        <p data-loc="cheats_administratorRequirement"></p>
+    </div>
+    <main class="world-activities-page d-none admin-show">
+        <header class="world-activities-hero">
+            <div class="world-activities-hero-copy">
+                <span class="world-activities-eyebrow" data-loc="worldActivities_eyebrow"></span>
+                <h1 data-loc="worldActivities_title"></h1>
+                <p data-loc="worldActivities_description"></p>
+            </div>
+            <div class="world-activities-hero-actions">
+                <span class="world-activities-updated" id="world-activities-updated" aria-live="polite"></span>
+                <button class="btn btn-primary" id="world-activities-refresh" type="button">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    <span data-loc="worldActivities_refresh"></span>
+                </button>
+            </div>
+        </header>
+
+        <div class="alert d-none world-activities-notice" id="world-activities-notice" role="status"></div>
+
+        <section class="world-activities-stats" aria-label="World activity summary">
+            <article class="world-activities-stat world-activities-stat-active">
+                <span class="world-activities-stat-icon"><i class="bi bi-broadcast-pin" aria-hidden="true"></i></span>
+                <div><span class="world-activities-stat-label" data-loc="worldActivities_activeCount"></span><strong id="world-activities-active-count">—</strong></div>
+            </article>
+            <article class="world-activities-stat world-activities-stat-completed">
+                <span class="world-activities-stat-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+                <div><span class="world-activities-stat-label" data-loc="worldActivities_completedCount"></span><strong id="world-activities-completed-count">—</strong></div>
+            </article>
+            <article class="world-activities-stat world-activities-stat-mode">
+                <span class="world-activities-stat-icon"><i class="bi bi-sliders" aria-hidden="true"></i></span>
+                <div><span class="world-activities-stat-label" data-loc="worldActivities_mode"></span><strong id="world-activities-mode">—</strong></div>
+            </article>
+            <article class="world-activities-stat world-activities-stat-source">
+                <span class="world-activities-stat-icon"><i class="bi bi-database-check" aria-hidden="true"></i></span>
+                <div><span class="world-activities-stat-label" data-loc="worldActivities_source"></span><strong id="world-activities-source">—</strong></div>
+            </article>
+        </section>
+
+        <section class="world-activities-dashboard">
+            <article class="world-activities-panel card world-activities-runtime-panel">
+                <div class="world-activities-panel-header">
+                    <div class="world-activities-panel-heading">
+                        <span class="world-activities-panel-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 data-loc="worldActivities_runtime"></h2>
+                            <p data-loc="worldActivities_rotationHint"></p>
+                        </div>
+                    </div>
+                    <span class="badge world-activities-source-badge" id="world-activities-source-badge">—</span>
+                </div>
+                <div class="world-activities-runtime-details">
+                    <div class="world-activities-time-item">
+                        <span class="world-activities-time-icon"><i class="bi bi-play-circle" aria-hidden="true"></i></span>
+                        <div><span data-loc="worldActivities_rotation"></span><strong id="world-activities-rotation">—</strong></div>
+                    </div>
+                    <div class="world-activities-time-item">
+                        <span class="world-activities-time-icon world-activities-time-next"><i class="bi bi-flag" aria-hidden="true"></i></span>
+                        <div><span data-loc="worldActivities_settles"></span><strong id="world-activities-settles">—</strong></div>
+                    </div>
+                </div>
+                <div class="world-activities-runtime-footer">
+                    <span><i class="bi bi-hourglass-split" aria-hidden="true"></i><span data-loc="worldActivities_rotationLength"></span></span>
+                    <strong id="world-activities-rotation-hours">—</strong>
+                </div>
+            </article>
+
+            <section class="world-activities-panel card world-activities-invasions-panel" aria-labelledby="world-activities-invasions-title">
+                <div class="world-activities-panel-header">
+                    <div class="world-activities-panel-heading">
+                        <span class="world-activities-panel-icon world-activities-invasions-icon"><i class="bi bi-crosshair" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 id="world-activities-invasions-title" data-loc="worldActivities_invasions"></h2>
+                            <p id="world-activities-invasion-count" data-loc="worldActivities_loading"></p>
+                        </div>
+                    </div>
+                    <div class="world-activities-invasion-tools">
+                        <label class="visually-hidden" for="world-activities-search" data-loc="worldActivities_search"></label>
+                        <div class="world-activities-search">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <input class="form-control" id="world-activities-search" type="search" data-loc-placeholder="worldActivities_search" autocomplete="off" />
+                        </div>
+                        <label class="visually-hidden" for="world-activities-filter" data-loc="worldActivities_filter"></label>
+                        <select class="form-select world-activities-filter" id="world-activities-filter">
+                            <option value="all" data-loc="worldActivities_allStatuses"></option>
+                            <option value="active" data-loc="worldActivities_active"></option>
+                            <option value="completed" data-loc="worldActivities_completed"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive world-activities-table-wrap">
+                    <table class="table align-middle mb-0 world-activities-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-loc="worldActivities_node"></th>
+                                <th scope="col" data-loc="worldActivities_factions"></th>
+                                <th scope="col" data-loc="worldActivities_progress"></th>
+                                <th scope="col" data-loc="worldActivities_status"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="world-activities-invasions"></tbody>
+                    </table>
+                    <div class="world-activities-empty d-none" id="world-activities-empty">
+                        <i class="bi bi-inbox" aria-hidden="true"></i>
+                        <p data-loc="worldActivities_empty"></p>
+                    </div>
+                    <div class="world-activities-empty d-none" id="world-activities-no-matches">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <p data-loc="worldActivities_noMatches"></p>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <section class="config-form world-activities-settings" aria-labelledby="world-activities-settings-title">
+            <div class="world-activities-panel card">
+                <div class="world-activities-panel-header">
+                    <div class="world-activities-panel-heading">
+                        <span class="world-activities-panel-icon world-activities-settings-icon"><i class="bi bi-gear-wide-connected" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 id="world-activities-settings-title" data-loc="worldActivities_settings"></h2>
+                            <p data-loc="worldActivities_settingsDescription"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="world-activities-settings-body">
+                    <div class="world-activities-setting-grid">
+                        <div class="world-activities-setting-card">
+                            <label class="form-label" for="worldState.invasionMode" data-loc="worldActivities_mode"></label>
+                            <select class="form-select" id="worldState.invasionMode">
+                                <option value="official" data-loc="worldActivities_official"></option>
+                                <option value="local" data-loc="worldActivities_local"></option>
+                                <option value="hybrid" data-loc="worldActivities_hybrid"></option>
+                            </select>
+                            <p class="form-text" data-loc="worldActivities_modeHint"></p>
+                        </div>
+                        <div class="world-activities-setting-card">
+                            <form onsubmit="doSaveConfigInt('worldState.invasionRotationHours'); return false;">
+                                <label class="form-label" for="worldState.invasionRotationHours" data-loc="worldActivities_rotationHours"></label>
+                                <div class="input-group">
+                                    <input class="form-control" id="worldState.invasionRotationHours" type="number" min="1" max="168" step="1" />
+                                    <span class="input-group-text" data-loc="worldActivities_hoursUnit"></span>
+                                    <button class="btn btn-primary" type="submit" data-loc="cheats_save"></button>
+                                </div>
+                            </form>
+                            <p class="form-text" data-loc="worldActivities_rotationHoursHint"></p>
+                        </div>
+                        <div class="world-activities-setting-card">
+                            <form onsubmit="doSaveConfigInt('worldState.invasionMaxDurationHours'); return false;">
+                                <label class="form-label" for="worldState.invasionMaxDurationHours" data-loc="worldActivities_maxDurationHours"></label>
+                                <div class="input-group">
+                                    <input class="form-control" id="worldState.invasionMaxDurationHours" type="number" min="1" max="168" step="1" />
+                                    <span class="input-group-text" data-loc="worldActivities_hoursUnit"></span>
+                                    <button class="btn btn-primary" type="submit" data-loc="cheats_save"></button>
+                                </div>
+                            </form>
+                            <p class="form-text" data-loc="worldActivities_maxDurationHint"></p>
+                        </div>
+                    </div>
+                    <p class="world-activities-settings-hint">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span data-loc="worldActivities_settingsHint"></span>
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>

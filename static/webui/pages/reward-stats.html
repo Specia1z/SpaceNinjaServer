@@ -1,0 +1,120 @@
+<div id="reward-stats-route" class="reward-stats-page" data-route="/webui/reward-stats" data-title-tag="navbar_rewardStats">
+    <section class="reward-stats-access-state d-none admin-hide" role="status">
+        <span class="reward-stats-access-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+        <h1 data-loc="cheats_administratorRequirement"></h1>
+    </section>
+
+    <div class="admin-show d-none" id="reward-stats-admin">
+        <header class="reward-stats-hero">
+            <div class="reward-stats-hero-copy">
+                <span class="reward-stats-eyebrow" data-loc="navbar_rewardStats"></span>
+                <h1 data-loc="rewardStats_title"></h1>
+                <p data-loc="rewardStats_description"></p>
+            </div>
+            <div class="reward-stats-date-panel">
+                <label class="form-label" for="reward-stats-day" data-loc="rewardStats_day"></label>
+                <div class="input-group">
+                    <input class="form-control" id="reward-stats-day" type="date" />
+                    <button class="btn btn-primary" id="reward-stats-refresh" type="button">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        <span data-loc="rewardStats_refresh"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="reward-stats-hero-mark" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></div>
+        </header>
+
+        <section class="reward-stats-stat-grid" aria-live="polite">
+            <article class="card reward-stats-stat-card reward-stats-stat-platinum">
+                <span class="reward-stats-stat-icon"><i class="bi bi-coin" aria-hidden="true"></i></span>
+                <div>
+                    <span class="reward-stats-stat-label" data-loc="rewardStats_totalPlatinum"></span>
+                    <strong class="reward-stats-stat-value" id="reward-stats-total-platinum">0</strong>
+                </div>
+            </article>
+            <article class="card reward-stats-stat-card reward-stats-stat-aya">
+                <span class="reward-stats-stat-icon"><i class="bi bi-gem" aria-hidden="true"></i></span>
+                <div>
+                    <span class="reward-stats-stat-label" data-loc="rewardStats_totalAya"></span>
+                    <strong class="reward-stats-stat-value" id="reward-stats-total-aya">0</strong>
+                </div>
+            </article>
+            <article class="card reward-stats-stat-card">
+                <span class="reward-stats-stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                <div>
+                    <span class="reward-stats-stat-label" data-loc="rewardStats_accountsTitle"></span>
+                    <strong class="reward-stats-stat-value" id="reward-stats-account-count">0</strong>
+                </div>
+            </article>
+            <article class="card reward-stats-stat-card">
+                <span class="reward-stats-stat-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                <div>
+                    <span class="reward-stats-stat-label" data-loc="rewardStats_sourcesTitle"></span>
+                    <strong class="reward-stats-stat-value" id="reward-stats-source-count">0</strong>
+                </div>
+            </article>
+        </section>
+
+        <div class="alert alert-info d-none reward-stats-notice" id="reward-stats-notice" role="status"></div>
+
+        <section class="reward-stats-dashboard">
+            <article class="card reward-stats-card reward-stats-accounts-card">
+                <header class="reward-stats-card-header">
+                    <div class="reward-stats-card-heading">
+                        <span class="reward-stats-card-icon"><i class="bi bi-person-lines-fill" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="reward-stats-card-kicker" data-loc="rewardStats_accountsTitle"></span>
+                            <h2 id="reward-stats-accounts-heading" data-loc="rewardStats_accountsTitle"></h2>
+                        </div>
+                    </div>
+                    <span class="badge text-bg-secondary" id="reward-stats-visible-count">0</span>
+                </header>
+                <div class="reward-stats-toolbar">
+                    <label class="visually-hidden" for="reward-stats-search" data-loc="rewardStats_search"></label>
+                    <div class="input-group reward-stats-search">
+                        <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                        <input class="form-control" id="reward-stats-search" type="search" data-loc-placeholder="rewardStats_search" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="table-responsive reward-stats-table-wrap">
+                    <table class="table table-hover align-middle reward-stats-table mb-0" aria-labelledby="reward-stats-accounts-heading">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-loc="rewardStats_account"></th>
+                                <th scope="col" data-loc="rewardStats_platinum"></th>
+                                <th scope="col" data-loc="rewardStats_aya"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="reward-stats-accounts"></tbody>
+                    </table>
+                    <div class="reward-stats-empty d-none" id="reward-stats-accounts-empty">
+                        <i class="bi bi-person-x" aria-hidden="true"></i>
+                        <span data-loc="rewardStats_noData"></span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="card reward-stats-card reward-stats-sources-card">
+                <header class="reward-stats-card-header">
+                    <div class="reward-stats-card-heading">
+                        <span class="reward-stats-card-icon reward-stats-card-icon-sources"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                        <div>
+                            <span class="reward-stats-card-kicker" data-loc="rewardStats_sourcesTitle"></span>
+                            <h2 data-loc="rewardStats_sourcesTitle"></h2>
+                        </div>
+                    </div>
+                </header>
+                <div class="reward-stats-source-list" id="reward-stats-sources"></div>
+                <div class="reward-stats-empty d-none" id="reward-stats-sources-empty">
+                    <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                    <span data-loc="rewardStats_noData"></span>
+                </div>
+            </article>
+        </section>
+
+        <footer class="reward-stats-scope-note">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <span data-loc="rewardStats_scopeHint"></span>
+        </footer>
+    </div>
+</div>

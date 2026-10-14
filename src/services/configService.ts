@@ -191,6 +191,7 @@ export const getWorldStateBoostMultiplier = (key: TWorldStateBoostMultiplierKey)
 };
 
 export type TLogLevel = "error" | "warn" | "info" | "http" | "debug" | "trace";
+export type TAntiCheatResponseMode = "observe" | "sanitize" | "reject";
 
 type TQolConfigKey =
     | "tutorialGivesStanceMods"
@@ -284,7 +285,7 @@ export interface IConfig {
     missionPlatinumRewardPityCompletions?: number;
     /** When true, the platinum reward is delivered as an Ordis inbox message instead of being credited silently. */
     missionPlatinumRewardSendMail?: boolean;
-    /** Per-account mission drop multipliers, keyed by the exact DisplayName. */
+    /** Compatibility input for old configs; keyed by exact DisplayName and migrated when saved in the WebUI. */
     accountDropMultipliers?: Record<string, IAccountDropMultiplier>;
     /** Per-account reward multipliers, keyed by the MongoDB account id. */
     accountRateProfiles?: Record<string, IAccountRateProfile>;
@@ -309,10 +310,9 @@ export interface IConfig {
     antiCheat?: {
         /** 总开关。关闭后完全不跑检测。 */
         enabled?: boolean;
-        /**
-         * 是否实际拦截。默认 false 只记日志，玩家照常拿到奖励；打开后命中会改写结算种子、
-         * 拒绝发放任务奖励。
-         */
+        /** observe only records; sanitize repairs/clamps suspicious client values; reject drops the full report. */
+        responseMode?: TAntiCheatResponseMode;
+        /** Legacy compatibility setting. Used only when responseMode is not configured. */
         enforce?: boolean;
         /** 结算上报为成功的任务，时长低于该值即判定异常（秒）。0 表示不检查。 */
         minMissionTimeSec?: number;
@@ -322,6 +322,10 @@ export interface IConfig {
         maxXpPerMissionSecond?: number;
         /** 客户端单次结算对同一物品允许上报的最大数量。0 表示不检查。 */
         maxClientItemCountPerReport?: number;
+        /** Maximum number of client-supplied inventory delta entries accepted in one report. 0 disables the limit. */
+        maxClientInventoryEntriesPerReport?: number;
+        /** Maximum client-supplied RegularCredits delta accepted in one report. 0 disables the limit. */
+        maxClientCreditsPerReport?: number;
     };
     webui?: IWebuiConfig;
     client?: IClientConfig;

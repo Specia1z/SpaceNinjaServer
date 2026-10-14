@@ -1,0 +1,133 @@
+<div class="store-price-route" data-route="/webui/store-prices" data-title-tag="navbar_storePrices">
+    <section class="store-price-access d-none admin-hide" role="status">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <p data-loc="cheats_administratorRequirement"></p>
+    </section>
+
+    <main class="store-price-page admin-show d-none">
+        <header class="store-price-hero">
+            <div>
+                <span class="store-price-eyebrow" data-loc="navbar_storePrices"></span>
+                <h1 data-loc="navbar_storePrices"></h1>
+                <p data-loc="admin_storePricePageDescription"></p>
+            </div>
+            <span class="store-price-hero-icon" aria-hidden="true"><i class="bi bi-bag-check"></i></span>
+        </header>
+
+        <section class="store-price-summary" aria-label="Store data summary">
+            <article class="store-price-summary-card">
+                <span class="store-price-summary-icon"><i class="bi bi-tag" aria-hidden="true"></i></span>
+                <div><span data-loc="admin_storeOfficialPrices"></span><strong id="admin-store-price-total">0</strong></div>
+            </article>
+            <article class="store-price-summary-card store-price-summary-bundles">
+                <span class="store-price-summary-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                <div><span data-loc="admin_storeBundles"></span><strong id="admin-store-bundle-total">0</strong></div>
+            </article>
+            <article class="store-price-summary-card store-price-summary-data">
+                <span class="store-price-summary-icon"><i class="bi bi-database-check" aria-hidden="true"></i></span>
+                <div><span data-loc="admin_itemData"></span><strong id="admin-store-catalog-version">0.6.12</strong><small><span id="admin-store-catalog-item-count">0</span> <span data-loc="admin_addableItemCount"></span></small></div>
+            </article>
+        </section>
+
+        <ul class="nav nav-pills store-price-tabs" role="tablist" aria-label="Store management sections">
+            <li class="nav-item" role="presentation"><button class="nav-link active" id="store-price-tab-bundles" data-bs-toggle="tab" data-bs-target="#store-price-pane-bundles" type="button" role="tab" aria-controls="store-price-pane-bundles" aria-selected="true"><i class="bi bi-box-seam" aria-hidden="true"></i><span data-loc="admin_storeBundleManagement"></span></button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="store-price-tab-supplemental" data-bs-toggle="tab" data-bs-target="#store-price-pane-supplemental" type="button" role="tab" aria-controls="store-price-pane-supplemental" aria-selected="false"><i class="bi bi-pencil-square" aria-hidden="true"></i><span data-loc="admin_storePriceManagement"></span></button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="store-price-tab-catalog" data-bs-toggle="tab" data-bs-target="#store-price-pane-catalog" type="button" role="tab" aria-controls="store-price-pane-catalog" aria-selected="false"><i class="bi bi-tags" aria-hidden="true"></i><span data-loc="admin_storeOfficialPrices"></span></button></li>
+        </ul>
+
+        <div class="tab-content store-price-tab-content">
+            <div class="tab-pane fade show active" id="store-price-pane-bundles" role="tabpanel" aria-labelledby="store-price-tab-bundles" tabindex="0">
+                <div class="store-price-editor-grid store-price-editor-grid-single">
+                    <section class="card store-price-card">
+                        <header class="store-price-card-header">
+                            <span class="store-price-card-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                            <div><span class="store-price-kicker" data-loc="admin_storeBundles"></span><h2 data-loc="admin_storeBundleManagement"></h2><p data-loc="admin_storeBundleManagementDescription"></p></div>
+                        </header>
+                        <form class="store-price-form" id="admin-store-bundle-form">
+                            <div class="store-price-field">
+                                <label class="form-label" for="admin-store-bundle-type" data-loc="admin_storeBundle"></label>
+                                <input class="form-control font-monospace" id="admin-store-bundle-type" required autocomplete="off" placeholder="/Lotus/Types/StoreItems/..." data-loc-placeholder="admin_storeBundleTypePlaceholder" />
+                            </div>
+                            <div class="store-price-components-heading">
+                                <label class="form-label" data-loc="admin_storeBundleComponents"></label>
+                                <button class="btn btn-sm btn-outline-secondary" id="admin-store-bundle-add-component" type="button"><i class="bi bi-plus-lg" aria-hidden="true"></i><span data-loc="admin_addComponent"></span></button>
+                            </div>
+                            <div id="admin-store-bundle-components" class="store-price-components"></div>
+                            <div class="store-price-form-footer">
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i><span data-loc="admin_saveStoreBundle"></span></button>
+                                <button class="btn btn-outline-secondary" id="admin-store-bundle-reset" type="button"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span data-loc="admin_clearForm"></span></button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+
+                <section class="card store-price-card store-price-list-card">
+                    <header class="store-price-card-header store-price-list-header">
+                        <span class="store-price-card-icon"><i class="bi bi-boxes" aria-hidden="true"></i></span>
+                        <div><span class="store-price-kicker" data-loc="admin_storeBundles"></span><h2 data-loc="admin_storeBundles"></h2><p data-loc="admin_storeBundlesDescription"></p></div>
+                        <select class="form-select store-price-page-size" id="admin-store-bundle-page-size" aria-label="Page size"><option value="25" selected>25</option><option value="50">50</option><option value="100">100</option></select>
+                    </header>
+                    <div class="table-responsive store-price-table-wrap">
+                        <table class="table table-hover align-middle store-price-table">
+                            <thead><tr><th data-loc="admin_storeBundle"></th><th data-loc="admin_storeBundleComponents"></th><th data-loc="admin_storePriceSource"></th><th data-loc="admin_actions"></th></tr></thead>
+                            <tbody id="admin-store-bundles"></tbody>
+                        </table>
+                        <div class="store-price-empty d-none" id="admin-store-bundle-empty"><i class="bi bi-box" aria-hidden="true"></i><span data-loc="code_nothingToDo"></span></div>
+                    </div>
+                    <footer class="store-price-pagination"><span id="admin-store-bundle-page-status"></span><div class="btn-group" role="group"><button class="btn btn-outline-secondary" id="admin-store-bundle-previous" type="button" data-loc="admin_previousPage"></button><button class="btn btn-outline-secondary" id="admin-store-bundle-next" type="button" data-loc="admin_nextPage"></button></div></footer>
+                </section>
+            </div>
+
+            <div class="tab-pane fade" id="store-price-pane-supplemental" role="tabpanel" aria-labelledby="store-price-tab-supplemental" tabindex="0">
+                <div class="store-price-editor-grid store-price-editor-grid-single">
+                    <section class="card store-price-card">
+                        <header class="store-price-card-header">
+                            <span class="store-price-card-icon store-price-manual-icon"><i class="bi bi-pencil-square" aria-hidden="true"></i></span>
+                            <div><span class="store-price-kicker" data-loc="admin_storePriceManagement"></span><h2 data-loc="admin_storePriceManagement"></h2><p data-loc="admin_storePriceManagementDescription"></p></div>
+                        </header>
+                        <form class="store-price-form" id="admin-supplemental-price-form">
+                            <div class="store-price-field">
+                                <label class="form-label" for="admin-supplemental-price-type" data-loc="admin_storeItem"></label>
+                                <input class="form-control font-monospace" id="admin-supplemental-price-type" required autocomplete="off" placeholder="/Lotus/StoreItems/..." data-loc-placeholder="admin_supplementalPriceTypePlaceholder" />
+                                <span class="form-text" id="admin-supplemental-price-type-resolved" aria-live="polite"></span>
+                                <span class="form-text" data-loc="admin_supplementalPriceTypeHint"></span>
+                            </div>
+                            <div class="store-price-prices-grid">
+                                <div class="store-price-field"><label class="form-label" for="admin-supplemental-price-premium" data-loc="admin_storeOfficialPremium"></label><input class="form-control" id="admin-supplemental-price-premium" type="number" min="0" step="1" /></div>
+                                <div class="store-price-field"><label class="form-label" for="admin-supplemental-price-regular" data-loc="admin_storeOfficialRegular"></label><input class="form-control" id="admin-supplemental-price-regular" type="number" min="0" step="1" /></div>
+                            </div>
+                            <div class="store-price-form-footer">
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i><span data-loc="admin_saveSupplementalPrice"></span></button>
+                                <button class="btn btn-outline-secondary" id="admin-supplemental-price-reset" type="button"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span data-loc="admin_clearForm"></span></button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="store-price-pane-catalog" role="tabpanel" aria-labelledby="store-price-tab-catalog" tabindex="0">
+                <section class="card store-price-card store-price-list-card">
+                    <header class="store-price-card-header store-price-list-header">
+                        <span class="store-price-card-icon store-price-official-icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
+                        <div><span class="store-price-kicker" data-loc="admin_storeOfficialPrices"></span><h2 data-loc="admin_storeOfficialPrices"></h2><p data-loc="admin_storeOfficialPricesDescription"></p></div>
+                        <button class="btn btn-outline-primary" id="admin-store-price-sync" type="button"><i class="bi bi-arrow-repeat" aria-hidden="true"></i><span data-loc="admin_syncStorePrices"></span></button>
+                    </header>
+                    <div class="store-price-toolbar">
+                        <label class="visually-hidden" for="admin-store-price-search" data-loc="admin_storeItem"></label>
+                        <div class="input-group store-price-search"><span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span><input class="form-control" id="admin-store-price-search" type="search" data-loc-placeholder="admin_storePriceSearchPlaceholder" /></div>
+                        <label class="visually-hidden" for="admin-store-price-page-size" data-loc="admin_pageSize"></label>
+                        <select class="form-select store-price-page-size" id="admin-store-price-page-size"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option></select>
+                    </div>
+                    <div class="table-responsive store-price-table-wrap">
+                        <table class="table table-hover align-middle store-price-table">
+                            <thead><tr><th data-loc="admin_storeItem"></th><th data-loc="admin_storeOfficialPremium"></th><th data-loc="admin_storeOfficialRegular"></th><th data-loc="admin_storePriceSource"></th><th data-loc="admin_storePriceSyncedAt"></th><th data-loc="admin_actions"></th></tr></thead>
+                            <tbody id="admin-store-price-catalog"></tbody>
+                        </table>
+                        <div class="store-price-empty d-none" id="admin-store-price-empty"><i class="bi bi-tags" aria-hidden="true"></i><span data-loc="code_nothingToDo"></span></div>
+                    </div>
+                    <footer class="store-price-pagination"><span id="admin-store-price-page-status"></span><div class="btn-group" role="group"><button class="btn btn-outline-secondary" id="admin-store-price-previous" type="button" data-loc="admin_previousPage"></button><button class="btn btn-outline-secondary" id="admin-store-price-next" type="button" data-loc="admin_nextPage"></button></div></footer>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>

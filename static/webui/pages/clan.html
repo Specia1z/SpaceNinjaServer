@@ -1,0 +1,177 @@
+<div id="guild-route" class="guild-page" data-route="/webui/clan, /webui/guildView" data-title-tag="navbar_guildView">
+    <div class="guild-state guild-loading" aria-live="polite">
+        <span class="spinner-border text-primary" aria-hidden="true"></span>
+        <h2 id="guildView-loading" data-loc="general_loading"></h2>
+    </div>
+
+    <div id="guild-empty-state" class="guild-state guild-empty-state d-none" role="status">
+        <span class="guild-state-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+        <h2 id="guildView-na" class="d-none" data-loc="guildView_na"></h2>
+        <p id="guildView-naDescription" class="d-none" data-loc="guildView_naDescription"></p>
+    </div>
+
+    <div id="guild-content" class="guild-content d-none">
+        <header class="guild-hero">
+            <div class="guild-hero-copy">
+                <span class="guild-eyebrow" data-loc="navbar_guildView"></span>
+                <h1 id="guildView-title"></h1>
+                <div class="guild-meta">
+                    <span class="guild-meta-item">
+                        <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                        <span id="guildView-tier"></span>
+                    </span>
+                    <span class="guild-meta-item">
+                        <i class="bi bi-shield" aria-hidden="true"></i>
+                        <span id="guildView-class"></span>
+                    </span>
+                </div>
+                <p id="guildView-alliance" class="guild-alliance-name"></p>
+            </div>
+            <div class="guild-hero-mark" aria-hidden="true"><i class="bi bi-buildings"></i></div>
+        </header>
+
+        <section class="guild-currency-grid" aria-label="Clan vault currencies">
+            <article class="card guild-card guild-currency-card guild-credits-card">
+                <div class="guild-currency-icon" aria-hidden="true"><i class="bi bi-coin"></i></div>
+                <div class="guild-currency-content">
+                    <span class="guild-card-kicker" data-loc-itemMap="/Lotus/Language/Menu/Store_BuyWithCredits"></span>
+                    <p class="guild-currency-value" id="VaultRegularCredits-owned"></p>
+                    <form id="vaultRegularCredits-form" class="input-group d-none" data-guild-currency="VaultRegularCredits">
+                        <input class="form-control" id="VaultRegularCredits-delta" type="number" value="1000000" />
+                        <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                    </form>
+                </div>
+            </article>
+            <article class="card guild-card guild-currency-card guild-platinum-card">
+                <div class="guild-currency-icon" aria-hidden="true"><i class="bi bi-gem"></i></div>
+                <div class="guild-currency-content">
+                    <span class="guild-card-kicker" data-loc-itemMap="/Lotus/Language/Dojo/TradeTypePlatinum"></span>
+                    <p class="guild-currency-value" id="VaultPremiumCredits-owned"></p>
+                    <form id="vaultPremiumCredits-form" class="input-group d-none" data-guild-currency="VaultPremiumCredits">
+                        <input class="form-control" id="VaultPremiumCredits-delta" type="number" value="100" />
+                        <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                    </form>
+                </div>
+            </article>
+        </section>
+
+        <div class="guild-dashboard">
+            <section class="card guild-card guild-list-card guild-projects-card">
+                <div class="card-header guild-card-header" data-guildCardType="TechProjects"></div>
+                <div class="card-body guild-list-body">
+                    <form id="techProjects-form" class="input-group guild-add-form d-none" data-guild-project-form>
+                        <label class="visually-hidden" for="acquire-type-TechProjects" data-loc-itemMap="/Lotus/Language/Dojo/Research"></label>
+                        <input class="form-control" id="acquire-type-TechProjects" list="datalist-TechProjects" autocomplete="off" />
+                        <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                    </form>
+                    <div class="guild-list-scroll">
+                        <table class="table table-hover guild-table"><tbody id="TechProjects-list"></tbody></table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card guild-card guild-list-card guild-deco-recipes-card">
+                <div class="card-header guild-card-header" data-guildCardType="VaultDecoRecipes"></div>
+                <div class="card-body guild-list-body">
+                    <form id="vaultDecoRecipes-form" class="input-group guild-add-form d-none" data-guild-vault-form="VaultDecoRecipes">
+                        <label class="visually-hidden" for="acquire-type-VaultDecoRecipes" data-loc-itemMap="/Lotus/Language/Dojo/Research"></label>
+                        <input class="form-control" id="acquire-type-VaultDecoRecipes" list="datalist-VaultDecoRecipes" autocomplete="off" />
+                        <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                    </form>
+                    <div class="guild-list-scroll">
+                        <table class="table table-hover guild-table"><tbody id="VaultDecoRecipes-list"></tbody></table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card guild-card guild-list-card guild-vault-card">
+                <div class="card-header guild-card-header" data-guildCardType="VaultMiscItems"></div>
+                <div class="card-body guild-list-body">
+                    <form id="vaultMiscItems-form" class="input-group guild-add-form d-none" data-guild-vault-form="VaultMiscItems">
+                        <label class="visually-hidden" for="VaultMiscItems-count" data-loc="code_count"></label>
+                        <input class="form-control guild-count-input" id="VaultMiscItems-count" type="number" value="1" />
+                        <label class="visually-hidden" for="acquire-type-VaultMiscItems" data-loc-itemMap="/Lotus/Language/Menu/Store_BuyWithCredits"></label>
+                        <input class="form-control" id="acquire-type-VaultMiscItems" list="datalist-VaultMiscItems" autocomplete="off" />
+                        <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                    </form>
+                    <div class="guild-list-scroll">
+                        <table class="table table-hover guild-table"><tbody id="VaultMiscItems-list"></tbody></table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card guild-card guild-list-card guild-decorations-card">
+                <div class="card-header guild-card-header" data-guildCardType="VaultShipDecorations"></div>
+                <div class="card-body guild-list-body">
+                    <form id="vaultShipDecorations-form" class="input-group guild-add-form d-none" data-guild-vault-form="VaultShipDecorations">
+                        <label class="visually-hidden" for="VaultShipDecorations-count" data-loc="code_count"></label>
+                        <input class="form-control guild-count-input" id="VaultShipDecorations-count" type="number" value="1" />
+                        <label class="visually-hidden" for="acquire-type-VaultShipDecorations" data-loc-itemMap="/Lotus/Language/Menu/Store_BuyWithCredits"></label>
+                        <input class="form-control" id="acquire-type-VaultShipDecorations" list="datalist-ShipDecorations" autocomplete="off" />
+                        <button class="btn btn-primary" type="submit" data-loc="general_addButton" data-enabling-permission="addItems"></button>
+                    </form>
+                    <div class="guild-list-scroll">
+                        <table class="table table-hover guild-table"><tbody id="VaultShipDecorations-list"></tbody></table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card guild-card guild-list-card guild-members-card">
+                <h2 class="card-header guild-static-card-header">
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    <span data-loc-itemMap-norm="/Lotus/Language/Menu/Members"></span>
+                </h2>
+                <div class="card-body guild-list-body">
+                    <div class="guild-list-scroll">
+                        <table class="table table-hover guild-table"><tbody id="Members-list"></tbody></table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card guild-card guild-list-card guild-alliance-card">
+                <h2 class="card-header guild-static-card-header">
+                    <i class="bi bi-diagram-2" aria-hidden="true"></i>
+                    <span data-loc-itemMap="/Lotus/Language/Clan/Clan_AllianceBtnTitle"></span>
+                </h2>
+                <div class="card-body guild-list-body">
+                    <div class="guild-list-scroll">
+                        <table class="table table-hover guild-table"><tbody id="Alliance-list"></tbody></table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card guild-card guild-cheats-card">
+                <h2 class="card-header guild-static-card-header">
+                    <i class="bi bi-sliders" aria-hidden="true"></i>
+                    <span data-loc="guildView_cheats"></span>
+                </h2>
+                <div class="card-body guild-cheats-grid" id="guild-cheats">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="noDojoRoomBuildStage" data-enabling-permission="toggleCheat.noDojoRoomBuildStage" />
+                        <label class="form-check-label" for="noDojoRoomBuildStage" data-loc="cheats_noDojoRoomBuildStage"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="fastDojoRoomDestruction" data-enabling-permission="toggleCheat.fastDojoRoomDestruction" />
+                        <label class="form-check-label" for="fastDojoRoomDestruction" data-loc="cheats_fastDojoRoomDestruction"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="noDojoDecoBuildStage" data-enabling-permission="toggleCheat.noDojoDecoBuildStage" />
+                        <label class="form-check-label" for="noDojoDecoBuildStage" data-loc="cheats_noDojoDecoBuildStage"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="noDojoResearchCosts" data-enabling-permission="toggleCheat.noDojoResearchCosts" />
+                        <label class="form-check-label" for="noDojoResearchCosts" data-loc="cheats_noDojoResearchCosts"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="noDojoResearchTime" data-enabling-permission="toggleCheat.noDojoResearchTime" />
+                        <label class="form-check-label" for="noDojoResearchTime" data-loc="cheats_noDojoResearchTime"></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="fastClanAscension" data-enabling-permission="toggleCheat.fastClanAscension" />
+                        <label class="form-check-label" for="fastClanAscension" data-loc="cheats_fastClanAscension"></label>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
