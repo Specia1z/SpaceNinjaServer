@@ -55,13 +55,13 @@
     "warframe-riven-info": "^0.1.2",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
-    "ws": "^8.18.2"
+    "ws": "^8.22.0"
   },
   "optionalDependencies": {
     "@types/express": "^5",
     "@types/morgan": "^1.9.9",
     "@types/websocket": "^1.0.10",
-    "@types/ws": "^8.18.1",
+    "@types/ws": "^8.18.2",
     "@typescript/native-preview": "^7.0.0-dev.20260308.1",
     "logform": "^2.7.0",
     "ncp": "^2.0.0"
