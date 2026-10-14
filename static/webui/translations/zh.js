@@ -112,6 +112,8 @@ dict = {
     navbar_mods: `Mods`,
     navbar_cheats: `作弊选项`,
     navbar_import: `导入`,
+    navbar_sectionManagement: `管理中心`,
+    navbar_sectionServer: `服务器`,
     navbar_accountRates: `账号倍率`,
     navbar_rewardStats: `奖励统计`,
     navbar_worldActivities: `世界活动`,

@@ -499,10 +499,11 @@ single.on("route_load", function (event) {
 
             navPath = category == "Upgrades" ? "/webui/mods" : "/webui/inventory";
         }
-        $("#sidebar .nav-link").removeClass("active");
-        const navLink = document.querySelector(".nav-link[href='" + navPath + "']");
+        $("#sidebar .sidebar-route-link, #sidebar .app-navigation-trigger").removeClass("active");
+        const navLink = document.querySelector("#sidebar .sidebar-route-link[href='" + navPath + "']");
         if (navLink) {
             navLink.classList.add("active");
+            navLink.closest(".dropdown")?.querySelector(".app-navigation-trigger")?.classList.add("active");
         } else {
             console.warn("No sidebar entry for current route!");
         }
@@ -2390,7 +2391,7 @@ document.querySelectorAll(".tags-input").forEach(input => {
     input.oninput();
 });
 
-document.querySelectorAll("#sidebar .nav-link").forEach(function (elm) {
+document.querySelectorAll("#sidebar .sidebar-route-link").forEach(function (elm) {
     elm.addEventListener("click", function () {
         window.scrollTo(0, 0);
     });

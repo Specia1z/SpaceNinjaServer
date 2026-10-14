@@ -112,6 +112,8 @@ dict = {
     navbar_mods: `Модифікатори`,
     navbar_cheats: `Чити`,
     navbar_import: `Імпорт`,
+    navbar_sectionManagement: `Керування`,
+    navbar_sectionServer: `Сервер`,
     settings_passwordMismatch: `[UNTRANSLATED] The new passwords do not match.`,
     settings_passwordSuccess: `[UNTRANSLATED] Password updated.`,
     settings_emailSuccess: `[UNTRANSLATED] Email updated.`,

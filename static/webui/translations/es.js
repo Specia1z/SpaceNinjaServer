@@ -112,6 +112,8 @@ dict = {
     navbar_mods: `Mods`,
     navbar_cheats: `Trucos`,
     navbar_import: `Importar`,
+    navbar_sectionManagement: `Administración`,
+    navbar_sectionServer: `Servidor`,
     settings_passwordMismatch: `[UNTRANSLATED] The new passwords do not match.`,
     settings_passwordSuccess: `[UNTRANSLATED] Password updated.`,
     settings_emailSuccess: `[UNTRANSLATED] Email updated.`,

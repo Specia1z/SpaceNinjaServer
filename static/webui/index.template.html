@@ -75,64 +75,48 @@
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
-                <div class="navbar p-0">
-                    <ul class="navbar-nav justify-content-end">
+                <nav class="navbar p-0 app-navigation" aria-label="Main navigation">
+                    <ul class="navbar-nav app-navigation-list">
                         <li class="nav-item">
-                            <a class="nav-link" href="/webui/inventory" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_inventory"></a>
+                            <a class="nav-link sidebar-route-link" href="/webui/inventory" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"><i class="bi bi-box-seam" aria-hidden="true"></i><span data-loc="navbar_inventory"></span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/webui/mods" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_mods"></a>
+                            <a class="nav-link sidebar-route-link" href="/webui/mods" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"><i class="bi bi-stars" aria-hidden="true"></i><span data-loc="navbar_mods"></span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/webui/cheats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_cheats"></a>
+                            <a class="nav-link sidebar-route-link" href="/webui/cheats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"><i class="bi bi-sliders" aria-hidden="true"></i><span data-loc="navbar_cheats"></span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/webui/import" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_import"></a>
+                            <a class="nav-link sidebar-route-link" href="/webui/import" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"><i class="bi bi-upload" aria-hidden="true"></i><span data-loc="navbar_import"></span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/webui/clan" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_guildView"></a>
+                            <a class="nav-link sidebar-route-link" href="/webui/clan" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"><i class="bi bi-people" aria-hidden="true"></i><span data-loc="navbar_guildView"></span></a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/users" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="admin_users"></a>
+                        <li class="nav-item dropdown app-navigation-group app-navigation-management">
+                            <button class="nav-link dropdown-toggle app-navigation-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-shield-check" aria-hidden="true"></i><span data-loc="navbar_sectionManagement"></span></button>
+                            <ul class="dropdown-menu app-navigation-menu">
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/users" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="admin_users"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/admin-data" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_adminData"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/store-prices" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_storePrices"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/redeem-codes" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_redeemCodes"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/anti-cheat" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_antiCheat"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/account-rates" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_accountRates"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/reward-stats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_rewardStats"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/player-presence" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_playerPresence"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/metadata-patches" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_metadataPatches"></a></li>
+                            </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/admin-data" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_adminData"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/store-prices" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_storePrices"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/redeem-codes" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_redeemCodes"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/anti-cheat" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_antiCheat"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/account-rates" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_accountRates"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/reward-stats" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_rewardStats"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/player-presence" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_playerPresence"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/metadata-patches" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_metadataPatches"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/bootstrapper-version" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_bootstrapperVersion"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/client-config" data-bs-dismiss="offcanvas" data-bs-target="#sidebar">Client Configuration</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/world-activities" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_worldActivities"></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/webui/world-state" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="worldState"></a>
+                        <li class="nav-item dropdown app-navigation-group app-navigation-server">
+                            <button class="nav-link dropdown-toggle app-navigation-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-hdd-network" aria-hidden="true"></i><span data-loc="navbar_sectionServer"></span></button>
+                            <ul class="dropdown-menu dropdown-menu-end app-navigation-menu">
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/bootstrapper-version" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_bootstrapperVersion"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/client-config" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_clientConfig"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/world-activities" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="navbar_worldActivities"></a></li>
+                                <li><a class="dropdown-item sidebar-route-link" href="/webui/world-state" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" data-loc="worldState"></a></li>
+                            </ul>
                         </li>
                     </ul>
-                </div>
+                </nav>
             </div>
         </div>
         <div id="main-content" class="w-100">

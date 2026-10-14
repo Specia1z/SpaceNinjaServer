@@ -111,6 +111,8 @@ dict = {
     navbar_mods: `Mods`,
     navbar_cheats: `Cheats`,
     navbar_import: `Import`,
+    navbar_sectionManagement: `Management`,
+    navbar_sectionServer: `Server`,
     navbar_accountRates: `Account Rates`,
     navbar_rewardStats: `Reward Statistics`,
     navbar_worldActivities: `World Activities`,
