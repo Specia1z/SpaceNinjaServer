@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
+import { ROAD_TO_TAU_CURRENCY, ROAD_TO_TAU_VENDOR } from "../constants/roadToTauVendor.ts";
 import { ePurchaseSource } from "../types/purchaseTypes.ts";
 import { handlePurchase } from "./purchaseService.ts";
+import { getVendor } from "./itemDataService.ts";
+import { getVendorManifestByTypeName } from "./serversideVendorsService.ts";
 
 void test("Narin bundle stores skins as WeaponSkins", async () => {
     const inventory = new Inventory({
@@ -177,6 +180,67 @@ void test("market booster packages are not discounted by an active booster", asy
 
     assert.equal(response.InventoryChanges.PremiumCredits, -200);
     assert.equal(inventory.PremiumCredits, 0);
+});
+
+void test("RoadToTau vendor exposes the extracted manifest and accepts event-resource purchases", async () => {
+    const vendor = getVendor(ROAD_TO_TAU_VENDOR);
+    assert.ok(vendor);
+    assert.equal(vendor.isDynamic, true);
+    assert.equal(vendor.requiredGoalTag, "RoadToTauEvent");
+    assert.equal(vendor.items.length, 50);
+
+    const manifest = getVendorManifestByTypeName(ROAD_TO_TAU_VENDOR, true);
+    assert.ok(manifest);
+    assert.equal(manifest.VendorInfo.RequiredGoalTag, "RoadToTauEvent");
+    assert.equal(manifest.VendorInfo.ItemManifest.length, 50);
+
+    const weaponOffer = manifest.VendorInfo.ItemManifest.find(
+        offer => offer.StoreItem == "/Lotus/StoreItems/Weapons/Sentients/SentOctaMiniGun/SentOctaMiniGun"
+    );
+    assert.ok(weaponOffer);
+    assert.equal(weaponOffer.PurchaseQuantityLimit, 1);
+    assert.equal(weaponOffer.AllowMultipurchase, false);
+    assert.deepEqual(weaponOffer.ItemPrices, [
+        {
+            ItemType: ROAD_TO_TAU_CURRENCY,
+            ItemCount: 150,
+            ProductCategory: "MiscItems"
+        }
+    ]);
+
+    const sigilOffer = manifest.VendorInfo.ItemManifest.find(
+        offer => offer.StoreItem == "/Lotus/StoreItems/Upgrades/Skins/Sigils/ClanSigilBasicAdd"
+    );
+    assert.ok(sigilOffer);
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        PremiumCredits: 0,
+        PremiumCreditsFree: 0,
+        MiscItems: [{ ItemType: ROAD_TO_TAU_CURRENCY, ItemCount: 50 }]
+    });
+
+    const response = await handlePurchase(
+        {
+            PurchaseParams: {
+                Source: ePurchaseSource.Vendor,
+                SourceId: manifest.VendorInfo._id.$oid,
+                StoreItem: sigilOffer.StoreItem,
+                Quantity: 1,
+                UsePremium: false
+            },
+            buildLabel: "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg"
+        },
+        inventory
+    );
+
+    assert.equal(response.InventoryChanges.MiscItems![0].ItemType, ROAD_TO_TAU_CURRENCY);
+    assert.equal(response.InventoryChanges.MiscItems![0].ItemCount, -50);
+    assert.equal(inventory.MiscItems.some(item => item.ItemType == ROAD_TO_TAU_CURRENCY), false);
+    assert.equal(response.InventoryChanges.WeaponSkins!.length, 1);
+    assert.equal(
+        response.InventoryChanges.WeaponSkins![0].ItemType,
+        "/Lotus/Upgrades/Skins/Sigils/ClanSigilBasicAdd"
+    );
 });
 
 void test("market fusion bundles grant their advertised fusion points", async () => {

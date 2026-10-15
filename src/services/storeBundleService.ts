@@ -1,4 +1,4 @@
-import { ExportBundles } from "warframe-public-export-plus";
+import { ExportBoosters, ExportBundles } from "warframe-public-export-plus";
 import type { IBundle } from "warframe-public-export-plus";
 import { StoreBundle, type IStoreBundle, type IStoreBundleComponent } from "../models/storeBundleModel.ts";
 import { getAdminItemData } from "./adminItemDataService.ts";
@@ -28,6 +28,22 @@ const normalizeTypeName = (typeName: string): string => {
     throw new Error("Bundle TypeName must be a StoreItem path");
 };
 
+const normalizeComponentTypeName = (typeName: string): string => {
+    if (Object.hasOwn(ExportBoosters, typeName)) return typeName;
+
+    const storeItem = toStoreItem(typeName);
+    if (Object.hasOwn(ExportBoosters, storeItem)) return storeItem;
+
+    // Booster metadata is keyed by the Types/StoreItems spelling, while other
+    // bundle components use the shorter StoreItems spelling.
+    if (storeItem.startsWith("/Lotus/StoreItems/")) {
+        const typesStoreItem = "/Lotus/Types/StoreItems/" + storeItem.substring("/Lotus/StoreItems/".length);
+        if (Object.hasOwn(ExportBoosters, typesStoreItem)) return typesStoreItem;
+    }
+
+    return storeItem;
+};
+
 const normalizeComponents = (components: readonly IStoreBundleComponent[]): IStoreBundleComponent[] => {
     if (components.length == 0 || components.length > 100) throw new Error("A bundle must contain 1 to 100 components");
     return components.map(component => {
@@ -52,7 +68,7 @@ const normalizeComponents = (components: readonly IStoreBundleComponent[]): ISto
             throw new Error("Invalid bundle component duration");
         }
         return {
-            TypeName: toStoreItem(component.TypeName),
+            TypeName: normalizeComponentTypeName(component.TypeName),
             PurchaseQuantity: component.PurchaseQuantity,
             ...(component.DurabilityDays !== undefined ? { DurabilityDays: component.DurabilityDays } : {})
         };

@@ -17,6 +17,14 @@ interface IGeneratableVendorInfo extends Omit<IVendorInfo, "ItemManifest" | "Exp
     cycleDuration: number;
 }
 
+interface IExtendedVendorOffer extends IVendorOffer {
+    allowMultipurchase?: boolean;
+}
+
+const getAllowMultipurchase = (offer: IVendorOffer): boolean => {
+    return (offer as IExtendedVendorOffer).allowMultipurchase ?? offer.purchaseLimit !== 1;
+};
+
 const generatableVendors: IGeneratableVendorInfo[] = [
     {
         _id: { $oid: "67dadc30e4b6e0e5979c8d84" },
@@ -100,6 +108,7 @@ export const getVendorManifestByTypeName = (
                 _id: { $oid: getVendorOid(typeName) },
                 TypeName: typeName,
                 RandomSeedType: manifest.randomSeedType,
+                RequiredGoalTag: manifest.requiredGoalTag,
                 cycleDuration: getCycleDuration(manifest)
             },
             fullStock ?? config.fullyStockedVendors
@@ -122,6 +131,7 @@ export const getVendorManifestByOid = (oid: string, buildVersion: number): ICach
                     _id: { $oid: typeNameOid },
                     TypeName: typeName,
                     RandomSeedType: manifest.randomSeedType,
+                    RequiredGoalTag: manifest.requiredGoalTag,
                     cycleDuration: getCycleDuration(manifest)
                 },
                 config.fullyStockedVendors
@@ -136,6 +146,7 @@ export const getVendorManifestByOid = (oid: string, buildVersion: number): ICach
                     _id: { $oid: typeNameOid },
                     TypeName: typeName,
                     RandomSeedType: manifest.randomSeedType,
+                    RequiredGoalTag: manifest.requiredGoalTag,
                     cycleDuration: getCycleDuration(manifest)
                 },
                 config.fullyStockedVendors
@@ -460,7 +471,7 @@ const generateVendorManifest = (
                 ReductionPerPositiveRank: rawItem.syndicate?.reductionPerPositiveRank,
                 IncreasePerNegativeRank: rawItem.syndicate?.increasePerNegativeRank,
                 StandingCost: rawItem.syndicate?.standingCost,
-                AllowMultipurchase: rawItem.purchaseLimit !== 1,
+                AllowMultipurchase: getAllowMultipurchase(rawItem),
                 Id: {
                     $oid:
                         ((cycleStart / 1000) & 0xffffffff).toString(16).padStart(8, "0") +

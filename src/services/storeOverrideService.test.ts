@@ -625,6 +625,73 @@ void test("custom bundle components support inventory-aware pricing and Types St
     await syncOfficialStorePrices();
 });
 
+void test("custom booster bundles accept StoreItem paths and preserve their durations", async () => {
+    const offers = [
+        {
+            bundleTypeName: "/Lotus/Types/StoreItems/Packages/DamageBlessing3DayBundle",
+            price: 40,
+            durationDays: 3
+        },
+        {
+            bundleTypeName: "/Lotus/Types/StoreItems/Packages/DamageBlessing720HourBundle",
+            price: 200,
+            durationDays: 30
+        }
+    ];
+    const componentTypeName = "/Lotus/Types/StoreItems/Boosters/DamageBlessingStoreItem";
+
+    try {
+        for (const offer of offers) {
+            await deleteStoreBundle(offer.bundleTypeName);
+            await deleteSupplementalStorePrice(offer.bundleTypeName);
+            await saveSupplementalStorePrice(offer.bundleTypeName, offer.price, undefined);
+            await saveStoreBundle(offer.bundleTypeName, [
+                { TypeName: componentTypeName, PurchaseQuantity: 1, DurabilityDays: offer.durationDays }
+            ]);
+
+            const saved = (await listStoreBundles()).find(bundle => bundle.TypeName == offer.bundleTypeName);
+            assert.ok(saved);
+            assert.deepEqual(saved.Components, [
+                { TypeName: componentTypeName, PurchaseQuantity: 1, DurabilityDays: offer.durationDays }
+            ]);
+            assert.equal(getPrice(offer.bundleTypeName, 1, 0, true, buildLabel), offer.price);
+
+            const inventory = new Inventory({
+                accountOwnerId: "000000000000000000000001",
+                PremiumCredits: offer.price,
+                PremiumCreditsFree: 0
+            });
+            const response = await handlePurchase(
+                {
+                    PurchaseParams: {
+                        Source: ePurchaseSource.Market,
+                        StoreItem: offer.bundleTypeName,
+                        Quantity: 1,
+                        UsePremium: true,
+                        ExpectedPrice: offer.price
+                    },
+                    buildLabel
+                },
+                inventory
+            );
+
+            assert.deepEqual(response.InventoryChanges.Boosters, [
+                {
+                    ItemType: "/Lotus/Types/Boosters/DamageBlessing",
+                    ExpiryDate: offer.durationDays * 86400
+                }
+            ]);
+            assert.equal(response.InventoryChanges.PremiumCredits, -offer.price);
+            assert.equal(inventory.PremiumCredits, 0);
+        }
+    } finally {
+        for (const offer of offers) {
+            await deleteStoreBundle(offer.bundleTypeName);
+            await deleteSupplementalStorePrice(offer.bundleTypeName);
+        }
+    }
+});
+
 void test("store bundles preserve AvatarImages type paths when adding flavour items", async () => {
     const bundleTypeName = "/Lotus/Types/StoreItems/Packages/AvatarImagePathBundle";
     const componentTypeName = "/Lotus/StoreItems/AvatarImages/CommunityArtPackVI/AvatarImageCitrineShivecu";

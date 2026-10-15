@@ -81,6 +81,11 @@ import { version_compare } from "../helpers/inventoryHelpers.ts";
 import vorsPrizePreU40Rewards from "../../static/fixed_responses/vorsPrizePreU40Rewards.json" with { type: "json" };
 import gameToBuildVersion from "../constants/gameToBuildVersion.ts";
 import gameToBuildVersionInt from "../constants/gameToBuildVersionInt.ts";
+import {
+    ROAD_TO_TAU_CURRENCY,
+    ROAD_TO_TAU_VENDOR,
+    roadToTauVendor
+} from "../constants/roadToTauVendor.ts";
 import { getWorldState } from "./worldStateService.ts";
 import { promises as fs } from "fs";
 import path from "path";
@@ -120,6 +125,8 @@ const supplementalResource = (name: string, icon: string): IResource => ({
 });
 
 export const supplementalResources: Record<string, IResource> = {
+    // This event currency is present in the client manifest but absent from the pinned Public Export snapshot.
+    [ROAD_TO_TAU_CURRENCY]: supplementalResource("Road to Tau Resource", ""),
     "/Lotus/Types/Recipes/WarframeRecipes/NarinChassisComponent": supplementalResource(
         "Narin Chassis",
         "/Lotus/Interface/Icons/StoreIcons/Warframes/Narin.png"
@@ -2008,6 +2015,7 @@ const melicaHubVendor: IVendor = {
 };
 
 export const supplementalVendors: Record<string, IVendor> = {
+    [ROAD_TO_TAU_VENDOR]: roadToTauVendor,
     "/Lotus/Types/Game/VendorManifests/Hubs/RailjackResourcesVendorManifest": {
         isDynamic: false,
         items: [
