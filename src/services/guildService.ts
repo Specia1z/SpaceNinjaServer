@@ -1074,8 +1074,26 @@ export const handleGuildGoalProgress = async (
         });
     }
     const totalCount = (goalProgress?.Count ?? 0) + upload.Count;
-    const guildRewards = goalGuildRewardByTag[upload.Tag].rewards;
-    const tierGoals = goalGuildRewardByTag[upload.Tag].guildGoals[guild.Tier - 1];
+    const guildGoalReward = goalGuildRewardByTag[upload.Tag];
+    if (!guildGoalReward) {
+        logger.warn(`unknown guild goal tag ${upload.Tag}`);
+        if (goalProgress) goalProgress.Count += upload.Count;
+        await guild.save();
+        return;
+    }
+
+    const guildRewards = guildGoalReward.rewards;
+    const tierGoals =
+        guild.Tier >= 1 && guild.Tier <= guildGoalReward.guildGoals.length
+            ? guildGoalReward.guildGoals[guild.Tier - 1]
+            : undefined;
+    if (!tierGoals) {
+        logger.warn(`unsupported guild tier ${guild.Tier} for goal tag ${upload.Tag}`);
+        if (goalProgress) goalProgress.Count += upload.Count;
+        await guild.save();
+        return;
+    }
+
     const rewards = [];
     if (tierGoals.length && guildRewards.length) {
         for (let i = 0; i < tierGoals.length; i++) {
@@ -1107,7 +1125,22 @@ export const handleGuildGoalProgress = async (
     await guild.save();
 };
 
-const goalGuildRewardByTag: Record<string, { guildGoals: number[][]; rewards: string[] }> = {
+const goalGuildRewardByTag: Partial<Record<string, { guildGoals: number[][]; rewards: string[] }>> = {
+    RoadToTauEvent: {
+        guildGoals: [
+            [1500, 3000, 4500, 6000],
+            [4500, 9000, 13500, 18000],
+            [15000, 30000, 45000, 60000],
+            [45000, 90000, 135000, 180000],
+            [150000, 300000, 450000, 600000]
+        ],
+        rewards: [
+            "/Lotus/Levels/ClanDojo/ComponentPropRecipes/RoadToTauEventTerracottaTrophyRecipe",
+            "/Lotus/Levels/ClanDojo/ComponentPropRecipes/RoadToTauEventBronzeTrophyRecipe",
+            "/Lotus/Levels/ClanDojo/ComponentPropRecipes/RoadToTauEventSilverTrophyRecipe",
+            "/Lotus/Levels/ClanDojo/ComponentPropRecipes/RoadToTauEventGoldTrophyRecipe"
+        ]
+    },
     JadeShadowsEvent: {
         guildGoals: [
             // I don't know what ClanGoal means
