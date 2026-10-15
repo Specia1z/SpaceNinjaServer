@@ -525,6 +525,8 @@ dict = {
     worldState_starDaysAlerts: `Star Days Alerts (|VAL|)`,
     worldState_hallowedNightmaresRewards: `Hallowed Nightmares Rewards`,
     worldState_proxyRebellionRewards: `Proxy Rebellion Rewards`,
+    worldState_roadToTau: `Taubound: Road to Tau`,
+    worldState_roadToTauProgressOverride: `Taubound Progress`,
     worldState_bellyOfTheBeastProgressOverride: `Belly of the Beast Progress`,
     worldState_eightClawProgressOverride: `Eight Claw Progress`,
     worldState_thermiaFracturesProgressOverride: `Thermia Fractures Progress`,

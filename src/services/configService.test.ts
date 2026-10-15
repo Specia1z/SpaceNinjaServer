@@ -4,6 +4,7 @@ import {
     config,
     getWorldStateBoostMultiplier,
     isWorldStateBoostActive,
+    validateRoadToTauConfig,
     validateVarziaRotationConfig,
     validateWorldStateBoostConfig,
     validateClientConfig
@@ -45,6 +46,14 @@ void test("Varzia rotation configuration validates supported modes and day range
     assert.match(validateVarziaRotationConfig("worldState.varziaCustomRotationMode", "yearly") ?? "", /daily/);
     assert.match(validateVarziaRotationConfig("worldState.varziaCustomRotationDays", 0) ?? "", /1 to 3650/);
     assert.match(validateVarziaRotationConfig("worldState.varziaCustomRotationEnabled", "true") ?? "", /boolean/);
+});
+
+void test("Road to Tau configuration validates its switch and progress range", () => {
+    assert.equal(validateRoadToTauConfig("worldState.roadToTau", true), undefined);
+    assert.equal(validateRoadToTauConfig("worldState.roadToTauProgressOverride", 42), undefined);
+    assert.match(validateRoadToTauConfig("worldState.roadToTau", 1) ?? "", /boolean/);
+    assert.match(validateRoadToTauConfig("worldState.roadToTauProgressOverride", 100.5) ?? "", /integer/);
+    assert.match(validateRoadToTauConfig("worldState.roadToTauProgressOverride", 101) ?? "", /0 to 100/);
 });
 
 void test("client configuration validates supported types and ranges", () => {

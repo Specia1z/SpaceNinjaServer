@@ -526,6 +526,8 @@ dict = {
     worldState_starDaysAlerts: `星日警报 (|VAL|)`,
     worldState_hallowedNightmaresRewards: `万圣噩梦奖励设置`,
     worldState_proxyRebellionRewards: `机械叛乱奖励设置`,
+    worldState_roadToTau: `纪元行动：奔赴 Tau 星系`,
+    worldState_roadToTauProgressOverride: `奔赴 Tau 星系进度(%)`,
     worldState_bellyOfTheBeastProgressOverride: `不稳定微粒收集进度(%)`,
     worldState_eightClawProgressOverride: `大帝金币收集进度(%)`,
     worldState_thermiaFracturesProgressOverride: `热美亚裂缝进度`,

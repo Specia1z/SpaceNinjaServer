@@ -405,6 +405,8 @@ dict = {
     worldState_starDaysAlerts: `Sternen-Tage Alarmierungen (|VAL|)`,
     worldState_hallowedNightmaresRewards: `Geweihte Albträume-Belohnungen`,
     worldState_proxyRebellionRewards: `Proxy-Rebellion-Belohnungen`,
+    worldState_roadToTau: `[UNTRANSLATED] Taubound: Road to Tau`,
+    worldState_roadToTauProgressOverride: `[UNTRANSLATED] Taubound Progress`,
     worldState_bellyOfTheBeastProgressOverride: `Das Innere der Bestie-Fortschritt`,
     worldState_eightClawProgressOverride: `Acht Klauen-Fortschritt`,
     worldState_thermiaFracturesProgressOverride: `Thermische Risse-Fortschritt`,

@@ -405,6 +405,8 @@ dict = {
     worldState_starDaysAlerts: `Сигналы Тревоги Звёздных днёй (|VAL|)`,
     worldState_hallowedNightmaresRewards: `Награды Священных кошмаров`,
     worldState_proxyRebellionRewards: `Награды Восстания роботов`,
+    worldState_roadToTau: `[UNTRANSLATED] Taubound: Road to Tau`,
+    worldState_roadToTauProgressOverride: `[UNTRANSLATED] Taubound Progress`,
     worldState_bellyOfTheBeastProgressOverride: `Прогресс Чрева зверя`,
     worldState_eightClawProgressOverride: `Прогресс Восьми когтей`,
     worldState_thermiaFracturesProgressOverride: `Прогресс Разломов Термии`,

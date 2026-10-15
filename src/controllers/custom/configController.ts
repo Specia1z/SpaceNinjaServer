@@ -4,6 +4,7 @@ import {
     inventoryAffectingConfigKeys,
     validateRegistrationRateLimitConfig,
     validateWorldStateBoostConfig,
+    validateRoadToTauConfig,
     validateVarziaRotationConfig,
     validateClientConfig,
     validateInvasionConfig
@@ -48,6 +49,11 @@ export const setConfigController: RequestHandler = async (req, res) => {
             const worldStateBoostError = validateWorldStateBoostConfig(id, value);
             if (worldStateBoostError) {
                 res.status(400).send(worldStateBoostError);
+                return;
+            }
+            const roadToTauError = validateRoadToTauConfig(id, value);
+            if (roadToTauError) {
+                res.status(400).send(roadToTauError);
                 return;
             }
             const varziaRotationError = validateVarziaRotationConfig(id, value);

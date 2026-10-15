@@ -16,6 +16,7 @@ import {
     getSeasonChallengePools,
     getVarziaRotationPeriodMs,
     getVarziaRotationWindow,
+    getRoadToTauGoal,
     pushWeeklyActs,
     VARZIA_ROTATION_EPOCH
 } from "./worldStateService.ts";
@@ -100,6 +101,18 @@ void test("Varzia custom rotation windows use an independent epoch", () => {
     });
     assert.equal(getVarziaRotationPeriodMs("monthly"), 30 * 86_400_000);
     assert.equal(getVarziaRotationPeriodMs("custom", 13), 13 * 86_400_000);
+});
+
+void test("local Road to Tau goals use the official metadata and configured progress", () => {
+    const goal = getRoadToTauGoal("2026.09.22.16.46/", 37);
+    assert.equal(goal._id.$oid, "6ad0ea700000000000000000");
+    assert.equal(goal.Tag, "RoadToTauEvent");
+    assert.equal(goal.Count, 37);
+    assert.equal(goal.HealthPct, 0.37);
+    assert.deepEqual(goal.ClanGoal, [72, 216, 648, 1944, 5832]);
+    assert.deepEqual(goal.Regions, [10]);
+    assert.deepEqual(goal.RegionDrops, ["/Lotus/Types/Gameplay/Events/RoadToTauEvent/RoadToTauEventPickup"]);
+    assert.equal(goal.ItemType, "/Lotus/Types/Gameplay/Events/RoadToTauEvent/RoadToTauEventResource");
 });
 
 void test("active void trader is selected from the effective world-state window", () => {

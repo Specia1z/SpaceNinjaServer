@@ -1841,6 +1841,26 @@ export const getWorldStateTime = (): {
     };
 };
 
+export const getRoadToTauGoal = (buildLabel: string, progressOverride = 0): IGoal => ({
+    _id: toOid2("6ad0ea700000000000000000", buildLabel),
+    Activation: toMongoDate2(1792076400000, buildLabel),
+    Expiry: toMongoDate2(2000000000000, buildLabel),
+    Count: progressOverride,
+    HealthPct: progressOverride / 100,
+    Goal: 0,
+    Community: true,
+    ClanGoal: [72, 216, 648, 1944, 5832],
+    Faction: "FC_INFESTATION",
+    Desc: "/Lotus/Language/TauPrologue/RoadToTauEventName",
+    ToolTip: "/Lotus/Language/TauPrologue/RoadToTauShortEventDesc",
+    Icon: "/Lotus/Interface/Icons/WorldStatePanel/EpochOperationEventBadge.png",
+    Tag: "RoadToTauEvent",
+    ScoreLocTag: "/Lotus/Language/TauPrologue/RoadToTauEventScore",
+    Regions: [10],
+    RegionDrops: ["/Lotus/Types/Gameplay/Events/RoadToTauEvent/RoadToTauEventPickup"],
+    ItemType: "/Lotus/Types/Gameplay/Events/RoadToTauEvent/RoadToTauEventResource"
+});
+
 export const getWorldState = (
     buildLabel: string = BL_LATEST,
     convertGoals: boolean = true,
@@ -3271,6 +3291,10 @@ export const getWorldState = (
             MissionKeyName: "/Lotus/Types/Keys/ShadowgrapherEventMission",
             ItemType: "/Lotus/Types/Gameplay/Shadowgrapher/Resources/ShadowgrapherEventResource"
         });
+    }
+
+    if (config.worldState?.roadToTau && buildVersion >= gameToBuildVersionInt["44.0.0"]) {
+        worldState.Goals.push(getRoadToTauGoal(buildLabel, config.worldState.roadToTauProgressOverride ?? 0));
     }
 
     // <U39

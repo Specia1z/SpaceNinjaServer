@@ -395,6 +395,8 @@ export interface IConfig {
         lunarNewYear?: string;
         dogDaysOverride?: boolean;
         dogDaysRewardsOverride?: number;
+        roadToTau?: boolean;
+        roadToTauProgressOverride?: number;
         operationAtramentum?: boolean;
         operationAtramentumProgressOverride?: number;
         bellyOfTheBeast?: boolean;
@@ -607,6 +609,18 @@ export const validateWorldStateBoostConfig = (id: string, value: unknown): strin
     if (value === undefined || value === null || value === "") return undefined;
     if (!isValidIsoDateTime(value)) {
         return `${id} must be an ISO 8601 date-time with a timezone`;
+    }
+    return undefined;
+};
+
+export const validateRoadToTauConfig = (id: string, value: unknown): string | undefined => {
+    if (id == "worldState.roadToTau") {
+        return typeof value == "boolean" ? undefined : `${id} must be a boolean`;
+    }
+    if (id == "worldState.roadToTauProgressOverride") {
+        return typeof value == "number" && Number.isSafeInteger(value) && value >= 0 && value <= 100
+            ? undefined
+            : `${id} must be an integer from 0 to 100`;
     }
     return undefined;
 };

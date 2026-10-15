@@ -252,6 +252,8 @@
     "lunarNewYear": null,
     "dogDaysOverride": null,
     "dogDaysRewardsOverride": null,
+    "roadToTau": false,
+    "roadToTauProgressOverride": 0,
     "operationAtramentum": false,
     "operationAtramentumProgressOverride": 0,
     "bellyOfTheBeast": false,
