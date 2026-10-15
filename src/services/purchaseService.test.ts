@@ -153,6 +153,32 @@ void test("market booster packages honor duration prices", async () => {
     }
 });
 
+void test("market booster packages are not discounted by an active booster", async () => {
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        PremiumCredits: 200,
+        PremiumCreditsFree: 0,
+        Boosters: [{ ItemType: "/Lotus/Types/Boosters/ResourceAmountBooster", ExpiryDate: 9999999999 }]
+    });
+
+    const response = await handlePurchase(
+        {
+            PurchaseParams: {
+                Source: ePurchaseSource.Market,
+                StoreItem: "/Lotus/Types/StoreItems/Boosters/ResourceAmount30DayStoreItem",
+                Quantity: 1,
+                UsePremium: true,
+                ExpectedPrice: 200
+            },
+            buildLabel: "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg"
+        },
+        inventory
+    );
+
+    assert.equal(response.InventoryChanges.PremiumCredits, -200);
+    assert.equal(inventory.PremiumCredits, 0);
+});
+
 void test("market fusion bundles grant their advertised fusion points", async () => {
     for (const fusionBundle of [
         {

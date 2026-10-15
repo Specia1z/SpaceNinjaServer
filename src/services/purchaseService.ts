@@ -53,6 +53,8 @@ import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import { applyLiveWorldState, getLiveDailyDealForPurchase } from "./liveWorldStateService.ts";
 import { getStoreItemBogoBonusQuantity, isStoreItemPurchasable } from "./storeOverrideService.ts";
 
+const stackableBoosterTypes = new Set(Object.values(ExportBoosters).map(booster => booster.typeName));
+
 const getStoreItemCategory = (storeItem: string): string => {
     const storeItemString = getSubstringFromKeyword(storeItem, "StoreItems/");
     const storeItemElements = storeItemString.split("/");
@@ -73,6 +75,8 @@ const isInventoryItemOwned = (inventory: TInventoryDatabaseDocument, storeItemNa
     if (typeName.startsWith("/Lotus/StoreItems/") || typeName.startsWith("/Lotus/Types/StoreItems/")) {
         typeName = fromStoreItem(typeName);
     }
+    // Active boosters extend their duration when purchased again; they never remove the booster from a bundle price.
+    if (stackableBoosterTypes.has(typeName)) return false;
 
     const inventoryRecord = inventory.toObject() as unknown as Record<string, unknown>;
     return Object.values(inventoryRecord).some(value => {
