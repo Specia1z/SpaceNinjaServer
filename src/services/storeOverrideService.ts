@@ -1,7 +1,7 @@
 import { StoreOverride, type IStoreOverride } from "../models/storeOverrideModel.ts";
 import type { IWorldState } from "../types/worldStateTypes.ts";
 import { toMongoDate2 } from "../helpers/inventoryHelpers.ts";
-import { fromStoreItem, getUndiscountedPrice, toStoreItem } from "./itemDataService.ts";
+import { fromStoreItem, getUndiscountedPrice, isBundle, toStoreItem } from "./itemDataService.ts";
 import { sendWsBroadcastToGame } from "./wsService.ts";
 
 const storeOverrides = new Map<string, IStoreOverride>();
@@ -284,7 +284,7 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
     for (const override of storeOverrides.values()) {
         if (!override.Enabled) continue;
         const storeItem = storeItemName(override.TypeName);
-        const typeName = overrideTypeName(override.TypeName);
+        const flashSaleTypeName = isBundle(storeItem) ? storeItem : overrideTypeName(override.TypeName);
         const categories = worldState.InGameMarket.LandingPage.Categories;
         const productExpired = isProductExpired(override, now);
         if (productExpired || !override.Listed || override.CategoryName) {
@@ -293,7 +293,7 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             }
         }
         if (productExpired) {
-            worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != typeName);
+            worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != flashSaleTypeName);
             continue;
         }
         if (
@@ -321,7 +321,7 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             override.ProductExpiryDate !== undefined ||
             override.StartDate !== undefined ||
             override.EndDate !== undefined;
-        worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != typeName);
+        worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != flashSaleTypeName);
         const promotionActive = isPromotionActive(override, now);
         const productWindowActive = override.ProductExpiryDate !== undefined && isProductWindowActive(override, now);
         if (
@@ -355,7 +355,7 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
                 : undefined;
 
         worldState.FlashSales.push({
-            TypeName: typeName,
+            TypeName: flashSaleTypeName,
             ShowInMarket: override.Listed,
             HideFromMarket: override.Listed ? undefined : true,
             Discount: promotionActive ? override.DiscountPercent : undefined,

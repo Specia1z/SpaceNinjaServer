@@ -254,6 +254,29 @@ void test("absolute prices do not emit a competing zero-percent discount", async
     assert.equal("EndDate" in state.FlashSales[0], true);
 });
 
+void test("bundle overrides use the same StoreItem path for listings and flash sales", async () => {
+    const bundleTypeName = "/Lotus/Types/StoreItems/Boosters/AffinityBooster90DayStoreItem";
+    try {
+        await saveStoreOverride({
+            TypeName: bundleTypeName,
+            Enabled: true,
+            Listed: true,
+            Purchasable: true,
+            PremiumPrice: 400,
+            UpdatedBy: "test"
+        });
+        const state = worldState();
+        applyStoreOverrides(state, buildLabel);
+
+        assert.ok(state.InGameMarket.LandingPage.Categories[0].Items?.includes(bundleTypeName));
+        const sale = state.FlashSales.find(item => item.TypeName == bundleTypeName);
+        assert.ok(sale);
+        assert.equal(sale.PremiumOverride, 400);
+    } finally {
+        await deleteStoreOverride(bundleTypeName);
+    }
+});
+
 void test("limited-only overrides reuse the original store price", async () => {
     await saveStoreOverride(override({ ProductExpiryDate: new Date(Date.now() + 60_000) }));
     const state = worldState();
