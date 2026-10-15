@@ -181,6 +181,37 @@ void test("category-only overrides create permanent market entries without promo
     await deleteStoreOverride(typeName);
 });
 
+void test("category schedules automatically hide permanent market entries outside their window", async () => {
+    const now = Date.now();
+    try {
+        await saveStoreOverride(
+            override({
+                CategoryName: "POPULAR",
+                CategoryStartDate: new Date(now + 60_000),
+                CategoryEndDate: new Date(now + 120_000)
+            })
+        );
+        const beforeStartState = worldState();
+        applyStoreOverrides(beforeStartState, buildLabel);
+        assert.deepEqual(beforeStartState.InGameMarket.LandingPage.Categories[3].Items, []);
+        assert.deepEqual(beforeStartState.FlashSales, []);
+
+        await saveStoreOverride(
+            override({
+                CategoryName: "POPULAR",
+                CategoryStartDate: new Date(now - 120_000),
+                CategoryEndDate: new Date(now - 60_000)
+            })
+        );
+        const afterEndState = worldState();
+        applyStoreOverrides(afterEndState, buildLabel);
+        assert.deepEqual(afterEndState.InGameMarket.LandingPage.Categories[3].Items, []);
+        assert.deepEqual(afterEndState.FlashSales, []);
+    } finally {
+        await deleteStoreOverride(typeName);
+    }
+});
+
 void test("category and promotion schedules are independent", async () => {
     const now = Date.now();
     await saveStoreOverride(

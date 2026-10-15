@@ -287,6 +287,11 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
         const flashSaleTypeName = isBundle(storeItem) ? storeItem : overrideTypeName(override.TypeName);
         const categories = worldState.InGameMarket.LandingPage.Categories;
         const productExpired = isProductExpired(override, now);
+        const productWindowActive = override.ProductExpiryDate !== undefined && isProductWindowActive(override, now);
+        const categoryListingActive =
+            override.Listed &&
+            isCategoryActive(override, now) &&
+            (override.ProductExpiryDate === undefined || productWindowActive);
         if (productExpired || !override.Listed || override.CategoryName) {
             for (const category of categories) {
                 if (category.Items) category.Items = category.Items.filter(item => item != storeItem);
@@ -297,8 +302,7 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             continue;
         }
         if (
-            override.Listed &&
-            isCategoryActive(override, now) &&
+            categoryListingActive &&
             !categories.some(category => category.Items?.includes(storeItem))
         ) {
             const category =
@@ -309,13 +313,26 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
 
         worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != flashSaleTypeName);
         const promotionActive = isPromotionActive(override, now);
-        const productWindowActive = override.ProductExpiryDate !== undefined && isProductWindowActive(override, now);
+        const hasFlashSaleOverride =
+            !override.Listed ||
+            override.DiscountPercent !== undefined ||
+            override.PremiumPrice !== undefined ||
+            override.RegularPrice !== undefined ||
+            override.SupporterPack !== undefined ||
+            override.BogoBuy !== undefined ||
+            override.BogoGet !== undefined ||
+            override.Featured !== undefined ||
+            override.Popular !== undefined ||
+            override.BannerIndex !== undefined ||
+            override.ProductExpiryDate !== undefined ||
+            override.StartDate !== undefined ||
+            override.EndDate !== undefined;
 
         // A listed override is also a market entry for items that are not part of the stock catalogue. Promotion
         // fields remain conditional below, so placing an item in a category does not turn it into a discounted sale.
         if (
-            (!override.Listed && !promotionActive && !productWindowActive) ||
-            (override.ProductExpiryDate !== undefined && !productWindowActive)
+            (override.ProductExpiryDate !== undefined && !productWindowActive) ||
+            (!categoryListingActive && (!hasFlashSaleOverride || (!promotionActive && !productWindowActive)))
         )
             continue;
 
