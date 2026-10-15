@@ -625,10 +625,8 @@ const getItemListsController: RequestHandler = async (req, response) => {
         });
     }
 
-    // Bundles are store items in their own right and are what the in-game market sells as packages, so the admin
-    // store override editor needs them listed. Bundles that are not marketed are skipped to keep the list useful.
+    // Include every bundle in the admin picker. Excluded bundles can still be manually listed through a store override.
     for (const [uniqueName, bundle] of Object.entries(adminItemData.bundles)) {
-        if (bundle.excludeFromMarket) continue;
         res.Bundles.push({
             uniqueName,
             name: getString(bundle.name ?? uniqueName, lang)

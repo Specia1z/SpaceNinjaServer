@@ -44,6 +44,14 @@ const addPrice = (prices: Map<string, IOfficialStorePrice>, price: IOfficialStor
     if (!existing || priceKey(price) != priceKey(existing)) prices.set(price.TypeName, { ...existing, ...price });
 };
 
+const resolveDerivedPrice = (typeName: string, usePremium: boolean): number | undefined => {
+    try {
+        return getUndiscountedPrice(typeName, 1, 0, usePremium, BL_LATEST, true, true);
+    } catch {
+        return undefined;
+    }
+};
+
 const collectOfficialPrices = (): IOfficialStorePrice[] => {
     const prices = new Map<string, IOfficialStorePrice>();
     for (const table of publicPriceTables) {
@@ -52,12 +60,8 @@ const collectOfficialPrices = (): IOfficialStorePrice[] => {
             let premiumPrice = data.platinumCost;
             let regularPrice = data.creditsCost;
             if (premiumPrice === undefined && regularPrice === undefined && data.components) {
-                try {
-                    premiumPrice = getUndiscountedPrice(typeName, 1, 0, true, BL_LATEST, true, true);
-                    regularPrice = getUndiscountedPrice(typeName, 1, 0, false, BL_LATEST, true, true);
-                } catch {
-                    continue;
-                }
+                premiumPrice = resolveDerivedPrice(typeName, true);
+                regularPrice = resolveDerivedPrice(typeName, false);
             }
             addPrice(prices, { TypeName: typeName, PremiumPrice: premiumPrice, RegularPrice: regularPrice });
         }

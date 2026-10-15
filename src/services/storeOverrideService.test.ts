@@ -401,6 +401,22 @@ void test("official price sync builds the complete catalogue instead of only cus
     assert.equal(banshee.PremiumPrice, 245);
 });
 
+void test("platinum-only boosters do not receive a regular credit price", async () => {
+    const boosterTypeName = "/Lotus/Types/StoreItems/Boosters/ResourceDropChance30DayStoreItem";
+
+    assert.equal(getUndiscountedPrice(boosterTypeName, 1, 0, true, buildLabel, true, true), 200);
+    assert.throws(
+        () => getUndiscountedPrice(boosterTypeName, 1, 0, false, buildLabel, true, true),
+        /no price found/
+    );
+
+    await syncOfficialStorePrices();
+    const saved = await StorePrice.findOne({ TypeName: boosterTypeName }).lean();
+    assert.ok(saved);
+    assert.equal(saved.PremiumPrice, 200);
+    assert.equal(saved.RegularPrice, undefined);
+});
+
 void test("supplemental prices survive official sync and update the live cache", async () => {
     const manualTypeName = "/Lotus/Upgrades/Skins/Decree/ManualSupplementalPrice";
     await deleteSupplementalStorePrice(manualTypeName);

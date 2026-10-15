@@ -59,9 +59,9 @@ void test("item list exposes all major categories from one self-contained snapsh
     assert.ok(Object.keys(ExportRelics).every(uniqueName => miscNames.has(uniqueName)));
     assert.ok(Object.keys(ExportCustoms).filter(uniqueName => allNames.has(uniqueName)).length > 1_000);
     assert.equal(payload.Nodes.length, Object.keys(ExportRegions).length);
-    const marketBundles = Object.entries(ExportBundles)
-        .filter(([, bundle]) => !bundle.excludeFromMarket)
-        .map(([uniqueName]) => uniqueName);
-    assert.equal(payload.Bundles.length, marketBundles.length);
-    assert.ok(marketBundles.every(uniqueName => allNames.has(uniqueName)));
+    const allBundles = Object.keys(ExportBundles);
+    assert.equal(payload.Bundles.length, allBundles.length);
+    assert.ok(allBundles.every(uniqueName => allNames.has(uniqueName)));
+    assert.ok(payload.Bundles.some(item => item.uniqueName.endsWith("AffinityBooster90DayStoreItem")));
+    assert.ok(payload.Bundles.some(item => item.uniqueName.endsWith("ModDropChanceBooster90DayStoreItem")));
 });

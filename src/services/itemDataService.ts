@@ -6167,7 +6167,7 @@ export const getUndiscountedPrice = (
     const bundle = isBundle(storeItemName);
     let internalName = bundle ? storeItemName : fromStoreItem(storeItemName);
 
-    if (storeItemName in ExportBoosters) {
+    if (usePremium && storeItemName in ExportBoosters) {
         return [40, 80, 200, 400][durability] ?? 40;
     }
 
