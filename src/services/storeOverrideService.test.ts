@@ -47,7 +47,8 @@ const worldState = (): IWorldState =>
                 Categories: [
                     { CategoryName: "NEW", Name: "new", Icon: "new", Items: [] },
                     { CategoryName: "TENNOGEN", Name: "tennogen", Icon: "tennogen", Items: [] },
-                    { CategoryName: "SALE", Name: "sale", Icon: "sale", Items: [] }
+                    { CategoryName: "SALE", Name: "sale", Icon: "sale", Items: [] },
+                    { CategoryName: "POPULAR", Name: "popular", Icon: "popular", Items: [] }
                 ]
             }
         }
@@ -78,7 +79,9 @@ void test("visible Repala appears in TennoGen but purchase can be blocked indepe
 
     assert.deepEqual(state.InGameMarket.LandingPage.Categories[0].Items, []);
     assert.deepEqual(state.InGameMarket.LandingPage.Categories[1].Items, [storeItem]);
-    assert.deepEqual(state.FlashSales, []);
+    assert.equal(state.FlashSales[0].TypeName, typeName);
+    assert.equal(state.FlashSales[0].ShowInMarket, true);
+    assert.equal(state.FlashSales[0].Discount, 0);
     assert.equal(isStoreItemPurchasable(typeName), false);
 
     const inventory = new Inventory({ accountOwnerId: "000000000000000000000001", PremiumCredits: 200 });
@@ -110,7 +113,7 @@ void test("hidden Repala is removed from every category and cannot be purchased"
     applyStoreOverrides(state, buildLabel);
     assert.deepEqual(
         state.InGameMarket.LandingPage.Categories.map(category => category.Items),
-        [[], [], []]
+        [[], [], [], []]
     );
     assert.equal(state.FlashSales[0].HideFromMarket, true);
 
@@ -160,12 +163,21 @@ void test("discounted Repala uses the client's truncated unit price when purchas
     assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 94);
 });
 
-void test("category-only overrides do not mark items as limited-time sales", async () => {
+void test("category-only overrides create permanent market entries without promotion overrides", async () => {
     await saveStoreOverride(override({ CategoryName: "POPULAR" }));
     const state = worldState();
     applyStoreOverrides(state, buildLabel);
 
-    assert.deepEqual(state.FlashSales, []);
+    assert.equal(state.InGameMarket.LandingPage.Categories[0].Items?.length, 0);
+    assert.deepEqual(state.InGameMarket.LandingPage.Categories[3].Items, [storeItem]);
+    const sale = state.FlashSales[0];
+    assert.equal(sale.TypeName, typeName);
+    assert.equal(sale.ShowInMarket, true);
+    assert.equal(sale.Discount, 0);
+    assert.equal(sale.PremiumOverride, undefined);
+    assert.equal(sale.RegularOverride, undefined);
+    assert.equal("StartDate" in sale, true);
+    assert.equal("EndDate" in sale, true);
     await deleteStoreOverride(typeName);
 });
 
@@ -185,7 +197,9 @@ void test("category and promotion schedules are independent", async () => {
     const categoryOnlyState = worldState();
     applyStoreOverrides(categoryOnlyState, buildLabel);
     assert.deepEqual(categoryOnlyState.InGameMarket.LandingPage.Categories[2].Items, [storeItem]);
-    assert.deepEqual(categoryOnlyState.FlashSales, []);
+    assert.equal(categoryOnlyState.FlashSales[0].ShowInMarket, true);
+    assert.equal(categoryOnlyState.FlashSales[0].Discount, undefined);
+    assert.deepEqual(categoryOnlyState.FlashSales[0].StartDate, { $date: { $numberLong: "0" } });
     assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 105);
 
     await saveStoreOverride(
@@ -356,7 +370,8 @@ void test("expired promotions keep the product listed at its original price", as
     applyStoreOverrides(state, buildLabel);
 
     assert.deepEqual(state.InGameMarket.LandingPage.Categories[2].Items, [storeItem]);
-    assert.deepEqual(state.FlashSales, []);
+    assert.equal(state.FlashSales[0].ShowInMarket, true);
+    assert.equal(state.FlashSales[0].Discount, undefined);
     assert.equal(getPrice(storeItem, 1, 0, true, buildLabel), 105);
     await deleteStoreOverride(typeName);
 });

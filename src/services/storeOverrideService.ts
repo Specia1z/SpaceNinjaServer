@@ -307,35 +307,29 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             if (category) (category.Items ??= []).push(storeItem);
         }
 
-        const hasFlashSaleOverride =
-            !override.Listed ||
-            override.DiscountPercent !== undefined ||
-            override.PremiumPrice !== undefined ||
-            override.RegularPrice !== undefined ||
-            override.SupporterPack !== undefined ||
-            override.BogoBuy !== undefined ||
-            override.BogoGet !== undefined ||
-            override.Featured !== undefined ||
-            override.Popular !== undefined ||
-            override.BannerIndex !== undefined ||
-            override.ProductExpiryDate !== undefined ||
-            override.StartDate !== undefined ||
-            override.EndDate !== undefined;
         worldState.FlashSales = worldState.FlashSales.filter(sale => sale.TypeName != flashSaleTypeName);
         const promotionActive = isPromotionActive(override, now);
         const productWindowActive = override.ProductExpiryDate !== undefined && isProductWindowActive(override, now);
+
+        // A listed override is also a market entry for items that are not part of the stock catalogue. Promotion
+        // fields remain conditional below, so placing an item in a category does not turn it into a discounted sale.
         if (
-            !hasFlashSaleOverride ||
-            (!promotionActive && !productWindowActive) ||
+            (!override.Listed && !promotionActive && !productWindowActive) ||
             (override.ProductExpiryDate !== undefined && !productWindowActive)
         )
             continue;
 
-        const startDate = toMongoDate2(override.StartDate ?? permanentOfferStart, buildLabel);
+        const offerWindowActive = promotionActive || productWindowActive;
+        const startDate = toMongoDate2(
+            offerWindowActive ? (override.StartDate ?? permanentOfferStart) : permanentOfferStart,
+            buildLabel
+        );
         const endDate = toMongoDate2(
             promotionActive
                 ? (override.EndDate ?? override.ProductExpiryDate ?? permanentOfferEnd)
-                : (override.ProductExpiryDate ?? permanentOfferEnd),
+                : productWindowActive
+                  ? (override.ProductExpiryDate ?? permanentOfferEnd)
+                  : permanentOfferEnd,
             buildLabel
         );
         const productExpiryDate = override.ProductExpiryDate
@@ -345,12 +339,14 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             override.DiscountPercent !== undefined ||
             override.PremiumPrice !== undefined ||
             override.RegularPrice !== undefined;
+        const hasOriginalPriceOverride = override.ProductExpiryDate !== undefined && !hasPriceOverride;
+        const defaultDiscount = !hasPriceOverride && !hasOriginalPriceOverride ? 0 : undefined;
         const originalPremiumPrice =
-            override.ProductExpiryDate !== undefined && !hasPriceOverride
+            hasOriginalPriceOverride
                 ? getOriginalPrice(storeItem, true, buildLabel)
                 : undefined;
         const originalRegularPrice =
-            override.ProductExpiryDate !== undefined && !hasPriceOverride
+            hasOriginalPriceOverride
                 ? getOriginalPrice(storeItem, false, buildLabel)
                 : undefined;
 
@@ -358,7 +354,7 @@ export const applyStoreOverrides = (worldState: IWorldState, buildLabel: string)
             TypeName: flashSaleTypeName,
             ShowInMarket: override.Listed,
             HideFromMarket: override.Listed ? undefined : true,
-            Discount: promotionActive ? override.DiscountPercent : undefined,
+            Discount: promotionActive ? (override.DiscountPercent ?? defaultDiscount) : defaultDiscount,
             // Absent unless the admin configured an absolute price, in which case it takes precedence over Discount.
             PremiumOverride: promotionActive ? (override.PremiumPrice ?? originalPremiumPrice) : originalPremiumPrice,
             RegularOverride: promotionActive ? (override.RegularPrice ?? originalRegularPrice) : originalRegularPrice,
