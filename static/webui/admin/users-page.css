@@ -340,6 +340,127 @@
     line-height: 1.45;
 }
 
+.users-attachment-field {
+    min-width: 0;
+}
+
+.users-attachment-editor {
+    min-width: 0;
+    position: relative;
+}
+
+.users-attachment-heading {
+    align-items: start;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    min-height: 3.55rem;
+}
+
+.users-attachment-heading .form-label {
+    margin-bottom: 0.15rem;
+}
+
+.users-attachment-heading .form-text {
+    line-height: 1.35;
+    margin: 0;
+}
+
+.users-attachment-heading .badge {
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
+}
+
+.users-attachment-search {
+    position: relative;
+}
+
+.users-attachment-search .btn {
+    min-width: 4.2rem;
+}
+
+.users-attachment-results {
+    box-shadow: 0 0.65rem 1.6rem color-mix(in srgb, var(--bs-emphasis-color) 13%, transparent);
+    left: 0;
+    max-height: 17rem;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.25rem);
+    z-index: 1080;
+}
+
+.users-attachment-result {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+}
+
+.users-attachment-result code,
+.users-attachment-details code {
+    color: var(--bs-secondary-color);
+    font-size: 0.7rem;
+    overflow-wrap: anywhere;
+}
+
+.users-attachment-no-results {
+    background: var(--bs-body-bg);
+    color: var(--bs-secondary-color);
+    padding: 0.7rem;
+}
+
+.users-attachment-list {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.65rem;
+}
+
+.users-attachment-row {
+    align-items: center;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.45rem;
+    display: flex;
+    gap: 0.55rem;
+    min-width: 0;
+    padding: 0.55rem 0.6rem;
+}
+
+.users-attachment-details {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.08rem;
+    min-width: 0;
+}
+
+.users-attachment-details strong,
+.users-attachment-details code {
+    overflow-wrap: anywhere;
+}
+
+.users-attachment-quantity {
+    flex: 0 0 5.5rem;
+    text-align: right;
+}
+
+.users-attachment-remove {
+    flex: 0 0 auto;
+}
+
+.users-attachment-empty {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    gap: 0.45rem;
+    justify-content: center;
+    min-height: 3.15rem;
+    padding: 0.6rem;
+    text-align: center;
+}
+
 .users-form-footer {
     align-items: center;
     border-top: 1px solid var(--bs-border-color);
@@ -441,6 +562,10 @@
     .users-field-target,
     .users-field-full {
         grid-column: 1;
+    }
+
+    .users-attachment-heading {
+        min-height: 0;
     }
 
     .users-account-tools .badge {

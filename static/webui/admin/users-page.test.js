@@ -73,7 +73,18 @@ function loadUsersPage() {
         "#admin-message-subject",
         "#admin-message-body",
         "#admin-message-target",
-        "#admin-message-counted-att",
+        "#admin-message-att-search",
+        "#admin-message-att-add",
+        "#admin-message-att-results",
+        "#admin-message-att-list",
+        "#admin-message-att-empty",
+        "#admin-message-att-count",
+        "#admin-message-counted-att-search",
+        "#admin-message-counted-att-add",
+        "#admin-message-counted-att-results",
+        "#admin-message-counted-att-list",
+        "#admin-message-counted-att-empty",
+        "#admin-message-counted-att-count",
         "#admin-broadcast-submit",
         "#admin-message-att",
         "#admin-message-high-priority",
@@ -115,6 +126,13 @@ function loadUsersPage() {
             list: async () => users,
             broadcastInbox: async payload => messages.push(payload),
             announceIrc: async message => apiCalls.push(["announceIrc", message])
+        },
+        adminItemCatalog: {
+            items: [
+                { uniqueName: "item-one", name: "First Item", searchText: "first item item-one" },
+                { uniqueName: "item-three", name: "Third Item", searchText: "third item item-three" }
+            ],
+            load: async () => []
         },
         suspicionApi: { ban: async (...args) => apiCalls.push(["ban", ...args]) },
         webuiComponents: { confirm: async () => true },
@@ -224,8 +242,19 @@ test("users page confirms and sends an inbox broadcast with all attachment field
     elements.get("#admin-message-body").value = "Maintenance soon";
     elements.get("#admin-message-target").value = "all";
     elements.get("#admin-message-target").setAttribute("data-tags-value", "all");
-    elements.get("#admin-message-att").value = "item-one\nitem-two";
-    elements.get("#admin-message-counted-att").value = '[{"ItemType":"item-three","ItemCount":2}]';
+    elements.get("#admin-message-att-search").value = "First";
+    elements.get("#admin-message-att-search").dispatch("input");
+    assert.equal(elements.get("#admin-message-att-results").children.length, 1);
+    elements.get("#admin-message-att-results").children[0].dispatch("mousedown");
+    elements.get("#admin-message-att-search").value = "/item-two";
+    elements.get("#admin-message-att-search").dispatch("input");
+    elements.get("#admin-message-att-add").dispatch("click");
+    elements.get("#admin-message-counted-att-search").value = "Third";
+    elements.get("#admin-message-counted-att-search").dispatch("input");
+    elements.get("#admin-message-counted-att-results").children[0].dispatch("mousedown");
+    const countedRow = elements.get("#admin-message-counted-att-list").children[0];
+    countedRow.children[1].value = "2";
+    countedRow.children[1].dispatch("input");
     elements.get("#admin-message-icon").value = "event-icon";
     elements.get("#admin-broadcast-form").dispatch("submit");
     await new Promise(resolve => setImmediate(resolve));
@@ -242,7 +271,7 @@ test("users page confirms and sends an inbox broadcast with all attachment field
                         msg: "Maintenance soon",
                         highPriority: true,
                         icon: "event-icon",
-                        att: ["item-one", "item-two"],
+                        att: ["item-one", "/item-two"],
                         countedAtt: [{ ItemType: "item-three", ItemCount: 2 }]
                     }
                 ]

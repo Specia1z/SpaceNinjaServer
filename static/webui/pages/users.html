@@ -111,13 +111,55 @@
                         <label class="form-label" for="admin-message-icon" data-loc="admin_messageIcon"></label>
                         <input class="form-control" id="admin-message-icon" placeholder="/Lotus/Interface/Icons/Npcs/Ordis.png" />
                     </div>
-                    <div class="users-form-field">
-                        <label class="form-label" for="admin-message-att" data-loc="admin_messageAtt"></label>
-                        <textarea class="form-control font-monospace" id="admin-message-att" rows="4" placeholder="/Lotus/Powersuits/Excalibur/ExcaliburPrime&#10;/Lotus/Weapons/Tenno/Melee/LongSword/SkanaPrime&#10;/Lotus/Weapons/Tenno/Pistol/LatoPrime"></textarea>
+                    <div class="users-form-field users-attachment-field">
+                        <div class="users-attachment-editor" data-attachment-editor="plain">
+                            <div class="users-attachment-heading">
+                                <div>
+                                    <label class="form-label" for="admin-message-att-search" data-loc="admin_messageAtt"></label>
+                                    <p class="form-text" data-loc="admin_messageAttHelp"></p>
+                                </div>
+                                <span class="badge text-bg-secondary" id="admin-message-att-count">0</span>
+                            </div>
+                            <div class="input-group users-attachment-search">
+                                <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                                <input class="form-control" id="admin-message-att-search" type="search" autocomplete="off" data-loc-placeholder="admin_messageAttSearch" />
+                                <button class="btn btn-outline-primary" id="admin-message-att-add" type="button" data-loc-title="admin_messageAttAdd" aria-label="Add attachment">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                    <span data-loc="general_addButton"></span>
+                                </button>
+                                <div class="list-group users-attachment-results d-none" id="admin-message-att-results" role="listbox"></div>
+                            </div>
+                            <div class="users-attachment-list" id="admin-message-att-list"></div>
+                            <div class="users-attachment-empty" id="admin-message-att-empty">
+                                <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                <span data-loc="admin_messageNoAttachments"></span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="users-form-field">
-                        <label class="form-label" for="admin-message-counted-att" data-loc="admin_messageCountedAtt"></label>
-                        <textarea class="form-control font-monospace" id="admin-message-counted-att" rows="4" placeholder="[&#10;  { &quot;ItemType&quot;: &quot;/Lotus/Types/Items/MiscItems/OxiumAlloy&quot;, &quot;ItemCount&quot;: 1200 }&#10;]"></textarea>
+                    <div class="users-form-field users-attachment-field">
+                        <div class="users-attachment-editor" data-attachment-editor="counted">
+                            <div class="users-attachment-heading">
+                                <div>
+                                    <label class="form-label" for="admin-message-counted-att-search" data-loc="admin_messageCountedAtt"></label>
+                                    <p class="form-text" data-loc="admin_messageCountedAttHelp"></p>
+                                </div>
+                                <span class="badge text-bg-secondary" id="admin-message-counted-att-count">0</span>
+                            </div>
+                            <div class="input-group users-attachment-search">
+                                <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
+                                <input class="form-control" id="admin-message-counted-att-search" type="search" autocomplete="off" data-loc-placeholder="admin_messageCountedAttSearch" />
+                                <button class="btn btn-outline-primary" id="admin-message-counted-att-add" type="button" data-loc-title="admin_messageAttAdd" aria-label="Add counted attachment">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                    <span data-loc="general_addButton"></span>
+                                </button>
+                                <div class="list-group users-attachment-results d-none" id="admin-message-counted-att-results" role="listbox"></div>
+                            </div>
+                            <div class="users-attachment-list" id="admin-message-counted-att-list"></div>
+                            <div class="users-attachment-empty" id="admin-message-counted-att-empty">
+                                <i class="bi bi-box-seam" aria-hidden="true"></i>
+                                <span data-loc="admin_messageNoCountedAttachments"></span>
+                            </div>
+                        </div>
                     </div>
                     <div class="users-form-footer users-field-full">
                         <div class="form-check">

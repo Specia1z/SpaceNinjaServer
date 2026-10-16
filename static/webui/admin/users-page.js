@@ -9,6 +9,230 @@
     const userSearch = find("#admin-users-search");
     const userRows = find("#registered-losers");
     const usernameList = document.getElementById("datalist-usernames");
+    const attachmentStates = {
+        plain: [],
+        counted: []
+    };
+    const attachmentEditors = [
+        {
+            key: "plain",
+            search: find("#admin-message-att-search"),
+            add: find("#admin-message-att-add"),
+            results: find("#admin-message-att-results"),
+            list: find("#admin-message-att-list"),
+            empty: find("#admin-message-att-empty"),
+            count: find("#admin-message-att-count"),
+            counted: false
+        },
+        {
+            key: "counted",
+            search: find("#admin-message-counted-att-search"),
+            add: find("#admin-message-counted-att-add"),
+            results: find("#admin-message-counted-att-results"),
+            list: find("#admin-message-counted-att-list"),
+            empty: find("#admin-message-counted-att-empty"),
+            count: find("#admin-message-counted-att-count"),
+            counted: true
+        }
+    ];
+    let attachmentCatalogPromise;
+
+    const normalizeAttachmentSearch = value =>
+        String(value ?? "")
+            .normalize("NFKD")
+            .toLocaleLowerCase()
+            .trim();
+
+    const getAttachmentItems = () => window.adminItemCatalog?.items ?? [];
+    const getAttachmentItem = itemType => getAttachmentItems().find(item => item.uniqueName === itemType);
+    const getAttachmentLabel = itemType => getAttachmentItem(itemType)?.name ?? itemType.split("/").pop() ?? itemType;
+
+    const getAttachmentMatches = query => {
+        const normalizedQuery = normalizeAttachmentSearch(query);
+        if (!normalizedQuery) return [];
+        return getAttachmentItems()
+            .filter(item => item.searchText.includes(normalizedQuery))
+            .sort((left, right) => {
+                const rank = item =>
+                    normalizeAttachmentSearch(item.uniqueName) === normalizedQuery
+                        ? 0
+                        : normalizeAttachmentSearch(item.name).startsWith(normalizedQuery)
+                          ? 1
+                          : normalizeAttachmentSearch(item.uniqueName).startsWith(normalizedQuery)
+                            ? 2
+                            : 3;
+                return rank(left) - rank(right) || left.name.localeCompare(right.name);
+            })
+            .slice(0, 30);
+    };
+
+    const hasExactAttachmentItem = query =>
+        getAttachmentItems().some(
+            item => normalizeAttachmentSearch(item.uniqueName) === normalizeAttachmentSearch(query)
+        );
+
+    const updateAttachmentAddButton = editor => {
+        const query = editor.search.value.trim();
+        editor.add.disabled = !query || (!hasExactAttachmentItem(query) && !query.startsWith("/"));
+    };
+
+    const renderAttachmentResults = editor => {
+        const query = editor.search.value.trim();
+        editor.results.replaceChildren();
+        updateAttachmentAddButton(editor);
+        if (!query) {
+            editor.results.classList.add("d-none");
+            return;
+        }
+
+        const matches = getAttachmentMatches(query);
+        for (const item of matches) {
+            const option = document.createElement("button");
+            option.type = "button";
+            option.className = "list-group-item list-group-item-action users-attachment-result";
+            option.setAttribute("role", "option");
+            const name = document.createElement("strong");
+            name.textContent = item.name;
+            const path = document.createElement("code");
+            path.textContent = item.uniqueName;
+            option.append(name, path);
+            option.addEventListener("mousedown", event => {
+                event.preventDefault();
+                addAttachment(editor, item.uniqueName);
+            });
+            editor.results.append(option);
+        }
+
+        if (!matches.length) {
+            const empty = document.createElement("div");
+            empty.className = "users-attachment-no-results";
+            empty.textContent = loc("admin_messageNoAttachmentMatches");
+            editor.results.append(empty);
+        }
+        editor.results.classList.remove("d-none");
+    };
+
+    const renderAttachmentCount = editor => {
+        const items = attachmentStates[editor.key];
+        if (!editor.counted) {
+            editor.count.textContent = loc("admin_messageAttachmentCount").replace("|COUNT|", String(items.length));
+            return;
+        }
+        const total = items.reduce((sum, item) => sum + (item.itemCount > 0 ? item.itemCount : 0), 0);
+        editor.count.textContent = loc("admin_messageCountedAttachmentCount")
+            .replace("|COUNT|", String(items.length))
+            .replace("|TOTAL|", total.toLocaleString());
+    };
+
+    const renderAttachmentEditor = editor => {
+        const items = attachmentStates[editor.key];
+        editor.list.replaceChildren(
+            ...items.map((item, index) => {
+                const row = document.createElement("div");
+                row.className = "users-attachment-row";
+
+                const details = document.createElement("div");
+                details.className = "users-attachment-details";
+                const name = document.createElement("strong");
+                name.textContent = getAttachmentLabel(item.itemType ?? item);
+                const path = document.createElement("code");
+                path.textContent = item.itemType ?? item;
+                details.append(name, path);
+
+                if (editor.counted) {
+                    const quantity = document.createElement("input");
+                    quantity.className = "form-control users-attachment-quantity";
+                    quantity.type = "number";
+                    quantity.min = "1";
+                    quantity.step = "1";
+                    quantity.value = String(item.itemCount);
+                    quantity.setAttribute(
+                        "aria-label",
+                        `${loc("admin_messageQuantity")}: ${getAttachmentLabel(item.itemType)}`
+                    );
+                    quantity.addEventListener("input", () => {
+                        const value = Number(quantity.value);
+                        item.itemCount = Number.isSafeInteger(value) && value > 0 ? value : 0;
+                        renderAttachmentCount(editor);
+                    });
+                    row.append(details, quantity);
+                } else {
+                    row.append(details);
+                }
+
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "btn btn-sm btn-outline-danger users-attachment-remove";
+                remove.title = loc("code_remove");
+                remove.setAttribute(
+                    "aria-label",
+                    `${loc("code_remove")}: ${getAttachmentLabel(item.itemType ?? item)}`
+                );
+                remove.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+                remove.addEventListener("click", () => {
+                    attachmentStates[editor.key].splice(index, 1);
+                    renderAttachmentEditor(editor);
+                });
+                row.append(remove);
+                return row;
+            })
+        );
+        editor.empty.classList.toggle("d-none", items.length > 0);
+        renderAttachmentCount(editor);
+        renderAttachmentResults(editor);
+    };
+
+    function addAttachment(editor, itemType = editor.search.value) {
+        const value = itemType.trim();
+        if (!value) return false;
+        const items = attachmentStates[editor.key];
+        if (editor.counted) {
+            const existing = items.find(item => item.itemType === value);
+            if (existing) existing.itemCount += 1;
+            else items.push({ itemType: value, itemCount: 1 });
+        } else if (!items.includes(value)) {
+            items.push(value);
+        }
+        editor.search.value = "";
+        renderAttachmentEditor(editor);
+        editor.search.focus();
+        return true;
+    }
+
+    const initializeAttachmentEditors = () => {
+        for (const editor of attachmentEditors) {
+            editor.search.addEventListener("input", () => renderAttachmentResults(editor));
+            editor.search.addEventListener("focus", () => renderAttachmentResults(editor));
+            editor.search.addEventListener("keydown", event => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    const firstMatch = getAttachmentMatches(editor.search.value)[0];
+                    if (firstMatch) addAttachment(editor, firstMatch.uniqueName);
+                    else if (!editor.add.disabled) addAttachment(editor);
+                } else if (event.key === "Escape") {
+                    editor.results.classList.add("d-none");
+                }
+            });
+            editor.search.addEventListener("blur", () => {
+                setTimeout(() => editor.results.classList.add("d-none"), 150);
+            });
+            editor.add.addEventListener("click", () => addAttachment(editor));
+            renderAttachmentEditor(editor);
+        }
+    };
+
+    const loadAttachmentCatalog = async () => {
+        if (!window.adminItemCatalog?.load) return;
+        const language = window.lang ?? "en";
+        if (!attachmentCatalogPromise || attachmentCatalogPromise.language !== language) {
+            attachmentCatalogPromise = {
+                language,
+                promise: window.adminItemCatalog.load(language).catch(() => undefined)
+            };
+        }
+        await attachmentCatalogPromise.promise;
+        attachmentEditors.forEach(renderAttachmentEditor);
+    };
 
     function showAccessDenied() {
         window.is_admin = false;
@@ -167,10 +391,9 @@
         const subject = find("#admin-message-subject");
         const body = find("#admin-message-body");
         const target = find("#admin-message-target");
-        const countedAttInput = find("#admin-message-counted-att");
         const button = find("#admin-broadcast-submit");
 
-        [sender, subject, body, target, countedAttInput].forEach(input => input.classList.remove("is-invalid"));
+        [sender, subject, body, target].forEach(input => input.classList.remove("is-invalid"));
         if (!sender.value.trim() || !subject.value.trim() || !body.value.trim() || !target.value.trim()) {
             [sender, subject, body, target].forEach(input => {
                 if (!input.value.trim()) input.classList.add("is-invalid");
@@ -178,19 +401,9 @@
             return;
         }
 
-        const countedAttRaw = countedAttInput.value.trim();
-        let countedAttachments;
-        if (countedAttRaw) {
-            try {
-                countedAttachments = JSON.parse(countedAttRaw);
-            } catch {
-                countedAttachments = undefined;
-            }
-            if (!Array.isArray(countedAttachments)) {
-                countedAttInput.classList.add("is-invalid");
-                countedAttInput.focus();
-                return;
-            }
+        if (attachmentStates.counted.some(item => !Number.isSafeInteger(item.itemCount) || item.itemCount < 1)) {
+            toast(loc("admin_messageInvalidQuantity"), "danger");
+            return;
         }
 
         target.oninput?.();
@@ -212,10 +425,8 @@
         });
         if (!confirmed) return;
 
-        const attachments = find("#admin-message-att")
-            .value.split("\n")
-            .map(value => value.trim())
-            .filter(Boolean);
+        const attachments = attachmentStates.plain;
+        const countedAttachments = attachmentStates.counted;
         const message = {
             sndr: sender.value.trim(),
             sub: subject.value.trim(),
@@ -225,7 +436,12 @@
         const icon = find("#admin-message-icon").value.trim();
         if (icon) message.icon = icon;
         if (attachments.length) message.att = attachments;
-        if (countedAttachments?.length) message.countedAtt = countedAttachments;
+        if (countedAttachments.length) {
+            message.countedAtt = countedAttachments.map(item => ({
+                ItemType: item.itemType,
+                ItemCount: item.itemCount
+            }));
+        }
 
         button.disabled = true;
         try {
@@ -290,6 +506,10 @@
     }
 
     userSearch.addEventListener("input", renderUsers);
+    initializeAttachmentEditors();
+    document.addEventListener?.("webui:translations-ready", () => {
+        attachmentEditors.forEach(renderAttachmentEditor);
+    });
     root.querySelectorAll("#admin-broadcast-form input, #admin-broadcast-form textarea").forEach(input => {
         input.addEventListener("input", () => input.classList.remove("is-invalid"));
     });
@@ -302,5 +522,8 @@
     find("#admin-broadcast-form").addEventListener("submit", event => void sendInboxBroadcast(event));
     find("#admin-irc-form").addEventListener("submit", event => void sendIrcAnnouncement(event));
     find("#admin-irc-message").addEventListener("input", updateIrcByteCount);
-    single.getRoute("/webui/users").on("beforeload", () => void loadUsers());
+    single.getRoute("/webui/users").on("beforeload", () => {
+        void loadUsers();
+        void loadAttachmentCatalog();
+    });
 })();
