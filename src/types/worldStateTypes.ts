@@ -48,6 +48,7 @@ export interface IWorldState {
         ActiveChallenges: ISeasonChallenge[];
     };
     KnownCalendarSeasons: ICalendarSeason[];
+    HubEvents?: unknown[];
     Conquests?: IConquest[];
     Descents?: IDescent[];
     PrimeVaultAvailabilities: boolean[]; // different in older versions

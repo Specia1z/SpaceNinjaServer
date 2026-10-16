@@ -17,6 +17,7 @@ import { logger } from "../../utils/logger.ts";
 import { fromMongoDate } from "../../helpers/inventoryHelpers.ts";
 import gameToBuildVersionInt from "../../constants/gameToBuildVersionInt.ts";
 import { buildVersionToInt } from "../../helpers/versionHelper.ts";
+import { stripExternalEventIcons } from "../../services/worldStateClientCompatibilityService.ts";
 
 const normalizeWorldStateForClient = (worldState: ReturnType<typeof getWorldState>, buildLabel: string): void => {
     const buildVersion = buildVersionToInt(buildLabel);
@@ -33,6 +34,7 @@ const normalizeWorldStateForClient = (worldState: ReturnType<typeof getWorldStat
         const response = worldState as unknown as Record<string, unknown>;
         delete response.PrimeVaultAvailabilities;
         delete response.PrimeTokenAvailability;
+        stripExternalEventIcons(worldState.Events);
 
         for (const goal of worldState.Goals) {
             const missionReward = goal.MissionInfo?.missionReward as { randomizedItems?: string } | undefined;
