@@ -878,10 +878,15 @@ export const mergeLocalGoalProgress = (
     generatedGoals: IWorldState["Goals"],
     liveGoals: IWorldState["Goals"],
     persistedGoals: IWorldState["Goals"],
-    buildVersion: number
+    buildVersion: number,
+    nowMs = Date.now()
 ): IWorldState["Goals"] => {
     const isCompatibleGoal = (goal: IWorldState["Goals"][number]): boolean =>
         buildVersion >= gameToBuildVersionInt["43.5.0"] || isUpdate41Goal(goal);
+    const activePersistedGoals = persistedGoals.filter(goal => {
+        const expiryMs = getSafeMongoDateMs(goal.Expiry);
+        return !Number.isFinite(expiryMs) || expiryMs > nowMs;
+    });
     const isSameActivity = (a: IWorldState["Goals"][number], b: IWorldState["Goals"][number]): boolean => {
         const aStart = getGoalDateMs(a.Activation);
         const aEnd = getGoalDateMs(a.Expiry);
@@ -902,7 +907,7 @@ export const mergeLocalGoalProgress = (
             bStart < aEnd
         );
     };
-    const syncedGoals = [...liveGoals, ...persistedGoals].filter(isCompatibleGoal);
+    const syncedGoals = [...liveGoals, ...activePersistedGoals].filter(isCompatibleGoal);
     const result = structuredClone(
         generatedGoals.filter(
             goal => isCompatibleGoal(goal) && !syncedGoals.some(synced => isSameActivity(goal, synced))
@@ -917,7 +922,7 @@ export const mergeLocalGoalProgress = (
     });
 
     const persistedByOid = new Map<string, IWorldState["Goals"][number]>();
-    for (const goal of persistedGoals) {
+    for (const goal of activePersistedGoals) {
         const oid = getGoalOid(goal);
         if (oid) {
             persistedByOid.set(oid, goal);
@@ -963,7 +968,7 @@ export const mergeLocalGoalProgress = (
 
     // Keep a locally persisted activity visible when the upstream snapshot temporarily omits it.
     const liveGoalOids = new Set(liveGoals.map(getGoalOid).filter(Boolean));
-    for (const goal of persistedGoals) {
+    for (const goal of activePersistedGoals) {
         const oid = getGoalOid(goal);
         if (!oid || !liveGoalOids.has(oid)) {
             mergeGoal(goal);

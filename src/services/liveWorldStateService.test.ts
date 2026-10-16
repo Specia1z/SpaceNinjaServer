@@ -150,7 +150,7 @@ void test("local goal progress wins and retained goals survive an upstream omiss
     const generated = [goal("local", 0, "LocalEvent")];
     const live = [goal("active", 90)];
     const persisted = [goal("active", 7), goal("retained", 42)];
-    const merged = mergeLocalGoalProgress(generated, live, persisted, gameToBuildVersionInt["43.5.0"]);
+    const merged = mergeLocalGoalProgress(generated, live, persisted, gameToBuildVersionInt["43.5.0"], now);
 
     assert.deepEqual(
         merged.map(value => value._id.$oid),
@@ -158,6 +158,33 @@ void test("local goal progress wins and retained goals survive an upstream omiss
     );
     assert.equal(merged.find(value => value._id.$oid == "active")?.Count, 7);
     assert.equal(merged.find(value => value._id.$oid == "retained")?.Count, 42);
+});
+
+void test("expired persisted goals are not reintroduced after upstream omission", () => {
+    const goal = (oid: string, expiry: number): IWorldState["Goals"][number] =>
+        ({
+            _id: { $oid: oid },
+            Activation: { $date: { $numberLong: String(expiry - 100_000) } },
+            Expiry: { $date: { $numberLong: String(expiry) } },
+            Count: 0,
+            Goal: 100,
+            Personal: false,
+            Community: true,
+            Tag: "FomorianEvent",
+            Desc: "",
+            Fomorian: true,
+            VictimNode: oid == "expired" ? "SaturnHUB" : "PlutoHUB"
+        }) as unknown as IWorldState["Goals"][number];
+
+    const merged = mergeLocalGoalProgress(
+        [],
+        [],
+        [goal("expired", now - 1), goal("active", now + 1_000)],
+        gameToBuildVersionInt["43.5.0"],
+        now
+    );
+
+    assert.deepEqual(merged.map(value => value._id.$oid), ["active"]);
 });
 
 void test("official goal metadata wins while persisted progress is retained", () => {
@@ -177,7 +204,7 @@ void test("official goal metadata wins while persisted progress is retained", ()
         Count: 7
     } as unknown as IWorldState["Goals"][number];
 
-    const merged = mergeLocalGoalProgress([], [official], [persisted], gameToBuildVersionInt["43.5.0"]);
+    const merged = mergeLocalGoalProgress([], [official], [persisted], gameToBuildVersionInt["43.5.0"], now);
     assert.equal(merged[0].Desc, "official description");
     assert.equal(merged[0].Count, 7);
 });
