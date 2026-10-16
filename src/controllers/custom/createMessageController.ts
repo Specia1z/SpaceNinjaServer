@@ -1,6 +1,7 @@
 import type { IMessageCreationTemplate } from "../../services/inboxService.ts";
 import { createMessage } from "../../services/inboxService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
+import { sendWsBroadcastToGame } from "../../services/wsService.ts";
 import type { RequestHandler } from "express";
 
 export const createMessageController: RequestHandler = async (req, res) => {
@@ -13,6 +14,7 @@ export const createMessageController: RequestHandler = async (req, res) => {
     const data = req.body as ICreateMessageRequest;
     for (const targetId of data.targetIds) {
         await createMessage(targetId, data.messages);
+        sendWsBroadcastToGame(targetId, { sync_inventory: true });
     }
 
     res.status(204).end();
