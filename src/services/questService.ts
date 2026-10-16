@@ -24,6 +24,7 @@ import { addString } from "../helpers/stringHelpers.ts";
 import { unlockShipFeature } from "./personalRoomsService.ts";
 import { eEquipmentFeatures } from "../types/equipmentTypes.ts";
 import { BL_LATEST } from "../constants/gameVersions.ts";
+import { supplementalKeys } from "../constants/itemDataSupplementalCatalog.ts";
 
 export interface IUpdateQuestRequest {
     QuestKeys: IQuestKeyClient[];
@@ -50,6 +51,13 @@ export const ensureTauPrologueQuest = (inventory: TInventoryDatabaseDocument): I
     if (!prerequisitesCompleted) return;
 
     return addQuestKey(inventory, { ItemType: TAU_PROLOGUE_QUEST }, true);
+};
+
+export const getQuestKeyTypes = (includeSupplemental = false): string[] => {
+    const questKeys = includeSupplemental ? { ...ExportKeys, ...supplementalKeys } : ExportKeys;
+    return Object.entries(questKeys)
+        .filter(([, quest]) => "chainStages" in quest)
+        .map(([questKey]) => questKey);
 };
 
 export const updateQuestKey = async (
@@ -250,12 +258,11 @@ export const completeQuest = async (
 export const completeAllQuests = async (
     inventory: TInventoryDatabaseDocument,
     buildLabel: string,
-    sendMessages: boolean = false
+    sendMessages: boolean = false,
+    includeSupplemental: boolean = false
 ): Promise<void> => {
-    for (const [questKey, quest] of Object.entries(ExportKeys)) {
-        if (quest.chainStages) {
-            await completeQuest(inventory, questKey, buildLabel, sendMessages);
-        }
+    for (const questKey of getQuestKeyTypes(includeSupplemental)) {
+        await completeQuest(inventory, questKey, buildLabel, sendMessages);
     }
     inventory.ActiveQuest = "";
 };

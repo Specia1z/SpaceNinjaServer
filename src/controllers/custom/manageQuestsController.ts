@@ -4,14 +4,15 @@ import {
     completeAllQuests,
     completeQuest,
     giveKeyChainMissionReward,
-    giveKeyChainStageTriggered
+    giveKeyChainStageTriggered,
+    getQuestKeyTypes
 } from "../../services/questService.ts";
 import { logger } from "../../utils/logger.ts";
 import type { RequestHandler } from "express";
-import { ExportKeys } from "warframe-public-export-plus";
 import { broadcastInventoryUpdate } from "../../services/wsService.ts";
 import type { TInventoryDatabaseDocument } from "../../models/inventoryModels/inventoryModel.ts";
 import { BL_LATEST } from "../../constants/gameVersions.ts";
+import { getKey } from "../../services/itemDataService.ts";
 
 export const manageQuestsController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
@@ -27,18 +28,13 @@ export const manageQuestsController: RequestHandler = async (req, res) => {
 
     const questItemType = req.query.itemType as string;
 
-    const allQuestKeys: string[] = [];
-    for (const [k, v] of Object.entries(ExportKeys)) {
-        if ("chainStages" in v) {
-            allQuestKeys.push(k);
-        }
-    }
+    const allQuestKeys = getQuestKeyTypes(true);
 
     let modified = false;
     switch (operation) {
         case "completeAll": {
             const inventory = await getInventory(accountId, undefined);
-            await completeAllQuests(inventory, BL_LATEST);
+            await completeAllQuests(inventory, BL_LATEST, false, true);
             modified = await saveOnDemand(inventory);
             break;
         }
@@ -131,17 +127,17 @@ export const manageQuestsController: RequestHandler = async (req, res) => {
             if (allQuestKeys.includes(questItemType)) {
                 const inventory = await getInventory(accountId, undefined);
                 const questKey = inventory.QuestKeys.find(key => key.ItemType === questItemType);
-                const questManifest = ExportKeys[questItemType];
+                const questManifest = getKey(questItemType, BL_LATEST);
                 if (!questKey) {
                     logger.error(`Quest key not found in inventory: ${questItemType}`);
                     break;
                 }
-                if (!questKey.Progress) break;
+                if (!questKey.Progress || !questManifest?.chainStages) break;
 
                 const run = questKey.Progress[0]?.c ?? 0;
                 const currentStage = questKey.Progress.map(p => p.c).lastIndexOf(run);
 
-                if (currentStage + 1 == questManifest.chainStages?.length) {
+                if (currentStage + 1 == questManifest.chainStages.length) {
                     logger.debug(`Trying to complete last stage with nextStage, calling completeQuest instead`);
                     await completeQuest(inventory, questKey.ItemType, BL_LATEST, true);
                 } else {

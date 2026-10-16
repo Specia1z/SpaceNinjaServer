@@ -5,6 +5,7 @@ import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
 import {
     completeQuest,
     ensureTauPrologueQuest,
+    getQuestKeyTypes,
     OLD_PEACE_QUEST,
     TAU_PROLOGUE_QUEST,
     THE_HEX_QUEST,
@@ -38,6 +39,29 @@ void test("ensureTauPrologueQuest grants the first Tau keychain once", () => {
     assert.equal(inventory.QuestKeys.filter(quest => quest.ItemType === TAU_PROLOGUE_QUEST).length, 1);
     assert.equal(ensureTauPrologueQuest(inventory), undefined);
     assert.equal(inventory.QuestKeys.filter(quest => quest.ItemType === TAU_PROLOGUE_QUEST).length, 1);
+});
+
+void test("getQuestKeyTypes includes supplemental quest chains only when requested", () => {
+    const officialQuestKeys = getQuestKeyTypes();
+    const allQuestKeys = getQuestKeyTypes(true);
+
+    assert.equal(officialQuestKeys.includes(TAU_PROLOGUE_QUEST), false);
+    assert.equal(allQuestKeys.includes(TAU_PROLOGUE_QUEST), true);
+    assert.equal(allQuestKeys.filter(questKey => questKey.includes("/Lotus/Types/Keys/TauPrologue/")).length, 3);
+});
+
+void test("completeQuest completes the supplemental Tau A stages", async () => {
+    const inventory = new Inventory({
+        QuestKeys: [{ ItemType: TAU_PROLOGUE_QUEST }]
+    });
+
+    await completeQuest(inventory, TAU_PROLOGUE_QUEST, BL_LATEST);
+
+    const questKey = inventory.QuestKeys.find(quest => quest.ItemType === TAU_PROLOGUE_QUEST);
+    assert.ok(questKey);
+    assert.equal(questKey.Completed, true);
+    assert.ok(questKey.Progress);
+    assert.equal(questKey.Progress.length, 2);
 });
 
 void test("completing the second prerequisite reports the Tau keychain in inventory changes", async () => {

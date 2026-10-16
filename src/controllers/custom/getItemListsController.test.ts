@@ -14,6 +14,7 @@ import { getItemListsController } from "./getItemListsController.ts";
 
 interface ListedItem {
     uniqueName: string;
+    chainLength?: number;
 }
 
 interface ItemListPayload {
@@ -25,6 +26,7 @@ interface ItemListPayload {
     miscitems: ListedItem[];
     Nodes: ListedItem[];
     Bundles: ListedItem[];
+    QuestKeys: ListedItem[];
 }
 
 void test("item list exposes all major categories from one self-contained snapshot", async () => {
@@ -64,4 +66,7 @@ void test("item list exposes all major categories from one self-contained snapsh
     assert.ok(allBundles.every(uniqueName => allNames.has(uniqueName)));
     assert.ok(payload.Bundles.some(item => item.uniqueName.endsWith("AffinityBooster90DayStoreItem")));
     assert.ok(payload.Bundles.some(item => item.uniqueName.endsWith("ModDropChanceBooster90DayStoreItem")));
+
+    const tauQuest = payload.QuestKeys.find(item => item.uniqueName.endsWith("TauPrologueKeyChainA"));
+    assert.equal(tauQuest?.chainLength, 2);
 });
