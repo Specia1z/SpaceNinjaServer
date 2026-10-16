@@ -13,14 +13,17 @@ import {
     updatePlatinum
 } from "../../services/inventoryService.ts";
 import type { IInventoryChanges } from "../../types/purchaseTypes.ts";
-import { addInfestedFoundryXP, applyCheatsToInfestedFoundry } from "../../services/infestedFoundryService.ts";
+import {
+    addInfestedFoundryXP,
+    applyCheatsToInfestedFoundry,
+    hasInfiniteHelminthMaterials
+} from "../../services/infestedFoundryService.ts";
 import { sendWsBroadcastTo, sendWsBroadcastToWebui } from "../../services/wsService.ts";
 import type { IEquipmentDatabase } from "../../types/equipmentTypes.ts";
 import { eEquipmentFeatures } from "../../types/equipmentTypes.ts";
 import { Types } from "mongoose";
 import gameToBuildVersion from "../../constants/gameToBuildVersion.ts";
 import { ExportRecipes } from "warframe-public-export-plus";
-import { config } from "../../services/configService.ts";
 
 export const upgradesController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
@@ -236,7 +239,7 @@ export const upgradesController: RequestHandler = async (req, res) => {
                     }
                     for (const ingredient of recipe.ingredients) {
                         totalPercentagePointsConsumed += ingredient.ItemCount / 10;
-                        if (!config.infiniteHelminthMaterials) {
+                        if (!hasInfiniteHelminthMaterials(accountId)) {
                             inventory.InfestedFoundry!.Resources!.find(x => x.ItemType == ingredient.ItemType)!.Count -=
                                 ingredient.ItemCount;
                         }
@@ -260,7 +263,7 @@ export const upgradesController: RequestHandler = async (req, res) => {
 
                 inventoryChanges.Recipes = recipeChanges;
                 inventoryChanges.InfestedFoundry = inventory.toJSON<IInventoryClient>().InfestedFoundry;
-                applyCheatsToInfestedFoundry(inventoryChanges.InfestedFoundry!);
+                applyCheatsToInfestedFoundry(inventoryChanges.InfestedFoundry!, accountId);
             } else
                 switch (operation.UpgradeRequirement) {
                     case "/Lotus/Types/Items/MiscItems/OrokinReactor":

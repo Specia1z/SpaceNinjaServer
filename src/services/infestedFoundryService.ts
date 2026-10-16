@@ -3,7 +3,7 @@ import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inven
 import type { IInfestedFoundryClient, IInfestedFoundryDatabase } from "../types/inventoryTypes/inventoryTypes.ts";
 import { addRecipes } from "./inventoryService.ts";
 import type { ITypeCount } from "../types/commonTypes.ts";
-import { config } from "./configService.ts";
+import { getEffectiveAccountFeatureProfile } from "./accountFeatureService.ts";
 
 export const addInfestedFoundryXP = (infestedFoundry: IInfestedFoundryDatabase, delta: number): ITypeCount[] => {
     const recipeChanges: ITypeCount[] = [];
@@ -99,8 +99,11 @@ export const handleSubsumeCompletion = (
     return recipeChanges;
 };
 
-export const applyCheatsToInfestedFoundry = (infestedFoundry: IInfestedFoundryClient): void => {
-    if (config.infiniteHelminthMaterials) {
+export const hasInfiniteHelminthMaterials = (accountId: string): boolean =>
+    getEffectiveAccountFeatureProfile(accountId).infiniteHelminthMaterials;
+
+export const applyCheatsToInfestedFoundry = (infestedFoundry: IInfestedFoundryClient, accountId: string): void => {
+    if (hasInfiniteHelminthMaterials(accountId)) {
         infestedFoundry.Resources = [
             { ItemType: "/Lotus/Types/Items/InfestedFoundry/HelminthCalx", Count: 1000 },
             { ItemType: "/Lotus/Types/Items/InfestedFoundry/HelminthBiotics", Count: 1000 },

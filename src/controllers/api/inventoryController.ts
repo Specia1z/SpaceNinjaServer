@@ -545,7 +545,7 @@ export const getInventoryResponse = async (
         }
 
         if (inventoryResponse.InfestedFoundry) {
-            applyCheatsToInfestedFoundry(inventoryResponse.InfestedFoundry);
+            applyCheatsToInfestedFoundry(inventoryResponse.InfestedFoundry, inventory.accountOwnerId.toString());
         }
     }
 

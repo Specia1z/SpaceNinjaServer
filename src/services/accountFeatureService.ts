@@ -4,7 +4,8 @@ export const ACCOUNT_FEATURE_KEYS = [
     "universalPolarityEverywhere",
     "unlockDoubleCapacityPotatoesEverywhere",
     "unlockExilusEverywhere",
-    "unlockArcanesEverywhere"
+    "unlockArcanesEverywhere",
+    "infiniteHelminthMaterials"
 ] as const;
 
 export type TAccountFeatureKey = (typeof ACCOUNT_FEATURE_KEYS)[number];

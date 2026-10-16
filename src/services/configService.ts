@@ -163,6 +163,7 @@ export interface IAccountFeatureProfile {
     unlockDoubleCapacityPotatoesEverywhere?: boolean;
     unlockExilusEverywhere?: boolean;
     unlockArcanesEverywhere?: boolean;
+    infiniteHelminthMaterials?: boolean;
 }
 
 export type TWorldStateBoostMultiplierKey =
