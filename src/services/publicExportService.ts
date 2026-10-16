@@ -66,6 +66,7 @@ import {
     ExportWarframes,
     ExportWeapons
 } from "warframe-public-export-plus";
+import { supplementalKeys } from "../constants/itemDataSupplementalCatalog.ts";
 import { getDict, getProductCategory, getString } from "./itemDataService.ts";
 
 export const getExportCustoms = (lang: string): IExportCustoms => {
@@ -134,14 +135,24 @@ export const getExportFusionBundles = (lang: string): IExportFusionBundles => {
 
 export const getExportKeys = (lang: string): IExportKeys => {
     const dict = getDict(lang);
+    const englishDict = getDict("en");
+    const localize = (key: string): string => {
+        const localized = getString(key, dict);
+        return localized === key ? getString(key, englishDict) : localized;
+    };
     const res: IKey[] = [];
-    for (const [uniqueName, data] of Object.entries(ExportKeys)) {
+    const supplementalExportKeys = Object.fromEntries(
+        Object.entries(supplementalKeys).filter(([uniqueName]) =>
+            uniqueName.startsWith("/Lotus/Types/Keys/TauPrologue/")
+        )
+    );
+    for (const [uniqueName, data] of Object.entries({ ...ExportKeys, ...supplementalExportKeys })) {
         if (data.name && data.description) {
             res.push({
                 uniqueName,
                 ...data,
-                name: getString(data.name, dict),
-                description: getString(data.description, dict)
+                name: localize(data.name),
+                description: localize(data.description)
             });
         }
     }

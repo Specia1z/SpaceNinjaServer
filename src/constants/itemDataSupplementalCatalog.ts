@@ -243,6 +243,44 @@ export const supplementalUpgrades: Record<string, IUpgrade> = {
 };
 
 export const supplementalKeys: Record<string, IKey> = {
+    "/Lotus/Types/Keys/TauPrologue/TauPrologueAStage1Lua": {
+        name: "/Lotus/Language/TauPrologue/QuestPartAStage1",
+        parentName: "/Lotus/Types/Game/KeyItem",
+        codexSecret: true,
+        mission: {}
+    },
+    "/Lotus/Types/Keys/TauPrologue/TauPrologueKeyChainA": {
+        name: "/Lotus/Language/TauPrologue/QuestPartATitle",
+        description: "/Lotus/Language/TauPrologue/QuestPartADesc",
+        parentName: "/Lotus/Types/Game/KeyChainItem",
+        codexSecret: false,
+        replayable: true,
+        chainStages: [
+            {
+                key: "/Lotus/Types/Keys/TauPrologue/TauPrologueAStage1Lua",
+                itemsToGiveWhenTriggered: []
+            },
+            {
+                itemsToGiveWhenTriggered: []
+            }
+        ]
+    },
+    "/Lotus/Types/Keys/TauPrologue/TauPrologueKeyChainB": {
+        name: "/Lotus/Language/TauPrologue/QuestPartBTitle",
+        description: "/Lotus/Language/TauPrologue/QuestPartBDesc",
+        parentName: "/Lotus/Types/Game/KeyChainItem",
+        codexSecret: false,
+        replayable: true,
+        chainStages: [{ itemsToGiveWhenTriggered: [] }]
+    },
+    "/Lotus/Types/Keys/TauPrologue/TauPrologueKeyChainC": {
+        name: "/Lotus/Language/TauPrologue/QuestPartCTitle",
+        description: "/Lotus/Language/TauPrologue/QuestPartCDesc",
+        parentName: "/Lotus/Types/Game/KeyChainItem",
+        codexSecret: false,
+        replayable: true,
+        chainStages: [{ itemsToGiveWhenTriggered: [] }]
+    },
     "/Lotus/Types/Keys/RaidKeys/Raid01Stage01KeyItem": {
         name: "/Lotus/Language/Items/GrineerTrialsName",
         description: "/Lotus/Language/Items/GrineerTrialsDesc",

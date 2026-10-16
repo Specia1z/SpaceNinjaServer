@@ -38,6 +38,19 @@ const ARCHWING_QUEST = "/Lotus/Types/Keys/ArchwingQuest/ArchwingQuestKeyChain";
 const STANDARD_ARCHWING = "/Lotus/Powersuits/Archwing/StandardJetPack/StandardJetPack";
 const STANDARD_ARCHGUN = "/Lotus/Weapons/Tenno/Archwing/Primary/FoldingMachineGun/ArchMachineGun";
 const STANDARD_ARCHMELEE = "/Lotus/Weapons/Tenno/Archwing/Melee/Archsword/ArchSwordWeapon";
+export const THE_HEX_QUEST = "/Lotus/Types/Keys/1999Quest/1999QuestKeyChain";
+export const OLD_PEACE_QUEST = "/Lotus/Types/Keys/TauPrequel/TauPrequelQuestKeyChain";
+export const TAU_PROLOGUE_QUEST = "/Lotus/Types/Keys/TauPrologue/TauPrologueKeyChainA";
+
+export const ensureTauPrologueQuest = (inventory: TInventoryDatabaseDocument): IQuestKeyClient | undefined => {
+    const prerequisitesCompleted = [THE_HEX_QUEST, OLD_PEACE_QUEST].every(questKey =>
+        inventory.QuestKeys.some(quest => quest.ItemType === questKey && quest.Completed === true)
+    );
+
+    if (!prerequisitesCompleted) return;
+
+    return addQuestKey(inventory, { ItemType: TAU_PROLOGUE_QUEST }, true);
+};
 
 export const updateQuestKey = async (
     inventory: TInventoryDatabaseDocument,
@@ -163,8 +176,7 @@ export const completeQuest = async (
     buildLabel: string,
     sendMessages: boolean = false
 ): Promise<void | IQuestKeyClient> => {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const chainStages = ExportKeys[questKey]?.chainStages;
+    const chainStages = getKey(questKey, buildLabel)?.chainStages;
 
     if (!chainStages) {
         throw new Error(`Quest ${questKey} does not contain chain stages`);
@@ -272,7 +284,9 @@ const getQuestCompletionItems = (questKey: string): ITypeCount[] | undefined => 
     logger.debug(`using PE+ reward data for ${questKey}`);
 
     const items: ITypeCount[] = [];
-    const meta = ExportKeys[questKey];
+    const meta = getKey(questKey);
+    if (!meta) return;
+
     if (meta.rewards) {
         for (const reward of meta.rewards) {
             if (reward.rewardType == "RT_STORE_ITEM") {
@@ -317,6 +331,12 @@ const handleQuestCompletion = async (
     isRerun: boolean = false
 ): Promise<void> => {
     logger.debug(`completed quest ${questKey}`);
+
+    const tauPrologueQuest = ensureTauPrologueQuest(inventory);
+    if (tauPrologueQuest) {
+        inventoryChanges.QuestKeys ??= [];
+        inventoryChanges.QuestKeys.push(tauPrologueQuest);
+    }
 
     if (inventory.ActiveQuest == questKey) inventory.ActiveQuest = "";
     if (questKey == "/Lotus/Types/Keys/OrokinMoonQuest/OrokinMoonQuestKeyChain") {
@@ -513,8 +533,7 @@ export const giveKeyChainStageTriggered = async (
     keyChainInfo: IKeyChainRequest,
     sendMessage: boolean = true
 ): Promise<void> => {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const chainStages = ExportKeys[keyChainInfo.KeyChain]?.chainStages;
+    const chainStages = getKey(keyChainInfo.KeyChain)?.chainStages;
     const questKey = inventory.QuestKeys.find(qk => qk.ItemType === keyChainInfo.KeyChain);
 
     if (chainStages && questKey) {
@@ -547,8 +566,7 @@ const installShipFeatures = async (
     keyChainInfo: IKeyChainRequest,
     buildLabel: string
 ): Promise<void> => {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const chainStages = ExportKeys[keyChainInfo.KeyChain]?.chainStages;
+    const chainStages = getKey(keyChainInfo.KeyChain, buildLabel)?.chainStages;
     const questKey = inventory.QuestKeys.find(qk => qk.ItemType === keyChainInfo.KeyChain);
     if (chainStages && questKey) {
         if (keyChainInfo.ChainStage - 1 >= 0) {

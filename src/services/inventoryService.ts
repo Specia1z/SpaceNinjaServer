@@ -84,7 +84,7 @@ import {
     toOid2,
     version_compare
 } from "../helpers/inventoryHelpers.ts";
-import { addQuestKey, completeQuest } from "./questService.ts";
+import { addQuestKey, completeQuest, ensureTauPrologueQuest } from "./questService.ts";
 import { handleBundleAcquisition } from "./purchaseService.ts";
 import { getSyncedSentinel, getSyncedUpgrade, getSyncedWeapon } from "./adminItemDataService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
@@ -3058,6 +3058,8 @@ export const ensureUserHasFounderHonoria = async (inventory: TInventoryDatabaseD
 };
 
 export const handleTauMemories = async (inventory: TInventoryDatabaseDocument): Promise<void> => {
+    ensureTauPrologueQuest(inventory);
+
     const oldPeace = inventory.QuestKeys.find(
         x => x.ItemType == "/Lotus/Types/Keys/TauPrequel/TauPrequelQuestKeyChain"
     );

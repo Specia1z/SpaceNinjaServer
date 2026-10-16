@@ -2,9 +2,56 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { BL_LATEST } from "../constants/gameVersions.ts";
 import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
-import { completeQuest } from "./questService.ts";
+import {
+    completeQuest,
+    ensureTauPrologueQuest,
+    OLD_PEACE_QUEST,
+    TAU_PROLOGUE_QUEST,
+    THE_HEX_QUEST,
+    updateQuestKey
+} from "./questService.ts";
 
 const ARCHWING_QUEST = "/Lotus/Types/Keys/ArchwingQuest/ArchwingQuestKeyChain";
+
+void test("ensureTauPrologueQuest requires both prerequisite quests", () => {
+    const inventory = new Inventory({
+        QuestKeys: [{ ItemType: THE_HEX_QUEST, Completed: true }]
+    });
+
+    assert.equal(ensureTauPrologueQuest(inventory), undefined);
+    assert.equal(
+        inventory.QuestKeys.some(quest => quest.ItemType === TAU_PROLOGUE_QUEST),
+        false
+    );
+});
+
+void test("ensureTauPrologueQuest grants the first Tau keychain once", () => {
+    const inventory = new Inventory({
+        QuestKeys: [
+            { ItemType: THE_HEX_QUEST, Completed: true },
+            { ItemType: OLD_PEACE_QUEST, Completed: true }
+        ]
+    });
+
+    const grantedQuest = ensureTauPrologueQuest(inventory);
+    assert.equal(grantedQuest?.ItemType, TAU_PROLOGUE_QUEST);
+    assert.equal(inventory.QuestKeys.filter(quest => quest.ItemType === TAU_PROLOGUE_QUEST).length, 1);
+    assert.equal(ensureTauPrologueQuest(inventory), undefined);
+    assert.equal(inventory.QuestKeys.filter(quest => quest.ItemType === TAU_PROLOGUE_QUEST).length, 1);
+});
+
+void test("completing the second prerequisite reports the Tau keychain in inventory changes", async () => {
+    const inventory = new Inventory({
+        QuestKeys: [
+            { ItemType: THE_HEX_QUEST, Completed: false },
+            { ItemType: OLD_PEACE_QUEST, Completed: true }
+        ]
+    });
+
+    const inventoryChanges = await updateQuestKey(inventory, [{ ItemType: THE_HEX_QUEST, Completed: true }]);
+
+    assert.equal(inventoryChanges.QuestKeys?.[0]?.ItemType, TAU_PROLOGUE_QUEST);
+});
 
 void test("completeQuest grants Archwing stage equipment for a missing quest key", async () => {
     const inventory = new Inventory({ RegularCredits: 0 });
@@ -15,9 +62,7 @@ void test("completeQuest grants Archwing stage equipment for a missing quest key
     assert.equal(questKey?.Completed, true);
     assert.equal(inventory.ArchwingEnabled, true);
     assert.ok(
-        inventory.SpaceSuits.some(
-            item => item.ItemType == "/Lotus/Powersuits/Archwing/StandardJetPack/StandardJetPack"
-        )
+        inventory.SpaceSuits.some(item => item.ItemType == "/Lotus/Powersuits/Archwing/StandardJetPack/StandardJetPack")
     );
     assert.ok(
         inventory.SpaceGuns.some(
