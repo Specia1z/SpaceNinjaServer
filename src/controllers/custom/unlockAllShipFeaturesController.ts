@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import allShipFeatures from "../../../static/fixed_responses/allShipFeatures.json" with { type: "json" };
 import { getAccountIdForRequest } from "../../services/loginService.ts";
 import { getPersonalRooms } from "../../services/personalRoomsService.ts";
+import { sendWsBroadcastToGame } from "../../services/wsService.ts";
 
 export const unlockAllShipFeaturesController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
@@ -16,4 +17,5 @@ export const unlockAllShipFeaturesController: RequestHandler = async (req, res) 
 
     await personalRooms.save();
     res.end();
+    sendWsBroadcastToGame(accountId, { sync_inventory: true });
 };

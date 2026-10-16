@@ -1,6 +1,7 @@
 import { getInventory } from "../../services/inventoryService.ts";
 import { getAccountIdForRequest } from "../../services/loginService.ts";
 import { completeAllMissions } from "../../services/accountInitializationService.ts";
+import { sendWsBroadcastToGame } from "../../services/wsService.ts";
 import type { RequestHandler } from "express";
 
 export const completeAllMissionsController: RequestHandler = async (req, res) => {
@@ -10,4 +11,5 @@ export const completeAllMissionsController: RequestHandler = async (req, res) =>
     await completeAllMissions(inventory, includeSteelPath);
     await inventory.save();
     res.end();
+    sendWsBroadcastToGame(accountId, { sync_inventory: true });
 };
