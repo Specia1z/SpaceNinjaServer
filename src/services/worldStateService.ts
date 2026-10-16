@@ -3825,12 +3825,6 @@ export const getWorldState = (
                 Activation: toMongoDate2(1535646600000, buildVersion)
             });
         }
-        worldState.NodeOverrides.push({
-            _id: toOid2("5ad9f9bb6df82a56eabf3d45", buildVersion),
-            Node: "SaturnHUB",
-            Hide: false,
-            LevelOverride: "/Lotus/Levels/Proc/Hub/RelayStationHubMain"
-        });
     }
 
     // Holdfast, Cavia, & Hex bounties cycling every 2.5 hours; unfaithful implementation
