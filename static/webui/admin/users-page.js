@@ -324,9 +324,11 @@
     function populateUsernameDatalist() {
         const options = [document.createElement("option")];
         options[0].value = "all";
+        options[0].textContent = "all";
         for (const user of users) {
             const option = document.createElement("option");
             option.value = user.DisplayName;
+            option.textContent = user.DisplayName;
             options.push(option);
         }
         usernameList.replaceChildren(...options);

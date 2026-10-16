@@ -208,6 +208,10 @@ test("users page loads accounts, summarizes states, and filters safely by name o
     assert.equal(elements.get("#registered-losers").children.length, 3);
     assert.equal(datalist.children[0].value, "all");
     assert.deepEqual(
+        datalist.children.map(option => option.textContent),
+        ["all", ...users.map(user => user.DisplayName)]
+    );
+    assert.deepEqual(
         datalist.children.slice(1).map(option => option.value),
         users.map(user => user.DisplayName)
     );
