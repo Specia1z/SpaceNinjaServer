@@ -5,6 +5,7 @@ import {
     getActiveVoidTrader,
     getCompatibleSeasonInfo,
     getInitialLiveGoalProgress,
+    getLiveWorldStateSourceStatus,
     isLiveInvasionCompleted,
     isFreshSupplementalWorldState,
     mergeLocalInvasionProgress,
@@ -36,6 +37,18 @@ void test("stale supplemental snapshots cannot win the mirror race", () => {
     assert.equal(isFreshSupplementalWorldState(now / 1000 - 14 * 3600, now), false);
     assert.equal(isFreshSupplementalWorldState(now / 1000 - 15, now), true);
     assert.equal(isFreshSupplementalWorldState(undefined, now), false);
+});
+
+void test("live world-state source status separates primary and supplemental feeds", () => {
+    const status = getLiveWorldStateSourceStatus();
+    const nextStatus = getLiveWorldStateSourceStatus();
+
+    assert.ok("primary" in status);
+    assert.ok("supplemental" in status);
+    assert.equal(status.primary.source, null);
+    assert.equal(status.supplemental.source, null);
+    assert.notStrictEqual(status.primary, nextStatus.primary);
+    assert.notStrictEqual(status.supplemental, nextStatus.supplemental);
 });
 
 void test("expired live bounties fall back to generated missions while current ones remain live", () => {

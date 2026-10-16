@@ -39,6 +39,41 @@
             </article>
         </section>
 
+        <section class="world-activities-panel card world-activities-sources" aria-labelledby="world-activities-sources-title">
+            <div class="world-activities-panel-header">
+                <div class="world-activities-panel-heading">
+                    <span class="world-activities-panel-icon world-activities-sources-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="world-activities-sources-title" data-loc="worldActivities_liveSources"></h2>
+                        <p data-loc="worldActivities_liveSourcesDescription"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="world-activities-source-grid">
+                <div class="world-activities-source-item">
+                    <span class="world-activities-source-icon"><i class="bi bi-globe2" aria-hidden="true"></i></span>
+                    <div>
+                        <span class="world-activities-source-label" data-loc="worldActivities_primarySource"></span>
+                        <strong id="world-activities-primary-source">—</strong>
+                        <small id="world-activities-primary-source-time">—</small>
+                    </div>
+                </div>
+                <div class="world-activities-source-item">
+                    <span class="world-activities-source-icon world-activities-source-icon-supplemental"><i class="bi bi-shuffle" aria-hidden="true"></i></span>
+                    <div>
+                        <span class="world-activities-source-label" data-loc="worldActivities_supplementalSource"></span>
+                        <strong id="world-activities-supplemental-source">—</strong>
+                        <small id="world-activities-supplemental-source-time">—</small>
+                    </div>
+                </div>
+            </div>
+            <div class="world-activities-source-footer">
+                <span><i class="bi bi-arrow-repeat" aria-hidden="true"></i><span data-loc="worldActivities_lastAttempt"></span><strong id="world-activities-source-attempt">—</strong></span>
+                <span><i class="bi bi-check2-circle" aria-hidden="true"></i><span data-loc="worldActivities_lastSuccess"></span><strong id="world-activities-source-success">—</strong></span>
+            </div>
+            <div class="alert alert-warning d-none world-activities-source-error" id="world-activities-source-error" role="status"></div>
+        </section>
+
         <section class="world-activities-dashboard">
             <article class="world-activities-panel card world-activities-runtime-panel">
                 <div class="world-activities-panel-header">

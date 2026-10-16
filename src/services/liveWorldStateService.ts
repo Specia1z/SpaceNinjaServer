@@ -21,10 +21,71 @@ import { BV_LATEST } from "../constants/gameVersions.ts";
 import { getInvasionRotationStatus, getLocalInvasionByOid, getLocalInvasions } from "./invasionRotationService.ts";
 
 const LIVE_WORLD_STATE_URL = "https://oracle.browse.wf/worldState.min.json";
-const SUPPLEMENTAL_WORLD_STATE_URLS = [
-    "https://cdn.jsdelivr.net/gh/calamity-inc/warframe-worldstate-history@senpai/worldState.json?source=browse.wf",
-    "https://api.warframe.com/cdn/worldState.php"
-];
+const SUPPLEMENTAL_WORLD_STATE_SOURCES = [
+    {
+        source: "backup-mirror",
+        url: "https://cdn.jsdelivr.net/gh/calamity-inc/warframe-worldstate-history@senpai/worldState.json?source=browse.wf"
+    },
+    { source: "official-api", url: "https://api.warframe.com/cdn/worldState.php" }
+] as const;
+export type TLiveWorldStateSupplementalSource = (typeof SUPPLEMENTAL_WORLD_STATE_SOURCES)[number]["source"];
+
+export interface ILiveWorldStateSourceStatus {
+    liveSyncEnabled: boolean;
+    lastAttemptAt: string | null;
+    lastSuccessAt: string | null;
+    primary: {
+        source: "browse.wf" | null;
+        lastSuccessAt: string | null;
+        lastError: string | null;
+    };
+    supplemental: {
+        source: TLiveWorldStateSupplementalSource | null;
+        lastSuccessAt: string | null;
+        lastError: string | null;
+    };
+    lastError: string | null;
+}
+
+const createLiveWorldStateSourceStatus = (): ILiveWorldStateSourceStatus => ({
+    liveSyncEnabled: Boolean(config.worldState?.liveSync),
+    lastAttemptAt: null,
+    lastSuccessAt: null,
+    primary: {
+        source: null,
+        lastSuccessAt: null,
+        lastError: null
+    },
+    supplemental: {
+        source: null,
+        lastSuccessAt: null,
+        lastError: null
+    },
+    lastError: null
+});
+
+let liveWorldStateSourceStatus = createLiveWorldStateSourceStatus();
+
+export const getLiveWorldStateSourceStatus = (): ILiveWorldStateSourceStatus => ({
+    ...liveWorldStateSourceStatus,
+    liveSyncEnabled: Boolean(config.worldState?.liveSync),
+    primary: { ...liveWorldStateSourceStatus.primary },
+    supplemental: { ...liveWorldStateSourceStatus.supplemental }
+});
+
+const resetLiveWorldStateSourceStatus = (): void => {
+    liveWorldStateSourceStatus = createLiveWorldStateSourceStatus();
+};
+
+const getErrorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+const getSupplementalErrorMessage = (error: unknown): string => {
+    if (error instanceof AggregateError) {
+        return error.errors.map(getErrorMessage).join("; ");
+    }
+    return getErrorMessage(error);
+};
+
 const REFRESH_INTERVAL_MS = 60_000;
 const MAX_SUPPLEMENTAL_AGE_SECONDS = 300;
 
@@ -992,17 +1053,20 @@ const getUpdate41PrimeVaultSchedule = (
         : [];
 };
 
-const fetchSupplementalWorldState = async (): Promise<
-    Pick<
-        IWorldState,
-        "PrimeVaultTraders" | "Invasions" | "SyndicateMissions" | "SeasonInfo" | "KnownCalendarSeasons" | "Descents"
-    >
-> => {
+type TSupplementalWorldState = Pick<
+    IWorldState,
+    "PrimeVaultTraders" | "Invasions" | "SyndicateMissions" | "SeasonInfo" | "KnownCalendarSeasons" | "Descents"
+>;
+
+const fetchSupplementalWorldState = async (): Promise<{
+    source: TLiveWorldStateSupplementalSource;
+    worldState: TSupplementalWorldState;
+}> => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
         return await Promise.any(
-            SUPPLEMENTAL_WORLD_STATE_URLS.map(async url => {
+            SUPPLEMENTAL_WORLD_STATE_SOURCES.map(async ({ source, url }) => {
                 const response = await fetch(url, { signal: controller.signal });
                 if (!response.ok) {
                     throw new Error(`${url}: HTTP ${response.status}`);
@@ -1038,12 +1102,15 @@ const fetchSupplementalWorldState = async (): Promise<
                     getCompatibleCalendarSeason(season, gameToBuildVersionInt["42.0.0"])
                 ).filter((season): season is IWorldState["KnownCalendarSeasons"][number] => season !== undefined);
                 return {
-                    PrimeVaultTraders: primeVaultTraders,
-                    Invasions: invasions,
-                    SyndicateMissions: syndicateMissions,
-                    SeasonInfo: worldState.SeasonInfo,
-                    KnownCalendarSeasons: knownCalendarSeasons,
-                    Descents: worldState.Descents ?? []
+                    source,
+                    worldState: {
+                        PrimeVaultTraders: primeVaultTraders,
+                        Invasions: invasions,
+                        SyndicateMissions: syndicateMissions,
+                        SeasonInfo: worldState.SeasonInfo,
+                        KnownCalendarSeasons: knownCalendarSeasons,
+                        Descents: worldState.Descents ?? []
+                    }
                 };
             })
         );
@@ -1054,6 +1121,10 @@ const fetchSupplementalWorldState = async (): Promise<
 };
 
 const fetchLiveWorldState = async (): Promise<void> => {
+    const attemptAt = new Date().toISOString();
+    liveWorldStateSourceStatus.liveSyncEnabled = Boolean(config.worldState?.liveSync);
+    liveWorldStateSourceStatus.lastAttemptAt = attemptAt;
+    liveWorldStateSourceStatus.lastError = null;
     try {
         const response = await fetch(LIVE_WORLD_STATE_URL, { signal: AbortSignal.timeout(10_000) });
         if (!response.ok) {
@@ -1061,13 +1132,26 @@ const fetchLiveWorldState = async (): Promise<void> => {
         }
 
         const liveWorldState = parseLiveWorldState(await response.json());
+        const primaryFetchedAt = new Date().toISOString();
+        liveWorldStateSourceStatus.primary = {
+            source: "browse.wf",
+            lastSuccessAt: primaryFetchedAt,
+            lastError: null
+        };
         try {
             await updateLiveGoals(liveWorldState.Goals);
         } catch (e) {
             logger.debug(`Could not persist live goal state: ${String(e)}`);
         }
         try {
-            const supplementalWorldState = await fetchSupplementalWorldState();
+            const supplementalResult = await fetchSupplementalWorldState();
+            const supplementalFetchedAt = new Date().toISOString();
+            liveWorldStateSourceStatus.supplemental = {
+                source: supplementalResult.source,
+                lastSuccessAt: supplementalFetchedAt,
+                lastError: null
+            };
+            const supplementalWorldState = supplementalResult.worldState;
             liveWorldState.PrimeVaultTraders = supplementalWorldState.PrimeVaultTraders;
             try {
                 await updateVarziaRotationCache(supplementalWorldState.PrimeVaultTraders);
@@ -1104,7 +1188,10 @@ const fetchLiveWorldState = async (): Promise<void> => {
                     logger.debug(`Could not persist fallback invasion state: ${String(persistError)}`);
                 }
             }
-            logger.debug(`Could not supplement browse.wf world state: ${String(e)}`);
+            const message = getSupplementalErrorMessage(e);
+            liveWorldStateSourceStatus.supplemental.lastError = message;
+            liveWorldStateSourceStatus.lastError = `supplemental: ${message}`;
+            logger.debug(`Could not supplement browse.wf world state: ${message}`);
         }
         const nextJson = JSON.stringify({
             ...liveWorldState,
@@ -1113,6 +1200,7 @@ const fetchLiveWorldState = async (): Promise<void> => {
         const changed = nextJson != cachedWorldStateJson;
         cachedWorldState = liveWorldState;
         cachedWorldStateJson = nextJson;
+        liveWorldStateSourceStatus.lastSuccessAt = new Date().toISOString();
         lastError = undefined;
 
         if (changed) {
@@ -1120,7 +1208,9 @@ const fetchLiveWorldState = async (): Promise<void> => {
             sendWsBroadcastToGame(undefined, { sync_world_state: true });
         }
     } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
+        const message = getErrorMessage(e);
+        liveWorldStateSourceStatus.primary.lastError = message;
+        liveWorldStateSourceStatus.lastError = `browse.wf: ${message}`;
         if (message != lastError) {
             logger.warn(`Could not update live world state from browse.wf: ${message}`);
             lastError = message;
@@ -1137,6 +1227,7 @@ export const refreshLiveWorldState = async (): Promise<void> => {
         liveGoals.clear();
         liveSyndicateMissions.clear();
         liveCalendarSeasons.clear();
+        resetLiveWorldStateSourceStatus();
         return;
     }
 
@@ -1147,6 +1238,7 @@ export const refreshLiveWorldState = async (): Promise<void> => {
         liveGoals.clear();
         liveSyndicateMissions.clear();
         liveCalendarSeasons.clear();
+        resetLiveWorldStateSourceStatus();
         await restoreLiveInvasions();
         await updateLiveInvasions(getConfiguredLocalInvasions(), "local");
         return;

@@ -1,6 +1,10 @@
 import type { RequestHandler } from "express";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
-import { getInvasionRuntimeStatus, refreshLiveWorldState } from "../../services/liveWorldStateService.ts";
+import {
+    getInvasionRuntimeStatus,
+    getLiveWorldStateSourceStatus,
+    refreshLiveWorldState
+} from "../../services/liveWorldStateService.ts";
 import { config } from "../../services/configService.ts";
 import { getExportRegions } from "../../services/publicExportService.ts";
 
@@ -52,6 +56,7 @@ export const getWorldActivitiesController: RequestHandler = async (req, res) => 
     const language = getLanguage(req, account);
     res.json({
         invasion: localizeInvasionRuntime(getInvasionRuntimeStatus(), language),
+        worldStateSources: getLiveWorldStateSourceStatus(),
         config: {
             liveSync: config.worldState?.liveSync ?? false,
             invasionMode: config.worldState?.invasionMode ?? "official",
@@ -69,5 +74,8 @@ export const refreshWorldActivitiesController: RequestHandler = async (req, res)
     }
 
     await refreshLiveWorldState();
-    res.json(localizeInvasionRuntime(getInvasionRuntimeStatus(), getLanguage(req, account)));
+    res.json({
+        invasion: localizeInvasionRuntime(getInvasionRuntimeStatus(), getLanguage(req, account)),
+        worldStateSources: getLiveWorldStateSourceStatus()
+    });
 };

@@ -7,6 +7,7 @@
     const state = {
         invasions: [],
         config: {},
+        worldStateSources: null,
         requestId: 0,
         hasData: false
     };
@@ -29,6 +30,46 @@
         const key = `worldActivities_${value}`;
         const translated = loc(key);
         return translated === key ? value || "—" : translated;
+    };
+
+    const localizeSource = source => {
+        if (!source) return loc("worldActivities_sourceUnavailable");
+        return localizeValue(`source_${source.replaceAll(".", "_").replaceAll("-", "_")}`);
+    };
+
+    const renderSourceEntry = (prefix, entry) => {
+        const source = find(`#world-activities-${prefix}-source`);
+        const fetchedAt = find(`#world-activities-${prefix}-source-time`);
+        const hasSource = Boolean(entry?.source);
+        source.textContent = localizeSource(entry?.source);
+        source.className = `world-activities-source-value ${hasSource ? "is-current" : "is-unavailable"}`;
+        fetchedAt.textContent = entry?.lastSuccessAt
+            ? loc("worldActivities_sourceLastUsed").replace("|DATE|", formatDate(entry.lastSuccessAt))
+            : loc("worldActivities_sourceWaiting");
+    };
+
+    const renderWorldStateSources = sources => {
+        const status = sources ?? {};
+        renderSourceEntry("primary", status.primary);
+        renderSourceEntry("supplemental", status.supplemental);
+        find("#world-activities-source-attempt").textContent = status.lastAttemptAt
+            ? formatDate(status.lastAttemptAt)
+            : loc("worldActivities_sourceUnavailable");
+        find("#world-activities-source-success").textContent = status.lastSuccessAt
+            ? formatDate(status.lastSuccessAt)
+            : loc("worldActivities_sourceUnavailable");
+
+        const errors = [
+            status.primary?.lastError ? `${loc("worldActivities_primarySource")}: ${status.primary.lastError}` : "",
+            status.supplemental?.lastError
+                ? `${loc("worldActivities_supplementalSource")}: ${status.supplemental.lastError}`
+                : ""
+        ].filter(Boolean);
+        const error = find("#world-activities-source-error");
+        error.textContent = errors.length
+            ? loc("worldActivities_sourceError").replace("|ERROR|", errors.join(" · "))
+            : "";
+        error.classList.toggle("d-none", errors.length === 0);
     };
 
     const visibleInvasions = () => {
@@ -171,7 +212,9 @@
             find('[id="worldState.invasionMaxDurationHours"]').value = state.config.invasionMaxDurationHours;
         }
         state.invasions = invasion.invasions ?? [];
+        if (data.worldStateSources) state.worldStateSources = data.worldStateSources;
         state.hasData = true;
+        renderWorldStateSources(state.worldStateSources);
         renderSummary(invasion);
         renderInvasions();
         find("#world-activities-updated").textContent = `${loc("worldActivities_updated")} ${formatDate(Date.now())}`;
