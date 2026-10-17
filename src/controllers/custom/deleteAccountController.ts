@@ -1,58 +1,47 @@
 import type { RequestHandler } from "express";
-import { getAccountForRequest } from "../../services/loginService.ts";
-import { Account, Ignore } from "../../models/loginModel.ts";
-import { Inbox } from "../../models/inboxModel.ts";
-import { Inventory } from "../../models/inventoryModels/inventoryModel.ts";
-import { Loadout } from "../../models/inventoryModels/loadoutModel.ts";
-import { PersonalRooms } from "../../models/personalRoomsModel.ts";
-import { Ship } from "../../models/shipModel.ts";
-import { Stats } from "../../models/statsModel.ts";
-import { GuildMember } from "../../models/guildModel.ts";
-import { Leaderboard } from "../../models/leaderboardModel.ts";
-import { deleteGuild } from "../../services/guildService.ts";
-import { Friendship } from "../../models/friendModel.ts";
+import { Types } from "mongoose";
+import { Account } from "../../models/loginModel.ts";
+import { deleteAccountData } from "../../services/accountDeletionService.ts";
+import { getAccountForRequest, isAdministrator, type TAccountDocument } from "../../services/loginService.ts";
 import { sendWsBroadcastTo } from "../../services/wsService.ts";
-import { config } from "../../services/configService.ts";
-import { saveConfig } from "../../services/configWriterService.ts";
-import { PendingTrade } from "../../models/tradingModel.ts";
+
+const getAdministrator = async (req: Parameters<RequestHandler>[0]): Promise<TAccountDocument> => {
+    const account = await getAccountForRequest(req);
+    if (!isAdministrator(account)) throw new Error("Administrator permission required");
+    return account;
+};
 
 export const deleteAccountController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
-
-    // If this account is an admin, remove it from administratorNames
-    if (config.administratorNames) {
-        const adminIndex = config.administratorNames.indexOf(account.DisplayName);
-        if (adminIndex != -1) {
-            config.administratorNames.splice(adminIndex, 1);
-            await saveConfig();
-        }
-    }
-
-    // If account is the founding warlord of a guild, delete that guild as well.
-    const guildMember = await GuildMember.findOne({ accountId: account._id, rank: 0, status: 0 });
-    if (guildMember) {
-        await deleteGuild(guildMember.guildId);
-    }
-
-    await Promise.all([
-        Account.deleteOne({ _id: account._id }),
-        Friendship.deleteMany({ owner: account._id }),
-        Friendship.deleteMany({ friend: account._id }),
-        GuildMember.deleteMany({ accountId: account._id }),
-        Ignore.deleteMany({ ignorer: account._id }),
-        Ignore.deleteMany({ ignoree: account._id }),
-        Inbox.deleteMany({ ownerId: account._id }),
-        Inventory.deleteOne({ accountOwnerId: account._id }),
-        Leaderboard.deleteMany({ ownerId: account._id }),
-        Loadout.deleteOne({ loadoutOwnerId: account._id }),
-        PendingTrade.deleteMany({ a: account._id }),
-        PendingTrade.deleteMany({ b: account._id }),
-        PersonalRooms.deleteOne({ personalRoomsOwnerId: account._id }),
-        Ship.deleteMany({ ShipOwnerId: account._id }),
-        Stats.deleteOne({ accountOwnerId: account._id })
-    ]);
-
+    await deleteAccountData(account);
     sendWsBroadcastTo(account._id.toString(), { logged_out: true });
-
     res.end();
+};
+
+export const deleteAdminAccountController: RequestHandler = async (req, res) => {
+    const administrator = await getAdministrator(req);
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const accountId = body.accountId;
+    if (typeof accountId != "string" || !Types.ObjectId.isValid(accountId)) {
+        res.status(400).send("A valid accountId is required");
+        return;
+    }
+
+    const account = await Account.findById(accountId);
+    if (!account) {
+        res.status(404).send("Account not found");
+        return;
+    }
+    if (account._id.equals(administrator._id)) {
+        res.status(400).send("Use the account deletion action to delete your own account");
+        return;
+    }
+    if (isAdministrator(account)) {
+        res.status(403).send("Administrators cannot be deleted by another administrator");
+        return;
+    }
+
+    await deleteAccountData(account);
+    sendWsBroadcastTo(account._id.toString(), { logged_out: true });
+    res.json({ deleted: true, accountId: account._id.toString() });
 };

@@ -6,7 +6,10 @@ import { exportController } from "../controllers/custom/exportController.ts";
 import { getItemListsController } from "../controllers/custom/getItemListsController.ts";
 import { pushArchonCrystalUpgradeController } from "../controllers/custom/pushArchonCrystalUpgradeController.ts";
 import { popArchonCrystalUpgradeController } from "../controllers/custom/popArchonCrystalUpgradeController.ts";
-import { deleteAccountController } from "../controllers/custom/deleteAccountController.ts";
+import {
+    deleteAccountController,
+    deleteAdminAccountController
+} from "../controllers/custom/deleteAccountController.ts";
 import { getNameController } from "../controllers/custom/getNameController.ts";
 import { getAccountInfoController } from "../controllers/custom/getAccountInfoController.ts";
 import { getGuildController } from "../controllers/custom/getGuildController.ts";
@@ -259,6 +262,7 @@ customRouter.post("/admin/account-rates/delete", deleteAccountRatesController);
 customRouter.post("/admin/irc-announcement", ircAnnouncementController);
 customRouter.post("/admin/world-activities/refresh", refreshWorldActivitiesController);
 customRouter.post("/admin/features", saveAdminFeaturesController);
+customRouter.post("/admin/users/delete", deleteAdminAccountController);
 customRouter.post("/redeemCode", redeemCodeController);
 
 customRouter.post("/changePassword", changePasswordController);

@@ -302,6 +302,15 @@
             ban.textContent = loc(user.Banned ? "admin_unban" : "admin_ban");
             ban.addEventListener("click", () => void toggleBan(user, ban));
             actions.append(ban);
+
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "btn btn-sm btn-outline-danger";
+            remove.innerHTML = '<i class="bi bi-trash3" aria-hidden="true"></i>';
+            remove.title = loc("admin_deleteAccount");
+            remove.setAttribute("aria-label", `${loc("admin_deleteAccount")}: ${user.DisplayName}`);
+            remove.addEventListener("click", () => void deleteUser(user, remove));
+            actions.append(remove);
         }
         return row;
     }
@@ -383,6 +392,27 @@
             await loadUsers();
         } catch (error) {
             toast(error.responseText || error.message || loc("settings_changeFailed"), "danger");
+            button.disabled = false;
+        }
+    }
+
+    async function deleteUser(user, button) {
+        const confirmed = await window.webuiComponents.confirm({
+            title: loc("admin_deleteAccount"),
+            message: loc("admin_deleteAccountConfirm").replace("|TARGET|", user.DisplayName),
+            variant: "danger",
+            icon: "bi-trash3"
+        });
+        if (!confirmed) return;
+
+        button.disabled = true;
+        try {
+            await revalidateAuthz();
+            await window.adminUsersApi.deleteAccount(user.id);
+            toast(loc("admin_deleteAccountDone").replace("|TARGET|", user.DisplayName), "success");
+            await loadUsers();
+        } catch (error) {
+            toast(error.responseText || error.message || loc("admin_deleteAccountFailed"), "danger");
             button.disabled = false;
         }
     }

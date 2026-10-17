@@ -125,6 +125,7 @@ function loadUsersPage() {
         adminUsersApi: {
             list: async () => users,
             broadcastInbox: async payload => messages.push(payload),
+            deleteAccount: async accountId => apiCalls.push(["deleteAccount", accountId]),
             announceIrc: async message => apiCalls.push(["announceIrc", message])
         },
         adminItemCatalog: {
@@ -236,6 +237,17 @@ test("users page sends an authorized ban mutation and refreshes the account list
     assert.equal(elements.get("#admin-users-total").textContent, "3");
 });
 
+test("users page confirms account deletion and refreshes the account list", async () => {
+    const { elements, handlers, apiCalls } = loadUsersPage();
+    await handlers.get("beforeload")();
+    await new Promise(resolve => setImmediate(resolve));
+    const deleteButton = elements.get("#registered-losers").children[0].children[3].children[2];
+    await deleteButton.dispatch("click");
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(apiCalls, [["deleteAccount", "account-1"]]);
+    assert.equal(elements.get("#admin-users-total").textContent, "3");
+});
+
 test("users page confirms and sends an inbox broadcast with all attachment fields", async () => {
     const { elements, handlers, messages, toasts } = loadUsersPage();
     await handlers.get("beforeload")();
@@ -318,6 +330,14 @@ test("users API preserves the users, inbox, and IRC endpoint contracts", async (
         method: "POST",
         contentType: "application/json",
         data: JSON.stringify(payload)
+    });
+
+    await api.deleteAccount("account-1");
+    assert.deepEqual(JSON.parse(JSON.stringify(calls.ajax[1])), {
+        url: "/custom/admin/users/delete?auth=token",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ accountId: "account-1" })
     });
 
     await api.announceIrc("Server maintenance");

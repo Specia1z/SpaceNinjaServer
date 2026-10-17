@@ -7,6 +7,13 @@ window.adminUsersApi = {
             contentType: "application/json",
             data: JSON.stringify(payload)
         }),
+    deleteAccount: accountId =>
+        $.ajax({
+            url: "/custom/admin/users/delete?" + window.authz,
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ accountId })
+        }),
     async announceIrc(message) {
         const response = await fetch("/custom/admin/irc-announcement?" + window.authz, {
             method: "POST",
