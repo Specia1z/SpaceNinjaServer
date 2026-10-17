@@ -7,14 +7,14 @@
         {
             "name": "dwmapi.dll",
             "url": "/custom/launcher/assets/dwmapi.dll",
-            "size": 1366528,
-            "sha256": "65ac674bc5bafffc11c13949ca961a7e1f860f43f4ab5efb88c4ad6bdd456114"
+            "size": 1367040,
+            "sha256": "60aa6557a876b71dbce89cc587322b528054ef61f8a8c2189287f33edb5a17c6"
         },
         {
             "name": "Hotfix.owf",
             "url": "/custom/launcher/assets/Hotfix.owf",
             "size": 78634,
-            "sha256": "22504a339dae40effb215f43c412718a336004de3b4917b391ea2e499205ce78"
+            "sha256": "e206096052bb0eff101584e4be98040b80560795bdb3dac843049acfe993d9d8"
         }
     ]
 }
