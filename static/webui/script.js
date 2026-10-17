@@ -195,6 +195,7 @@ function refreshServerConfig() {
         single.getCurrentPath() == "/webui/account-rates" ||
         single.getCurrentPath() == "/webui/reward-stats" ||
         single.getCurrentPath() == "/webui/metadata-patches" ||
+        single.getCurrentPath() == "/webui/pluto-scripts" ||
         single.getCurrentPath() == "/webui/bootstrapper-version" ||
         single.getCurrentPath() == "/webui/client-config" ||
         single.getCurrentPath() == "/webui/world-activities" ||

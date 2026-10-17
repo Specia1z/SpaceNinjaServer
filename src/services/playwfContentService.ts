@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import type { RequestHandler } from "express";
@@ -10,6 +11,18 @@ const scriptPathPattern = /^\/(?:[^/]+\/)*[^/]+\.pluto$/;
 interface IResolvedPlaywfScript {
     path: string;
     source: string;
+}
+
+export interface IPlaywfScriptEditorEntry {
+    name: string;
+    source: string;
+    enabled: boolean;
+}
+
+export interface IPlaywfServerScriptsState {
+    scripts: IResolvedPlaywfScript[];
+    payload: string;
+    revision: string;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -102,6 +115,37 @@ export const getPlaywfScript = (requestPath: string): IResolvedPlaywfScript | un
     if (!mod) return undefined;
     const source = getScriptSource(mod);
     return source === undefined ? undefined : { path: requestPath, source };
+};
+
+export const getPlaywfScriptEditorEntries = (): IPlaywfScriptEditorEntry[] => {
+    return (getPlaywfContentConfig()?.mods ?? [])
+        .map(mod => {
+            const source = getScriptSource(mod);
+            return source === undefined
+                ? undefined
+                : {
+                      name: path.posix.basename(mod.scriptPath!, ".pluto"),
+                      source,
+                      enabled: mod.enabled !== false
+                  };
+        })
+        .filter((entry): entry is IPlaywfScriptEditorEntry => !!entry);
+};
+
+export const getPlaywfServerScriptsState = (): IPlaywfServerScriptsState => {
+    const scripts = (getPlaywfContentConfig()?.mods ?? [])
+        .filter(mod => mod.enabled !== false)
+        .map(mod => {
+            const source = getScriptSource(mod);
+            return source === undefined ? undefined : { path: mod.scriptPath!, source };
+        })
+        .filter((script): script is IResolvedPlaywfScript => !!script);
+    const payload = JSON.stringify(scripts);
+    return {
+        scripts,
+        payload,
+        revision: crypto.createHash("sha256").update(payload).digest("hex")
+    };
 };
 
 export const getPlaywfAutoStartScripts = (): string[] => {

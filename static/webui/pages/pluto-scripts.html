@@ -1,0 +1,38 @@
+<div data-route="/webui/pluto-scripts" data-title-tag="navbar_plutoScripts">
+    <div class="d-none admin-hide">
+        <p data-loc="cheats_administratorRequirement"></p>
+    </div>
+    <main class="pluto-scripts-page d-none admin-show">
+        <header class="pluto-scripts-hero">
+            <div>
+                <span class="pluto-scripts-eyebrow" data-loc="plutoScripts_eyebrow"></span>
+                <h1 data-loc="plutoScripts_title"></h1>
+                <p data-loc="plutoScripts_description"></p>
+            </div>
+            <div class="pluto-scripts-actions">
+                <span id="pluto-scripts-save-status" data-loc="plutoScripts_savedStatus"></span>
+                <button class="btn btn-primary" id="pluto-scripts-save" type="button" disabled>
+                    <i class="bi bi-cloud-check" aria-hidden="true"></i>
+                    <span data-loc="plutoScripts_save"></span>
+                </button>
+            </div>
+        </header>
+
+        <section class="card pluto-scripts-panel" aria-labelledby="pluto-scripts-list-title">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div>
+                    <h2 class="h5 mb-1" id="pluto-scripts-list-title" data-loc="plutoScripts_listTitle"></h2>
+                    <p class="text-body-secondary mb-0" data-loc="plutoScripts_listHint"></p>
+                </div>
+                <button class="btn btn-outline-primary" id="pluto-scripts-add" type="button">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                    <span data-loc="plutoScripts_add"></span>
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="pluto-scripts-list"></div>
+                <p class="text-body-secondary text-center py-4 mb-0 d-none" id="pluto-scripts-empty" data-loc="plutoScripts_empty"></p>
+            </div>
+        </section>
+    </main>
+</div>

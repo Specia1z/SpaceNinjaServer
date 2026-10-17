@@ -121,6 +121,10 @@ import {
     getWorldActivitiesController,
     refreshWorldActivitiesController
 } from "../controllers/custom/worldActivitiesController.ts";
+import {
+    getPlaywfScriptsController,
+    savePlaywfScriptsController
+} from "../controllers/custom/playwfScriptsController.ts";
 
 const customRouter = express.Router();
 
@@ -218,6 +222,7 @@ customRouter.get("/admin/player-presence/history", getPlayerPresenceHistoryContr
 customRouter.get("/admin/player-presence/nodes", resolvePresenceNodesController);
 customRouter.get("/admin/world-activities", getWorldActivitiesController);
 customRouter.get("/admin/features", getAdminFeaturesController);
+customRouter.get("/admin/playwf-scripts", getPlaywfScriptsController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -262,6 +267,7 @@ customRouter.post("/admin/account-rates/delete", deleteAccountRatesController);
 customRouter.post("/admin/irc-announcement", ircAnnouncementController);
 customRouter.post("/admin/world-activities/refresh", refreshWorldActivitiesController);
 customRouter.post("/admin/features", saveAdminFeaturesController);
+customRouter.post("/admin/playwf-scripts", savePlaywfScriptsController);
 customRouter.post("/admin/users/delete", deleteAdminAccountController);
 customRouter.post("/redeemCode", redeemCodeController);
 

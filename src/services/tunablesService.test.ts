@@ -85,6 +85,35 @@ void test("native proxy forcing is only emitted when explicitly enabled", () => 
     delete config.tunables!.forceNativeProxy;
 });
 
+void test("server Pluto scripts are included in tunables with a stable revision", () => {
+    const previousContent = config.tunables!.playwfContent;
+    config.tunables!.playwfContent = {
+        schemaVersion: 1,
+        namespace: "/PlayWF",
+        revision: "ignored",
+        mods: [
+            {
+                id: "server/test",
+                version: 1,
+                scriptPath: "/PlayWF/test.pluto",
+                script: "print('server')",
+                enabled: true
+            }
+        ]
+    };
+
+    try {
+        const first = getTunablesForClient("127.0.0.1", "127.0.0.1");
+        const second = getTunablesForClient("127.0.0.1", "127.0.0.1");
+        assert.deepEqual(JSON.parse(first.playwf_scripts!), [
+            { path: "/PlayWF/test.pluto", source: "print('server')" }
+        ]);
+        assert.equal(first.playwf_scripts_revision, second.playwf_scripts_revision);
+    } finally {
+        config.tunables!.playwfContent = previousContent;
+    }
+});
+
 void test("client buildlab must match the configured required build label", () => {
     config.tunables!.requiredBuildLabel = "2026.01.02.03.04";
     config.tunables!.versionMismatchTitle = "Version rejected";

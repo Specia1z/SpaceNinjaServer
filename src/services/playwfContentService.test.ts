@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { config } from "./configService.ts";
-import { getPlaywfAutoStartScripts, getPlaywfContentConfig, getPlaywfScript } from "./playwfContentService.ts";
+import {
+    getPlaywfAutoStartScripts,
+    getPlaywfContentConfig,
+    getPlaywfScript,
+    getPlaywfScriptEditorEntries,
+    getPlaywfServerScriptsState
+} from "./playwfContentService.ts";
 
 const previousTunables = config.tunables;
 
@@ -42,6 +48,24 @@ void test("normalizes configured Pluto content and exposes only enabled scripts"
         source: "print('hello')"
     });
     assert.equal(getPlaywfScript("/PlayWF/disabled.pluto"), undefined);
+});
+
+void test("builds an in-memory server script payload without disabled scripts", () => {
+    assert.deepEqual(getPlaywfScriptEditorEntries(), [
+        {
+            name: "test",
+            source: "print('hello')",
+            enabled: true
+        },
+        {
+            name: "disabled",
+            source: "print('disabled')",
+            enabled: false
+        }
+    ]);
+    const state = getPlaywfServerScriptsState();
+    assert.deepEqual(JSON.parse(state.payload), [{ path: "/PlayWF/test.pluto", source: "print('hello')" }]);
+    assert.notEqual(state.revision, "");
 });
 
 void test("prohibitScripts suppresses configured Pluto auto-start scripts", () => {

@@ -54,6 +54,7 @@ webuiRouter.get("/webui/admin-data", virtualRouteController);
 webuiRouter.get("/webui/redeem-codes", virtualRouteController);
 webuiRouter.get("/webui/anti-cheat", virtualRouteController);
 webuiRouter.get("/webui/metadata-patches", virtualRouteController);
+webuiRouter.get("/webui/pluto-scripts", virtualRouteController);
 webuiRouter.get("/webui/account-rates", virtualRouteController);
 webuiRouter.get("/webui/player-presence", virtualRouteController);
 webuiRouter.get("/webui/bootstrapper-version", virtualRouteController);
