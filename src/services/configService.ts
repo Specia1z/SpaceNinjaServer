@@ -98,6 +98,25 @@ export interface IPlaywfContentConfig {
     mods?: IPlaywfContentMod[];
 }
 
+export interface INewAccountWelcomeReward {
+    ItemType: string;
+    ItemCount: number;
+}
+
+export interface INewAccountWelcomeConfig {
+    enabled?: boolean;
+    sender?: string;
+    subject?: string;
+    body?: string;
+    icon?: string;
+    rewards?: INewAccountWelcomeReward[];
+}
+
+/** Feature settings with their own admin page, kept separate for future PlayWF-specific additions. */
+export interface IPlaywfFeaturesConfig {
+    newAccountWelcome?: INewAccountWelcomeConfig;
+}
+
 /** Public defaults consumed by the PlayWF client before account login. */
 export interface IClientConfig {
     fallback_language?: string;
@@ -247,6 +266,7 @@ export interface IConfig {
     accountCheats?: Partial<IAccountCheats>;
     playerPortal?: IPlayerPortalConfig;
     playerMarket?: IPlayerMarketConfig;
+    playwfFeatures?: IPlaywfFeaturesConfig;
     registrationRateLimit?: {
         /** Rolling time window for new accounts, in minutes (default: 1440). */
         windowMinutes?: number;

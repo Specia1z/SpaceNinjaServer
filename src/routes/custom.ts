@@ -109,6 +109,10 @@ import {
 import { getCurrencyGrantStatsController } from "../controllers/custom/currencyGrantStatsController.ts";
 import { clientConfigController } from "../controllers/custom/clientConfigController.ts";
 import { featureManifestController, featurePackageController } from "../controllers/custom/featurePackageController.ts";
+import {
+    getAdminFeaturesController,
+    saveAdminFeaturesController
+} from "../controllers/custom/adminFeaturesController.ts";
 import { launcherAssetController, launcherManifestController } from "../controllers/custom/launcherController.ts";
 import {
     getWorldActivitiesController,
@@ -210,6 +214,7 @@ customRouter.get("/admin/player-presence", listPlayerPresenceController);
 customRouter.get("/admin/player-presence/history", getPlayerPresenceHistoryController);
 customRouter.get("/admin/player-presence/nodes", resolvePresenceNodesController);
 customRouter.get("/admin/world-activities", getWorldActivitiesController);
+customRouter.get("/admin/features", getAdminFeaturesController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -253,6 +258,7 @@ customRouter.post("/admin/account-rates", saveAccountRatesController);
 customRouter.post("/admin/account-rates/delete", deleteAccountRatesController);
 customRouter.post("/admin/irc-announcement", ircAnnouncementController);
 customRouter.post("/admin/world-activities/refresh", refreshWorldActivitiesController);
+customRouter.post("/admin/features", saveAdminFeaturesController);
 customRouter.post("/redeemCode", redeemCodeController);
 
 customRouter.post("/changePassword", changePasswordController);

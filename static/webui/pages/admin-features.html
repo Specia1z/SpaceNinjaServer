@@ -1,0 +1,78 @@
+<div id="admin-features-route" class="admin-features-route" data-route="/webui/admin-features" data-title-tag="navbar_adminFeatures">
+    <section class="admin-features-access d-none admin-hide" role="status">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <p data-loc="cheats_administratorRequirement"></p>
+    </section>
+
+    <main class="admin-features-page admin-show d-none">
+        <header class="admin-features-hero">
+            <div>
+                <span class="admin-features-eyebrow" data-loc="admin_features"></span>
+                <h1 data-loc="admin_features"></h1>
+                <p data-loc="admin_featuresDescription"></p>
+            </div>
+            <span class="admin-features-hero-mark" aria-hidden="true"><i class="bi bi-stars"></i></span>
+        </header>
+
+        <section class="card admin-features-section">
+            <header class="admin-features-section-header">
+                <span class="admin-features-section-icon"><i class="bi bi-envelope-heart" aria-hidden="true"></i></span>
+                <div>
+                    <span class="admin-features-kicker" data-loc="admin_newAccountWelcome"></span>
+                    <h2 data-loc="admin_newAccountWelcome"></h2>
+                    <p data-loc="admin_newAccountWelcomeDescription"></p>
+                </div>
+            </header>
+            <form id="admin-new-account-welcome-form" class="card-body admin-features-body">
+                <div class="admin-features-settings-grid">
+                    <label class="admin-features-switch">
+                        <input class="form-check-input" id="admin-feature-welcome-enabled" type="checkbox" />
+                        <span><strong data-loc="admin_featureEnabled"></strong><small data-loc="admin_featureEnabledHint"></small></span>
+                    </label>
+                    <div class="admin-features-field">
+                        <label class="form-label" for="admin-feature-welcome-sender" data-loc="admin_featureSender"></label>
+                        <input class="form-control" id="admin-feature-welcome-sender" maxlength="100" required />
+                    </div>
+                    <div class="admin-features-field">
+                        <label class="form-label" for="admin-feature-welcome-subject" data-loc="admin_featureSubject"></label>
+                        <input class="form-control" id="admin-feature-welcome-subject" maxlength="200" required />
+                    </div>
+                    <div class="admin-features-field admin-features-field-full">
+                        <label class="form-label" for="admin-feature-welcome-body" data-loc="admin_featureBody"></label>
+                        <textarea class="form-control" id="admin-feature-welcome-body" rows="6" maxlength="10000" required></textarea>
+                    </div>
+                    <div class="admin-features-field admin-features-field-full">
+                        <label class="form-label" for="admin-feature-welcome-icon" data-loc="admin_featureIcon"></label>
+                        <input class="form-control font-monospace" id="admin-feature-welcome-icon" maxlength="300" />
+                    </div>
+                </div>
+
+                <div class="admin-features-rewards-heading">
+                    <div>
+                        <h3 data-loc="admin_featureRewards"></h3>
+                        <p data-loc="admin_featureRewardsDescription"></p>
+                    </div>
+                    <button class="btn btn-outline-primary" id="admin-feature-add-reward" type="button">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i><span data-loc="admin_featureAddReward"></span>
+                    </button>
+                </div>
+                <div id="admin-feature-rewards" class="admin-features-rewards"></div>
+                <div id="admin-feature-rewards-empty" class="admin-features-empty d-none">
+                    <i class="bi bi-gift" aria-hidden="true"></i><span data-loc="admin_featureNoRewards"></span>
+                </div>
+
+                <div class="admin-features-form-footer">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-primary" id="admin-feature-save" type="submit">
+                            <i class="bi bi-check2" aria-hidden="true"></i><span data-loc="admin_featureSave"></span>
+                        </button>
+                        <button class="btn btn-outline-secondary" id="admin-feature-reset" type="button">
+                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span data-loc="admin_featureReset"></span>
+                        </button>
+                    </div>
+                    <div class="alert d-none" id="admin-feature-notice" role="status" aria-live="polite"></div>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>

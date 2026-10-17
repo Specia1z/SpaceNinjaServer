@@ -24,6 +24,7 @@ import { buildVersionToInt } from "../helpers/versionHelper.ts";
 import { giveNewAccountStarterPack, initializeNewAccount } from "./accountInitializationService.ts";
 import { hashAccountPassword, verifyAccountPassword } from "./passwordService.ts";
 import { releaseReferral, reserveReferral } from "./playerReferralService.ts";
+import { sendNewAccountWelcomeMessage } from "./newAccountWelcomeService.ts";
 
 export const isCorrectPassword = verifyAccountPassword;
 
@@ -108,6 +109,7 @@ export const createAccount = async (
             await giveNewAccountStarterPack(inventory);
         }
         await createStats(account._id.toString());
+        await sendNewAccountWelcomeMessage(account._id);
         return account.toJSON();
     } catch (error) {
         if (referral?.reservedCount && !accountCreated) await releaseReferral(referral.inviterId);

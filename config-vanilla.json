@@ -125,6 +125,21 @@
     "excludedItemPatterns": [],
     "itemOverrides": {}
   },
+  "playwfFeatures": {
+    "newAccountWelcome": {
+      "enabled": false,
+      "sender": "PlayWF",
+      "subject": "Welcome to PlayWF",
+      "body": "Welcome to PlayWF, Tenno! Thank you for joining us. Your starter rewards are attached to this message.",
+      "icon": "/Lotus/Interface/Icons/Npcs/Lotus_d.png",
+      "rewards": [
+        {
+          "ItemType": "PremiumCredits",
+          "ItemCount": 200
+        }
+      ]
+    }
+  },
   "registrationRateLimit": {
     "windowMinutes": 1440,
     "perAddress": 3,
