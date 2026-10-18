@@ -7,8 +7,8 @@
         {
             "name": "dwmapi.dll",
             "url": "/custom/launcher/assets/dwmapi.dll",
-            "size": 1610240,
-            "sha256": "80e782e405a93aba806b1d1fa089808f7f38e13611a2fdc6e8a8fe7ce5bd303a"
+            "size": 2264576,
+            "sha256": "c5575978f3d5f44c961513e822a3d0ff87bd4636a64931b5a10e88af73594cf3"
         },
         {
             "name": "Hotfix.owf",
