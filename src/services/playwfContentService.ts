@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import fsPromises from "node:fs/promises";
 import path from "node:path";
 import type { RequestHandler } from "express";
 import { repoDir } from "../helpers/pathHelper.ts";
@@ -7,6 +8,8 @@ import { config, type IPlaywfContentConfig, type IPlaywfContentMod } from "./con
 
 const defaultNamespace = "/PlayWF";
 const scriptPathPattern = /^\/(?:[^/]+\/)*[^/]+\.pluto$/;
+export const serverScriptDirectory = path.join(repoDir, "static", "data", "playwf-scripts");
+const serverScriptSourceDirectory = "static/data/playwf-scripts";
 
 interface IResolvedPlaywfScript {
     path: string;
@@ -24,6 +27,16 @@ export interface IPlaywfServerScriptsState {
     payload: string;
     revision: string;
 }
+
+export const getPlaywfServerScriptSourcePath = (name: string): string =>
+    path.posix.join(serverScriptSourceDirectory, `${name}.pluto`);
+
+const getManagedScriptFilePath = (sourcePath: string): string | undefined => {
+    const prefix = `${serverScriptSourceDirectory}/`;
+    if (!sourcePath.startsWith(prefix) || sourcePath.slice(prefix.length).includes("/")) return undefined;
+    const filePath = path.resolve(repoDir, sourcePath);
+    return path.dirname(filePath) == serverScriptDirectory ? filePath : undefined;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value == "object" && value != null && !Array.isArray(value);
@@ -146,6 +159,33 @@ export const getPlaywfServerScriptsState = (): IPlaywfServerScriptsState => {
         payload,
         revision: crypto.createHash("sha256").update(payload).digest("hex")
     };
+};
+
+export const writePlaywfServerScriptFiles = async (scripts: IPlaywfScriptEditorEntry[]): Promise<string[]> => {
+    const previousSourcePaths = (getPlaywfContentConfig()?.mods ?? [])
+        .map(mod => mod.sourcePath)
+        .filter((sourcePath): sourcePath is string => !!sourcePath && !!getManagedScriptFilePath(sourcePath));
+    const nextSourcePaths = new Set(scripts.map(script => getPlaywfServerScriptSourcePath(script.name)));
+
+    await fsPromises.mkdir(serverScriptDirectory, { recursive: true });
+    for (const script of scripts) {
+        const sourcePath = getPlaywfServerScriptSourcePath(script.name);
+        const targetPath = getManagedScriptFilePath(sourcePath)!;
+        const temporaryPath = `${targetPath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+        try {
+            await fsPromises.writeFile(temporaryPath, script.source, "utf8");
+            await fsPromises.rename(temporaryPath, targetPath);
+        } finally {
+            await fsPromises.rm(temporaryPath, { force: true });
+        }
+    }
+
+    return previousSourcePaths.filter(sourcePath => !nextSourcePaths.has(sourcePath));
+};
+
+export const removePlaywfServerScriptFiles = async (sourcePaths: string[]): Promise<void> => {
+    const filePaths = sourcePaths.map(getManagedScriptFilePath).filter((filePath): filePath is string => !!filePath);
+    await Promise.all(filePaths.map(filePath => fsPromises.rm(filePath, { force: true })));
 };
 
 export const getPlaywfAutoStartScripts = (): string[] => {

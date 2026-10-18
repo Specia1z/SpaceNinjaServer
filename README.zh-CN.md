@@ -74,7 +74,7 @@ Copy-Item config-vanilla.json config.json
 
 `tunables.metadataPatchBlacklist` 可配置不接收任何服务端元数据补丁的账号 ID 列表。管理员也可以在 WebUI 的“元数据补丁”页面按账号切换黑名单；修改会立即推送给已连接的 Bootstrapper，但已经加载的游戏元数据需要完整重启游戏才能重新应用。
 
-`tunables.playwfContent` 可配置由 OpenWF Bootstrapper 运行的 Pluto 脚本。每个启用的 `mods` 条目需要设置类似 `/PlayWF/example.pluto` 的 `scriptPath`；服务端会将源码直接放入 tunables payload，并立即推送给已连接的 Bootstrapper。客户端只在内存中编译和运行，不会写入本地脚本目录。设置 `enabled: false` 可以暂时移除脚本，小脚本也可以直接填写 `script` 内联内容。管理员可以在 WebUI 的“Pluto 脚本”页面管理列表。`tunables.prohibitScripts` 仍会禁止本地脚本和旧的自动启动列表，但不会阻止这些明确下发的服务端脚本。
+`tunables.playwfContent` 可配置由 OpenWF Bootstrapper 运行的 Pluto 脚本。每个启用的 `mods` 条目需要设置类似 `/PlayWF/example.pluto` 的 `scriptPath`；管理员在 WebUI 的“Pluto 脚本”页面保存时，源码会单独写入 `static/data/playwf-scripts/`，`config.json` 只保存对应的 `sourcePath`。服务端会读取这些文件并将源码放入 tunables payload，随后立即推送给已连接的 Bootstrapper。客户端只在内存中编译和运行，不会写入本地脚本目录。设置 `enabled: false` 可以暂时移除脚本；已有或手动维护的配置仍支持 `script` 内联内容。`tunables.prohibitScripts` 仍会禁止本地脚本和旧的自动启动列表，但不会阻止这些明确下发的服务端脚本。
 
 管理员可以在 WebUI 的“账号倍率”页面按账号 ID 设置奖励倍率和账号专属仓库功能。倍率配置保存在 `config.json` 的 `accountRateProfiles` 中；未配置的账号保持原行为：
 

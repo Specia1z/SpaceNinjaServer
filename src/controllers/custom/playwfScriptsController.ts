@@ -3,7 +3,10 @@ import { config } from "../../services/configService.ts";
 import { saveConfig } from "../../services/configWriterService.ts";
 import {
     getPlaywfScriptEditorEntries,
+    getPlaywfServerScriptSourcePath,
     getPlaywfServerScriptsState,
+    removePlaywfServerScriptFiles,
+    writePlaywfServerScriptFiles,
     type IPlaywfScriptEditorEntry
 } from "../../services/playwfContentService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
@@ -41,7 +44,9 @@ const parseScripts = (value: unknown): IPlaywfScriptEditorEntry[] => {
         }
         const name = input.name.trim();
         if (!name || name.length > MAX_NAME_LENGTH || !scriptNamePattern.test(name)) {
-            throw new Error(`Script ${index + 1} name must contain only letters, numbers, dots, underscores, or hyphens`);
+            throw new Error(
+                `Script ${index + 1} name must contain only letters, numbers, dots, underscores, or hyphens`
+            );
         }
         if (names.has(name)) {
             throw new Error(`Script name ${name} is duplicated`);
@@ -105,6 +110,7 @@ export const savePlaywfScriptsController: RequestHandler = async (req, res) => {
     try {
         const body = req.body as Record<string, unknown>;
         const scripts = parseScripts(body.scripts);
+        const staleSourcePaths = await writePlaywfServerScriptFiles(scripts);
         config.tunables ??= {};
         config.tunables.playwfContent = {
             schemaVersion: 1,
@@ -114,13 +120,14 @@ export const savePlaywfScriptsController: RequestHandler = async (req, res) => {
                 id: `server/${script.name}`,
                 version: 1,
                 scriptPath: `/PlayWF/${script.name}.pluto`,
-                script: script.source,
+                sourcePath: getPlaywfServerScriptSourcePath(script.name),
                 enabled: script.enabled,
                 autoStart: true
             }))
         };
         config.tunables.playwfContent.revision = getPlaywfServerScriptsState().revision;
         await saveConfig();
+        await removePlaywfServerScriptFiles(staleSourcePaths);
         broadcastTunables();
         sendWsBroadcastEx({ config_reloaded: true }, undefined, parseInt(String(req.query.wsid)));
         res.json(getResponse());
