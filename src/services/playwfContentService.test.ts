@@ -5,6 +5,7 @@ import path from "node:path";
 import { config } from "./configService.ts";
 import {
     getPlaywfAutoStartScripts,
+    getPlaywfAccountScriptEditorEntries,
     getPlaywfContentConfig,
     getPlaywfScript,
     getPlaywfScriptEditorEntries,
@@ -72,6 +73,42 @@ void test("builds an in-memory server script payload without disabled scripts", 
     const state = getPlaywfServerScriptsState();
     assert.deepEqual(JSON.parse(state.payload), [{ path: "/PlayWF/test.pluto", source: "print('hello')" }]);
     assert.notEqual(state.revision, "");
+});
+
+void test("appends account scripts and suppresses them for blacklisted accounts", () => {
+    const previousContent = config.tunables!.playwfContent;
+    config.tunables!.playwfContent = {
+        schemaVersion: 1,
+        namespace: "/PlayWF",
+        mods: [
+            {
+                scriptPath: "/PlayWF/global.pluto",
+                script: "print('global')"
+            }
+        ],
+        accountMods: {
+            account: [
+                {
+                    scriptPath: "/PlayWF/accounts/account/account.pluto",
+                    script: "print('account')"
+                }
+            ]
+        },
+        accountBlacklist: ["blocked"]
+    };
+
+    try {
+        assert.deepEqual(JSON.parse(getPlaywfServerScriptsState("account").payload), [
+            { path: "/PlayWF/global.pluto", source: "print('global')" },
+            { path: "/PlayWF/accounts/account/account.pluto", source: "print('account')" }
+        ]);
+        assert.deepEqual(JSON.parse(getPlaywfServerScriptsState("blocked").payload), []);
+        assert.deepEqual(getPlaywfAccountScriptEditorEntries(), {
+            account: [{ name: "account", source: "print('account')", enabled: true }]
+        });
+    } finally {
+        config.tunables!.playwfContent = previousContent;
+    }
 });
 
 void test("stores server scripts in managed files and removes stale files", async () => {

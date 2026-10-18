@@ -8,8 +8,10 @@ import { config, type IPlaywfContentConfig, type IPlaywfContentMod } from "./con
 
 const defaultNamespace = "/PlayWF";
 const scriptPathPattern = /^\/(?:[^/]+\/)*[^/]+\.pluto$/;
+const scriptNamePattern = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export const serverScriptDirectory = path.join(repoDir, "static", "data", "playwf-scripts");
 const serverScriptSourceDirectory = "static/data/playwf-scripts";
+const serverScriptAccountDirectory = "accounts";
 
 interface IResolvedPlaywfScript {
     path: string;
@@ -28,14 +30,41 @@ export interface IPlaywfServerScriptsState {
     revision: string;
 }
 
-export const getPlaywfServerScriptSourcePath = (name: string): string =>
-    path.posix.join(serverScriptSourceDirectory, `${name}.pluto`);
+const assertScriptPathSegment = (value: string, label: string): void => {
+    if (!scriptNamePattern.test(value)) throw new Error(`${label} contains unsafe characters`);
+};
+
+export const getPlaywfServerScriptSourcePath = (name: string, accountId?: string): string => {
+    assertScriptPathSegment(name, "Script name");
+    if (accountId === undefined) return path.posix.join(serverScriptSourceDirectory, `${name}.pluto`);
+    assertScriptPathSegment(accountId, "Account ID");
+    return path.posix.join(serverScriptSourceDirectory, serverScriptAccountDirectory, accountId, `${name}.pluto`);
+};
+
+export const getPlaywfServerScriptPath = (name: string, accountId?: string): string => {
+    assertScriptPathSegment(name, "Script name");
+    if (accountId === undefined) return `/PlayWF/${name}.pluto`;
+    assertScriptPathSegment(accountId, "Account ID");
+    return `/PlayWF/${serverScriptAccountDirectory}/${accountId}/${name}.pluto`;
+};
 
 const getManagedScriptFilePath = (sourcePath: string): string | undefined => {
     const prefix = `${serverScriptSourceDirectory}/`;
-    if (!sourcePath.startsWith(prefix) || sourcePath.slice(prefix.length).includes("/")) return undefined;
+    if (sourcePath.includes("\\") || !sourcePath.startsWith(prefix)) return undefined;
+    const parts = sourcePath.slice(prefix.length).split("/");
+    if (
+        (parts.length != 1 && parts.length != 3) ||
+        (parts.length == 3 && parts[0] != serverScriptAccountDirectory) ||
+        parts.some(part => !scriptNamePattern.test(part)) ||
+        !parts.at(-1)!.endsWith(".pluto")
+    ) {
+        return undefined;
+    }
     const filePath = path.resolve(repoDir, sourcePath);
-    return path.dirname(filePath) == serverScriptDirectory ? filePath : undefined;
+    const relativePath = path.relative(serverScriptDirectory, filePath);
+    return relativePath && !relativePath.startsWith(`..${path.sep}`) && !path.isAbsolute(relativePath)
+        ? filePath
+        : undefined;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -81,23 +110,33 @@ const normalizeMod = (value: unknown): IPlaywfContentMod | undefined => {
     };
 };
 
+const normalizeMods = (value: unknown): IPlaywfContentMod[] =>
+    Array.isArray(value) ? value.map(normalizeMod).filter((mod): mod is IPlaywfContentMod => !!mod) : [];
+
 export const getPlaywfContentConfig = (): IPlaywfContentConfig | undefined => {
     const value: unknown = config.tunables?.playwfContent;
     if (!isRecord(value)) return undefined;
     const rawMods = value.mods;
     const namespace = normalizeNamespace(value.namespace);
     const namespacePrefix = namespace.endsWith("/") ? namespace : `${namespace}/`;
-    const mods = Array.isArray(rawMods)
-        ? rawMods
-              .map(normalizeMod)
-              .filter((mod): mod is IPlaywfContentMod => !!mod)
-              .filter(mod => mod.scriptPath!.startsWith(namespacePrefix))
+    const filterNamespace = (mods: IPlaywfContentMod[]): IPlaywfContentMod[] =>
+        mods.filter(mod => mod.scriptPath!.startsWith(namespacePrefix));
+    const accountMods: Partial<Record<string, IPlaywfContentMod[]>> = {};
+    if (isRecord(value.accountMods)) {
+        for (const [accountId, rawAccountMods] of Object.entries(value.accountMods)) {
+            accountMods[accountId] = filterNamespace(normalizeMods(rawAccountMods));
+        }
+    }
+    const accountBlacklist = Array.isArray(value.accountBlacklist)
+        ? [...new Set(value.accountBlacklist.filter((accountId): accountId is string => typeof accountId == "string"))]
         : [];
     return {
         schemaVersion: typeof value.schemaVersion == "number" ? value.schemaVersion : 1,
         namespace,
         revision: typeof value.revision == "string" ? value.revision : "",
-        mods
+        mods: filterNamespace(normalizeMods(rawMods)),
+        accountMods,
+        accountBlacklist
     };
 };
 
@@ -130,8 +169,8 @@ export const getPlaywfScript = (requestPath: string): IResolvedPlaywfScript | un
     return source === undefined ? undefined : { path: requestPath, source };
 };
 
-export const getPlaywfScriptEditorEntries = (): IPlaywfScriptEditorEntry[] => {
-    return (getPlaywfContentConfig()?.mods ?? [])
+const getEditorEntriesForMods = (mods: IPlaywfContentMod[]): IPlaywfScriptEditorEntry[] => {
+    return mods
         .map(mod => {
             const source = getScriptSource(mod);
             return source === undefined
@@ -145,14 +184,34 @@ export const getPlaywfScriptEditorEntries = (): IPlaywfScriptEditorEntry[] => {
         .filter((entry): entry is IPlaywfScriptEditorEntry => !!entry);
 };
 
-export const getPlaywfServerScriptsState = (): IPlaywfServerScriptsState => {
-    const scripts = (getPlaywfContentConfig()?.mods ?? [])
+export const getPlaywfScriptEditorEntries = (): IPlaywfScriptEditorEntry[] =>
+    getEditorEntriesForMods(getPlaywfContentConfig()?.mods ?? []);
+
+export const getPlaywfAccountScriptEditorEntries = (): Partial<Record<string, IPlaywfScriptEditorEntry[]>> => {
+    const accountMods = getPlaywfContentConfig()?.accountMods ?? {};
+    return Object.fromEntries(
+        Object.entries(accountMods).map(([accountId, mods]) => [accountId, getEditorEntriesForMods(mods ?? [])])
+    );
+};
+
+export const getPlaywfServerScriptsState = (accountId?: string): IPlaywfServerScriptsState => {
+    const content = getPlaywfContentConfig();
+    const mods =
+        accountId && (content?.accountBlacklist ?? []).includes(accountId)
+            ? []
+            : [...(content?.mods ?? []), ...(accountId ? (content?.accountMods?.[accountId] ?? []) : [])];
+    const seenPaths = new Set<string>();
+    const scripts = mods
         .filter(mod => mod.enabled !== false)
         .map(mod => {
             const source = getScriptSource(mod);
             return source === undefined ? undefined : { path: mod.scriptPath!, source };
         })
-        .filter((script): script is IResolvedPlaywfScript => !!script);
+        .filter((script): script is IResolvedPlaywfScript => {
+            if (!script || seenPaths.has(script.path)) return false;
+            seenPaths.add(script.path);
+            return true;
+        });
     const payload = JSON.stringify(scripts);
     return {
         scripts,
@@ -161,18 +220,54 @@ export const getPlaywfServerScriptsState = (): IPlaywfServerScriptsState => {
     };
 };
 
-export const writePlaywfServerScriptFiles = async (scripts: IPlaywfScriptEditorEntry[]): Promise<string[]> => {
-    const previousSourcePaths = (getPlaywfContentConfig()?.mods ?? [])
+export const getPlaywfContentUpdateRevision = (): string => {
+    const content = getPlaywfContentConfig();
+    const accountIds = Object.keys(content?.accountMods ?? {}).sort();
+    const accountRevisions = Object.fromEntries(
+        accountIds.map(accountId => [accountId, getPlaywfServerScriptsState(accountId).revision])
+    );
+    const revisionInput = {
+        schemaVersion: content?.schemaVersion ?? 1,
+        namespace: content?.namespace ?? defaultNamespace,
+        mods: content?.mods ?? [],
+        accountMods: Object.fromEntries(
+            accountIds.map(accountId => [accountId, content?.accountMods?.[accountId] ?? []])
+        ),
+        accountBlacklist: [...(content?.accountBlacklist ?? [])].sort(),
+        globalRevision: getPlaywfServerScriptsState().revision,
+        accountRevisions
+    };
+    return crypto.createHash("sha256").update(JSON.stringify(revisionInput)).digest("hex");
+};
+
+export const writePlaywfServerScriptFiles = async (
+    scripts: IPlaywfScriptEditorEntry[],
+    accountScripts: Partial<Record<string, IPlaywfScriptEditorEntry[]>> = {}
+): Promise<string[]> => {
+    const content = getPlaywfContentConfig();
+    const previousSourcePaths = [
+        ...(content?.mods ?? []),
+        ...Object.values(content?.accountMods ?? {}).flatMap(mods => mods ?? [])
+    ]
         .map(mod => mod.sourcePath)
         .filter((sourcePath): sourcePath is string => !!sourcePath && !!getManagedScriptFilePath(sourcePath));
-    const nextSourcePaths = new Set(scripts.map(script => getPlaywfServerScriptSourcePath(script.name)));
+    const writes = [
+        ...scripts.map(script => ({ accountId: undefined, script })),
+        ...Object.entries(accountScripts).flatMap(([accountId, entries]) =>
+            (entries ?? []).map(script => ({ accountId, script }))
+        )
+    ];
+    const nextSourcePaths = new Set(
+        writes.map(({ script, accountId }) => getPlaywfServerScriptSourcePath(script.name, accountId))
+    );
 
     await fsPromises.mkdir(serverScriptDirectory, { recursive: true });
-    for (const script of scripts) {
-        const sourcePath = getPlaywfServerScriptSourcePath(script.name);
+    for (const { script, accountId } of writes) {
+        const sourcePath = getPlaywfServerScriptSourcePath(script.name, accountId);
         const targetPath = getManagedScriptFilePath(sourcePath)!;
         const temporaryPath = `${targetPath}.${process.pid}.${crypto.randomUUID()}.tmp`;
         try {
+            await fsPromises.mkdir(path.dirname(targetPath), { recursive: true });
             await fsPromises.writeFile(temporaryPath, script.source, "utf8");
             await fsPromises.rename(temporaryPath, targetPath);
         } finally {

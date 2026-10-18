@@ -99,7 +99,19 @@ void test("server Pluto scripts are included in tunables with a stable revision"
                 script: "print('server')",
                 enabled: true
             }
-        ]
+        ],
+        accountMods: {
+            [accountId]: [
+                {
+                    id: "account/test",
+                    version: 1,
+                    scriptPath: "/PlayWF/accounts/test.pluto",
+                    script: "print('account')",
+                    enabled: true
+                }
+            ]
+        },
+        accountBlacklist: ["blocked-account"]
     };
 
     try {
@@ -109,6 +121,18 @@ void test("server Pluto scripts are included in tunables with a stable revision"
             { path: "/PlayWF/test.pluto", source: "print('server')" }
         ]);
         assert.equal(first.playwf_scripts_revision, second.playwf_scripts_revision);
+
+        const accountTunables = getTunablesForClient("127.0.0.1", "127.0.0.1", accountId);
+        assert.deepEqual(JSON.parse(accountTunables.playwf_scripts!), [
+            { path: "/PlayWF/test.pluto", source: "print('server')" },
+            { path: "/PlayWF/accounts/test.pluto", source: "print('account')" }
+        ]);
+        const blockedTunables = getTunablesForClient("127.0.0.1", "127.0.0.1", "blocked-account");
+        assert.deepEqual(JSON.parse(blockedTunables.playwf_scripts!), []);
+        assert.equal(first.playwf_scripts_update_revision, accountTunables.playwf_scripts_update_revision);
+        assert.equal(first.playwf_scripts_update_revision, blockedTunables.playwf_scripts_update_revision);
+        assert.equal(first.metadata_patches_update_revision, accountTunables.metadata_patches_update_revision);
+        assert.equal(first.metadata_patches_update_revision, blockedTunables.metadata_patches_update_revision);
     } finally {
         config.tunables!.playwfContent = previousContent;
     }

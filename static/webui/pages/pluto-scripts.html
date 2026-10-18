@@ -4,13 +4,16 @@
     </div>
     <main class="pluto-scripts-page d-none admin-show">
         <header class="pluto-scripts-hero">
-            <div>
+            <div class="pluto-scripts-hero-copy">
                 <span class="pluto-scripts-eyebrow" data-loc="plutoScripts_eyebrow"></span>
                 <h1 data-loc="plutoScripts_title"></h1>
                 <p data-loc="plutoScripts_description"></p>
             </div>
             <div class="pluto-scripts-actions">
-                <span id="pluto-scripts-save-status" data-loc="plutoScripts_savedStatus"></span>
+                <div class="pluto-scripts-save-state" id="pluto-scripts-save-state" aria-live="polite">
+                    <span class="pluto-scripts-save-dot"></span>
+                    <span id="pluto-scripts-save-status" data-loc="plutoScripts_savedStatus"></span>
+                </div>
                 <button class="btn btn-primary" id="pluto-scripts-save" type="button" disabled>
                     <i class="bi bi-cloud-check" aria-hidden="true"></i>
                     <span data-loc="plutoScripts_save"></span>
@@ -18,20 +21,84 @@
             </div>
         </header>
 
-        <section class="card pluto-scripts-panel" aria-labelledby="pluto-scripts-list-title">
-            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div>
-                    <h2 class="h5 mb-1" id="pluto-scripts-list-title" data-loc="plutoScripts_listTitle"></h2>
-                    <p class="text-body-secondary mb-0" data-loc="plutoScripts_listHint"></p>
+        <div class="alert alert-info pluto-scripts-delivery-hint" role="note">
+            <i class="bi bi-lightning-charge" aria-hidden="true"></i>
+            <span data-loc="plutoScripts_deliveryHint"></span>
+        </div>
+
+        <section class="pluto-scripts-panel card" aria-labelledby="pluto-scripts-global-heading">
+            <div class="pluto-scripts-panel-header">
+                <div class="pluto-scripts-panel-heading">
+                    <span class="pluto-scripts-panel-icon pluto-scripts-global-icon"><i class="bi bi-globe2" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="pluto-scripts-global-heading" data-loc="plutoScripts_globalTitle"></h2>
+                        <p data-loc="plutoScripts_globalHint"></p>
+                    </div>
                 </div>
-                <button class="btn btn-outline-primary" id="pluto-scripts-add" type="button">
-                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                    <span data-loc="plutoScripts_add"></span>
-                </button>
+                <div class="pluto-scripts-panel-actions">
+                    <span class="badge text-bg-secondary" id="pluto-scripts-global-count"></span>
+                    <button class="btn btn-outline-primary" id="pluto-scripts-global-add" type="button">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span data-loc="plutoScripts_add"></span>
+                    </button>
+                </div>
             </div>
-            <div class="card-body">
-                <div id="pluto-scripts-list"></div>
-                <p class="text-body-secondary text-center py-4 mb-0 d-none" id="pluto-scripts-empty" data-loc="plutoScripts_empty"></p>
+            <div class="pluto-scripts-panel-body">
+                <div id="pluto-scripts-global-list" class="pluto-scripts-list"></div>
+            </div>
+        </section>
+
+        <section class="pluto-scripts-panel card" aria-labelledby="pluto-scripts-account-heading">
+            <div class="pluto-scripts-panel-header">
+                <div class="pluto-scripts-panel-heading">
+                    <span class="pluto-scripts-panel-icon pluto-scripts-account-icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="pluto-scripts-account-heading" data-loc="plutoScripts_accountTitle"></h2>
+                        <p data-loc="plutoScripts_accountDescription"></p>
+                    </div>
+                </div>
+                <div class="pluto-scripts-panel-actions">
+                    <button class="btn btn-outline-primary" id="pluto-scripts-account-add" type="button">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span data-loc="plutoScripts_add"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="pluto-scripts-account-layout">
+                <aside class="pluto-scripts-account-sidebar">
+                    <label class="visually-hidden" for="pluto-scripts-account-search" data-loc="plutoScripts_accountSearch"></label>
+                    <div class="pluto-scripts-search">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input class="form-control" id="pluto-scripts-account-search" type="search" data-loc-placeholder="plutoScripts_accountSearch" autocomplete="off" />
+                    </div>
+                    <div id="pluto-scripts-account-list" class="pluto-scripts-account-list"></div>
+                </aside>
+                <div class="pluto-scripts-account-editor">
+                    <div id="pluto-scripts-account-empty" class="pluto-scripts-account-empty">
+                        <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+                        <p data-loc="plutoScripts_accountNoSelection"></p>
+                    </div>
+                    <div id="pluto-scripts-account-form" class="d-none">
+                        <div class="pluto-scripts-account-toolbar">
+                            <div class="pluto-scripts-account-identity">
+                                <h3 id="pluto-scripts-account-name"></h3>
+                                <code id="pluto-scripts-account-id"></code>
+                            </div>
+                            <div class="pluto-scripts-account-controls">
+                                <span class="badge text-bg-secondary" id="pluto-scripts-account-count"></span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" id="pluto-scripts-account-blacklist" type="checkbox" />
+                                    <label class="form-check-label" for="pluto-scripts-account-blacklist" data-loc="plutoScripts_blacklist"></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="pluto-scripts-blacklist-note" class="pluto-scripts-blacklist-note d-none">
+                            <i class="bi bi-shield-slash" aria-hidden="true"></i>
+                            <span data-loc="plutoScripts_blacklistHint"></span>
+                        </div>
+                        <div id="pluto-scripts-account-list-editor" class="pluto-scripts-list"></div>
+                    </div>
+                </div>
             </div>
         </section>
     </main>

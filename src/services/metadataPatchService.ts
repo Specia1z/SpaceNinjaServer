@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import {
     METADATA_PATCH_SETTINGS_KEY,
     MetadataPatchSettings,
@@ -54,6 +55,9 @@ export const initializeMetadataPatches = async (): Promise<void> => {
 };
 
 export const getMetadataPatchState = (): IMetadataPatchState => state ?? fromConfig();
+
+export const getMetadataPatchUpdateRevision = (): string =>
+    crypto.createHash("sha256").update(JSON.stringify(getMetadataPatchState())).digest("hex");
 
 export const saveMetadataPatchState = async (next: IMetadataPatchState): Promise<void> => {
     const document = await MetadataPatchSettings.findOneAndUpdate(

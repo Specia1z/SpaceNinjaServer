@@ -2,8 +2,8 @@ import crypto from "node:crypto";
 import { args } from "../helpers/commandLineArguments.ts";
 import type { ITunables } from "../types/bootstrapperTypes.ts";
 import { config, type IMetadataPatchConfig } from "./configService.ts";
-import { getMetadataPatchState } from "./metadataPatchService.ts";
-import { getPlaywfServerScriptsState } from "./playwfContentService.ts";
+import { getMetadataPatchState, getMetadataPatchUpdateRevision } from "./metadataPatchService.ts";
+import { getPlaywfContentUpdateRevision, getPlaywfServerScriptsState } from "./playwfContentService.ts";
 import { getStoreItemRules } from "./storeOverrideService.ts";
 
 let secret;
@@ -163,8 +163,10 @@ export const getTunablesForClient = (
         tunables.metadata_patches = metadataPatches;
         tunables.metadata_patches_revision = crypto.createHash("sha256").update(metadataPatches).digest("hex");
     }
-    const playwfScripts = getPlaywfServerScriptsState();
+    tunables.metadata_patches_update_revision = getMetadataPatchUpdateRevision();
+    const playwfScripts = getPlaywfServerScriptsState(accountId);
     tunables.playwf_scripts = playwfScripts.payload;
     tunables.playwf_scripts_revision = playwfScripts.revision;
+    tunables.playwf_scripts_update_revision = getPlaywfContentUpdateRevision();
     return tunables;
 };

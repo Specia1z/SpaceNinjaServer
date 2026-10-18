@@ -96,6 +96,10 @@ export interface IPlaywfContentConfig {
     namespace?: string;
     revision?: string;
     mods?: IPlaywfContentMod[];
+    /** Account-specific Pluto mods appended after the global mods. */
+    accountMods?: Partial<Record<string, IPlaywfContentMod[]>>;
+    /** Account IDs that must not receive any server Pluto mods. */
+    accountBlacklist?: string[];
 }
 
 export interface INewAccountWelcomeReward {

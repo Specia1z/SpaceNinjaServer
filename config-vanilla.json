@@ -322,7 +322,9 @@
       "schemaVersion": 1,
       "namespace": "/PlayWF",
       "revision": "",
-      "mods": []
+      "mods": [],
+      "accountMods": {},
+      "accountBlacklist": []
     }
   },
   "dev": {
