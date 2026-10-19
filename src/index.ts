@@ -21,6 +21,7 @@ import { initializeRedeemCodes } from "./services/redeemCodeService.ts";
 import { WarframeIrcServer } from "./services/ircService.ts";
 import { initializePresence } from "./services/presenceService.ts";
 import { initializeMetadataPatches } from "./services/metadataPatchService.ts";
+import { initializeDropTableOverrides } from "./services/dropTableOverrideService.ts";
 import { unlockStarChartForExistingAccounts } from "./services/accountInitializationService.ts";
 
 const validateIrcCredentials = async (accountId: string, token: string): Promise<boolean> => {
@@ -131,7 +132,8 @@ if (args.test) {
         initializeStoreBundles(),
         initializeCraftingConfigs(),
         initializeRedeemCodes(),
-        initializeMetadataPatches()
+        initializeMetadataPatches(),
+        initializeDropTableOverrides()
     ]);
     await initializePresence();
 

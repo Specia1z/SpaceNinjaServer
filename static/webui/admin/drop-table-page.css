@@ -1,0 +1,201 @@
+.drop-table-hero {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem 0 1rem;
+}
+
+.drop-table-eyebrow,
+.drop-table-kicker {
+    color: var(--bs-secondary-color);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.drop-table-hero h1 {
+    margin: .25rem 0 .5rem;
+}
+
+.drop-table-hero p,
+.drop-table-card-header p {
+    color: var(--bs-secondary-color);
+    margin: 0;
+}
+
+.drop-table-hero-mark,
+.drop-table-card-icon {
+    align-items: center;
+    background: rgba(var(--bs-primary-rgb), .12);
+    border-radius: .5rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 3rem;
+    justify-content: center;
+    width: 3rem;
+}
+
+.drop-table-note {
+    align-items: flex-start;
+    display: flex;
+    gap: .6rem;
+    margin-bottom: 1rem;
+}
+
+.drop-table-note span {
+    min-width: 0;
+}
+
+.drop-table-card {
+    border-radius: .5rem;
+}
+
+.drop-table-card-header {
+    align-items: flex-start;
+    display: flex;
+    gap: .9rem;
+    padding: 1.1rem 1.25rem;
+}
+
+.drop-table-card-header h2 {
+    font-size: 1.15rem;
+    margin: .25rem 0 .35rem;
+}
+
+.drop-table-form {
+    padding: 0 1.25rem 1.25rem;
+}
+
+.drop-table-editor-state {
+    margin: 1rem 0;
+}
+
+.drop-table-section-heading,
+.drop-table-pool-header,
+.drop-table-items-heading,
+.drop-table-list-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.drop-table-section-heading {
+    margin: 1.25rem 0 .75rem;
+}
+
+.drop-table-section-heading h3 {
+    font-size: 1rem;
+    margin: 0 0 .2rem;
+}
+
+.drop-table-enemies {
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: .35rem;
+    max-height: 12rem;
+    overflow: auto;
+    padding: .65rem .8rem;
+}
+
+.drop-table-enemy {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem .7rem;
+    padding: .2rem 0;
+}
+
+.drop-table-enemy span {
+    overflow-wrap: anywhere;
+}
+
+.drop-table-pool {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .4rem;
+    margin-bottom: .75rem;
+    padding: .85rem;
+}
+
+.drop-table-pool-header {
+    margin-bottom: .8rem;
+}
+
+.drop-table-items-heading {
+    margin-bottom: .5rem;
+}
+
+.admin-drop-item-type-column {
+    min-width: 0;
+}
+
+.drop-table-form-footer,
+.drop-table-pagination {
+    align-items: center;
+    display: flex;
+    gap: .6rem;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.drop-table-list-card {
+    margin-top: 1rem;
+}
+
+.drop-table-list-header {
+    align-items: flex-start;
+}
+
+.drop-table-toolbar {
+    display: flex;
+    gap: .5rem;
+    margin-left: auto;
+    min-width: min(26rem, 100%);
+}
+
+.drop-table-toolbar input {
+    min-width: 12rem;
+}
+
+.drop-table-table-wrap {
+    min-height: 12rem;
+}
+
+.drop-table-table th,
+.drop-table-table td {
+    vertical-align: middle;
+}
+
+.drop-table-enemy-list {
+    max-width: 26rem;
+}
+
+.drop-table-empty {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    justify-content: center;
+    min-height: 10rem;
+}
+
+@media (max-width: 768px) {
+    .drop-table-hero,
+    .drop-table-list-header,
+    .drop-table-form-footer,
+    .drop-table-pagination {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .drop-table-toolbar {
+        margin-left: 0;
+        min-width: 0;
+    }
+
+    .drop-table-toolbar input {
+        min-width: 0;
+    }
+}

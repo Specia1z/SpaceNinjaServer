@@ -116,6 +116,12 @@ import {
     getAdminFeaturesController,
     saveAdminFeaturesController
 } from "../controllers/custom/adminFeaturesController.ts";
+import {
+    deleteDropTableOverrideController,
+    getDropTableDetailController,
+    listDropTableOverridesController,
+    saveDropTableOverrideController
+} from "../controllers/custom/dropTableOverrideController.ts";
 import { launcherAssetController, launcherManifestController } from "../controllers/custom/launcherController.ts";
 import {
     getWorldActivitiesController,
@@ -223,6 +229,8 @@ customRouter.get("/admin/player-presence/nodes", resolvePresenceNodesController)
 customRouter.get("/admin/world-activities", getWorldActivitiesController);
 customRouter.get("/admin/features", getAdminFeaturesController);
 customRouter.get("/admin/playwf-scripts", getPlaywfScriptsController);
+customRouter.get("/admin/drop-tables", listDropTableOverridesController);
+customRouter.get("/admin/drop-tables/detail", getDropTableDetailController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -268,6 +276,8 @@ customRouter.post("/admin/irc-announcement", ircAnnouncementController);
 customRouter.post("/admin/world-activities/refresh", refreshWorldActivitiesController);
 customRouter.post("/admin/features", saveAdminFeaturesController);
 customRouter.post("/admin/playwf-scripts", savePlaywfScriptsController);
+customRouter.post("/admin/drop-tables", saveDropTableOverrideController);
+customRouter.post("/admin/drop-tables/delete", deleteDropTableOverrideController);
 customRouter.post("/admin/users/delete", deleteAdminAccountController);
 customRouter.post("/redeemCode", redeemCodeController);
 

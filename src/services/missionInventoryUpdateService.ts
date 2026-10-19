@@ -1,11 +1,5 @@
 import type { IReward, TMissionDeck } from "warframe-public-export-plus";
-import {
-    ExportEnemies,
-    ExportFusionBundles,
-    ExportRelics,
-    ExportRewards,
-    ExportRecipes
-} from "warframe-public-export-plus";
+import { ExportFusionBundles, ExportRelics, ExportRewards, ExportRecipes } from "warframe-public-export-plus";
 import type { IMissionInventoryUpdateRequest, IRewardInfo } from "../types/requestTypes.ts";
 import { logger } from "../utils/logger.ts";
 import { SRng, generateRewardSeed, getRandomElement, getRandomInt, getRandomReward } from "./rngService.ts";
@@ -118,6 +112,12 @@ import {
     scaleAccountResourceItems,
     scaleReportedModItems
 } from "./missionRewardService.ts";
+import {
+    getDropTablePoolType,
+    getEffectiveEnemyDropTable,
+    getMiscDropTablePool,
+    getReportedDropRetentionChance
+} from "./dropTableOverrideService.ts";
 export { addFixedLevelRewards } from "./missionRewardService.ts";
 export { handleConservation } from "./conservationRewardService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
@@ -1631,13 +1631,19 @@ export const addMissionRewards = async (
                         `captured x${si.DROP_MOD.length} hydrolist, gave ${inventory.hydrolystCapturePlatinumBonus * si.DROP_MOD.length} platinum`
                     );
                 }
-                const droptables = ExportEnemies.droptables[si.DropTable] ?? [];
+                const droptables = getEffectiveEnemyDropTable(si.DropTable);
                 if (si.DROP_MOD) {
                     const modDroptable = droptables.find(x => x.type == "mod");
                     if (modDroptable) {
                         const dropCount = scaleAccountDropCount(si.DROP_MOD.length, modDropMultiplier);
+                        const retentionChance = getReportedDropRetentionChance(
+                            si.DropTable,
+                            getDropTablePoolType("DROP_MOD")
+                        );
                         for (let i = 0; i != dropCount; ++i) {
-                            const reward = getRandomReward(modDroptable.items)!;
+                            if (Math.random() >= retentionChance) continue;
+                            const reward = getRandomReward(modDroptable.items);
+                            if (!reward) continue;
                             logger.debug(`stripped droptable (mods pool) rolled`, reward);
                             await addItem(inventory, reward.type);
                             MissionRewards.push({
@@ -1653,8 +1659,14 @@ export const addMissionRewards = async (
                 if (si.DROP_BLUEPRINT) {
                     const blueprintDroptable = droptables.find(x => x.type == "blueprint");
                     if (blueprintDroptable) {
+                        const retentionChance = getReportedDropRetentionChance(
+                            si.DropTable,
+                            getDropTablePoolType("DROP_BLUEPRINT")
+                        );
                         for (let i = 0; i != si.DROP_BLUEPRINT.length; ++i) {
-                            const reward = getRandomReward(blueprintDroptable.items)!;
+                            if (Math.random() >= retentionChance) continue;
+                            const reward = getRandomReward(blueprintDroptable.items);
+                            if (!reward) continue;
                             logger.debug(`stripped droptable (blueprints pool) rolled`, reward);
                             await addItem(inventory, reward.type);
                             MissionRewards.push({
@@ -1669,12 +1681,20 @@ export const addMissionRewards = async (
                 }
                 // e.g. H-09 Apex Turret Sumdali
                 if (si.DROP_MISC_ITEM) {
-                    const resourceDroptable = droptables.find(x => x.type == "resource");
-                    if (resourceDroptable) {
-                        const dropCount = scaleAccountDropCount(si.DROP_MISC_ITEM.length, legacyResourceMultiplier);
+                    // The protocol has one misc field for resource/sigil/additionalItem/relic pools. Prefer the
+                    // resource pool to preserve existing behavior, then support tables that only expose another misc pool.
+                    const miscDroptable = getMiscDropTablePool(droptables);
+                    if (miscDroptable) {
+                        const dropCount = scaleAccountDropCount(
+                            si.DROP_MISC_ITEM.length,
+                            miscDroptable.type == "resource" ? legacyResourceMultiplier : 1
+                        );
+                        const retentionChance = getReportedDropRetentionChance(si.DropTable, miscDroptable.type);
                         for (let i = 0; i != dropCount; ++i) {
-                            const reward = getRandomReward(resourceDroptable.items)!;
-                            logger.debug(`stripped droptable (resources pool) rolled`, reward);
+                            if (Math.random() >= retentionChance) continue;
+                            const reward = getRandomReward(miscDroptable.items);
+                            if (!reward) continue;
+                            logger.debug(`stripped droptable (${miscDroptable.type} pool) rolled`, reward);
                             if (Object.keys(await addItem(inventory, reward.type)).length == 0) {
                                 logger.debug(`item already owned, skipping`);
                             } else {

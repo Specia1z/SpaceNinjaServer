@@ -192,6 +192,7 @@ function refreshServerConfig() {
     if (
         single.getCurrentPath() == "/webui/cheats" ||
         single.getCurrentPath() == "/webui/users" ||
+        single.getCurrentPath() == "/webui/drop-tables" ||
         single.getCurrentPath() == "/webui/account-rates" ||
         single.getCurrentPath() == "/webui/reward-stats" ||
         single.getCurrentPath() == "/webui/metadata-patches" ||

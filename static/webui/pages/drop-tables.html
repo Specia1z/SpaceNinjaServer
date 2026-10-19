@@ -1,0 +1,73 @@
+<div id="drop-table-route" class="drop-table-route" data-route="/webui/drop-tables" data-title-tag="navbar_dropTables">
+    <section class="drop-table-access d-none admin-hide" role="status">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <p data-loc="cheats_administratorRequirement"></p>
+    </section>
+
+    <main class="drop-table-page admin-show d-none">
+        <header class="drop-table-hero">
+            <div>
+                <span class="drop-table-eyebrow" data-loc="admin_dropTables"></span>
+                <h1 data-loc="navbar_dropTables"></h1>
+                <p data-loc="admin_dropTablesDescription"></p>
+            </div>
+            <span class="drop-table-hero-mark" aria-hidden="true"><i class="bi bi-boxes"></i></span>
+        </header>
+
+        <div class="alert alert-warning drop-table-note" role="note">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <span data-loc="admin_dropChanceNote"></span>
+        </div>
+
+        <div class="drop-table-editor-grid">
+            <section class="card drop-table-card">
+                <header class="drop-table-card-header">
+                    <span class="drop-table-card-icon"><i class="bi bi-sliders" aria-hidden="true"></i></span>
+                    <div><span class="drop-table-kicker" data-loc="admin_dropTableEditor"></span><h2 data-loc="admin_dropTableEditor"></h2><p data-loc="admin_dropTableEditorDescription"></p></div>
+                </header>
+                <form id="admin-drop-table-form" class="drop-table-form">
+                    <div class="drop-table-field">
+                        <label class="form-label" for="admin-drop-table-path" data-loc="admin_dropTablePath"></label>
+                        <input class="form-control font-monospace" id="admin-drop-table-path" required autocomplete="off" placeholder="/Lotus/Types/DropTables/..." />
+                        <div class="form-text" data-loc="admin_dropTablePathHint"></div>
+                    </div>
+                    <div class="drop-table-editor-state">
+                        <label class="form-check form-switch"><input class="form-check-input" id="admin-drop-table-enabled" type="checkbox" checked /><span class="form-check-label" data-loc="admin_overrideEnabled"></span></label>
+                    </div>
+                    <div class="drop-table-references">
+                        <div class="drop-table-section-heading"><h3 data-loc="admin_dropReferencedEnemies"></h3><span class="small text-body-secondary" data-loc="admin_dropReferencedEnemiesHint"></span></div>
+                        <div id="admin-drop-enemies" class="drop-table-enemies"></div>
+                    </div>
+                    <div class="drop-table-section-heading">
+                        <div><h3 data-loc="admin_dropPools"></h3><span class="small text-body-secondary" data-loc="admin_dropPoolsHint"></span></div>
+                        <button class="btn btn-sm btn-outline-secondary" id="admin-drop-add-pool" type="button"><i class="bi bi-plus-lg" aria-hidden="true"></i><span data-loc="admin_dropAddPool"></span></button>
+                    </div>
+                    <div id="admin-drop-pools" class="drop-table-pools"></div>
+                    <div class="drop-table-form-footer">
+                        <button class="btn btn-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i><span data-loc="admin_dropSave"></span></button>
+                        <button class="btn btn-outline-secondary" id="admin-drop-reset" type="button"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span data-loc="admin_clearForm"></span></button>
+                    </div>
+                </form>
+            </section>
+        </div>
+
+        <section class="card drop-table-card drop-table-list-card">
+            <header class="drop-table-card-header drop-table-list-header">
+                <span class="drop-table-card-icon"><i class="bi bi-list-columns-reverse" aria-hidden="true"></i></span>
+                <div><span class="drop-table-kicker" data-loc="admin_dropTables"></span><h2 data-loc="admin_dropTables"></h2><p data-loc="admin_dropTablesListDescription"></p></div>
+                <div class="drop-table-toolbar">
+                    <input class="form-control" id="admin-drop-table-search" type="search" data-loc-placeholder="admin_dropSearchPlaceholder" />
+                    <select class="form-select" id="admin-drop-table-page-size" aria-label="Page size"><option value="25" selected>25</option><option value="50">50</option><option value="100">100</option></select>
+                </div>
+            </header>
+            <div class="table-responsive drop-table-table-wrap">
+                <table class="table table-hover align-middle drop-table-table">
+                    <thead><tr><th data-loc="admin_dropTablePath"></th><th data-loc="admin_dropEnemies"></th><th data-loc="admin_dropPoolCount"></th><th data-loc="admin_status"></th><th data-loc="admin_actions"></th></tr></thead>
+                    <tbody id="admin-drop-table-list"></tbody>
+                </table>
+                <div class="drop-table-empty d-none" id="admin-drop-table-empty"><i class="bi bi-boxes" aria-hidden="true"></i><span data-loc="code_nothingToDo"></span></div>
+            </div>
+            <footer class="drop-table-pagination"><span id="admin-drop-table-page-status"></span><div class="btn-group" role="group"><button class="btn btn-outline-secondary" id="admin-drop-table-previous" type="button" data-loc="admin_previousPage"></button><button class="btn btn-outline-secondary" id="admin-drop-table-next" type="button" data-loc="admin_nextPage"></button></div></footer>
+        </section>
+    </main>
+</div>

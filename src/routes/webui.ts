@@ -51,6 +51,7 @@ webuiRouter.get("/webui/admin", virtualRouteController);
 // These pages are reachable by clicking the sidebar (single.js intercepts the link), but a hard
 // reload or a direct link used to 404 because the route was never registered server-side.
 webuiRouter.get("/webui/admin-data", virtualRouteController);
+webuiRouter.get("/webui/drop-tables", virtualRouteController);
 webuiRouter.get("/webui/store-prices", virtualRouteController);
 webuiRouter.get("/webui/redeem-codes", virtualRouteController);
 webuiRouter.get("/webui/anti-cheat", virtualRouteController);
