@@ -767,6 +767,7 @@ export const addItem = async (
         (typeName.startsWith("/Lotus/Upgrades/Mods/") && // Fusion Core, Legendary Core
             !typeName.startsWith("/Lotus/Upgrades/Mods/FusionBundles/")) ||
         typeName.startsWith("/Lotus/Upgrades/CosmeticEnhancers/") || // Traumatic Peculiar
+        (typeName.startsWith("/Lotus/Powersuits/") && typeName.includes("Augment") && typeName.endsWith("Card")) ||
         (typeName.endsWith("AbilityCard") && typeName.startsWith("/Lotus/Powersuits/"))
     ) {
         if (!targetFingerprint && typeName in U5Modules) {
@@ -1056,7 +1057,6 @@ export const addItem = async (
     // Path-based duck typing
     switch (typeName.substring(1).split("/")[1]) {
         case "Powersuits":
-            if (typeName.endsWith("AugmentCard")) break;
             switch (typeName.substring(1).split("/")[2]) {
                 default: {
                     if (quantity != 1) {

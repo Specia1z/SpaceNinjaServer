@@ -287,3 +287,43 @@ void test("market fusion bundles grant their advertised fusion points", async ()
         assert.equal(inventory.PremiumCredits, 0);
     }
 });
+
+void test("syndicate augment-two cards are added as raw upgrades", async () => {
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        Affiliations: [
+            {
+                Tag: "SteelMeridianSyndicate",
+                Standing: 0,
+                FreeFavorsEarned: [2],
+                FreeFavorsUsed: []
+            }
+        ]
+    });
+
+    const response = await handlePurchase(
+        {
+            PurchaseParams: {
+                Source: ePurchaseSource.SyndicateFavor,
+                StoreItem: "/Lotus/StoreItems/Powersuits/Frost/IceShieldAugmentTwoCard",
+                Quantity: 1,
+                UsePremium: false,
+                ExpectedPrice: 0,
+                SyndicateTag: "SteelMeridianSyndicate",
+                UseFreeFavor: true
+            },
+            buildLabel: "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg"
+        },
+        inventory
+    );
+
+    assert.deepEqual(response.InventoryChanges.RawUpgrades, [
+        {
+            ItemType: "/Lotus/Powersuits/Frost/IceShieldAugmentTwoCard",
+            ItemCount: 1
+        }
+    ]);
+    assert.equal(response.InventoryChanges.Suits, undefined);
+    assert.equal(response.InventoryChanges.SuitBin, undefined);
+    assert.deepEqual(response.FreeFavorsUsed, [{ Tag: "SteelMeridianSyndicate", Title: 2 }]);
+});
