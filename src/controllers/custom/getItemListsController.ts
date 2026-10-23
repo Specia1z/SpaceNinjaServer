@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { ExportFusionBundles } from "warframe-public-export-plus";
 import {
     getDict,
     getItemName,
@@ -76,6 +77,29 @@ interface ItemLists {
     //circuitGameModes: ListedItem[];
     blueprintAndItem: string;
 }
+
+const supplementalDropItemNames: Record<string, { en: string; zh: string; tc: string }> = {
+    "/Lotus/RESOLUTION_FAILURE/Region Resource": {
+        en: "Unresolved region resource",
+        zh: "未解析的地区资源",
+        tc: "未解析的地區資源"
+    },
+    "/Lotus/Types/PickUps/ExcavatorCellItem": {
+        en: "Power Cell",
+        zh: "挖掘机能量电池",
+        tc: "挖掘機能量電池"
+    },
+    "/Lotus/Types/Gameplay/1999Wf/PvPvE/Objectives/ExcavatorCellItem": {
+        en: "Power Cell",
+        zh: "挖掘机能量电池",
+        tc: "挖掘機能量電池"
+    },
+    "/Lotus/Types/PickUps/InfestedLichChipItem": {
+        en: "Mixtape",
+        zh: "混音带",
+        tc: "混音帶"
+    }
+};
 
 const relicQualitySuffixes: Record<TRelicQuality, string> = {
     VPQ_BRONZE: "",
@@ -630,6 +654,20 @@ const getItemListsController: RequestHandler = async (req, response) => {
         res.Bundles.push({
             uniqueName,
             name: getString(bundle.name ?? uniqueName, lang)
+        });
+    }
+
+    for (const [uniqueName, bundle] of Object.entries(ExportFusionBundles)) {
+        res.miscitems.push({
+            uniqueName,
+            name: `${getString(bundle.name, lang)} (${bundle.fusionPoints})`
+        });
+    }
+
+    for (const [uniqueName, names] of Object.entries(supplementalDropItemNames)) {
+        res.miscitems.push({
+            uniqueName,
+            name: language == "zh" || language == "tc" ? names[language] : names.en
         });
     }
 

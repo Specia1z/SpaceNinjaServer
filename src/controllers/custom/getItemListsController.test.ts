@@ -3,6 +3,8 @@ import { test } from "node:test";
 import {
     ExportBundles,
     ExportCustoms,
+    ExportEnemies,
+    ExportFusionBundles,
     ExportRecipes,
     ExportRegions,
     ExportRelics,
@@ -14,6 +16,7 @@ import { getItemListsController } from "./getItemListsController.ts";
 
 interface ListedItem {
     uniqueName: string;
+    name?: string;
     chainLength?: number;
 }
 
@@ -69,4 +72,40 @@ void test("item list exposes all major categories from one self-contained snapsh
 
     const tauQuest = payload.QuestKeys.find(item => item.uniqueName.endsWith("TauPrologueKeyChainA"));
     assert.equal(tauQuest?.chainLength, 2);
+});
+
+void test("item list resolves names for every enemy drop table reward", async () => {
+    let payload: ItemListPayload | undefined;
+    const handler = getItemListsController as unknown as (
+        request: { query: Record<string, string> },
+        response: { json: (value: ItemListPayload) => void }
+    ) => Promise<void>;
+
+    await handler(
+        { query: { lang: "zh", gameVersion: "latest" } },
+        {
+            json: value => {
+                payload = value;
+            }
+        }
+    );
+
+    assert.ok(payload);
+    const itemNames = new Map(
+        Object.values(payload)
+            .filter((value): value is ListedItem[] => Array.isArray(value))
+            .flat()
+            .map(item => [item.uniqueName, item.name ?? ""])
+    );
+    const rewardTypes = new Set(
+        Object.values(ExportEnemies.droptables).flatMap(pools => pools.flatMap(pool => pool.items.map(item => item.type)))
+    );
+
+    assert.deepEqual([...rewardTypes].filter(type => !itemNames.has(type)), []);
+    assert.deepEqual([...rewardTypes].filter(type => !itemNames.get(type) || itemNames.get(type) == type), []);
+    assert.ok(Object.keys(ExportFusionBundles).every(type => itemNames.has(type)));
+    assert.equal(itemNames.get("/Lotus/Upgrades/Mods/FusionBundles/CommonFusionBundle"), "内融核心 (15)");
+    assert.equal(itemNames.get("/Lotus/Types/PickUps/ExcavatorCellItem"), "挖掘机能量电池");
+    assert.equal(itemNames.get("/Lotus/Types/PickUps/InfestedLichChipItem"), "混音带");
+    assert.equal(itemNames.get("/Lotus/RESOLUTION_FAILURE/Region Resource"), "未解析的地区资源");
 });
