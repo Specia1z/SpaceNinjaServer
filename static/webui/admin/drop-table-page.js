@@ -2,6 +2,15 @@
     const root = document.getElementById("drop-table-route");
     if (!root) return;
 
+    const poolTypeLabelKeys = {
+        mod: "admin_dropPoolType_mod",
+        blueprint: "admin_dropPoolType_blueprint",
+        resource: "admin_dropPoolType_resource",
+        sigil: "admin_dropPoolType_sigil",
+        additionalItem: "admin_dropPoolType_additionalItem",
+        relic: "admin_dropPoolType_relic"
+    };
+
     const state = {
         page: 1,
         pageSize: 25,
@@ -32,16 +41,49 @@
     };
 
     const addPoolItem = (container, item = {}) => {
+        const itemId = ++state.itemId;
         const row = document.createElement("div");
         row.className = "row g-2 mb-2 align-items-start admin-drop-item-row";
 
         const typeColumn = document.createElement("div");
         typeColumn.className = "col-lg-8 admin-drop-item-type-column";
+        const itemSummary = document.createElement("div");
+        itemSummary.className = "admin-drop-item-summary";
+        const itemName = document.createElement("strong");
+        itemName.className = "admin-drop-item-name";
+        itemName.id = `admin-drop-item-name-${itemId}`;
+        itemName.setAttribute("aria-live", "polite");
+        itemName.textContent = loc("admin_itemUnknownName");
+
+        const editPath = document.createElement("button");
+        editPath.className = "btn btn-sm btn-outline-secondary";
+        editPath.type = "button";
+        editPath.title = loc("admin_edit");
+        editPath.setAttribute("aria-label", loc("admin_edit"));
+        editPath.setAttribute("aria-expanded", String(!item.type));
+        editPath.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>';
+        itemSummary.append(itemName, editPath);
+
+        const pathEditor = document.createElement("div");
+        pathEditor.className = "admin-drop-item-path-editor";
+        if (item.type) pathEditor.classList.add("d-none");
         const typeInput = createInput("form-control font-monospace admin-drop-item-type", item.type);
         typeInput.required = true;
         typeInput.placeholder = loc("admin_dropItemPlaceholder");
-        typeInput.id = `admin-drop-item-${++state.itemId}`;
-        typeColumn.append(typeInput);
+        typeInput.id = `admin-drop-item-${itemId}`;
+        pathEditor.append(typeInput);
+        typeInput.addEventListener("change", () => {
+            if (!typeInput.value.trim()) return;
+            pathEditor.classList.add("d-none");
+            editPath.setAttribute("aria-expanded", "false");
+        });
+        editPath.onclick = () => {
+            const expanded = pathEditor.classList.contains("d-none");
+            pathEditor.classList.toggle("d-none", !expanded);
+            editPath.setAttribute("aria-expanded", String(expanded));
+            if (expanded) typeInput.focus();
+        };
+        typeColumn.append(itemSummary, pathEditor);
 
         const probabilityColumn = document.createElement("div");
         probabilityColumn.className = "col-lg-3";
@@ -65,7 +107,7 @@
 
         row.append(typeColumn, probabilityColumn, actionColumn);
         container.append(row);
-        window.adminItemCatalog?.setupPicker(typeInput.id);
+        window.adminItemCatalog?.setupPicker(typeInput.id, itemName.id);
     };
 
     const addPool = (pool = {}) => {
@@ -96,10 +138,12 @@
         typeLabel.textContent = loc("admin_dropPoolType");
         const typeSelect = document.createElement("select");
         typeSelect.className = "form-select admin-drop-pool-type";
-        ["mod", "blueprint", "resource", "sigil", "additionalItem", "relic"].forEach(type => {
+        Object.keys(poolTypeLabelKeys).forEach(type => {
             const option = document.createElement("option");
             option.value = type;
-            option.textContent = type;
+            const labelKey = poolTypeLabelKeys[type];
+            const label = loc(labelKey);
+            option.textContent = label == labelKey ? type : label;
             option.selected = type == (pool.type ?? "resource");
             typeSelect.append(option);
         });

@@ -130,6 +130,23 @@
     min-width: 0;
 }
 
+.admin-drop-item-summary {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+    justify-content: space-between;
+    min-height: 2rem;
+}
+
+.admin-drop-item-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.admin-drop-item-path-editor {
+    margin-top: .4rem;
+}
+
 .drop-table-form-footer,
 .drop-table-pagination {
     align-items: center;
