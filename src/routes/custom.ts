@@ -36,6 +36,10 @@ import { retroactivelyApplyCheatController } from "../controllers/api/retroactiv
 import { retroactivelyApplyGuildCheatController } from "../controllers/custom/retroactivelyApplyGuildCheatController.ts";
 import { getRegisteredLosersController } from "../controllers/custom/getRegisteredLosersController.ts";
 import {
+    previewMisclassifiedAugmentRepairController,
+    repairMisclassifiedAugmentController
+} from "../controllers/custom/adminInventoryRepairController.ts";
+import {
     deleteCraftingConfigController,
     deleteStoreBundleController,
     deleteStoreOverrideController,
@@ -231,6 +235,7 @@ customRouter.get("/admin/features", getAdminFeaturesController);
 customRouter.get("/admin/playwf-scripts", getPlaywfScriptsController);
 customRouter.get("/admin/drop-tables", listDropTableOverridesController);
 customRouter.get("/admin/drop-tables/detail", getDropTableDetailController);
+customRouter.get("/admin/users/inventory-repair", previewMisclassifiedAugmentRepairController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createMessage", createMessageController);
@@ -279,6 +284,7 @@ customRouter.post("/admin/playwf-scripts", savePlaywfScriptsController);
 customRouter.post("/admin/drop-tables", saveDropTableOverrideController);
 customRouter.post("/admin/drop-tables/delete", deleteDropTableOverrideController);
 customRouter.post("/admin/users/delete", deleteAdminAccountController);
+customRouter.post("/admin/users/inventory-repair", repairMisclassifiedAugmentController);
 customRouter.post("/redeemCode", redeemCodeController);
 
 customRouter.post("/changePassword", changePasswordController);

@@ -312,6 +312,15 @@
             remove.addEventListener("click", () => void deleteUser(user, remove));
             actions.append(remove);
         }
+
+        const inventoryRepair = document.createElement("button");
+        inventoryRepair.type = "button";
+        inventoryRepair.className = "btn btn-sm btn-outline-warning";
+        inventoryRepair.innerHTML = '<i class="bi bi-wrench-adjustable" aria-hidden="true"></i>';
+        inventoryRepair.title = loc("admin_inventoryRepair");
+        inventoryRepair.setAttribute("aria-label", `${loc("admin_inventoryRepair")}: ${user.DisplayName}`);
+        inventoryRepair.addEventListener("click", () => void reviewInventoryRepair(user, inventoryRepair));
+        actions.append(inventoryRepair);
         return row;
     }
 
@@ -413,6 +422,59 @@
             await loadUsers();
         } catch (error) {
             toast(error.responseText || error.message || loc("admin_deleteAccountFailed"), "danger");
+            button.disabled = false;
+        }
+    }
+
+    async function reviewInventoryRepair(user, button) {
+        button.disabled = true;
+        try {
+            await revalidateAuthz();
+            const preview = await window.adminUsersApi.previewInventoryRepair(user.id);
+            if (!preview.inventoryFound) {
+                toast(loc("admin_inventoryRepairNoInventory").replace("|TARGET|", user.DisplayName), "warning");
+                return;
+            }
+            if (!Number.isSafeInteger(preview.affectedCount) || preview.affectedCount < 0) {
+                throw new Error("Invalid inventory repair preview");
+            }
+            if (preview.affectedCount == 0) {
+                toast(loc("admin_inventoryRepairNoItems").replace("|TARGET|", user.DisplayName));
+                return;
+            }
+
+            const message = loc("admin_inventoryRepairConfirm")
+                .replace("|TARGET|", user.DisplayName)
+                .replace("|ACCOUNT_ID|", user.id)
+                .replace("|ITEM|", preview.itemType)
+                .replace("|COUNT|", String(preview.affectedCount))
+                .replace("|SLOTS|", String(preview.suitSlotsToReturn));
+            const confirmed = await window.webuiComponents.confirm({
+                title: loc("admin_inventoryRepair"),
+                message,
+                confirmLabel: loc("admin_inventoryRepairApply"),
+                variant: "warning",
+                icon: "bi-wrench-adjustable"
+            });
+            if (!confirmed) return;
+
+            await revalidateAuthz();
+            const result = await window.adminUsersApi.repairInventory(user.id, preview.affectedCount);
+            toast(
+                loc("admin_inventoryRepairDone")
+                    .replace("|TARGET|", user.DisplayName)
+                    .replace("|COUNT|", String(result.affectedCount))
+                    .replace("|SLOTS|", String(result.suitSlotsToReturn)),
+                "success"
+            );
+            await loadUsers();
+        } catch (error) {
+            const message =
+                error.status === 409
+                    ? loc("admin_inventoryRepairStale")
+                    : error.responseText || error.message || loc("admin_inventoryRepairFailed");
+            toast(message, "danger");
+        } finally {
             button.disabled = false;
         }
     }

@@ -14,6 +14,17 @@ window.adminUsersApi = {
             contentType: "application/json",
             data: JSON.stringify({ accountId })
         }),
+    previewInventoryRepair: accountId =>
+        $.get(
+            "/custom/admin/users/inventory-repair?" + window.authz + "&targetAccountId=" + encodeURIComponent(accountId)
+        ),
+    repairInventory: (accountId, expectedCount) =>
+        $.ajax({
+            url: "/custom/admin/users/inventory-repair?" + window.authz,
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ accountId, expectedCount })
+        }),
     async announceIrc(message) {
         const response = await fetch("/custom/admin/irc-announcement?" + window.authz, {
             method: "POST",

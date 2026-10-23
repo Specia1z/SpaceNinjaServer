@@ -110,6 +110,7 @@ function loadUsersPage() {
     const apiCalls = [];
     const messages = [];
     const toasts = [];
+    const confirmations = [];
     const context = {
         accountId: "account-2",
         document: {
@@ -126,6 +127,19 @@ function loadUsersPage() {
             list: async () => users,
             broadcastInbox: async payload => messages.push(payload),
             deleteAccount: async accountId => apiCalls.push(["deleteAccount", accountId]),
+            previewInventoryRepair: async accountId => {
+                apiCalls.push(["previewInventoryRepair", accountId]);
+                return {
+                    inventoryFound: true,
+                    itemType: "/Lotus/Powersuits/Frost/IceShieldAugmentTwoCard",
+                    affectedCount: 2,
+                    suitSlotsToReturn: 2
+                };
+            },
+            repairInventory: async (accountId, expectedCount) => {
+                apiCalls.push(["repairInventory", accountId, expectedCount]);
+                return { affectedCount: expectedCount, suitSlotsToReturn: expectedCount };
+            },
             announceIrc: async message => apiCalls.push(["announceIrc", message])
         },
         adminItemCatalog: {
@@ -136,10 +150,18 @@ function loadUsersPage() {
             load: async () => []
         },
         suspicionApi: { ban: async (...args) => apiCalls.push(["ban", ...args]) },
-        webuiComponents: { confirm: async () => true },
+        webuiComponents: {
+            confirm: async options => {
+                confirmations.push(options);
+                return true;
+            }
+        },
         awaitAuthz: async () => {},
         revalidateAuthz: async () => {},
-        loc: key => key,
+        loc: key =>
+            key === "admin_inventoryRepairConfirm"
+                ? "Account: |TARGET| (|ACCOUNT_ID|)\nIncorrect Suit entries: |COUNT|\nItem: |ITEM|\nSuit slots to return: |SLOTS|"
+                : key,
         replacePluralForms: (text, { COUNT }) => text.replace("|COUNT|", String(COUNT)),
         toast: (...args) => toasts.push(args),
         doAccountSwitch() {},
@@ -162,7 +184,7 @@ function loadUsersPage() {
         filename: "users-page.js"
     });
 
-    return { context, elements, handlers, users, datalist, denied, admin, apiCalls, messages, toasts };
+    return { context, elements, handlers, users, datalist, denied, admin, apiCalls, messages, toasts, confirmations };
 }
 
 function loadUsersApi() {
@@ -246,6 +268,24 @@ test("users page confirms account deletion and refreshes the account list", asyn
     await new Promise(resolve => setImmediate(resolve));
     assert.deepEqual(apiCalls, [["deleteAccount", "account-1"]]);
     assert.equal(elements.get("#admin-users-total").textContent, "3");
+});
+
+test("users page previews one account and confirms the exact inventory repair", async () => {
+    const { elements, handlers, apiCalls, confirmations, toasts } = loadUsersPage();
+    await handlers.get("beforeload")();
+    await new Promise(resolve => setImmediate(resolve));
+
+    const repairButton = elements.get("#registered-losers").children[0].children[3].children[3];
+    await repairButton.dispatch("click");
+    await new Promise(resolve => setImmediate(resolve));
+
+    assert.deepEqual(apiCalls, [
+        ["previewInventoryRepair", "account-1"],
+        ["repairInventory", "account-1", 2]
+    ]);
+    assert.match(confirmations[0].message, /Incorrect Suit entries: 2/);
+    assert.match(confirmations[0].message, /Suit slots to return: 2/);
+    assert.deepEqual(toasts.at(-1), ["admin_inventoryRepairDone", "success"]);
 });
 
 test("users page confirms and sends an inbox broadcast with all attachment fields", async () => {
@@ -338,6 +378,17 @@ test("users API preserves the users, inbox, and IRC endpoint contracts", async (
         method: "POST",
         contentType: "application/json",
         data: JSON.stringify({ accountId: "account-1" })
+    });
+
+    await api.previewInventoryRepair("account /1");
+    assert.equal(calls.get[1], "/custom/admin/users/inventory-repair?auth=token&targetAccountId=account%20%2F1");
+
+    await api.repairInventory("account-1", 3);
+    assert.deepEqual(JSON.parse(JSON.stringify(calls.ajax[2])), {
+        url: "/custom/admin/users/inventory-repair?auth=token",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ accountId: "account-1", expectedCount: 3 })
     });
 
     await api.announceIrc("Server maintenance");
