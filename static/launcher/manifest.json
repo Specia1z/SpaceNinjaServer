@@ -1,14 +1,14 @@
 {
     "schema": 1,
-    "tag": "0.13.9-hotfix-4",
+    "tag": "0.13.9-hotfix-5",
     "supported_build_versions": ["2026.09.30.14.45", "2026.10.6.16", "2026.10.14.17", "2026.10.22.13"],
     "supported_game_versions": [],
     "assets": [
         {
             "name": "dwmapi.dll",
             "url": "/custom/launcher/assets/dwmapi.dll",
-            "size": 2266624,
-            "sha256": "8508e7c495775cb7cabf0212f10fde04f2e4bc435779680feca9c3e46bd1eee9"
+            "size": 2267136,
+            "sha256": "b8eeba688f8a0d870004eccdf6f19aef2c23f110db83c3c9a9ca30bea917db1d"
         },
         {
             "name": "Hotfix.owf",
