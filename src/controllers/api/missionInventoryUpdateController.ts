@@ -36,6 +36,12 @@ import { filterInplace } from "../../helpers/general.ts";
 import crypto from "node:crypto";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
 import { markPresenceMission } from "../../services/presenceService.ts";
+import {
+    claimMissionSettlement,
+    completeMissionSettlementClaim,
+    getMissionSettlementKey,
+    type TClaimedMissionSettlement
+} from "../../services/missionSettlementClaimService.ts";
 
 /*
 **** INPUT ****
@@ -97,7 +103,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         report: missionReport
     });
 
-    const inventory = await getInventory(account._id, undefined);
+    let inventory = await getInventory(account._id, undefined);
     const firstCompletion = missionReport.SortieId
         ? inventory.CompletedSorties.indexOf(missionReport.SortieId) == -1
         : false;
@@ -168,6 +174,85 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         return;
     }
 
+    const respondWithoutSettlementRewards = async (): Promise<void> => {
+        inventory = await getInventory(account._id, undefined);
+        const isInterstitial = Boolean(
+            missionReport.BMI ||
+            missionReport.TNT ||
+            missionReport.SSC ||
+            missionReport.RJ ||
+            missionReport.SS ||
+            missionReport.CMI ||
+            missionReport.EJC
+        );
+        if (isInterstitial) {
+            res.json({ MissionRewards: [] });
+        } else if (missionReport.RewardInfo) {
+            const response: IMissionInventoryUpdateResponse = { MissionRewards: [] };
+            if (version_compare(buildLabel, gameToBuildVersion["8.0.0"]) > 0) {
+                response.InventoryJson = JSON.stringify(
+                    await getInventoryResponse(
+                        req,
+                        inventory,
+                        "xpBasedLevelCapDisabled" in req.query,
+                        buildLabel
+                    )
+                );
+            }
+            if (
+                missionReport.RewardInfo.sortieTag == "Final" &&
+                missionReport.SortieId &&
+                inventory.CompletedSorties.includes(missionReport.SortieId)
+            ) {
+                response.CompletedSortie = true;
+            }
+            res.json(response);
+        } else if (version_compare(buildLabel, gameToBuildVersion["8.0.0"]) > 0) {
+            res.json({
+                InventoryJson: JSON.stringify(
+                    await getInventoryResponse(
+                        req,
+                        inventory,
+                        "xpBasedLevelCapDisabled" in req.query,
+                        buildLabel
+                    )
+                )
+            } satisfies IMissionInventoryUpdateResponseBackToDryDock);
+        } else {
+            res.json({});
+        }
+        sendWsBroadcastTo(account._id.toString(), { update_inventory: true });
+    };
+
+    let settlementClaim: TClaimedMissionSettlement | undefined;
+    if (missionReport.EndOfMatchUpload === true || missionReport.RewardInfo !== undefined) {
+        const settlementKey = getMissionSettlementKey(missionReport);
+        if (!settlementKey) {
+            logger.warn("rejecting mission settlement without a stable identity", {
+                requestId,
+                account: account._id.toString(),
+                buildLabel,
+                sessionId: missionReport.sharedSessionId || undefined,
+                missionTag: missionReport.Missions?.Tag ?? missionReport.RewardInfo?.node
+            });
+            await respondWithoutSettlementRewards();
+            return;
+        }
+
+        const claim = await claimMissionSettlement(account._id, settlementKey);
+        if (claim.status != "claimed") {
+            logger.info("ignoring duplicate mission settlement", {
+                requestId,
+                account: account._id.toString(),
+                settlementKey,
+                claimStatus: claim.status
+            });
+            await respondWithoutSettlementRewards();
+            return;
+        }
+        settlementClaim = claim;
+    }
+
     const inventoryUpdates = await addMissionInventoryUpdates(account, buildLabel, inventory, missionReport);
 
     if (
@@ -184,6 +269,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
             inventory.RewardSeed = generateRewardSeed();
         }
         await inventory.save();
+        if (settlementClaim) await completeMissionSettlementClaim(settlementClaim);
         const inventoryResponse = await getInventoryResponse(req, inventory, true, buildLabel);
         res.json({
             InventoryJson: JSON.stringify(inventoryResponse),
@@ -221,6 +307,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         inventory.RewardSeed = generateRewardSeed();
     }
     await inventory.save();
+    if (settlementClaim) await completeMissionSettlementClaim(settlementClaim);
 
     if (version_compare(buildLabel, gameToBuildVersion["18.18.0"]) < 0) {
         // Client might crash if they see Endo, but their kids are gonna love it.
