@@ -221,6 +221,7 @@ export interface IRewardInfo extends IBountyRewardInfo {
     ConquestType?: string;
     ConquestCompleted?: number;
     ConquestEquipmentSuggestionsFulfilled?: number;
+    ConquestEquipmentSuggestionsFulfilledBitfield?: number;
     ConquestPersonalModifiersActive?: number;
     ConquestStickersActive?: number;
     ConquestHardModeActive?: number;

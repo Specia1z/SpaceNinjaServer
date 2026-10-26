@@ -321,6 +321,15 @@
         inventoryRepair.setAttribute("aria-label", `${loc("admin_inventoryRepair")}: ${user.DisplayName}`);
         inventoryRepair.addEventListener("click", () => void reviewInventoryRepair(user, inventoryRepair));
         actions.append(inventoryRepair);
+
+        const hexConquestRepair = document.createElement("button");
+        hexConquestRepair.type = "button";
+        hexConquestRepair.className = "btn btn-sm btn-outline-info";
+        hexConquestRepair.innerHTML = '<i class="bi bi-lightning-charge" aria-hidden="true"></i>';
+        hexConquestRepair.title = loc("admin_hexConquestRepair");
+        hexConquestRepair.setAttribute("aria-label", `${loc("admin_hexConquestRepair")}: ${user.DisplayName}`);
+        hexConquestRepair.addEventListener("click", () => void repairHexConquest(user, hexConquestRepair));
+        actions.append(hexConquestRepair);
         return row;
     }
 
@@ -473,6 +482,70 @@
                 error.status === 409
                     ? loc("admin_inventoryRepairStale")
                     : error.responseText || error.message || loc("admin_inventoryRepairFailed");
+            toast(message, "danger");
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async function repairHexConquest(user, button) {
+        button.disabled = true;
+        try {
+            await revalidateAuthz();
+            const preview = await window.adminUsersApi.previewHexConquestRepair(user.id);
+            if (!preview.inventoryFound) {
+                toast(loc("admin_hexConquestRepairNoInventory").replace("|TARGET|", user.DisplayName), "warning");
+                return;
+            }
+            if (
+                !Number.isSafeInteger(preview.currentScore) ||
+                !Number.isSafeInteger(preview.targetScore) ||
+                typeof preview.unlockNodeCompleted !== "boolean"
+            ) {
+                throw new Error("Invalid Hex Conquest repair preview");
+            }
+            if (preview.unlockNodeCompleted) {
+                toast(loc("admin_hexConquestRepairAlreadyDone").replace("|TARGET|", user.DisplayName));
+                return;
+            }
+            if (preview.currentScore !== 15) {
+                toast(
+                    loc("admin_hexConquestRepairNotEligible")
+                        .replace("|TARGET|", user.DisplayName)
+                        .replace("|SCORE|", String(preview.currentScore)),
+                    "warning"
+                );
+                return;
+            }
+
+            const message = loc("admin_hexConquestRepairConfirm")
+                .replace("|TARGET|", user.DisplayName)
+                .replace("|ACCOUNT_ID|", user.id)
+                .replace("|SCORE|", String(preview.currentScore))
+                .replace("|TARGET_SCORE|", String(preview.targetScore));
+            const confirmed = await window.webuiComponents.confirm({
+                title: loc("admin_hexConquestRepair"),
+                message,
+                confirmLabel: loc("admin_hexConquestRepairApply"),
+                variant: "info",
+                icon: "bi-lightning-charge"
+            });
+            if (!confirmed) return;
+
+            await revalidateAuthz();
+            const result = await window.adminUsersApi.repairHexConquest(user.id, preview.currentScore);
+            toast(
+                loc("admin_hexConquestRepairDone")
+                    .replace("|TARGET|", user.DisplayName)
+                    .replace("|SCORE|", String(result.currentScore)),
+                "success"
+            );
+            await loadUsers();
+        } catch (error) {
+            const message =
+                error.status === 409
+                    ? loc("admin_inventoryRepairStale")
+                    : error.responseText || error.message || loc("admin_hexConquestRepairFailed");
             toast(message, "danger");
         } finally {
             button.disabled = false;

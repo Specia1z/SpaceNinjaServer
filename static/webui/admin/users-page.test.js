@@ -140,6 +140,19 @@ function loadUsersPage() {
                 apiCalls.push(["repairInventory", accountId, expectedCount]);
                 return { affectedCount: expectedCount, suitSlotsToReturn: expectedCount };
             },
+            previewHexConquestRepair: async accountId => {
+                apiCalls.push(["previewHexConquestRepair", accountId]);
+                return {
+                    inventoryFound: true,
+                    currentScore: 15,
+                    targetScore: 27,
+                    unlockNodeCompleted: false
+                };
+            },
+            repairHexConquest: async (accountId, expectedScore) => {
+                apiCalls.push(["repairHexConquest", accountId, expectedScore]);
+                return { currentScore: 27, targetScore: 27, unlockNodeCompleted: true, inventoryFound: true };
+            },
             announceIrc: async message => apiCalls.push(["announceIrc", message])
         },
         adminItemCatalog: {
@@ -161,7 +174,9 @@ function loadUsersPage() {
         loc: key =>
             key === "admin_inventoryRepairConfirm"
                 ? "Account: |TARGET| (|ACCOUNT_ID|)\nIncorrect Suit entries: |COUNT|\nItem: |ITEM|\nSuit slots to return: |SLOTS|"
-                : key,
+                : key === "admin_hexConquestRepairConfirm"
+                  ? "Account: |TARGET| (|ACCOUNT_ID|)\nCurrent score: |SCORE|\nTarget score: |TARGET_SCORE|"
+                  : key,
         replacePluralForms: (text, { COUNT }) => text.replace("|COUNT|", String(COUNT)),
         toast: (...args) => toasts.push(args),
         doAccountSwitch() {},
@@ -288,6 +303,24 @@ test("users page previews one account and confirms the exact inventory repair", 
     assert.deepEqual(toasts.at(-1), ["admin_inventoryRepairDone", "success"]);
 });
 
+test("users page previews and confirms the Hex Conquest compensation repair", async () => {
+    const { elements, handlers, apiCalls, confirmations, toasts } = loadUsersPage();
+    await handlers.get("beforeload")();
+    await new Promise(resolve => setImmediate(resolve));
+
+    const repairButton = elements.get("#registered-losers").children[0].children[3].children[4];
+    await repairButton.dispatch("click");
+    await new Promise(resolve => setImmediate(resolve));
+
+    assert.deepEqual(apiCalls, [
+        ["previewHexConquestRepair", "account-1"],
+        ["repairHexConquest", "account-1", 15]
+    ]);
+    assert.match(confirmations[0].message, /Current score: 15/);
+    assert.match(confirmations[0].message, /Target score: 27/);
+    assert.deepEqual(toasts.at(-1), ["admin_hexConquestRepairDone", "success"]);
+});
+
 test("users page confirms and sends an inbox broadcast with all attachment fields", async () => {
     const { elements, handlers, messages, toasts } = loadUsersPage();
     await handlers.get("beforeload")();
@@ -389,6 +422,20 @@ test("users API preserves the users, inbox, and IRC endpoint contracts", async (
         method: "POST",
         contentType: "application/json",
         data: JSON.stringify({ accountId: "account-1", expectedCount: 3 })
+    });
+
+    await api.previewHexConquestRepair("account /1");
+    assert.equal(
+        calls.get[2],
+        "/custom/admin/users/inventory-repair/hex-conquest?auth=token&targetAccountId=account%20%2F1"
+    );
+
+    await api.repairHexConquest("account-1", 15);
+    assert.deepEqual(JSON.parse(JSON.stringify(calls.ajax[3])), {
+        url: "/custom/admin/users/inventory-repair/hex-conquest?auth=token",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ accountId: "account-1", expectedScore: 15 })
     });
 
     await api.announceIrc("Server maintenance");

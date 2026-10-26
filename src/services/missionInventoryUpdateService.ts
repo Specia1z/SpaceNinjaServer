@@ -98,6 +98,7 @@ import { getAccountCheatValue } from "./accountCheatService.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "./accountRateService.ts";
 import { addMissionPlatinumReward, addMissionRegalAyaReward } from "./missionPlatinumRewardService.ts";
 import { addMissionCredits } from "./missionCreditService.ts";
+import { getConquestMissionScore } from "./conquestScoreService.ts";
 import {
     addFixedLevelRewards,
     droptableAliases,
@@ -1248,17 +1249,13 @@ export const addMissionRewards = async (
     }
 
     if (rewardInfo.ConquestCompleted !== undefined) {
-        let score = 1;
-        if (rewardInfo.ConquestHardModeActive === 1) score += 3;
-
-        if (rewardInfo.ConquestPersonalModifiersActive !== undefined)
-            score += rewardInfo.ConquestPersonalModifiersActive;
-        if (rewardInfo.ConquestEquipmentSuggestionsFulfilled !== undefined)
-            score += rewardInfo.ConquestEquipmentSuggestionsFulfilled;
-
-        score *= rewardInfo.ConquestCompleted + 1;
-
-        if (rewardInfo.ConquestCompleted == 2 && rewardInfo.ConquestHardModeActive === 1) score += 1;
+        const score = getConquestMissionScore({
+            ConquestCompleted: rewardInfo.ConquestCompleted,
+            ConquestEquipmentSuggestionsFulfilled: rewardInfo.ConquestEquipmentSuggestionsFulfilled,
+            ConquestEquipmentSuggestionsFulfilledBitfield: rewardInfo.ConquestEquipmentSuggestionsFulfilledBitfield,
+            ConquestHardModeActive: rewardInfo.ConquestHardModeActive,
+            ConquestPersonalModifiersActive: rewardInfo.ConquestPersonalModifiersActive
+        });
 
         logger.debug(`completed conquest mission ${rewardInfo.ConquestCompleted + 1} for a score of ${score}`);
 

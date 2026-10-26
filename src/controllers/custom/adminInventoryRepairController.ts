@@ -3,7 +3,9 @@ import { Types } from "mongoose";
 import { Account } from "../../models/loginModel.ts";
 import {
     InventoryRepairConflictError,
+    previewHexConquestHardModeRepair,
     previewMisclassifiedAugmentRepair,
+    repairHexConquestHardMode,
     repairMisclassifiedAugmentInventory
 } from "../../services/adminInventoryRepairService.ts";
 import { getAccountForRequest, isAdministrator, type TAccountDocument } from "../../services/loginService.ts";
@@ -56,6 +58,46 @@ export const repairMisclassifiedAugmentController: RequestHandler = async (req, 
     try {
         const accountId = account._id.toString();
         const result = await repairMisclassifiedAugmentInventory(accountId, body.expectedCount as number);
+        sendWsBroadcastToGame(accountId, { sync_inventory: true });
+        sendWsBroadcastToWebui({ update_inventory: true }, accountId);
+        res.json(result);
+    } catch (error) {
+        if (error instanceof InventoryRepairConflictError) {
+            res.status(409).send(error.message);
+            return;
+        }
+        throw error;
+    }
+};
+
+export const previewHexConquestHardModeRepairController: RequestHandler = async (req, res) => {
+    if (!(await getAdministrator(req))) {
+        res.status(403).send("Administrator permission required");
+        return;
+    }
+
+    const account = await getTargetAccount(req.query.targetAccountId, res);
+    if (!account) return;
+    res.json(await previewHexConquestHardModeRepair(account._id.toString()));
+};
+
+export const repairHexConquestHardModeController: RequestHandler = async (req, res) => {
+    if (!(await getAdministrator(req))) {
+        res.status(403).send("Administrator permission required");
+        return;
+    }
+
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const account = await getTargetAccount(body.accountId, res);
+    if (!account) return;
+    if (!Number.isSafeInteger(body.expectedScore)) {
+        res.status(400).send("A valid expectedScore is required");
+        return;
+    }
+
+    try {
+        const accountId = account._id.toString();
+        const result = await repairHexConquestHardMode(accountId, body.expectedScore as number);
         sendWsBroadcastToGame(accountId, { sync_inventory: true });
         sendWsBroadcastToWebui({ update_inventory: true }, accountId);
         res.json(result);

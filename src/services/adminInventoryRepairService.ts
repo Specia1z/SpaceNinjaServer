@@ -2,6 +2,9 @@ import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 
 export const MISCLASSIFIED_AUGMENT_ITEM = "/Lotus/Powersuits/Frost/IceShieldAugmentTwoCard";
+export const ECHOES_HEX_CONQUEST_HARD_MODE_NODE = "EchoesHexConquestHardModeUnlocked";
+export const ECHOES_HEX_CONQUEST_REPAIRED_SCORE = 27;
+const ECHOES_HEX_CONQUEST_LEGACY_SCORE = 15;
 
 export class InventoryRepairConflictError extends Error {
     constructor() {
@@ -15,6 +18,13 @@ export type TInventoryRepairPreview = {
     itemType: string;
     affectedCount: number;
     suitSlotsToReturn: number;
+};
+
+export type THexConquestHardModeRepairPreview = {
+    inventoryFound: boolean;
+    currentScore: number;
+    targetScore: number;
+    unlockNodeCompleted: boolean;
 };
 
 const countMisclassifiedItems = (inventory: TInventoryDatabaseDocument): number =>
@@ -80,4 +90,57 @@ export const repairMisclassifiedAugmentInventory = async (
         affectedCount,
         suitSlotsToReturn: affectedCount
     };
+};
+
+const getHexConquestRepairPreview = (inventory: TInventoryDatabaseDocument): THexConquestHardModeRepairPreview => ({
+    inventoryFound: true,
+    currentScore: inventory.EchoesHexConquestCacheScoreMission ?? 0,
+    targetScore: ECHOES_HEX_CONQUEST_REPAIRED_SCORE,
+    unlockNodeCompleted: inventory.NodeIntrosCompleted.includes(ECHOES_HEX_CONQUEST_HARD_MODE_NODE)
+});
+
+export const previewHexConquestHardModeRepair = async (
+    accountOwnerId: string
+): Promise<THexConquestHardModeRepairPreview> => {
+    const inventory = await Inventory.findOne({ accountOwnerId });
+    if (!inventory) {
+        return {
+            inventoryFound: false,
+            currentScore: 0,
+            targetScore: ECHOES_HEX_CONQUEST_REPAIRED_SCORE,
+            unlockNodeCompleted: false
+        };
+    }
+    return getHexConquestRepairPreview(inventory);
+};
+
+export const repairHexConquestHardMode = async (
+    accountOwnerId: string,
+    expectedScore: number
+): Promise<THexConquestHardModeRepairPreview> => {
+    const inventory = await Inventory.findOne({ accountOwnerId });
+    if (!inventory) throw new InventoryRepairConflictError();
+
+    const currentScore = inventory.EchoesHexConquestCacheScoreMission ?? 0;
+    if (
+        expectedScore != ECHOES_HEX_CONQUEST_LEGACY_SCORE ||
+        currentScore != expectedScore ||
+        inventory.NodeIntrosCompleted.includes(ECHOES_HEX_CONQUEST_HARD_MODE_NODE)
+    ) {
+        throw new InventoryRepairConflictError();
+    }
+
+    inventory.EchoesHexConquestCacheScoreMission = ECHOES_HEX_CONQUEST_REPAIRED_SCORE;
+    inventory.NodeIntrosCompleted.push(ECHOES_HEX_CONQUEST_HARD_MODE_NODE);
+    inventory.increment();
+    try {
+        await inventory.save();
+    } catch (error) {
+        if (error instanceof Error && error.name == "VersionError") {
+            throw new InventoryRepairConflictError();
+        }
+        throw error;
+    }
+
+    return getHexConquestRepairPreview(inventory);
 };

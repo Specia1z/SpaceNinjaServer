@@ -25,6 +25,20 @@ window.adminUsersApi = {
             contentType: "application/json",
             data: JSON.stringify({ accountId, expectedCount })
         }),
+    previewHexConquestRepair: accountId =>
+        $.get(
+            "/custom/admin/users/inventory-repair/hex-conquest?" +
+                window.authz +
+                "&targetAccountId=" +
+                encodeURIComponent(accountId)
+        ),
+    repairHexConquest: (accountId, expectedScore) =>
+        $.ajax({
+            url: "/custom/admin/users/inventory-repair/hex-conquest?" + window.authz,
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ accountId, expectedScore })
+        }),
     async announceIrc(message) {
         const response = await fetch("/custom/admin/irc-announcement?" + window.authz, {
             method: "POST",

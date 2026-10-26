@@ -4,9 +4,13 @@ import mongoose, { Types } from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import { Inventory } from "../models/inventoryModels/inventoryModel.ts";
 import {
+    ECHOES_HEX_CONQUEST_HARD_MODE_NODE,
+    ECHOES_HEX_CONQUEST_REPAIRED_SCORE,
     InventoryRepairConflictError,
     MISCLASSIFIED_AUGMENT_ITEM,
+    previewHexConquestHardModeRepair,
     previewMisclassifiedAugmentRepair,
+    repairHexConquestHardMode,
     repairMisclassifiedAugmentInventory
 } from "./adminInventoryRepairService.ts";
 
@@ -106,4 +110,34 @@ void test("concurrent repairs apply only once", async () => {
     assert.equal(inventory.Suits.length, 0);
     assert.equal(inventory.RawUpgrades.find(item => item.ItemType == MISCLASSIFIED_AUGMENT_ITEM)?.ItemCount, 1);
     assert.equal(inventory.SuitBin.Slots, 6);
+});
+
+void test("hex conquest repair upgrades only the reviewed legacy score", async () => {
+    const accountOwnerId = new Types.ObjectId();
+    await new Inventory({
+        accountOwnerId,
+        EchoesHexConquestCacheScoreMission: 15,
+        NodeIntrosCompleted: ["ExistingNode"]
+    }).save();
+
+    assert.deepEqual(await previewHexConquestHardModeRepair(accountOwnerId.toString()), {
+        inventoryFound: true,
+        currentScore: 15,
+        targetScore: ECHOES_HEX_CONQUEST_REPAIRED_SCORE,
+        unlockNodeCompleted: false
+    });
+
+    const repaired = await repairHexConquestHardMode(accountOwnerId.toString(), 15);
+    assert.deepEqual(repaired, {
+        inventoryFound: true,
+        currentScore: ECHOES_HEX_CONQUEST_REPAIRED_SCORE,
+        targetScore: ECHOES_HEX_CONQUEST_REPAIRED_SCORE,
+        unlockNodeCompleted: true
+    });
+
+    const saved = (await Inventory.findOne({ accountOwnerId }))!;
+    assert.equal(saved.EchoesHexConquestCacheScoreMission, ECHOES_HEX_CONQUEST_REPAIRED_SCORE);
+    assert.deepEqual(saved.NodeIntrosCompleted, ["ExistingNode", ECHOES_HEX_CONQUEST_HARD_MODE_NODE]);
+    assert.equal(saved.EchoesHexConquestHardModeStatus, undefined);
+    await assert.rejects(repairHexConquestHardMode(accountOwnerId.toString(), 15), InventoryRepairConflictError);
 });
