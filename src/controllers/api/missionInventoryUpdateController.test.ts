@@ -199,3 +199,97 @@ void test("failed arbitration pays completed rotations but quitting and zero rot
         }
     }
 });
+
+void test("Hex bounty settlement pays the reward table, standing, and chemistry once", async () => {
+    const account = await new Account({
+        email: "hex-bounty@example.com",
+        password: "password",
+        DisplayName: "HexBounty",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/",
+        DailyFirstWinDate: Math.trunc(Date.now() / 86400000) * 86400
+    }).save();
+    const inventory = await new Inventory({ accountOwnerId: account._id, RegularCredits: 100 }).save();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: false,
+        MissionStatus: "GS_SUCCESS",
+        AliveTime: 900,
+        MissionTime: 900,
+        GameModeId: 0,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        MissionPTS: 42,
+        RepHash: "hex-bounty-report-1",
+        EndOfMatchUpload: true,
+        ObjectiveReached: true,
+        sharedSessionId: "0123456789abcdef01234568",
+        FpsAvg: 0,
+        FpsMin: 0,
+        FpsMax: 0,
+        FpsSamples: 0,
+        PlayerSkillGains: {},
+        Missions: { Tag: "SolNode850", Completes: 1 },
+        RewardInfo: {
+            node: "SolNode850",
+            challengeMissionId: "HexSyndicate_0_0",
+            rewardSeed: 123
+        }
+    } as IMissionInventoryUpdateRequest;
+
+    let responseBody: IMissionInventoryUpdateResponse | undefined;
+    const response = {
+        json(value: typeof responseBody) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654" },
+        body: JSON.stringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    const originalStringify = JSON.stringify;
+    try {
+        JSON.stringify = JSONStringify;
+        await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+    } finally {
+        JSON.stringify = originalStringify;
+    }
+
+    assert.equal(responseBody!.MissionRewards?.length, 1);
+    assert.equal(responseBody!.AffiliationMods?.find(mod => mod.Tag == "HexSyndicate")?.Standing, 1_000);
+    const savedInventory = (await Inventory.findById(inventory._id))!;
+    assert.equal(savedInventory.Affiliations.find(syndicate => syndicate.Tag == "HexSyndicate")?.Standing, 1_000);
+    assert.equal(
+        savedInventory.DialogueHistory?.Dialogues?.find(dialogue =>
+            dialogue.DialogueName.endsWith("JabirDialogue_rom.dialogue")
+        )?.Chemistry,
+        20
+    );
+
+    const duplicateResponse = {
+        json(value: typeof responseBody) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    try {
+        JSON.stringify = JSONStringify;
+        await (missionInventoryUpdateController as RequestHandler)(request, duplicateResponse, () => {});
+    } finally {
+        JSON.stringify = originalStringify;
+    }
+    assert.deepEqual(responseBody!.MissionRewards, []);
+    assert.equal(
+        (await Inventory.findById(inventory._id))!.Affiliations.find(syndicate => syndicate.Tag == "HexSyndicate")
+            ?.Standing,
+        1_000
+    );
+});
