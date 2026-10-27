@@ -62,6 +62,21 @@ void test("settlement identity ignores inventory deltas but separates mission ru
     assert.equal(getMissionSettlementKey(makeReport({ RepHash: "" })), undefined);
 });
 
+void test("stage-only bounty reports use job and checkpoint identity when final-match fields are absent", () => {
+    const first = makeReport({ sharedSessionId: undefined, RepHash: undefined, EndOfMatchUpload: undefined });
+    const key = getMissionSettlementKey(first);
+    assert.ok(key);
+    assert.equal(getMissionSettlementKey(makeReport({ ...first, RegularCredits: 999 })), key);
+    assert.notEqual(getMissionSettlementKey(makeReport({ ...first, MissionPTS: 43 })), key);
+    assert.notEqual(
+        getMissionSettlementKey(makeReport({ ...first, RewardInfo: { ...first.RewardInfo!, JobStage: 3 } })),
+        key
+    );
+    assert.equal(getMissionSettlementKey(makeReport({ ...first, RewardInfo: { node: "SolNode1" } })), undefined);
+    assert.equal(getMissionSettlementKey(makeReport({ ...first, EndOfMatchUpload: true })), undefined);
+    assert.equal(getMissionSettlementKey(makeReport({ ...first, RepHash: "rep-hash-1" })), undefined);
+});
+
 void test("only one request can claim a settlement and completed claims stay closed", async () => {
     const accountId = new Types.ObjectId();
     const settlementKey = getMissionSettlementKey(makeReport())!;

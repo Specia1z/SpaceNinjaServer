@@ -196,7 +196,12 @@ export const addMissionInventoryUpdates = async (
         }
     }
     if (inventoryUpdates.RewardInfo) {
-        if (inventoryUpdates.RewardInfo.periodicMissionTag) {
+        if (
+            inventoryUpdates.RewardInfo.periodicMissionTag &&
+            !inventoryUpdates.MissionFailed &&
+            (inventoryUpdates.MissionStatus === undefined || inventoryUpdates.MissionStatus == "GS_SUCCESS") &&
+            inventoryUpdates.EndOfMatchUpload !== false
+        ) {
             const tag = inventoryUpdates.RewardInfo.periodicMissionTag;
             if (!inventory.alertsRepeatable) {
                 const existingCompletion = inventory.PeriodicMissionCompletions.find(
@@ -259,7 +264,10 @@ export const addMissionInventoryUpdates = async (
             const [bounty, tier, hub, id, tag] = inventoryUpdates.RewardInfo.jobId.split("_");
             if (
                 (tag == "EudicoHeists" && inventoryUpdates.MissionStatus == "GS_SUCCESS") ||
-                (tag == "NokkoColony" && inventoryUpdates.RewardInfo.JobStage == 4)
+                (tag == "NokkoColony" &&
+                    inventoryUpdates.RewardInfo.JobStage == 4 &&
+                    !inventoryUpdates.MissionFailed &&
+                    (inventoryUpdates.MissionStatus === undefined || inventoryUpdates.MissionStatus == "GS_SUCCESS"))
             ) {
                 inventory.CompletedJobChains ??= [];
                 let chain = inventory.CompletedJobChains.find(x => x.LocationTag == tag);

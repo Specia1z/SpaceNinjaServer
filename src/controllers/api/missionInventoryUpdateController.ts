@@ -247,14 +247,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
 
     const inventoryUpdates = await addMissionInventoryUpdates(account, buildLabel, inventory, missionReport);
 
-    if (
-        (missionReport.MissionStatus ? missionReport.MissionStatus !== "GS_SUCCESS" : missionReport.MissionFailed) &&
-        !(
-            missionReport.RewardInfo?.jobId ||
-            missionReport.RewardInfo?.challengeMissionId ||
-            missionReport.RewardInfo?.T
-        )
-    ) {
+    if (missionReport.MissionStatus ? missionReport.MissionStatus !== "GS_SUCCESS" : missionReport.MissionFailed) {
         logger.debug(`aborted or failed mission, syncing inventory`);
         let MissionRewards: IMissionInventoryUpdateResponse["MissionRewards"] = [];
         if (

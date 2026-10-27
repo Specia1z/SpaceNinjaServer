@@ -7,7 +7,7 @@ const CLAIM_LEASE_MS = 5 * 60_000;
 
 type TMissionSettlementIdentity = Pick<
     IMissionInventoryUpdateRequest,
-    "sharedSessionId" | "MissionPTS" | "RepHash" | "Missions" | "RewardInfo"
+    "sharedSessionId" | "MissionPTS" | "RepHash" | "EndOfMatchUpload" | "Missions" | "RewardInfo"
 >;
 
 export type TMissionSettlementClaimResult =
@@ -23,11 +23,22 @@ const isDuplicateKeyError = (error: unknown): boolean =>
 export const getMissionSettlementKey = (report: TMissionSettlementIdentity): string | undefined => {
     const sessionId = typeof report.sharedSessionId == "string" ? report.sharedSessionId.trim() : "";
     const repHash = typeof report.RepHash == "string" ? report.RepHash.trim() : "";
-    if (!/^[\da-f]{24}$/i.test(sessionId) || !repHash || repHash.length > 256 || !Number.isSafeInteger(report.MissionPTS)) {
+    const rewardInfo = report.RewardInfo;
+    // Bounty checkpoints have no final-match session ID or RepHash; the job, stage and mission timestamp identify them.
+    const isStageOnlyBounty =
+        report.EndOfMatchUpload !== true &&
+        !sessionId &&
+        !repHash &&
+        Boolean(rewardInfo?.jobId) &&
+        Number.isSafeInteger(rewardInfo?.JobStage) &&
+        rewardInfo!.JobStage! >= 0;
+    if (
+        !Number.isSafeInteger(report.MissionPTS) ||
+        (!isStageOnlyBounty && (!/^[\da-f]{24}$/i.test(sessionId) || !repHash || repHash.length > 256))
+    ) {
         return undefined;
     }
 
-    const rewardInfo = report.RewardInfo;
     const identity = {
         sessionId: sessionId.toLowerCase(),
         missionPTS: report.MissionPTS,

@@ -293,3 +293,213 @@ void test("Hex bounty settlement pays the reward table, standing, and chemistry 
         1_000
     );
 });
+
+void test("aborted Hex bounties sync pickups without paying completion rewards", async () => {
+    for (const [index, { status, rewardInfo, syndicateTag }] of [
+        {
+            status: "GS_QUIT",
+            rewardInfo: { node: "SolNode850", challengeMissionId: "HexSyndicate_0_0", rewardSeed: 123 },
+            syndicateTag: "HexSyndicate"
+        },
+        {
+            status: "GS_FAILURE",
+            rewardInfo: { node: "SolNode850", challengeMissionId: "HexSyndicate_0_0", rewardSeed: 123 },
+            syndicateTag: "HexSyndicate"
+        },
+        {
+            status: "GS_QUIT",
+            rewardInfo: { node: "SolNode1", jobId: "job-1", JobStage: 0, rewardSeed: 123 },
+            syndicateTag: "CetusSyndicate"
+        },
+        {
+            status: "GS_FAILURE",
+            rewardInfo: { node: "SolNode1", jobId: "job-1", JobStage: 0, rewardSeed: 123 },
+            syndicateTag: "CetusSyndicate"
+        }
+    ].entries()) {
+        const account = await new Account({
+            email: `hex-aborted-${index}@example.com`,
+            password: "password",
+            DisplayName: `HexAborted${index}`,
+            Nonce: 654,
+            BuildLabel: "2026.10.22.13.12/",
+            DailyFirstWinDate: Math.trunc(Date.now() / 86400000) * 86400
+        }).save();
+        const inventory = await new Inventory({ accountOwnerId: account._id, RegularCredits: 100 }).save();
+        const report = {
+            LevelKeyName: "",
+            MissionFailed: status == "GS_FAILURE",
+            MissionStatus: status,
+            AliveTime: 90,
+            MissionTime: 90,
+            GameModeId: 0,
+            hosts: [],
+            currentClients: [],
+            ChallengeProgress: [],
+            PS: "",
+            ActiveDojoColorResearch: "",
+            ReceivedCeremonyMsg: false,
+            LastCeremonyResetDate: 0,
+            MissionPTS: 42,
+            RepHash: `hex-aborted-${index}`,
+            EndOfMatchUpload: true,
+            ObjectiveReached: false,
+            sharedSessionId: `0123456789abcdef0123457${index}`,
+            FpsAvg: 0,
+            FpsMin: 0,
+            FpsMax: 0,
+            FpsSamples: 0,
+            PlayerSkillGains: {},
+            RegularCredits: 25,
+            RewardInfo: rewardInfo
+        } as IMissionInventoryUpdateRequest;
+        let responseBody: IMissionInventoryUpdateResponse | undefined;
+        const response = {
+            json(value: typeof responseBody) {
+                responseBody = value;
+                return this;
+            }
+        } as unknown as Response;
+        const request = {
+            query: { accountId: account._id.toString(), nonce: "654" },
+            body: JSON.stringify(report),
+            ip: "127.0.0.1"
+        } as unknown as Request;
+        const originalStringify = JSON.stringify;
+        try {
+            JSON.stringify = JSONStringify;
+            await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+        } finally {
+            JSON.stringify = originalStringify;
+        }
+
+        assert.deepEqual(responseBody!.MissionRewards, []);
+        const savedInventory = (await Inventory.findById(inventory._id))!;
+        assert.equal(savedInventory.RegularCredits, 125);
+        assert.equal(
+            savedInventory.Affiliations.some(syndicate => syndicate.Tag == syndicateTag),
+            false
+        );
+        assert.equal(savedInventory.DialogueHistory?.Dialogues?.length ?? 0, 0);
+    }
+});
+
+void test("failed or quit periodic missions do not mark the alert as completed", async () => {
+    for (const [index, status] of ["GS_FAILURE", "GS_QUIT"].entries()) {
+        const account = await new Account({
+            email: `periodic-aborted-${index}@example.com`,
+            password: "password",
+            DisplayName: `PeriodicAborted${index}`,
+            Nonce: 654,
+            BuildLabel: "2026.10.22.13.12/"
+        }).save();
+        const inventory = await new Inventory({ accountOwnerId: account._id }).save();
+        const report = {
+            LevelKeyName: "",
+            MissionFailed: status == "GS_FAILURE",
+            MissionStatus: status,
+            AliveTime: 60,
+            MissionTime: 60,
+            GameModeId: 0,
+            hosts: [],
+            currentClients: [],
+            ChallengeProgress: [],
+            PS: "",
+            ActiveDojoColorResearch: "",
+            ReceivedCeremonyMsg: false,
+            LastCeremonyResetDate: 0,
+            MissionPTS: 42,
+            RepHash: `periodic-aborted-${index}`,
+            EndOfMatchUpload: true,
+            ObjectiveReached: false,
+            sharedSessionId: `0123456789abcdef0123458${index}`,
+            FpsAvg: 0,
+            FpsMin: 0,
+            FpsMax: 0,
+            FpsSamples: 0,
+            PlayerSkillGains: {},
+            RewardInfo: {
+                node: "SolNode1",
+                periodicMissionTag: "EliteAlert",
+                rewardQualifications: status == "GS_FAILURE" ? "1111" : ""
+            }
+        } as IMissionInventoryUpdateRequest;
+        let responseBody: IMissionInventoryUpdateResponse | undefined;
+        const response = {
+            json(value: typeof responseBody) {
+                responseBody = value;
+                return this;
+            }
+        } as unknown as Response;
+        const request = {
+            query: { accountId: account._id.toString(), nonce: "654" },
+            body: JSON.stringify(report),
+            ip: "127.0.0.1"
+        } as unknown as Request;
+        const originalStringify = JSON.stringify;
+        try {
+            JSON.stringify = JSONStringify;
+            await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+        } finally {
+            JSON.stringify = originalStringify;
+        }
+        assert.equal((await Inventory.findById(inventory._id))!.PeriodicMissionCompletions.length, 0);
+        assert.equal(responseBody!.MissionRewards!.length > 0, status == "GS_FAILURE");
+    }
+});
+
+void test("bounty stage reports without final-match identity pay once", async () => {
+    const account = await new Account({
+        email: "stage-bounty@example.com",
+        password: "password",
+        DisplayName: "StageBounty",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/"
+    }).save();
+    const inventory = await new Inventory({ accountOwnerId: account._id }).save();
+    const report = {
+        MissionFailed: false,
+        MissionPTS: 1792257292,
+        RewardInfo: {
+            node: "SolNode1",
+            jobId: "/Lotus/Types/Gameplay/Eidolon/Jobs/Hunts/TeralystHunt_0_CetusHub1_0123456789abcdef01234567_CetusSyndicate",
+            JobStage: 0,
+            CheckpointCounter: 1
+        }
+    } as IMissionInventoryUpdateRequest;
+    let responseBody: IMissionInventoryUpdateResponse | undefined;
+    const response = {
+        json(value: typeof responseBody) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654" },
+        body: JSON.stringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+    const runStage = async (): Promise<void> => {
+        const originalStringify = JSON.stringify;
+        try {
+            JSON.stringify = JSONStringify;
+            await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+        } finally {
+            JSON.stringify = originalStringify;
+        }
+    };
+    await runStage();
+    assert.equal(responseBody!.AffiliationMods?.find(mod => mod.Tag == "CetusSyndicate")?.Standing, 1_000);
+    assert.equal(
+        (await Inventory.findById(inventory._id))!.Affiliations.find(syndicate => syndicate.Tag == "CetusSyndicate")
+            ?.Standing,
+        1_000
+    );
+    await runStage();
+    assert.deepEqual(responseBody!.MissionRewards, []);
+    assert.equal(
+        (await Inventory.findById(inventory._id))!.Affiliations.find(syndicate => syndicate.Tag == "CetusSyndicate")
+            ?.Standing,
+        1_000
+    );
+});

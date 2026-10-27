@@ -12,6 +12,7 @@ before(async () => {
         binary: { version: "7.0.34", downloadDir: "node_modules/.cache" }
     });
     await mongoose.connect(`${mongod.getUri()}invasion-reward-claim-test`);
+    await InvasionRewardClaim.init();
 });
 
 after(async () => {
