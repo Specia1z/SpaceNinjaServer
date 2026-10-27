@@ -243,7 +243,7 @@ const gameModes: {
 
 interface IChallenge {
     tag: string;
-    repeatable: boolean; // TODO: This field is currently not respected when generating a descent.
+    repeatable: boolean;
     useSecondarySpec: boolean;
     enemySpecs: string[];
     auras: string[];
@@ -990,19 +990,26 @@ const generateDescentFloor = (
     rng: SRng,
     forcedTypes: Record<number, string>,
     index: number,
-    restrictTo42: boolean
+    restrictTo42: boolean,
+    usedNonRepeatableChallenges: Set<string>
 ): IDescentFloor => {
     const forcedType = forcedTypes[index];
-    const gameMode = (forcedType ? gameModes.find(x => x.type == forcedType) : rng.randomReward(gameModes))!;
-    const availableChallenges: IChallenge[] = [];
-    for (const challengeCategory of gameMode.availableChallengeCategories) {
-        for (const challenge of challenges[challengeCategory]) {
-            if (!restrictTo42 || !post42DescentChallenges.has(challenge.tag)) {
-                availableChallenges.push(challenge);
-            }
-        }
-    }
-    const challenge = rng.randomElement(availableChallenges)!;
+    const getAvailableChallenges = (gameMode: (typeof gameModes)[number]): IChallenge[] =>
+        gameMode.availableChallengeCategories.flatMap(category =>
+            challenges[category].filter(challenge => !restrictTo42 || !post42DescentChallenges.has(challenge.tag))
+        );
+    const eligibleGameModes = gameModes.filter(gameMode =>
+        getAvailableChallenges(gameMode).some(
+            challenge => challenge.repeatable || !usedNonRepeatableChallenges.has(challenge.tag)
+        )
+    );
+    const gameMode = (forcedType ? gameModes.find(x => x.type == forcedType) : rng.randomReward(eligibleGameModes))!;
+    const availableChallenges = getAvailableChallenges(gameMode);
+    const eligibleChallenges = availableChallenges.filter(
+        challenge => challenge.repeatable || !usedNonRepeatableChallenges.has(challenge.tag)
+    );
+    const challenge = rng.randomElement(eligibleChallenges.length > 0 ? eligibleChallenges : availableChallenges)!;
+    if (!challenge.repeatable) usedNonRepeatableChallenges.add(challenge.tag);
     return {
         Index: index,
         Type: gameMode.type,
@@ -1048,18 +1055,19 @@ export const getDescent = (week: number, buildVersion: number = Number.MAX_SAFE_
         reservedLevels.push(level);
         forcedTypes[level] = "DT_MIMICS";
     }
+    const usedNonRepeatableChallenges = new Set<string>();
 
     return {
         Activation: { $date: { $numberLong: weekStart.toString() } },
         Expiry: { $date: { $numberLong: weekEnd.toString() } },
         RandSeed: rng.randomInt(0, 1_000_000_000),
         Challenges: [
-            generateDescentFloor(rng, forcedTypes, 1, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 2, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 3, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 4, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 5, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 6, restrictTo42),
+            generateDescentFloor(rng, forcedTypes, 1, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 2, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 3, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 4, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 5, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 6, restrictTo42, usedNonRepeatableChallenges),
             {
                 Index: 7,
                 Type: "DT_PROTOFRAME",
@@ -1068,12 +1076,12 @@ export const getDescent = (week: number, buildVersion: number = Number.MAX_SAFE_
                 Specs: [],
                 Auras: []
             },
-            generateDescentFloor(rng, forcedTypes, 8, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 9, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 10, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 11, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 12, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 13, restrictTo42),
+            generateDescentFloor(rng, forcedTypes, 8, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 9, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 10, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 11, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 12, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 13, restrictTo42, usedNonRepeatableChallenges),
             {
                 Index: 14,
                 Type: "DT_PROTOFRAME",
@@ -1082,12 +1090,12 @@ export const getDescent = (week: number, buildVersion: number = Number.MAX_SAFE_
                 Specs: [],
                 Auras: []
             },
-            generateDescentFloor(rng, forcedTypes, 15, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 16, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 17, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 18, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 19, restrictTo42),
-            generateDescentFloor(rng, forcedTypes, 20, restrictTo42),
+            generateDescentFloor(rng, forcedTypes, 15, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 16, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 17, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 18, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 19, restrictTo42, usedNonRepeatableChallenges),
+            generateDescentFloor(rng, forcedTypes, 20, restrictTo42, usedNonRepeatableChallenges),
             {
                 Index: 21,
                 Type: "DT_PROTOFRAME",
