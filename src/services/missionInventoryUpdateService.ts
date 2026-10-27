@@ -103,10 +103,12 @@ import {
     addFixedLevelRewards,
     droptableAliases,
     getLevelCreditRewards,
+    getArbitrationMissionRewards,
     getRandomRewardByChance,
     getRotations,
     hexConquestRewards,
     isEligibleForCreditReward,
+    isArbitrationMission,
     labConquestRewards,
     scaleAccountDropCount,
     scaleAccountMissionRewards,
@@ -950,6 +952,39 @@ interface AddMissionRewardsReturnType {
     RecoveredItemInfo?: IRecoveredItemInfo;
 }
 
+const applyMissionRewardItems = async (
+    inventory: TInventoryDatabaseDocument,
+    rewards: readonly IMissionReward[],
+    inventoryChanges: IInventoryChanges
+): Promise<void> => {
+    for (const reward of rewards) {
+        const inventoryChange = await handleStoreItemAcquisition(
+            reward.StoreItem,
+            inventory,
+            reward.ItemCount,
+            undefined,
+            true
+        );
+        combineInventoryChanges(inventoryChanges, inventoryChange.InventoryChanges);
+    }
+};
+
+export const addFailedArbitrationRewards = async (
+    account: TAccountDocument,
+    buildLabel: string,
+    inventory: TInventoryDatabaseDocument,
+    rewardInfo: IRewardInfo
+): Promise<{ MissionRewards: IMissionReward[]; inventoryChanges: IInventoryChanges }> => {
+    const modDropMultiplier = getEffectiveAccountRate(getAccountRateProfile(account), "modDropMultiplier");
+    const MissionRewards = scaleAccountMissionRewards(
+        await getArbitrationMissionRewards(rewardInfo, buildLabel),
+        modDropMultiplier
+    );
+    const inventoryChanges: IInventoryChanges = {};
+    await applyMissionRewardItems(inventory, MissionRewards, inventoryChanges);
+    return { MissionRewards, inventoryChanges };
+};
+
 //TODO: return type of partial missioninventoryupdate response
 export const addMissionRewards = async (
     account: TAccountDocument,
@@ -1240,12 +1275,8 @@ export const addMissionRewards = async (
         });
     }
 
-    if (rewardInfo.periodicMissionTag == "EliteAlert" || rewardInfo.periodicMissionTag == "EliteAlertB") {
+    if (isArbitrationMission(rewardInfo)) {
         missionCompletionCredits += 50_000;
-        MissionRewards.push({
-            StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Elitium",
-            ItemCount: 1
-        });
     }
 
     if (rewardInfo.ConquestCompleted !== undefined) {
@@ -1471,19 +1502,7 @@ export const addMissionRewards = async (
         MissionRewards.splice(0, MissionRewards.length, ...scaledMissionRewards);
     }
 
-    for (const reward of MissionRewards) {
-        const inventoryChange = await handleStoreItemAcquisition(
-            reward.StoreItem,
-            inventory,
-            reward.ItemCount,
-            undefined,
-            true
-        );
-        //TODO: combineInventoryChanges improve type safety, merging 2 of the same item?
-        //TODO: check for the case when two of the same item are added, combineInventoryChanges should merge them, but the client also merges them
-        //TODO: some conditional types to rule out binchanges?
-        combineInventoryChanges(inventoryChanges, inventoryChange.InventoryChanges);
-    }
+    await applyMissionRewardItems(inventory, MissionRewards, inventoryChanges);
 
     inventory.RegularCredits += missionCompletionCredits;
 
@@ -1759,6 +1778,7 @@ async function getRandomMissionDrops(
     tierOverride: number | undefined,
     firstCompletion: boolean
 ): Promise<IMissionReward[]> {
+    if (isArbitrationMission(RewardInfo)) return getArbitrationMissionRewards(RewardInfo, buildLabel);
     const drops: IMissionReward[] = [];
     if (RewardInfo.sortieTag == "Final" && firstCompletion) {
         const arr = RewardInfo.sortieId!.split("_");
@@ -1842,9 +1862,7 @@ async function getRandomMissionDrops(
     const region = await getRegion(RewardInfo.node, buildLabel);
     if (region) {
         let rewardManifests: readonly string[];
-        if (RewardInfo.periodicMissionTag == "EliteAlert" || RewardInfo.periodicMissionTag == "EliteAlertB") {
-            rewardManifests = ["/Lotus/Types/Game/MissionDecks/EliteAlertMissionRewards/EliteAlertMissionRewards"];
-        } else if (RewardInfo.invasionId && region.missionType == "MT_ASSASSINATION") {
+        if (RewardInfo.invasionId && region.missionType == "MT_ASSASSINATION") {
             // Invasion assassination has Phorid has the boss who should drop Nyx parts
             // TODO: Check that the invasion faction is indeed FC_INFESTATION once the Invasions in worldState are more dynamic
             rewardManifests = ["/Lotus/Types/Game/MissionDecks/BossMissionRewards/NyxRewards"];

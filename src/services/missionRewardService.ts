@@ -128,6 +128,12 @@ export const droptableAliases: Record<string, string> = {
         "/Lotus/Types/DropTables/WF1999DropTables/LasrianTankHardModeDropTable"
 };
 
+const arbitrationRewardManifest = "/Lotus/Types/Game/MissionDecks/EliteAlertMissionRewards/EliteAlertMissionRewards";
+const vitusEssenceStoreItem = "/Lotus/StoreItems/Types/Items/MiscItems/Elitium";
+
+export const isArbitrationMission = (rewardInfo: Pick<IRewardInfo, "periodicMissionTag">): boolean =>
+    rewardInfo.periodicMissionTag == "EliteAlert" || rewardInfo.periodicMissionTag == "EliteAlertB";
+
 export const getRotations = async (
     rewardInfo: IRewardInfo,
     buildLabel: string,
@@ -137,6 +143,10 @@ export const getRotations = async (
         return Array.from({ length: rewardInfo.VaultsCracked }, (_, index) => Math.min(index, 2));
     }
     if (rewardInfo.T == 17 || rewardInfo.T == 19) return [0, 1];
+    if (isArbitrationMission(rewardInfo)) {
+        const rotationCount = rewardInfo.rewardQualifications?.length ?? 0;
+        return Array.from({ length: rotationCount }, (_, index) => Math.min(Math.floor(index / 2), 2));
+    }
 
     const region = await getRegion(rewardInfo.node, buildLabel);
     const missionType: TMissionType | undefined = region?.missionType;
@@ -176,6 +186,33 @@ export const getRotations = async (
     }
     const rotationPattern = tierOverride === undefined ? [0, 0, 1, 2] : [tierOverride];
     return Array.from({ length: rotationCount }, (_, index) => rotationPattern[index % rotationPattern.length]);
+};
+
+export const getArbitrationMissionRewards = async (
+    rewardInfo: IRewardInfo,
+    buildLabel: string
+): Promise<IMissionReward[]> => {
+    if (!isArbitrationMission(rewardInfo)) return [];
+    const rotations = await getRotations(rewardInfo, buildLabel);
+    if (!rotations.length) return [];
+
+    const rewards: IMissionReward[] = [{ StoreItem: vitusEssenceStoreItem, ItemCount: rotations.length }];
+    const table = getMissionDeck(arbitrationRewardManifest, buildLabel);
+    if (!table) {
+        logger.error(`unknown droptable: ${arbitrationRewardManifest}`);
+        return rewards;
+    }
+
+    const rng = new SRng(BigInt(rewardInfo.rewardSeed ?? generateRewardSeed()) ^ 0xffffffffffffffffn);
+    for (const rotation of rotations) {
+        if (!table[rotation]) {
+            logger.error(`unknown arbitration reward rotation: ${rotation}`);
+            continue;
+        }
+        const drop = getRandomRewardByChance(table[rotation], rng);
+        if (drop) rewards.push({ StoreItem: drop.type, ItemCount: drop.itemCount });
+    }
+    return rewards;
 };
 
 export const getRandomRewardByChance = (pool: readonly IReward[], rng?: SRng): IRngResult | undefined => {

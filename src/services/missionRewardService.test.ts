@@ -4,6 +4,7 @@ import type { IMissionReward as IMissionRewardExternal } from "warframe-public-e
 import type { IMissionReward } from "../types/missionTypes.ts";
 import {
     addFixedLevelRewards,
+    getArbitrationMissionRewards,
     getRotations,
     scaleAccountDropCount,
     scaleAccountMissionRewards,
@@ -36,6 +37,46 @@ void test("spy rotations and account drop counts retain their limits", async () 
     );
     assert.equal(scaleAccountDropCount(3, 1.5), 4);
     assert.equal(scaleAccountDropCount(3, -1), 0);
+});
+
+void test("arbitration rewards follow AABBCC and grant Vitus Essence per completed rotation", async () => {
+    const rewardInfo = {
+        node: "SolNode1",
+        periodicMissionTag: "EliteAlert",
+        rewardQualifications: "111111",
+        rewardSeed: 123
+    };
+    assert.deepEqual(await getRotations(rewardInfo, "2026.10.22.13.12"), [0, 0, 1, 1, 2, 2]);
+    assert.deepEqual(
+        await getRotations(
+            { ...rewardInfo, periodicMissionTag: "EliteAlertB", rewardQualifications: "11111111" },
+            "2026.10.22.13.12"
+        ),
+        [0, 0, 1, 1, 2, 2, 2, 2]
+    );
+
+    const rewards = await getArbitrationMissionRewards(rewardInfo, "2026.10.22.13.12");
+    assert.equal(rewards.length, 7);
+    assert.deepEqual(rewards[0], {
+        StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/Elitium",
+        ItemCount: 6
+    });
+    assert.deepEqual(await getRotations({ ...rewardInfo, rewardQualifications: "" }, "2026.10.22.13.12"), []);
+    assert.deepEqual(
+        await getArbitrationMissionRewards({ ...rewardInfo, rewardQualifications: "" }, "2026.10.22.13.12"),
+        []
+    );
+    assert.deepEqual(
+        await getRotations({ ...rewardInfo, node: "SolNode30", rewardTierOverrides: [0, 1, 2] }, "2026.10.22.13.12"),
+        [0, 0, 1, 1, 2, 2]
+    );
+    assert.deepEqual(
+        await getRotations(
+            { ...rewardInfo, periodicMissionTag: undefined, node: "SolNode30", rewardTierOverrides: [0, 1, 2] },
+            "2026.10.22.13.12"
+        ),
+        [0, 1, 2]
+    );
 });
 
 void test("reported mods scale only positive quantities at final settlement", () => {

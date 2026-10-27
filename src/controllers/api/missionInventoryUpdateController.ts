@@ -3,10 +3,12 @@ import { getJSONfromString } from "../../helpers/stringHelpers.ts";
 import { getAccountForRequest, getBuildLabel } from "../../services/loginService.ts";
 import type { IMissionInventoryUpdateRequest } from "../../types/requestTypes.ts";
 import {
+    addFailedArbitrationRewards,
     addMissionInventoryUpdates,
     addMissionRewards,
     handleConservation
 } from "../../services/missionInventoryUpdateService.ts";
+import { isArbitrationMission } from "../../services/missionRewardService.ts";
 import {
     combineInventoryChanges,
     dispatchPendingPremiumCredits,
@@ -191,12 +193,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
             const response: IMissionInventoryUpdateResponse = { MissionRewards: [] };
             if (version_compare(buildLabel, gameToBuildVersion["8.0.0"]) > 0) {
                 response.InventoryJson = JSON.stringify(
-                    await getInventoryResponse(
-                        req,
-                        inventory,
-                        "xpBasedLevelCapDisabled" in req.query,
-                        buildLabel
-                    )
+                    await getInventoryResponse(req, inventory, "xpBasedLevelCapDisabled" in req.query, buildLabel)
                 );
             }
             if (
@@ -210,12 +207,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         } else if (version_compare(buildLabel, gameToBuildVersion["8.0.0"]) > 0) {
             res.json({
                 InventoryJson: JSON.stringify(
-                    await getInventoryResponse(
-                        req,
-                        inventory,
-                        "xpBasedLevelCapDisabled" in req.query,
-                        buildLabel
-                    )
+                    await getInventoryResponse(req, inventory, "xpBasedLevelCapDisabled" in req.query, buildLabel)
                 )
             } satisfies IMissionInventoryUpdateResponseBackToDryDock);
         } else {
@@ -263,7 +255,18 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
             missionReport.RewardInfo?.T
         )
     ) {
-        logger.debug(`aborted or failed mission, just syncing inventory`);
+        logger.debug(`aborted or failed mission, syncing inventory`);
+        let MissionRewards: IMissionInventoryUpdateResponse["MissionRewards"] = [];
+        if (
+            (missionReport.MissionStatus == "GS_FAILURE" ||
+                (missionReport.MissionStatus === undefined && missionReport.MissionFailed)) &&
+            missionReport.RewardInfo &&
+            isArbitrationMission(missionReport.RewardInfo)
+        ) {
+            const rewards = await addFailedArbitrationRewards(account, buildLabel, inventory, missionReport.RewardInfo);
+            MissionRewards = rewards.MissionRewards;
+            combineInventoryChanges(inventoryUpdates.InventoryChanges, rewards.inventoryChanges);
+        }
         if (missionReport.EndOfMatchUpload || missionReport.RJ) {
             logger.debug(`refreshing reward seed`);
             inventory.RewardSeed = generateRewardSeed();
@@ -271,10 +274,12 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         await inventory.save();
         if (settlementClaim) await completeMissionSettlementClaim(settlementClaim);
         const inventoryResponse = await getInventoryResponse(req, inventory, true, buildLabel);
-        res.json({
+        const failureResponse: IMissionInventoryUpdateResponse = {
             InventoryJson: JSON.stringify(inventoryResponse),
-            MissionRewards: []
-        });
+            MissionRewards
+        };
+        if (MissionRewards.length) failureResponse.InventoryChanges = inventoryUpdates.InventoryChanges;
+        res.json(failureResponse);
         sendWsBroadcastTo(account._id.toString(), { update_inventory: true });
         return;
     }
