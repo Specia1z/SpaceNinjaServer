@@ -32,9 +32,12 @@ export const getMissionSettlementKey = (report: TMissionSettlementIdentity): str
         Boolean(rewardInfo?.jobId) &&
         Number.isSafeInteger(rewardInfo?.JobStage) &&
         rewardInfo!.JobStage! >= 0;
+    const hasValidRepHash = Boolean(repHash) && repHash.length <= 256;
+    const hasSessionIdentity = /^[\da-f]{24}$/i.test(sessionId) && hasValidRepHash;
+    const isSessionlessEndOfMatch = report.EndOfMatchUpload === true && !sessionId && hasValidRepHash;
     if (
         !Number.isSafeInteger(report.MissionPTS) ||
-        (!isStageOnlyBounty && (!/^[\da-f]{24}$/i.test(sessionId) || !repHash || repHash.length > 256))
+        (!isStageOnlyBounty && !hasSessionIdentity && !isSessionlessEndOfMatch)
     ) {
         return undefined;
     }

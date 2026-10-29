@@ -77,6 +77,18 @@ void test("stage-only bounty reports use job and checkpoint identity when final-
     assert.equal(getMissionSettlementKey(makeReport({ ...first, RepHash: "rep-hash-1" })), undefined);
 });
 
+void test("solo end-of-match reports use mission points and report hash without a session ID", () => {
+    const first = makeReport({ sharedSessionId: undefined, EndOfMatchUpload: true });
+    const key = getMissionSettlementKey(first);
+
+    assert.ok(key);
+    assert.equal(getMissionSettlementKey(makeReport({ ...first })), key);
+    assert.notEqual(getMissionSettlementKey(makeReport({ ...first, MissionPTS: 43 })), key);
+    assert.notEqual(getMissionSettlementKey(makeReport({ ...first, RepHash: "rep-hash-2" })), key);
+    assert.equal(getMissionSettlementKey(makeReport({ ...first, RepHash: "" })), undefined);
+    assert.equal(getMissionSettlementKey(makeReport({ ...first, sharedSessionId: "invalid-session" })), undefined);
+});
+
 void test("only one request can claim a settlement and completed claims stay closed", async () => {
     const accountId = new Types.ObjectId();
     const settlementKey = getMissionSettlementKey(makeReport())!;

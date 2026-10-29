@@ -90,6 +90,80 @@ void test("a completed settlement replay does not apply client inventory deltas"
     assert.equal((await Inventory.findById(inventory._id))?.RegularCredits, 100);
 });
 
+void test("solo end-of-match settlement saves equipment XP without a shared session ID", async () => {
+    const account = await new Account({
+        email: "solo-xp-settlement@example.com",
+        password: "password",
+        DisplayName: "SoloXpSettlement",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/"
+    }).save();
+    const inventory = await new Inventory({
+        accountOwnerId: account._id,
+        LongGuns: [{ ItemType: "/Lotus/Weapons/Tenno/LongGuns/Soma/Soma", XP: 0 }]
+    }).save();
+    const weaponId = inventory.LongGuns[0]._id.toString();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: false,
+        MissionStatus: "GS_SUCCESS",
+        AliveTime: 60,
+        MissionTime: 60,
+        GameModeId: 0,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        MissionPTS: 1234567890,
+        RepHash: "solo-xp-report-1",
+        EndOfMatchUpload: true,
+        ObjectiveReached: true,
+        FpsAvg: 0,
+        FpsMin: 0,
+        FpsMax: 0,
+        FpsSamples: 0,
+        PlayerSkillGains: {},
+        Missions: { Tag: "SolNode1", Completes: 1, Tier: 0 },
+        RewardInfo: { node: "SolNode1", rewardSeed: 123 },
+        LongGuns: [{ ItemId: { $oid: weaponId }, XP: 1200 }]
+    } as unknown as IMissionInventoryUpdateRequest;
+
+    let responseBody: IMissionInventoryUpdateResponse | undefined;
+    const response = {
+        json(value: typeof responseBody) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654", xpBasedLevelCapDisabled: "1" },
+        body: JSON.stringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    const originalStringify = JSON.stringify;
+    try {
+        JSON.stringify = JSONStringify;
+        await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+    } finally {
+        JSON.stringify = originalStringify;
+    }
+
+    const savedInventory = (await Inventory.findById(inventory._id))!;
+    assert.equal(savedInventory.LongGuns.id(weaponId)?.XP, 1200);
+    assert.equal(
+        savedInventory.XPInfo.find(item => item.ItemType == "/Lotus/Weapons/Tenno/LongGuns/Soma/Soma")?.XP,
+        1200
+    );
+    const clientInventory = JSON.parse(responseBody!.InventoryJson!) as {
+        LongGuns: { XP: number }[];
+    };
+    assert.equal(clientInventory.LongGuns[0].XP, 1200);
+});
+
 void test("failed arbitration pays completed rotations but quitting and zero rotations do not", async () => {
     for (const [index, status, rotations] of [
         [1, "GS_FAILURE", 4],
