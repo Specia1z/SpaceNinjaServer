@@ -288,6 +288,34 @@ void test("market fusion bundles grant their advertised fusion points", async ()
     }
 });
 
+void test("market purchase of a Riven cipher charges 20 platinum", async () => {
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        PremiumCredits: 100,
+        PremiumCreditsFree: 0
+    });
+    const response = await handlePurchase(
+        {
+            PurchaseParams: {
+                Source: ePurchaseSource.Market,
+                StoreItem: "/Lotus/StoreItems/Types/Items/MiscItems/RivenIdentifier",
+                Quantity: 1,
+                UsePremium: true,
+                ExpectedPrice: 20
+            },
+            buildLabel: "2026.10.22.13.12/"
+        },
+        inventory
+    );
+
+    assert.equal(inventory.PremiumCredits, 80);
+    assert.equal(response.InventoryChanges.PremiumCredits, -20);
+    assert.equal(
+        inventory.MiscItems.find(item => item.ItemType == "/Lotus/Types/Items/MiscItems/RivenIdentifier")?.ItemCount,
+        1
+    );
+});
+
 void test("syndicate augment-two cards are added as raw upgrades", async () => {
     const inventory = new Inventory({
         accountOwnerId: "000000000000000000000001",

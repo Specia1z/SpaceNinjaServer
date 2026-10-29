@@ -6,6 +6,7 @@ import type { IMiscItem } from "../../types/inventoryTypes/inventoryTypes.ts";
 import { getJSONfromString } from "../../helpers/stringHelpers.ts";
 import { isVeiledRivenFingerprint } from "../../helpers/rivenHelper.ts";
 import { logger } from "../../utils/logger.ts";
+import { sendWsBroadcastTo } from "../../services/wsService.ts";
 
 export const completeRandomModChallengeController: RequestHandler = async (req, res) => {
     const accountId = await getAccountIdForRequest(req);
@@ -83,6 +84,7 @@ export const completeRandomModChallengeController: RequestHandler = async (req, 
         InventoryChanges: inventoryChanges,
         Fingerprint: upgrade.UpgradeFingerprint
     });
+    sendWsBroadcastTo(accountId, { sync_inventory: true, update_inventory: true });
 };
 
 interface ICompleteRandomModChallengeRequest {
