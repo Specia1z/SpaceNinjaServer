@@ -7,6 +7,9 @@ import { handlePurchase } from "./purchaseService.ts";
 import { getVendor } from "./itemDataService.ts";
 import { getVendorManifestByTypeName } from "./serversideVendorsService.ts";
 
+const MELICA_VENDOR_MANIFEST = "/Lotus/Types/Game/VendorManifests/Hubs/MelicaVendorManifest";
+const MELICA_CURRENCY = "/Lotus/Types/Gameplay/Zariman/Resources/EntropicKuvaItem";
+
 void test("Narin bundle stores skins as WeaponSkins", async () => {
     const inventory = new Inventory({
         accountOwnerId: "000000000000000000000001",
@@ -182,6 +185,46 @@ void test("market booster packages are not discounted by an active booster", asy
     assert.equal(inventory.PremiumCredits, 0);
 });
 
+void test("Melica vendor accepts Entropic Kuva as a purchase currency", async () => {
+    const manifest = getVendorManifestByTypeName(MELICA_VENDOR_MANIFEST, true);
+    assert.ok(manifest);
+    const offer = manifest.VendorInfo.ItemManifest.find(
+        item => item.StoreItem == "/Lotus/StoreItems/Types/Recipes/WarframeRecipes/NarinBlueprint"
+    );
+    assert.ok(offer);
+    assert.deepEqual(offer.ItemPrices, [{ ItemType: MELICA_CURRENCY, ItemCount: 400, ProductCategory: "MiscItems" }]);
+
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        MiscItems: [{ ItemType: MELICA_CURRENCY, ItemCount: 400 }]
+    });
+    const response = await handlePurchase(
+        {
+            PurchaseParams: {
+                Source: ePurchaseSource.Vendor,
+                SourceId: manifest.VendorInfo._id.$oid,
+                StoreItem: offer.StoreItem,
+                Quantity: 1,
+                UsePremium: false
+            },
+            buildLabel: "2026.09.30.14.45/Rc-z7J92eRikCYiXffFybg"
+        },
+        inventory
+    );
+
+    assert.ok(response.InventoryChanges.MiscItems);
+    assert.equal(response.InventoryChanges.MiscItems[0].ItemType, MELICA_CURRENCY);
+    assert.equal(response.InventoryChanges.MiscItems[0].ItemCount, -400);
+    assert.equal(
+        inventory.MiscItems.some(item => item.ItemType == MELICA_CURRENCY),
+        false
+    );
+    assert.equal(
+        response.InventoryChanges.Recipes?.[0].ItemType,
+        "/Lotus/Types/Recipes/WarframeRecipes/NarinBlueprint"
+    );
+});
+
 void test("RoadToTau vendor exposes the extracted manifest and accepts event-resource purchases", async () => {
     const vendor = getVendor(ROAD_TO_TAU_VENDOR);
     assert.ok(vendor);
@@ -235,12 +278,12 @@ void test("RoadToTau vendor exposes the extracted manifest and accepts event-res
 
     assert.equal(response.InventoryChanges.MiscItems![0].ItemType, ROAD_TO_TAU_CURRENCY);
     assert.equal(response.InventoryChanges.MiscItems![0].ItemCount, -50);
-    assert.equal(inventory.MiscItems.some(item => item.ItemType == ROAD_TO_TAU_CURRENCY), false);
-    assert.equal(response.InventoryChanges.WeaponSkins!.length, 1);
     assert.equal(
-        response.InventoryChanges.WeaponSkins![0].ItemType,
-        "/Lotus/Upgrades/Skins/Sigils/ClanSigilBasicAdd"
+        inventory.MiscItems.some(item => item.ItemType == ROAD_TO_TAU_CURRENCY),
+        false
     );
+    assert.equal(response.InventoryChanges.WeaponSkins!.length, 1);
+    assert.equal(response.InventoryChanges.WeaponSkins![0].ItemType, "/Lotus/Upgrades/Skins/Sigils/ClanSigilBasicAdd");
 });
 
 void test("market fusion bundles grant their advertised fusion points", async () => {

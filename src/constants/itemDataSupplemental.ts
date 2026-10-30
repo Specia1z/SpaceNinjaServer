@@ -14,6 +14,8 @@ const supplementalResource = (name: string, icon: string): IResource => ({
 export const supplementalResources: Record<string, IResource> = {
     // This event currency is present in the client manifest but absent from the pinned Public Export snapshot.
     [ROAD_TO_TAU_CURRENCY]: supplementalResource("Road to Tau Resource", ""),
+    // Melica's currency is present in vendor manifests but absent from the pinned Public Export snapshot.
+    "/Lotus/Types/Gameplay/Zariman/Resources/EntropicKuvaItem": supplementalResource("Entropic Kuva", ""),
     "/Lotus/Types/Recipes/WarframeRecipes/NarinChassisComponent": supplementalResource(
         "Narin Chassis",
         "/Lotus/Interface/Icons/StoreIcons/Warframes/Narin.png"
