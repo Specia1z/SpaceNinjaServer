@@ -238,29 +238,27 @@ export const isAdministrator = (account: Pick<TAccountDocument, "DisplayName">):
 };
 
 export const hasPermission = (account: Pick<TAccountDocument, "DisplayName">, perm: string): boolean => {
-    if (!isAdministrator(account)) {
-        {
-            const [obj, idx] = configIdToIndexable(`webui.nonAdminPermissions.${perm}`);
-            if (typeof obj[idx] == "boolean") {
-                return obj[idx];
-            }
-        }
+    if (isAdministrator(account)) return true;
 
-        const arr = perm.split(".");
+    const [obj, idx] = configIdToIndexable(`webui.nonAdminPermissions.${perm}`);
+    if (typeof obj[idx] == "boolean") {
+        return obj[idx];
+    }
+
+    const arr = perm.split(".");
+    arr.pop();
+    while (arr.length > 0) {
+        const [obj, idx] = configIdToIndexable(`webui.nonAdminPermissions.${arr.join(".")}.*`);
+        if (typeof obj[idx] == "boolean") {
+            return obj[idx];
+        }
         arr.pop();
-        while (arr.length > 0) {
-            const [obj, idx] = configIdToIndexable(`webui.nonAdminPermissions.${arr.join(".")}.*`);
-            if (typeof obj[idx] == "boolean") {
-                return obj[idx];
-            }
-            arr.pop();
-        }
+    }
 
-        {
-            const [obj, idx] = configIdToIndexable(`webui.nonAdminPermissions.*`);
-            if (typeof obj[idx] == "boolean") {
-                return obj[idx];
-            }
+    {
+        const [obj, idx] = configIdToIndexable(`webui.nonAdminPermissions.*`);
+        if (typeof obj[idx] == "boolean") {
+            return obj[idx];
         }
     }
     // Missing permission configuration must fail closed. In particular, custom

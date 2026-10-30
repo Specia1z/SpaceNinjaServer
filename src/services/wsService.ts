@@ -292,7 +292,9 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                 }
             }
             if (data.allPermissions) {
-                const accountId = (ws as IWsCustomData).accountId;
+                // Permission ownership follows the authenticated account. accountId may point at a
+                // possessed target, while realAccountId retains the administrator who authorized it.
+                const accountId = (ws as IWsCustomData).realAccountId ?? (ws as IWsCustomData).accountId;
                 if (accountId && !(ws as IWsCustomData).isGame) {
                     const account = (await Account.findById(accountId))!;
                     ws.send(
