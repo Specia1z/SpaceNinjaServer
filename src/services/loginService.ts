@@ -263,7 +263,10 @@ export const hasPermission = (account: Pick<TAccountDocument, "DisplayName">, pe
             }
         }
     }
-    return true;
+    // Missing permission configuration must fail closed. In particular, custom
+    // WebUI endpoints can mutate inventory and must never become public just
+    // because an older config.json predates nonAdminPermissions.
+    return false;
 };
 
 export const getGoogleAccountData = async (googleTokenId: string | undefined): Promise<IAndroidAccount> => {

@@ -166,6 +166,74 @@ void test("solo end-of-match settlement saves equipment XP without a shared sess
     assert.equal(clientInventory.LongGuns[0].XP, 1200);
 });
 
+void test("mission settlement cannot turn Prime Vault FusionBundles into Endo", async () => {
+    const account = await new Account({
+        email: "prime-vault-endo@example.com",
+        password: "password",
+        DisplayName: "PrimeVaultEndo",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/"
+    }).save();
+    const inventory = await new Inventory({ accountOwnerId: account._id, FusionPoints: 0 }).save();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: false,
+        MissionStatus: "GS_SUCCESS",
+        AliveTime: 60,
+        MissionTime: 60,
+        GameModeId: 0,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        MissionPTS: 42,
+        RepHash: "prime-vault-endo-report-1",
+        EndOfMatchUpload: true,
+        ObjectiveReached: true,
+        sharedSessionId: "0123456789abcdef01234569",
+        FpsAvg: 0,
+        FpsMin: 0,
+        FpsMax: 0,
+        FpsSamples: 0,
+        PlayerSkillGains: {},
+        Missions: { Tag: "SolNode1", Completes: 1 },
+        RewardInfo: { node: "SolNode1", rewardSeed: 123 },
+        FusionBundles: [
+            {
+                ItemType: "/Lotus/Upgrades/Mods/FusionBundles/MPVDualPackFusionBundle",
+                ItemCount: 2000
+            }
+        ]
+    } as unknown as IMissionInventoryUpdateRequest;
+
+    let responseBody: IMissionInventoryUpdateResponse | undefined;
+    const response = {
+        json(value: typeof responseBody) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654", xpBasedLevelCapDisabled: "1" },
+        body: JSON.stringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    const originalStringify = JSON.stringify;
+    try {
+        JSON.stringify = JSONStringify;
+        await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+    } finally {
+        JSON.stringify = originalStringify;
+    }
+
+    assert.ok(responseBody);
+    assert.equal((await Inventory.findById(inventory._id))?.FusionPoints, 0);
+});
+
 void test("failed arbitration pays completed rotations but quitting and zero rotations do not", async () => {
     for (const [index, status, rotations] of [
         [1, "GS_FAILURE", 4],

@@ -1000,6 +1000,15 @@ export const addFailedArbitrationRewards = async (
     return { MissionRewards, inventoryChanges };
 };
 
+export const getEidolonCaptureCount = (
+    dropMods: readonly unknown[] | undefined,
+    maxCaptures: number,
+    alreadyCredited = 0
+): number => {
+    if (!dropMods) return 0;
+    return maxCaptures > 0 ? Math.min(dropMods.length, Math.max(0, maxCaptures - alreadyCredited)) : dropMods.length;
+};
+
 //TODO: return type of partial missioninventoryupdate response
 export const addMissionRewards = async (
     account: TAccountDocument,
@@ -1611,6 +1620,10 @@ export const addMissionRewards = async (
                     modDropMultiplier
                 });
             }
+            const maxEidolonCaptures = config.antiCheat?.maxEidolonCapturesPerReport ?? 1;
+            let teralystCapturesCredited = 0;
+            let gantulystCapturesCredited = 0;
+            let hydrolystCapturesCredited = 0;
             for (const si of strippedItems) {
                 if (si.DropTable in droptableAliases) {
                     logger.debug(`rewriting ${si.DropTable} to ${droptableAliases[si.DropTable]}`);
@@ -1632,10 +1645,23 @@ export const addMissionRewards = async (
                     inventory.teralystCapturePlatinumBonus != null &&
                     inventory.teralystCapturePlatinumBonus > 0
                 ) {
+                    const captureCount = getEidolonCaptureCount(
+                        si.DROP_MOD,
+                        maxEidolonCaptures,
+                        teralystCapturesCredited
+                    );
+                    teralystCapturesCredited += captureCount;
                     inventory.pendingPremiumCredits ??= 0;
-                    inventory.pendingPremiumCredits += inventory.teralystCapturePlatinumBonus * si.DROP_MOD.length;
+                    inventory.pendingPremiumCredits += inventory.teralystCapturePlatinumBonus * captureCount;
+                    if (captureCount != si.DROP_MOD.length) {
+                        logger.warn(`capped reported teralyst captures`, {
+                            account: account.DisplayName,
+                            requested: si.DROP_MOD.length,
+                            accepted: captureCount
+                        });
+                    }
                     logger.debug(
-                        `captured x${si.DROP_MOD.length} teralyst, gave ${inventory.teralystCapturePlatinumBonus * si.DROP_MOD.length} platinum`
+                        `captured x${captureCount} teralyst, gave ${inventory.teralystCapturePlatinumBonus * captureCount} platinum`
                     );
                 }
                 if (
@@ -1644,10 +1670,23 @@ export const addMissionRewards = async (
                     inventory.gantulystCapturePlatinumBonus != null &&
                     inventory.gantulystCapturePlatinumBonus > 0
                 ) {
+                    const captureCount = getEidolonCaptureCount(
+                        si.DROP_MOD,
+                        maxEidolonCaptures,
+                        gantulystCapturesCredited
+                    );
+                    gantulystCapturesCredited += captureCount;
                     inventory.pendingPremiumCredits ??= 0;
-                    inventory.pendingPremiumCredits += inventory.gantulystCapturePlatinumBonus * si.DROP_MOD.length;
+                    inventory.pendingPremiumCredits += inventory.gantulystCapturePlatinumBonus * captureCount;
+                    if (captureCount != si.DROP_MOD.length) {
+                        logger.warn(`capped reported gantulyst captures`, {
+                            account: account.DisplayName,
+                            requested: si.DROP_MOD.length,
+                            accepted: captureCount
+                        });
+                    }
                     logger.debug(
-                        `captured x${si.DROP_MOD.length} gantulyst, gave ${inventory.gantulystCapturePlatinumBonus * si.DROP_MOD.length} platinum`
+                        `captured x${captureCount} gantulyst, gave ${inventory.gantulystCapturePlatinumBonus * captureCount} platinum`
                     );
                 }
                 if (
@@ -1656,10 +1695,23 @@ export const addMissionRewards = async (
                     inventory.hydrolystCapturePlatinumBonus != null &&
                     inventory.hydrolystCapturePlatinumBonus > 0
                 ) {
+                    const captureCount = getEidolonCaptureCount(
+                        si.DROP_MOD,
+                        maxEidolonCaptures,
+                        hydrolystCapturesCredited
+                    );
+                    hydrolystCapturesCredited += captureCount;
                     inventory.pendingPremiumCredits ??= 0;
-                    inventory.pendingPremiumCredits += inventory.hydrolystCapturePlatinumBonus * si.DROP_MOD.length;
+                    inventory.pendingPremiumCredits += inventory.hydrolystCapturePlatinumBonus * captureCount;
+                    if (captureCount != si.DROP_MOD.length) {
+                        logger.warn(`capped reported hydrolyst captures`, {
+                            account: account.DisplayName,
+                            requested: si.DROP_MOD.length,
+                            accepted: captureCount
+                        });
+                    }
                     logger.debug(
-                        `captured x${si.DROP_MOD.length} hydrolist, gave ${inventory.hydrolystCapturePlatinumBonus * si.DROP_MOD.length} platinum`
+                        `captured x${captureCount} hydrolist, gave ${inventory.hydrolystCapturePlatinumBonus * captureCount} platinum`
                     );
                 }
                 const droptables = getEffectiveEnemyDropTable(si.DropTable);

@@ -347,10 +347,14 @@ export interface IConfig {
         maxXpPerMissionSecond?: number;
         /** 客户端单次结算对同一物品允许上报的最大数量。0 表示不检查。 */
         maxClientItemCountPerReport?: number;
+        /** Maximum Endo represented by client-supplied FusionBundles in one report. 0 disables the limit. */
+        maxClientFusionPointsPerReport?: number;
         /** Maximum number of client-supplied inventory delta entries accepted in one report. 0 disables the limit. */
         maxClientInventoryEntriesPerReport?: number;
         /** Maximum client-supplied RegularCredits delta accepted in one report. 0 disables the limit. */
         maxClientCreditsPerReport?: number;
+        /** Maximum number of captures credited by one client Eidolon drop-table entry. 0 disables the limit. */
+        maxEidolonCapturesPerReport?: number;
     };
     webui?: IWebuiConfig;
     client?: IClientConfig;

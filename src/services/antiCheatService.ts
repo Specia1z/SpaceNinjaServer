@@ -8,6 +8,7 @@ import type { IMissionInventoryUpdateRequest } from "../types/requestTypes.ts";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import type { TSuspicionKind, TSuspicionResponse } from "../models/suspicionEventModel.ts";
 import type { TAntiCheatResponseMode } from "./configService.ts";
+import { ExportFusionBundles } from "warframe-public-export-plus";
 
 export interface IAntiCheatContext {
     requestId: string;
@@ -64,6 +65,13 @@ const countedInventoryFields = [
     "RawUpgrades",
     "FusionTreasures"
 ] as const;
+
+// These are store-package components, not mission drops. Accepting them here turns a
+// client-controlled item count into a direct Endo grant worth 50,000 per item.
+const disallowedMissionFusionBundles = new Set([
+    "/Lotus/Upgrades/Mods/FusionBundles/MPVDualPackFusionBundle",
+    "/Lotus/Upgrades/Mods/FusionBundles/MPVSinglePackFusionBundle"
+]);
 
 const removeClientControlledClaims = (missionReport: IMissionInventoryUpdateRequest): void => {
     for (const field of countedInventoryFields) {
@@ -286,11 +294,14 @@ export const verifyClientInventoryUpdates = (
     if (!isEnabled()) return true;
 
     const maxItemCount = config.antiCheat?.maxClientItemCountPerReport ?? 10000;
+    const maxFusionPoints = config.antiCheat?.maxClientFusionPointsPerReport ?? 100000;
     const maxEntries = config.antiCheat?.maxClientInventoryEntriesPerReport ?? 250;
     const maxCredits = config.antiCheat?.maxClientCreditsPerReport ?? (maxItemCount > 0 ? maxItemCount * 1000 : 0);
     const mode = getAntiCheatResponseMode();
     const invalidDetails: Record<string, unknown>[] = [];
     const excessiveDetails: Record<string, unknown>[] = [];
+    const hardInvalidFields = new Set<string>();
+    let reportedFusionPoints = 0;
     let retainedEntries = 0;
 
     const noteInvalid = (details: Record<string, unknown>): void => {
@@ -304,9 +315,11 @@ export const verifyClientInventoryUpdates = (
         const report = missionReport as unknown as Record<string, unknown>;
         const items = report[field];
         if (items === undefined) continue;
+        const isFusionBundleField = field == "FusionBundles" || field == "FusionBundels";
         if (!Array.isArray(items)) {
             noteInvalid({ field, reason: "expectedArray" });
-            if (mode == "sanitize") delete report[field];
+            if (mode == "sanitize" || isFusionBundleField) delete report[field];
+            if (isFusionBundleField) hardInvalidFields.add(field);
             continue;
         }
 
@@ -319,21 +332,37 @@ export const verifyClientInventoryUpdates = (
                 typeof (rawItem as { ItemType?: unknown }).ItemType != "string"
             ) {
                 noteInvalid({ field, index, reason: "missingItemType" });
-                if (mode != "sanitize") output.push(rawItem);
+                if (mode != "sanitize" && !isFusionBundleField) output.push(rawItem);
+                if (isFusionBundleField) hardInvalidFields.add(field);
                 continue;
             }
             const item = rawItem as { ItemType: string; ItemCount?: unknown } & Record<string, unknown>;
             const itemType = item.ItemType;
+            const isFusionBundle = isFusionBundleField;
             if (!itemType.startsWith("/Lotus/")) {
                 noteInvalid({ field, index, itemType, reason: "invalidItemType" });
-                if (mode != "sanitize") output.push(rawItem);
+                if (mode != "sanitize" && !isFusionBundle) output.push(rawItem);
+                if (isFusionBundle) hardInvalidFields.add(field);
+                continue;
+            }
+
+            const fusionBundle = isFusionBundle ? ExportFusionBundles[itemType] : undefined;
+            if (isFusionBundle && !fusionBundle) {
+                noteInvalid({ field, index, itemType, reason: "unknownFusionBundle" });
+                hardInvalidFields.add(field);
+                continue;
+            }
+            if (isFusionBundle && disallowedMissionFusionBundles.has(itemType)) {
+                noteInvalid({ field, index, itemType, reason: "disallowedMissionFusionBundle" });
+                hardInvalidFields.add(field);
                 continue;
             }
 
             const itemCount = item.ItemCount;
             if (itemCount === undefined && field != "FusionTreasures") {
                 noteInvalid({ field, index, itemType, itemCount, reason: "invalidItemCount" });
-                if (mode != "sanitize") output.push(rawItem);
+                if (mode != "sanitize" && !isFusionBundle) output.push(rawItem);
+                if (isFusionBundle) hardInvalidFields.add(field);
                 continue;
             }
             if (
@@ -341,13 +370,15 @@ export const verifyClientInventoryUpdates = (
                 (typeof itemCount != "number" || !Number.isSafeInteger(itemCount) || itemCount <= 0)
             ) {
                 noteInvalid({ field, index, itemType, itemCount, reason: "invalidItemCount" });
-                if (mode != "sanitize") output.push(rawItem);
+                if (mode != "sanitize" && !isFusionBundle) output.push(rawItem);
+                if (isFusionBundle) hardInvalidFields.add(field);
                 continue;
             }
 
             if (maxEntries > 0 && retainedEntries >= maxEntries) {
                 noteExcessive({ field, index, reason: "tooManyEntries", allowed: maxEntries });
-                if (mode != "sanitize") output.push(rawItem);
+                if (mode != "sanitize" && !isFusionBundle) output.push(rawItem);
+                if (isFusionBundle) hardInvalidFields.add(field);
                 continue;
             }
             retainedEntries++;
@@ -359,12 +390,35 @@ export const verifyClientInventoryUpdates = (
 
             const count = itemCount;
             const prior = totals.get(itemType) ?? 0;
-            const remaining = maxItemCount > 0 ? Math.max(0, maxItemCount - prior) : count;
-            if (maxItemCount > 0 && count > remaining) {
+            const remainingItemCount = maxItemCount > 0 ? Math.max(0, maxItemCount - prior) : count;
+            if (maxItemCount > 0 && count > remainingItemCount) {
                 noteExcessive({ field, index, itemType, requested: count + prior, allowed: maxItemCount });
             }
-            if (mode == "sanitize" && remaining <= 0) continue;
-            const accepted = mode == "sanitize" ? Math.min(count, remaining) : count;
+            let accepted = isFusionBundle || mode == "sanitize" ? Math.min(count, remainingItemCount) : count;
+            if (isFusionBundle && maxItemCount > 0 && count > remainingItemCount) {
+                hardInvalidFields.add(field);
+            }
+            if (fusionBundle && maxFusionPoints > 0) {
+                const remainingFusionPoints = Math.max(0, maxFusionPoints - reportedFusionPoints);
+                const acceptedByFusionPoints =
+                    fusionBundle.fusionPoints > 0
+                        ? Math.floor(remainingFusionPoints / fusionBundle.fusionPoints)
+                        : accepted;
+                if (accepted > acceptedByFusionPoints) {
+                    noteExcessive({
+                        field,
+                        index,
+                        itemType,
+                        requested: fusionBundle.fusionPoints * count,
+                        allowed: maxFusionPoints,
+                        reason: "excessiveFusionPoints"
+                    });
+                    hardInvalidFields.add(field);
+                    accepted = acceptedByFusionPoints;
+                }
+                reportedFusionPoints += fusionBundle.fusionPoints * accepted;
+            }
+            if (accepted <= 0) continue;
             totals.set(itemType, prior + accepted);
             if (mode == "sanitize") {
                 const existing = output.find(
@@ -375,11 +429,13 @@ export const verifyClientInventoryUpdates = (
                 ) as { ItemCount?: number } | undefined;
                 if (existing) existing.ItemCount = (existing.ItemCount ?? 0) + accepted;
                 else output.push({ ...item, ItemCount: accepted });
+            } else if (accepted != count) {
+                output.push({ ...item, ItemCount: accepted });
             } else {
                 output.push(rawItem);
             }
         }
-        if (mode == "sanitize") report[field] = output;
+        if (mode == "sanitize" || hardInvalidFields.has(field)) report[field] = output;
     }
 
     if (missionReport.RegularCredits !== undefined) {
@@ -393,6 +449,12 @@ export const verifyClientInventoryUpdates = (
         }
     }
 
+    const getClientInventoryViolationResponse = (details: Record<string, unknown>): TSuspicionResponse | undefined => {
+        const configuredResponse = getViolationResponse(true);
+        if (configuredResponse) return configuredResponse;
+        return typeof details.field == "string" && hardInvalidFields.has(details.field) ? "sanitized" : undefined;
+    };
+
     if (invalidDetails.length > 0) {
         flagSuspicious(
             account,
@@ -400,7 +462,7 @@ export const verifyClientInventoryUpdates = (
             invalidDetails[0],
             missionReport,
             context,
-            getViolationResponse(true)
+            getClientInventoryViolationResponse(invalidDetails[0])
         );
     }
     if (excessiveDetails.length > 0) {
@@ -410,7 +472,7 @@ export const verifyClientInventoryUpdates = (
             excessiveDetails[0],
             missionReport,
             context,
-            getViolationResponse(true)
+            getClientInventoryViolationResponse(excessiveDetails[0])
         );
     }
     return invalidDetails.length == 0 && excessiveDetails.length == 0;

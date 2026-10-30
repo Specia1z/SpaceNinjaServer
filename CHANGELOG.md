@@ -46,6 +46,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Non-administrator accounts could call `/custom/addCurrency` with their normal account nonce and grant themselves Platinum or Endo because missing WebUI permission configuration defaulted to allow. Currency requests now validate their shape, unauthorized callers receive `403`, and the vanilla non-admin permission policy is deny-by-default.
+- Mission settlement reports now reject store-only Prime Vault FusionBundles, cap client-reported Endo value per report, and cap Eidolon capture counts used by account platinum bonuses.
 - U44 login responses must omit the legacy `DTLS` property for builds `43.5.0` and newer; current U44 clients reject it as an unknown property. The version cutoff is retained while the newer NRS handshake is investigated.
 - U44 IRC connections failed before authentication because the client only offers TLS 1.3 while the embedded IRC TLS server responds with TLS 1.2. Docker Compose now terminates IRC TLS 1.2/1.3 through HAProxy and bridges each secure port to its matching TLS 1.2 IRC port.
 - Containers failed to start with `exec: "/app/docker-entrypoint.sh": permission denied`, because the checkout records the script without its executable bit and `COPY` preserves source permissions. Both the git mode and the `Dockerfile` now set it.

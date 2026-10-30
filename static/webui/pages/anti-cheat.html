@@ -256,6 +256,26 @@
                                 </form>
                             </div>
                             <div class="admin-suspicion-config-item">
+                                <form onsubmit="doSaveConfigInt('antiCheat.maxClientFusionPointsPerReport'); return false;">
+                                    <label class="form-label" for="antiCheat.maxClientFusionPointsPerReport" data-loc="admin_antiCheatMaxFusionPoints"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="antiCheat.maxClientFusionPointsPerReport" type="number" min="0" step="1" data-default="100000" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                    <div class="form-text" data-loc="admin_antiCheatMaxFusionPointsHint"></div>
+                                </form>
+                            </div>
+                            <div class="admin-suspicion-config-item">
+                                <form onsubmit="doSaveConfigInt('antiCheat.maxEidolonCapturesPerReport'); return false;">
+                                    <label class="form-label" for="antiCheat.maxEidolonCapturesPerReport" data-loc="admin_antiCheatMaxEidolonCaptures"></label>
+                                    <div class="input-group">
+                                        <input class="form-control" id="antiCheat.maxEidolonCapturesPerReport" type="number" min="0" step="1" data-default="1" />
+                                        <button class="btn btn-secondary" type="submit" data-loc="cheats_save"></button>
+                                    </div>
+                                    <div class="form-text" data-loc="admin_antiCheatMaxEidolonCapturesHint"></div>
+                                </form>
+                            </div>
+                            <div class="admin-suspicion-config-item">
                                 <form onsubmit="doSaveConfigInt('antiCheat.maxClientInventoryEntriesPerReport'); return false;">
                                     <label class="form-label" for="antiCheat.maxClientInventoryEntriesPerReport" data-loc="admin_antiCheatMaxInventoryEntries"></label>
                                     <div class="input-group">

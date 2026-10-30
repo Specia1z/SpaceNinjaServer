@@ -493,8 +493,10 @@ export const validateConfig = (): void => {
             maxMissionCompletesPerReport: 10,
             maxXpPerMissionSecond: 100000,
             maxClientItemCountPerReport: 10000,
+            maxClientFusionPointsPerReport: 100000,
             maxClientInventoryEntriesPerReport: 250,
-            maxClientCreditsPerReport: 10000000
+            maxClientCreditsPerReport: 10000000,
+            maxEidolonCapturesPerReport: 1
         };
         modified = true;
     } else {
@@ -540,6 +542,18 @@ export const validateConfig = (): void => {
             modified = true;
         }
         if (
+            config.antiCheat.maxClientFusionPointsPerReport !== undefined &&
+            (!Number.isInteger(config.antiCheat.maxClientFusionPointsPerReport) ||
+                config.antiCheat.maxClientFusionPointsPerReport < 0)
+        ) {
+            config.antiCheat.maxClientFusionPointsPerReport = 100000;
+            modified = true;
+        }
+        if (config.antiCheat.maxClientFusionPointsPerReport === undefined) {
+            config.antiCheat.maxClientFusionPointsPerReport = 100000;
+            modified = true;
+        }
+        if (
             config.antiCheat.maxClientInventoryEntriesPerReport !== undefined &&
             (!Number.isInteger(config.antiCheat.maxClientInventoryEntriesPerReport) ||
                 config.antiCheat.maxClientInventoryEntriesPerReport < 0)
@@ -561,6 +575,18 @@ export const validateConfig = (): void => {
         }
         if (config.antiCheat.maxClientCreditsPerReport === undefined) {
             config.antiCheat.maxClientCreditsPerReport = 10000000;
+            modified = true;
+        }
+        if (
+            config.antiCheat.maxEidolonCapturesPerReport !== undefined &&
+            (!Number.isInteger(config.antiCheat.maxEidolonCapturesPerReport) ||
+                config.antiCheat.maxEidolonCapturesPerReport < 0)
+        ) {
+            config.antiCheat.maxEidolonCapturesPerReport = 1;
+            modified = true;
+        }
+        if (config.antiCheat.maxEidolonCapturesPerReport === undefined) {
+            config.antiCheat.maxEidolonCapturesPerReport = 1;
             modified = true;
         }
     }

@@ -185,24 +185,26 @@
     "maxMissionCompletesPerReport": 10,
     "maxXpPerMissionSecond": 100000,
     "maxClientItemCountPerReport": 10000,
+    "maxClientFusionPointsPerReport": 100000,
     "maxClientInventoryEntriesPerReport": 250,
-    "maxClientCreditsPerReport": 10000000
+    "maxClientCreditsPerReport": 10000000,
+    "maxEidolonCapturesPerReport": 1
   },
   "webui": {
     "enabled": true,
     "adminOnly": true,
     "nonAdminPermissions": {
-      "*": true,
-      "addCredits": true,
-      "addPlatinum": true,
-      "addRegalAya": true,
-      "addEndo": true,
-      "addDirac": true,
-      "import": true,
-      "export": true,
+      "*": false,
+      "addCredits": false,
+      "addPlatinum": false,
+      "addRegalAya": false,
+      "addEndo": false,
+      "addDirac": false,
+      "import": false,
+      "export": false,
       "toggleCheat": {
-        "*": true,
-        "skipAllDialogue": true
+        "*": false,
+        "skipAllDialogue": false
       }
     },
     "defaultLanguage": "en"
