@@ -4,9 +4,11 @@ import type { Request, RequestHandler, Response } from "express";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import { JSONStringify } from "json-with-bigint";
+import { getInfestedLichItemRewards, getKillTokenRewardCount } from "../../helpers/nemesisHelpers.ts";
 import { Inventory } from "../../models/inventoryModels/inventoryModel.ts";
 import { Account } from "../../models/loginModel.ts";
 import { MissionSettlementClaim } from "../../models/missionSettlementClaimModel.ts";
+import { fromStoreItem } from "../../services/itemDataService.ts";
 import type { IMissionInventoryUpdateResponse } from "../../types/missionTypes.ts";
 import type { IMissionInventoryUpdateRequest } from "../../types/requestTypes.ts";
 import { getMissionSettlementKey } from "../../services/missionSettlementClaimService.ts";
@@ -366,6 +368,140 @@ void test("Hex bounty settlement pays the reward table, standing, and chemistry 
             ?.Standing,
         1_000
     );
+});
+
+void test("sessionless Infested Nemesis final settlement clears the lich and grants Coda weapon bucks", async () => {
+    const account = await new Account({
+        email: "infested-nemesis-final@example.com",
+        password: "password",
+        DisplayName: "InfestedNemesisFinal",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/",
+        DailyFirstWinDate: Math.trunc(Date.now() / 86400000) * 86400
+    }).save();
+    const fingerprint = 123456789;
+    const inventory = await new Inventory({
+        accountOwnerId: account._id,
+        RegularCredits: 100,
+        Nemesis: {
+            fp: fingerprint,
+            manifest: "/Lotus/Types/Enemies/InfestedLich/InfestedLichManifest",
+            KillingSuit: "/Lotus/Powersuits/Saryn/SarynPrime",
+            killingDamageType: 22,
+            ShoulderHelmet: "/Lotus/Upgrades/Skins/Saryn/SWSarynIonHelmet",
+            WeaponIdx: -1,
+            AgentIdx: 2,
+            BirthNode: "SolNode854",
+            Faction: "FC_INFESTATION",
+            Rank: 0,
+            k: false,
+            Traded: false,
+            d: new Date(),
+            PrevOwners: 0,
+            SecondInCommand: false,
+            Weakened: true,
+            InfNodes: [{ Node: "CrewBattleNode559", Influence: 1 }],
+            HenchmenKilled: 100,
+            HintProgress: 0,
+            Hints: [],
+            GuessHistory: [],
+            MissionCount: 0,
+            LastEnc: 0
+        }
+    }).save();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: false,
+        MissionStatus: "GS_SUCCESS",
+        AliveTime: 900,
+        MissionTime: 900,
+        GameModeId: 0,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        MissionPTS: 1793045000,
+        RepHash: "infested-nemesis-final-1",
+        EndOfMatchUpload: true,
+        RJ: true,
+        ObjectiveReached: true,
+        FpsAvg: 0,
+        FpsMin: 0,
+        FpsMax: 0,
+        FpsSamples: 0,
+        PlayerSkillGains: {},
+        Missions: { Tag: "CrewBattleNode559", Completes: 1, Tier: 0 },
+        RewardInfo: { node: "CrewBattleNode559", rewardSeed: 123 },
+        Nemesis: 1,
+        NemesisKillConvert: {
+            nemesisName: "TEST INFESTED LICH",
+            weaponLoc: "/Lotus/Language/Weapons/DerelictCernosName",
+            petLoc: "",
+            fingerprint,
+            killed: true
+        }
+    } as unknown as IMissionInventoryUpdateRequest;
+
+    let responseBody: IMissionInventoryUpdateResponse | undefined;
+    const response = {
+        json(value: typeof responseBody) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654", xpBasedLevelCapDisabled: "1" },
+        body: JSON.stringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    const originalStringify = JSON.stringify;
+    try {
+        JSON.stringify = JSONStringify;
+        await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+    } finally {
+        JSON.stringify = originalStringify;
+    }
+
+    assert.ok(responseBody);
+    assert.ok(responseBody.RecoveredItemInfo);
+    assert.equal(responseBody.InventoryJson, undefined);
+    assert.ok(responseBody.InventoryChanges);
+    assert.ok(responseBody.InventoryChanges.ShipDecorations);
+    assert.ok(responseBody.InventoryChanges.WeaponSkins);
+    assert.ok(responseBody.InventoryChanges.MiscItems);
+    const [rotARewardStoreItem, rotBRewardStoreItem] = getInfestedLichItemRewards(BigInt(fingerprint));
+    assert.equal(
+        responseBody.InventoryChanges.ShipDecorations.find(item => item.ItemType == fromStoreItem(rotARewardStoreItem))
+            ?.ItemCount,
+        1
+    );
+    assert.ok(
+        responseBody.InventoryChanges.WeaponSkins.some(item => item.ItemType == fromStoreItem(rotBRewardStoreItem))
+    );
+    assert.ok(
+        responseBody.InventoryChanges.WeaponSkins.some(
+            item => item.ItemType == "/Lotus/Upgrades/Skins/Sigils/InfLichVanquishedSigil"
+        )
+    );
+    assert.equal(
+        responseBody.InventoryChanges.MiscItems.find(
+            item => item.ItemType == "/Lotus/Types/Items/MiscItems/CodaWeaponBucks"
+        )?.ItemCount,
+        getKillTokenRewardCount(BigInt(fingerprint))
+    );
+    const savedInventory = (await Inventory.findById(inventory._id))!;
+    assert.equal(savedInventory.Nemesis, undefined);
+    const nemesisHistory = savedInventory.NemesisHistory!;
+    assert.equal(nemesisHistory[0].Faction, "FC_INFESTATION");
+    assert.equal(nemesisHistory[0].k, true);
+    const codaWeaponBucks = savedInventory.MiscItems.find(
+        item => item.ItemType == "/Lotus/Types/Items/MiscItems/CodaWeaponBucks"
+    )?.ItemCount;
+    assert.equal(codaWeaponBucks, getKillTokenRewardCount(BigInt(fingerprint)));
 });
 
 void test("aborted Hex bounties sync pickups without paying completion rewards", async () => {

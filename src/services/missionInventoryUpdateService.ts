@@ -859,12 +859,14 @@ export const addMissionInventoryUpdates = async (
 
                     // "Players will receive a Lich's Ephemera regardless of whether they Vanquish or Convert them."
                     if (profile.ephemera) {
-                        addSkin(inventory, profile.ephemera);
+                        combineInventoryChanges(ret.InventoryChanges, addSkin(inventory, profile.ephemera));
                         att.push(profile.ephemera);
                     }
 
                     const skinRewardStoreItem = value.killed ? manifest.firstKillReward : manifest.firstConvertReward;
-                    if (Object.keys(addSkin(inventory, fromStoreItem(skinRewardStoreItem))).length != 0) {
+                    const skinRewardChanges = addSkin(inventory, fromStoreItem(skinRewardStoreItem));
+                    if (Object.keys(skinRewardChanges).length != 0) {
+                        combineInventoryChanges(ret.InventoryChanges, skinRewardChanges);
                         att.push(skinRewardStoreItem);
                     }
 
@@ -874,8 +876,8 @@ export const addMissionInventoryUpdates = async (
                         );
                         const rotAReward = fromStoreItem(rotARewardStoreItem);
                         const rotBReward = fromStoreItem(rotBRewardStoreItem);
-                        await addItem(inventory, rotAReward);
-                        await addItem(inventory, rotBReward);
+                        combineInventoryChanges(ret.InventoryChanges, await addItem(inventory, rotAReward));
+                        combineInventoryChanges(ret.InventoryChanges, await addItem(inventory, rotBReward));
                         att.push(rotAReward);
                         att.push(rotBReward);
 
@@ -886,7 +888,12 @@ export const addMissionInventoryUpdates = async (
                                     ItemCount: getKillTokenRewardCount(inventory.Nemesis.fp) * (extraWeaponCheat + 1)
                                 }
                             ];
-                            addMiscItems(inventory, countedAtt);
+                            addMiscItem(
+                                inventory,
+                                countedAtt[0].ItemType,
+                                countedAtt[0].ItemCount,
+                                ret.InventoryChanges
+                            );
                         }
                     }
 
