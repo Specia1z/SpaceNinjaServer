@@ -7,7 +7,10 @@ import {
     validateRoadToTauConfig,
     validateVarziaRotationConfig,
     validateClientConfig,
-    validateInvasionConfig
+    validateInvasionConfig,
+    normaliseBlockedClientAddresses,
+    validateBlockedClientAddressesConfig,
+    type TConfigValue
 } from "../../services/configService.ts";
 import { syncConfigWithDatabase } from "../../services/configWatcherService.ts";
 import { getAccountForRequest, isAdministrator } from "../../services/loginService.ts";
@@ -21,7 +24,7 @@ import { unlockStarChartForExistingAccounts } from "../../services/accountInitia
 export const getConfigController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     if (isAdministrator(account)) {
-        const responseData: Record<string, boolean | string | number | null> = {};
+        const responseData: Record<string, TConfigValue> = {};
         for (const id of req.body as string[]) {
             const [obj, idx] = configIdToIndexable(id);
             responseData[id] = obj[idx] ?? null;
@@ -35,7 +38,7 @@ export const getConfigController: RequestHandler = async (req, res) => {
 export const setConfigController: RequestHandler = async (req, res) => {
     const account = await getAccountForRequest(req);
     if (isAdministrator(account)) {
-        const edits = req.body as Record<string, boolean | string | number | null>;
+        const edits = req.body as Record<string, TConfigValue>;
         for (const [id, value] of Object.entries(edits)) {
             if (id === "unlockAllMissionsForNewAccounts" && typeof value !== "boolean") {
                 res.status(400).send(`${id} must be a boolean`);
@@ -71,6 +74,11 @@ export const setConfigController: RequestHandler = async (req, res) => {
                 res.status(400).send(invasionConfigError);
                 return;
             }
+            const blockedClientAddressesError = validateBlockedClientAddressesConfig(id, value);
+            if (blockedClientAddressesError) {
+                res.status(400).send(blockedClientAddressesError);
+                return;
+            }
             const playerPortalError = validatePlayerPolicyField(id, value);
             if (playerPortalError) {
                 res.status(400).send(playerPortalError);
@@ -98,7 +106,7 @@ export const setConfigController: RequestHandler = async (req, res) => {
             if (id == "worldState.boostExpiresAt" && (value === null || value === "")) {
                 delete obj[idx];
             } else {
-                obj[idx] = value;
+                obj[idx] = id == "blockedClientAddresses" ? normaliseBlockedClientAddresses(value) : value;
             }
         }
         for (const edit of accountCheatEdits) {

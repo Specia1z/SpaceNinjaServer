@@ -49,6 +49,19 @@ export interface IGuildCheats {
     fastClanAscension?: boolean;
 }
 
+export const guildCheatKeys = [
+    "noDojoRoomBuildStage",
+    "fastDojoRoomDestruction",
+    "noDojoDecoBuildStage",
+    "noDojoResearchCosts",
+    "noDojoResearchTime",
+    "fastClanAscension"
+] as const satisfies readonly (keyof IGuildCheats)[];
+
+export type TGuildCheatKey = (typeof guildCheatKeys)[number];
+
+export const isGuildCheatKey = (key: string): key is TGuildCheatKey => guildCheatKeys.includes(key as TGuildCheatKey);
+
 export interface IGuildDatabase extends IGuildCheats, IVaultDatabase {
     _id: Types.ObjectId;
     Name: string;

@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { isIP } from "node:net";
 import { repoDir } from "../helpers/pathHelper.ts";
 import { args } from "../helpers/commandLineArguments.ts";
 import type { Request } from "express";
@@ -8,6 +9,7 @@ import configDefaults from "../../config-vanilla.json" with { type: "json" };
 import type { IAccountCheats } from "../types/inventoryTypes/inventoryTypes.ts";
 
 export type TRegionId = "ASIA" | "OCEANIA" | "EUROPE" | "RUSSIA" | "NORTH_AMERICA" | "SOUTH_AMERICA";
+export type TConfigValue = boolean | string | number | null | string[];
 
 export interface IHubServer {
     address: string;
@@ -241,6 +243,8 @@ export interface IConfig {
         format?: string;
     };
     myAddress: string;
+    /** Exact client addresses rejected before request bodies are parsed. */
+    blockedClientAddresses?: string[];
     bindAddress?: string;
     httpPort?: number;
     httpsPort?: number;
@@ -563,6 +567,34 @@ if (args.docker) {
 
 export const configPath = path.join(repoDir, args.configPath ?? "config.json");
 
+export const normaliseClientAddress = (address: string): string | undefined => {
+    const normalized = address
+        .trim()
+        .replace(/^::ffff:/i, "")
+        .toLowerCase();
+    return isIP(normalized) ? normalized : undefined;
+};
+
+export const normaliseBlockedClientAddresses = (value: unknown): string[] => {
+    if (!Array.isArray(value)) return [];
+    const addresses = new Set<string>();
+    for (const address of value) {
+        if (typeof address != "string") continue;
+        const normalized = normaliseClientAddress(address);
+        if (normalized) addresses.add(normalized);
+    }
+    return [...addresses];
+};
+
+export const validateBlockedClientAddressesConfig = (id: string, value: unknown): string | undefined => {
+    if (id != "blockedClientAddresses") return undefined;
+    if (!Array.isArray(value)) return `${id} must be an array of IP addresses`;
+    if (value.some(address => typeof address != "string" || !normaliseClientAddress(address))) {
+        return `${id} must contain only valid IPv4 or IPv6 addresses`;
+    }
+    return undefined;
+};
+
 export const config: IConfig = {
     database: "mongodb://127.0.0.1:27017/openWF",
     logger: {
@@ -603,9 +635,7 @@ export const getReflexiveAddress = (request: Request): { myAddress: string; myUr
     return { myAddress, myUrlBase };
 };
 
-export const configIdToIndexable = (
-    id: string
-): [Record<string, boolean | string | number | null | undefined>, string] => {
+export const configIdToIndexable = (id: string): [Record<string, TConfigValue | undefined>, string] => {
     let obj = config as unknown as Record<string, never>;
     const arr = id.split(".");
     while (arr.length > 1) {

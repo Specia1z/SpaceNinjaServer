@@ -10,6 +10,7 @@ import {
     inventoryAffectingConfigKeys,
     isValidIsoDateTime,
     loadConfig,
+    normaliseBlockedClientAddresses,
     type IConfig
 } from "./configService.ts";
 import { saveConfig, shouldReloadConfig } from "./configWriterService.ts";
@@ -204,6 +205,13 @@ export const validateConfig = (): void => {
         }
         if (legacyValue !== undefined) {
             delete legacyConfig[key];
+            modified = true;
+        }
+    }
+    if (config.blockedClientAddresses !== undefined) {
+        const normalizedAddresses = normaliseBlockedClientAddresses(config.blockedClientAddresses);
+        if (JSON.stringify(normalizedAddresses) != JSON.stringify(config.blockedClientAddresses)) {
+            config.blockedClientAddresses = normalizedAddresses;
             modified = true;
         }
     }

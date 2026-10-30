@@ -1,6 +1,6 @@
 import express from "express";
 
-import { unknownEndpointHandler } from "./middleware/middleware.ts";
+import { clientAddressBlocker, unknownEndpointHandler } from "./middleware/middleware.ts";
 import { requestLogger } from "./middleware/morgenMiddleware.ts";
 import { errorHandler } from "./middleware/errorHandler.ts";
 
@@ -33,6 +33,8 @@ app.use((req, _res, next) => {
 
     next();
 });
+
+app.use(clientAddressBlocker);
 
 // Use body-parser middleware (exported by express)
 app.use(express.raw());

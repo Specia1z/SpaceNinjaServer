@@ -117,6 +117,11 @@ import {
 } from "../controllers/custom/accountRatesController.ts";
 import { getCurrencyGrantStatsController } from "../controllers/custom/currencyGrantStatsController.ts";
 import { clientConfigController } from "../controllers/custom/clientConfigController.ts";
+import {
+    addIpBlacklistController,
+    getIpBlacklistController,
+    removeIpBlacklistController
+} from "../controllers/custom/ipBlacklistController.ts";
 import { featureManifestController, featurePackageController } from "../controllers/custom/featurePackageController.ts";
 import {
     getAdminFeaturesController,
@@ -234,6 +239,7 @@ customRouter.get("/admin/player-presence/history", getPlayerPresenceHistoryContr
 customRouter.get("/admin/player-presence/nodes", resolvePresenceNodesController);
 customRouter.get("/admin/world-activities", getWorldActivitiesController);
 customRouter.get("/admin/features", getAdminFeaturesController);
+customRouter.get("/admin/ip-blacklist", getIpBlacklistController);
 customRouter.get("/admin/playwf-scripts", getPlaywfScriptsController);
 customRouter.get("/admin/drop-tables", listDropTableOverridesController);
 customRouter.get("/admin/drop-tables/detail", getDropTableDetailController);
@@ -283,6 +289,8 @@ customRouter.post("/admin/account-rates/delete", deleteAccountRatesController);
 customRouter.post("/admin/irc-announcement", ircAnnouncementController);
 customRouter.post("/admin/world-activities/refresh", refreshWorldActivitiesController);
 customRouter.post("/admin/features", saveAdminFeaturesController);
+customRouter.post("/admin/ip-blacklist", addIpBlacklistController);
+customRouter.post("/admin/ip-blacklist/delete", removeIpBlacklistController);
 customRouter.post("/admin/playwf-scripts", savePlaywfScriptsController);
 customRouter.post("/admin/drop-tables", saveDropTableOverrideController);
 customRouter.post("/admin/drop-tables/delete", deleteDropTableOverrideController);

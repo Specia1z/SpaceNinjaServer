@@ -1,0 +1,187 @@
+.ip-blacklist-page,
+.ip-blacklist-access {
+    margin-inline: auto;
+    max-width: 88rem;
+}
+
+.ip-blacklist-access {
+    align-items: center;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-block: 3rem;
+    min-height: 14rem;
+    text-align: center;
+}
+
+.ip-blacklist-access > i {
+    color: var(--bs-warning);
+    font-size: 2rem;
+}
+
+.ip-blacklist-access p {
+    margin: 0;
+}
+
+.ip-blacklist-hero {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-danger) 7%, var(--bs-tertiary-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-danger) 20%, var(--bs-border-color));
+    border-radius: 1rem;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    min-height: 9rem;
+    overflow: hidden;
+    padding: 2rem;
+}
+
+.ip-blacklist-hero h1 {
+    font-size: 2.2rem;
+    font-weight: 750;
+    margin: 0 0 0.55rem;
+}
+
+.ip-blacklist-hero p,
+.ip-blacklist-section-header p,
+.ip-blacklist-list-heading p {
+    color: var(--bs-secondary-color);
+    line-height: 1.55;
+    margin: 0;
+}
+
+.ip-blacklist-eyebrow,
+.ip-blacklist-kicker {
+    color: var(--bs-danger);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+}
+
+.ip-blacklist-hero-mark {
+    color: color-mix(in srgb, var(--bs-danger) 62%, transparent);
+    font-size: 4.5rem;
+    margin-inline: 2rem 0.75rem;
+}
+
+.ip-blacklist-section {
+    border-color: var(--bs-border-color);
+    border-radius: 0.95rem;
+    overflow: visible;
+}
+
+.ip-blacklist-section-header {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 75%, transparent);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    gap: 0.95rem;
+    padding: 1rem 1.25rem;
+}
+
+.ip-blacklist-section-icon {
+    align-items: center;
+    background: color-mix(in srgb, var(--bs-danger) 10%, var(--bs-body-bg));
+    border: 1px solid color-mix(in srgb, var(--bs-danger) 18%, var(--bs-border-color));
+    border-radius: 0.75rem;
+    color: var(--bs-danger);
+    display: inline-flex;
+    flex: 0 0 2.75rem;
+    font-size: 1.2rem;
+    height: 2.75rem;
+    justify-content: center;
+    width: 2.75rem;
+}
+
+.ip-blacklist-section-header h2,
+.ip-blacklist-list-heading h3 {
+    font-size: 1.15rem;
+    font-weight: 720;
+    margin: 0 0 0.25rem;
+}
+
+.ip-blacklist-body {
+    padding: 1.5rem;
+}
+
+.ip-blacklist-add-form {
+    max-width: 52rem;
+}
+
+.ip-blacklist-field .form-label {
+    font-size: 0.86rem;
+    font-weight: 650;
+    margin-bottom: 0.4rem;
+}
+
+.ip-blacklist-add-form .btn,
+.ip-blacklist-table .btn {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.45rem;
+}
+
+.ip-blacklist-notice {
+    margin: 1rem 0 0;
+}
+
+.ip-blacklist-list-heading {
+    align-items: end;
+    border-top: 1px solid var(--bs-border-color);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+}
+
+.ip-blacklist-list-heading .badge {
+    white-space: nowrap;
+}
+
+.ip-blacklist-empty {
+    align-items: center;
+    color: var(--bs-secondary-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    justify-content: center;
+    min-height: 8rem;
+    text-align: center;
+}
+
+.ip-blacklist-empty i {
+    color: var(--bs-success);
+    font-size: 1.8rem;
+}
+
+.ip-blacklist-table {
+    margin-bottom: 0;
+}
+
+.ip-blacklist-table code {
+    color: var(--bs-emphasis-color);
+    font-size: 0.95rem;
+}
+
+@media (max-width: 720px) {
+    .ip-blacklist-hero {
+        padding: 1.25rem;
+    }
+
+    .ip-blacklist-hero-mark {
+        font-size: 3rem;
+        margin-inline: 1rem 0;
+    }
+
+    .ip-blacklist-body {
+        padding: 1rem;
+    }
+}

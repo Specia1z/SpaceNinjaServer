@@ -1,0 +1,78 @@
+<div id="ip-blacklist-route" data-route="/webui/ip-blacklist" data-title-tag="navbar_ipBlacklist">
+    <section class="ip-blacklist-access d-none admin-hide" role="status">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <p data-loc="ipBlacklist_adminRequired"></p>
+    </section>
+
+    <main class="ip-blacklist-page admin-show d-none">
+        <header class="ip-blacklist-hero">
+            <div>
+                <span class="ip-blacklist-eyebrow" data-loc="ipBlacklist_eyebrow"></span>
+                <h1 data-loc="ipBlacklist_title"></h1>
+                <p data-loc="ipBlacklist_description"></p>
+            </div>
+            <span class="ip-blacklist-hero-mark" aria-hidden="true"><i class="bi bi-shield-slash"></i></span>
+        </header>
+
+        <section class="card ip-blacklist-section">
+            <header class="ip-blacklist-section-header">
+                <span class="ip-blacklist-section-icon"><i class="bi bi-list-ul" aria-hidden="true"></i></span>
+                <div>
+                    <span class="ip-blacklist-kicker" data-loc="ipBlacklist_sectionKicker"></span>
+                    <h2 data-loc="ipBlacklist_sectionTitle"></h2>
+                    <p data-loc="ipBlacklist_sectionDescription"></p>
+                </div>
+            </header>
+            <div class="ip-blacklist-body">
+                <form id="ip-blacklist-add-form" class="ip-blacklist-add-form">
+                    <div class="ip-blacklist-field">
+                        <label class="form-label" for="ip-blacklist-address" data-loc="ipBlacklist_addressLabel"></label>
+                        <div class="input-group">
+                            <input
+                                class="form-control font-monospace"
+                                id="ip-blacklist-address"
+                                type="text"
+                                inputmode="text"
+                                autocomplete="off"
+                                spellcheck="false"
+                                maxlength="45"
+                                data-loc-placeholder="ipBlacklist_addressPlaceholder"
+                                required
+                            />
+                            <button class="btn btn-primary" id="ip-blacklist-add" type="submit">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                <span data-loc="ipBlacklist_add"></span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="alert d-none ip-blacklist-notice" id="ip-blacklist-notice" role="status" aria-live="polite"></div>
+
+                <div class="ip-blacklist-list-heading">
+                    <div>
+                        <h3 data-loc="ipBlacklist_listTitle"></h3>
+                        <p data-loc="ipBlacklist_listDescription"></p>
+                    </div>
+                    <span class="badge text-bg-secondary" id="ip-blacklist-count"></span>
+                </div>
+
+                <div class="ip-blacklist-empty d-none" id="ip-blacklist-empty">
+                    <i class="bi bi-shield-check" aria-hidden="true"></i>
+                    <span data-loc="ipBlacklist_empty"></span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle ip-blacklist-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-loc="ipBlacklist_addressColumn"></th>
+                                <th scope="col" class="text-end" data-loc="ipBlacklist_actionColumn"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="ip-blacklist-entries"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>

@@ -1,6 +1,6 @@
 import { isIP } from "node:net";
 import { createHmac } from "node:crypto";
-import { config } from "./configService.ts";
+import { config, normaliseBlockedClientAddresses, normaliseClientAddress } from "./configService.ts";
 
 export interface IRegistrationFingerprint {
     ipHash?: string;
@@ -17,7 +17,11 @@ const globalRegistrations: IRegistrationAttempt[] = [];
 const globalAttempts: IRegistrationAttempt[] = [];
 let lastAddressSweep = 0;
 
-const normaliseAddress = (address: string | undefined): string => address?.replace(/^::ffff:/, "") || "unknown";
+const normaliseAddress = (address: string | undefined): string =>
+    address
+        ?.trim()
+        .replace(/^::ffff:/i, "")
+        .toLowerCase() || "unknown";
 
 export const getRegistrationAddress = (
     remoteAddress: string | undefined,
@@ -34,6 +38,14 @@ export const getRegistrationAddress = (
         if (!trusted.has(address)) break;
     }
     return address;
+};
+
+export const getClientAddress = getRegistrationAddress;
+
+export const isBlockedClientAddress = (address: string): boolean => {
+    const normalizedAddress = normaliseClientAddress(address);
+    if (!normalizedAddress) return false;
+    return normaliseBlockedClientAddresses(config.blockedClientAddresses).includes(normalizedAddress);
 };
 
 export const getRegistrationFingerprint = (

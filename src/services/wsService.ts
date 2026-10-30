@@ -23,6 +23,7 @@ import { config } from "./configService.ts";
 import {
     getRegistrationAddress,
     getRegistrationFingerprint,
+    isBlockedClientAddress,
     reserveRegistration
 } from "./registrationRateLimitService.ts";
 import { markPresenceOffline, markPresenceOnline } from "./presenceService.ts";
@@ -136,6 +137,12 @@ export interface IWsMsgToClientGame extends IWsMsgToClientCommon {
 export type IWsMsgToClient = IWsMsgToClientWebui | IWsMsgToClientGame;
 
 const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
+    const clientAddress = getRegistrationAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]);
+    if (isBlockedClientAddress(clientAddress)) {
+        logger.warn(`blocked websocket client ${clientAddress} ${req.url ?? "/"}`);
+        ws.close(1008, "Blocked client address");
+        return;
+    }
     if (req.url == "/custom/selftest") {
         ws.send("SpaceNinjaServer");
         ws.close();
