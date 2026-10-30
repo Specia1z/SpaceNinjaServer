@@ -291,7 +291,7 @@
     }
 
     const updateModeHint = () => {
-        const mode = find("#antiCheat.responseMode").value || "observe";
+        const mode = find('[id="antiCheat.responseMode"]').value || "observe";
         find("#admin-anti-cheat-mode-hint").textContent = loc("admin_antiCheatModeHint_" + mode);
     };
 
@@ -301,7 +301,7 @@
 
     find("#admin-anti-cheat-search").addEventListener("input", () => renderAccounts({ Accounts: accounts }));
     find("#admin-anti-cheat-kind-filter").addEventListener("change", () => renderAccounts({ Accounts: accounts }));
-    find("#antiCheat.responseMode").addEventListener("change", updateModeHint);
+    find('[id="antiCheat.responseMode"]').addEventListener("change", updateModeHint);
     find("#admin-anti-cheat-refresh").addEventListener("click", () => void runAction(load));
     find("#admin-anti-cheat-clear-all").addEventListener("click", () => void clear());
     single.getRoute("/webui/anti-cheat").on("beforeload", () => {

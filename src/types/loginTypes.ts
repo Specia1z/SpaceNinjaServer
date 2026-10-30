@@ -26,6 +26,7 @@ export interface IAccountCreationData extends IAccountAndLoginResponseCommons {
     email: string;
     password: string;
     RegistrationIpHash?: string;
+    LastLoginIp?: string;
     Language?: string;
     BuildLabel: string | undefined;
     LastLogin: Date;
@@ -44,6 +45,7 @@ interface IDatabaseAccount extends IAccountCreationData {
     ReferralRisk?: "same_registration_source";
     RegistrationIpHash?: string;
     LastKnownIpHash?: string;
+    LastLoginIp?: string;
     LastPlayerRenameAt?: Date;
     PlayerFirstRenameUsed?: boolean;
     PlayerPasswordVersion?: number;

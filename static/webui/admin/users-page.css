@@ -258,6 +258,14 @@
     overflow-wrap: anywhere;
 }
 
+.users-login-ip-cell {
+    min-width: 11rem;
+}
+
+.users-login-ip {
+    overflow-wrap: anywhere;
+}
+
 .users-status-cell {
     min-width: 10rem;
 }

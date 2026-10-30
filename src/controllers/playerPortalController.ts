@@ -107,8 +107,10 @@ export const playerLoginController: RequestHandler = async (req, res) => {
     if (!account || account.Banned || passwordProtocol == false) {
         return sendError(res, 401, "invalid_login");
     }
+    const loginAddress = getRegistrationAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]);
     const loginIpHash = getRegistrationFingerprint(req.socket.remoteAddress, req.headers["x-forwarded-for"]).ipHash;
     if (loginIpHash) account.LastKnownIpHash = loginIpHash;
+    if (loginAddress != "unknown") account.LastLoginIp = loginAddress;
     if (!account.PlayerPasswordVersion || passwordProtocol == "raw") {
         // Keep both the raw-player and WebUI-Whirlpool login paths valid after migrating a legacy account.
         account.password = await hashAccountPassword(whirlpoolHash(body.password));
@@ -133,9 +135,8 @@ export const playerRegisterController: RequestHandler = async (req, res) => {
     }
     const email = body.email.trim().toLowerCase();
     if (await findAccountByEmail(email)) return sendError(res, 409, "email_taken");
-    const reservation = reserveRegistration(
-        getRegistrationAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"])
-    );
+    const registrationAddress = getRegistrationAddress(req.socket.remoteAddress, req.headers["x-forwarded-for"]);
+    const reservation = reserveRegistration(registrationAddress);
     if (!reservation.allowed) {
         res.set("Retry-After", String(reservation.retryAfterSeconds));
         return sendError(res, 429, "registration_rate_limited");
@@ -154,6 +155,7 @@ export const playerRegisterController: RequestHandler = async (req, res) => {
                 ClientType: "player-portal",
                 BuildLabel: getBuildLabelForUnauthenticatedRequest(req),
                 RegistrationIpHash: registrationFingerprint.ipHash,
+                LastLoginIp: registrationAddress != "unknown" ? registrationAddress : undefined,
                 LastLogin: new Date(),
                 Nonce: createNonce()
             },

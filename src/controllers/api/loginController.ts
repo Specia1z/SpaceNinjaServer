@@ -67,6 +67,7 @@ export const loginController: RequestHandler = async (request, response) => {
     const account = await findAccountByEmail(loginRequest.email);
 
     const buildLabel = getBuildLabelForUnauthenticatedRequest(request);
+    const loginAddress = getRegistrationAddress(request.socket.remoteAddress, request.headers["x-forwarded-for"]);
 
     if (!account && config.autoCreateAccount) {
         // Early versions (~U14) allow login with the password field being empty.
@@ -78,9 +79,7 @@ export const loginController: RequestHandler = async (request, response) => {
             return;
         }
 
-        const reservation = reserveRegistration(
-            getRegistrationAddress(request.socket.remoteAddress, request.headers["x-forwarded-for"])
-        );
+        const reservation = reserveRegistration(loginAddress);
         if (!reservation.allowed) {
             response.set("Retry-After", String(reservation.retryAfterSeconds));
             response.status(429).json({ error: "registration rate limit exceeded" });
@@ -103,6 +102,7 @@ export const loginController: RequestHandler = async (request, response) => {
                         request.socket.remoteAddress,
                         request.headers["x-forwarded-for"]
                     ).ipHash,
+                    LastLoginIp: loginAddress != "unknown" ? loginAddress : undefined,
                     LastLogin: new Date()
                 },
                 loginRequest.referralCode
@@ -152,6 +152,7 @@ export const loginController: RequestHandler = async (request, response) => {
     }
     account.BuildLabel = buildLabel;
     account.LastLogin = new Date();
+    if (loginAddress != "unknown") account.LastLoginIp = loginAddress;
     account.LastPlatform = isAndroid ? ePlatform.Android : ePlatform.Windows;
     account.Dropped = undefined;
 

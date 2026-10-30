@@ -103,8 +103,14 @@ function loadUsersPage() {
 
     const handlers = new Map();
     const users = [
-        { id: "account-1", DisplayName: "<img src=x>", Banned: true, IsAdministrator: false },
-        { id: "account-2", DisplayName: "Operator", Banned: false, IsAdministrator: true },
+        {
+            id: "account-1",
+            DisplayName: "<img src=x>",
+            LastLoginIp: "203.0.113.11",
+            Banned: true,
+            IsAdministrator: false
+        },
+        { id: "account-2", DisplayName: "Operator", LastLoginIp: "2001:db8::2", Banned: false, IsAdministrator: true },
         { id: "account-3", DisplayName: "Regular", Banned: false, IsAdministrator: false }
     ];
     const apiCalls = [];
@@ -235,7 +241,7 @@ function loadUsersApi() {
     };
 }
 
-test("users page loads accounts, summarizes states, and filters safely by name or id", async () => {
+test("users page loads accounts, summarizes states, and filters safely by name, id, or IP", async () => {
     const { elements, handlers, datalist, users } = loadUsersPage();
     await handlers.get("beforeload")();
     await new Promise(resolve => setImmediate(resolve));
@@ -254,12 +260,13 @@ test("users page loads accounts, summarizes states, and filters safely by name o
         users.map(user => user.DisplayName)
     );
     assert.equal(elements.get("#registered-losers").children[0].children[0].children[0].textContent, "<img src=x>");
+    assert.equal(elements.get("#registered-losers").children[0].children[2].children[0].textContent, "203.0.113.11");
 
     const search = elements.get("#admin-users-search");
-    search.value = "account-3";
+    search.value = "203.0.113.11";
     search.dispatch("input");
     assert.equal(elements.get("#registered-losers").children.length, 1);
-    assert.equal(elements.get("#registered-losers").children[0].children[0].children[0].textContent, "Regular");
+    assert.equal(elements.get("#registered-losers").children[0].children[0].children[0].textContent, "<img src=x>");
     assert.equal(elements.get("#admin-users-visible-count").textContent, "1");
 });
 
@@ -267,7 +274,7 @@ test("users page sends an authorized ban mutation and refreshes the account list
     const { elements, handlers, apiCalls } = loadUsersPage();
     await handlers.get("beforeload")();
     await new Promise(resolve => setImmediate(resolve));
-    const banButton = elements.get("#registered-losers").children[0].children[3].children[1];
+    const banButton = elements.get("#registered-losers").children[0].children[4].children[1];
     await banButton.dispatch("click");
     await new Promise(resolve => setImmediate(resolve));
     assert.deepEqual(apiCalls, [["ban", "account-1", false]]);
@@ -278,7 +285,7 @@ test("users page confirms account deletion and refreshes the account list", asyn
     const { elements, handlers, apiCalls } = loadUsersPage();
     await handlers.get("beforeload")();
     await new Promise(resolve => setImmediate(resolve));
-    const deleteButton = elements.get("#registered-losers").children[0].children[3].children[2];
+    const deleteButton = elements.get("#registered-losers").children[0].children[4].children[2];
     await deleteButton.dispatch("click");
     await new Promise(resolve => setImmediate(resolve));
     assert.deepEqual(apiCalls, [["deleteAccount", "account-1"]]);
@@ -290,7 +297,7 @@ test("users page previews one account and confirms the exact inventory repair", 
     await handlers.get("beforeload")();
     await new Promise(resolve => setImmediate(resolve));
 
-    const repairButton = elements.get("#registered-losers").children[0].children[3].children[3];
+    const repairButton = elements.get("#registered-losers").children[0].children[4].children[3];
     await repairButton.dispatch("click");
     await new Promise(resolve => setImmediate(resolve));
 
@@ -308,7 +315,7 @@ test("users page previews and confirms the Hex Conquest compensation repair", as
     await handlers.get("beforeload")();
     await new Promise(resolve => setImmediate(resolve));
 
-    const repairButton = elements.get("#registered-losers").children[0].children[3].children[4];
+    const repairButton = elements.get("#registered-losers").children[0].children[4].children[4];
     await repairButton.dispatch("click");
     await new Promise(resolve => setImmediate(resolve));
 
@@ -376,16 +383,16 @@ test("users page validates IRC announcements by UTF-8 byte length and sends vali
     await new Promise(resolve => setImmediate(resolve));
 
     const input = elements.get("#admin-irc-message");
-    input.value = "Hi é";
+    input.value = "Hi ?";
     input.dispatch("input");
     assert.equal(elements.get("#admin-irc-byte-count").textContent, "5 / 400");
     elements.get("#admin-irc-form").dispatch("submit");
     await new Promise(resolve => setImmediate(resolve));
-    assert.deepEqual(apiCalls, [["announceIrc", "Hi é"]]);
+    assert.deepEqual(apiCalls, [["announceIrc", "Hi ?"]]);
     assert.equal(input.value, "");
     assert.equal(elements.get("#admin-irc-notice").textContent, "admin_ircSent");
 
-    input.value = "🙂".repeat(101);
+    input.value = "??".repeat(101);
     elements.get("#admin-irc-form").dispatch("submit");
     assert.equal(apiCalls.length, 1);
     assert.equal(elements.get("#admin-irc-notice").textContent, "admin_ircInvalid");

@@ -164,11 +164,11 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                 let accessedAccount = account;
                 if (account) {
                     if (await isCorrectPassword(data.auth.password, account.password)) {
-                        if (!account.Nonce) {
-                            account.ClientType = "webui";
-                            account.Nonce = createNonce();
-                            await (account as HydratedDocument<IDatabaseAccountJson>).save();
-                        }
+                        account.ClientType = "webui";
+                        account.LastLogin = new Date();
+                        if (clientAddress != "unknown") account.LastLoginIp = clientAddress;
+                        if (!account.Nonce) account.Nonce = createNonce();
+                        await (account as HydratedDocument<IDatabaseAccountJson>).save();
                         if (data.auth.possessing) {
                             accessedAccount = isAdministrator(account)
                                 ? await Account.findById(data.auth.possessing)
@@ -197,6 +197,7 @@ const wsOnConnect = (ws: WebSocket, req: http.IncomingMessage): void => {
                                     req.socket.remoteAddress,
                                     req.headers["x-forwarded-for"]
                                 ).ipHash,
+                                LastLoginIp: clientAddress != "unknown" ? clientAddress : undefined,
                                 LastLogin: new Date(),
                                 DisplayName: name,
                                 Nonce: createNonce()

@@ -26,6 +26,7 @@ const databaseAccountSchema = new Schema<IDatabaseAccountJson>(
         ReferralRisk: String,
         RegistrationIpHash: String,
         LastKnownIpHash: String,
+        LastLoginIp: String,
         LastPlayerRenameAt: Date,
         PlayerFirstRenameUsed: Boolean,
         PlayerPasswordVersion: { type: Number, default: 0 },

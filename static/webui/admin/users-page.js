@@ -254,7 +254,7 @@
 
     function makeUserRow(user) {
         const row = document.createElement("tr");
-        row.dataset.userSearch = `${user.DisplayName} ${user.id}`.toLocaleLowerCase();
+        row.dataset.userSearch = `${user.DisplayName} ${user.id} ${user.LastLoginIp ?? ""}`.toLocaleLowerCase();
 
         const account = row.insertCell();
         account.className = "users-account-cell";
@@ -269,6 +269,13 @@
         idCode.textContent = user.id;
         idCell.append(idCode);
 
+        const loginIpCell = row.insertCell();
+        loginIpCell.className = "users-login-ip-cell";
+        const loginIp = document.createElement("code");
+        loginIp.className = "users-login-ip";
+        loginIp.textContent = user.LastLoginIp || "?";
+        loginIpCell.append(loginIp);
+
         const statusCell = row.insertCell();
         statusCell.className = "users-status-cell";
         if (user.Banned) appendBadge(statusCell, loc("admin_banned"), "danger");
@@ -276,7 +283,7 @@
         if (!user.Banned && !user.IsAdministrator) {
             const status = document.createElement("span");
             status.className = "text-body-secondary";
-            status.textContent = "—";
+            status.textContent = "?";
             statusCell.append(status);
         }
 
@@ -336,7 +343,8 @@
     function renderUsers() {
         const query = userSearch.value.trim().toLocaleLowerCase();
         const visibleUsers = users.filter(
-            user => !query || `${user.DisplayName} ${user.id}`.toLocaleLowerCase().includes(query)
+            user =>
+                !query || `${user.DisplayName} ${user.id} ${user.LastLoginIp ?? ""}`.toLocaleLowerCase().includes(query)
         );
         userRows.replaceChildren(...visibleUsers.map(makeUserRow));
 
