@@ -273,7 +273,7 @@
         loginIpCell.className = "users-login-ip-cell";
         const loginIp = document.createElement("code");
         loginIp.className = "users-login-ip";
-        loginIp.textContent = user.LastLoginIp || "?";
+        loginIp.textContent = user.LastLoginIp || "—";
         loginIpCell.append(loginIp);
 
         const statusCell = row.insertCell();
@@ -283,7 +283,7 @@
         if (!user.Banned && !user.IsAdministrator) {
             const status = document.createElement("span");
             status.className = "text-body-secondary";
-            status.textContent = "?";
+            status.textContent = "—";
             statusCell.append(status);
         }
 

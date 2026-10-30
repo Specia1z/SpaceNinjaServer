@@ -383,16 +383,16 @@ test("users page validates IRC announcements by UTF-8 byte length and sends vali
     await new Promise(resolve => setImmediate(resolve));
 
     const input = elements.get("#admin-irc-message");
-    input.value = "Hi ?";
+    input.value = "Hi é";
     input.dispatch("input");
     assert.equal(elements.get("#admin-irc-byte-count").textContent, "5 / 400");
     elements.get("#admin-irc-form").dispatch("submit");
     await new Promise(resolve => setImmediate(resolve));
-    assert.deepEqual(apiCalls, [["announceIrc", "Hi ?"]]);
+    assert.deepEqual(apiCalls, [["announceIrc", "Hi é"]]);
     assert.equal(input.value, "");
     assert.equal(elements.get("#admin-irc-notice").textContent, "admin_ircSent");
 
-    input.value = "??".repeat(101);
+    input.value = "🙂".repeat(101);
     elements.get("#admin-irc-form").dispatch("submit");
     assert.equal(apiCalls.length, 1);
     assert.equal(elements.get("#admin-irc-notice").textContent, "admin_ircInvalid");
