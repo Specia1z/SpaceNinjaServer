@@ -8,7 +8,9 @@ import { getInfestedLichItemRewards, getKillTokenRewardCount } from "../../helpe
 import { Inventory } from "../../models/inventoryModels/inventoryModel.ts";
 import { Account } from "../../models/loginModel.ts";
 import { MissionSettlementClaim } from "../../models/missionSettlementClaimModel.ts";
+import { Inbox } from "../../models/inboxModel.ts";
 import { fromStoreItem } from "../../services/itemDataService.ts";
+import { config } from "../../services/configService.ts";
 import type { IMissionInventoryUpdateResponse } from "../../types/missionTypes.ts";
 import type { IMissionInventoryUpdateRequest } from "../../types/requestTypes.ts";
 import { getMissionSettlementKey } from "../../services/missionSettlementClaimService.ts";
@@ -232,6 +234,98 @@ void test("mission settlement cannot turn Prime Vault FusionBundles into Endo", 
 
     assert.ok(responseBody);
     assert.equal((await Inventory.findById(inventory._id))?.FusionPoints, 0);
+});
+
+void test("observe-mode suspicious settlements do not grant custom mission currency", async () => {
+    const previousAntiCheat = config.antiCheat;
+    const previousMissionReward = {
+        min: config.missionPlatinumRewardMin,
+        max: config.missionPlatinumRewardMax,
+        chance: config.missionPlatinumRewardChance,
+        sendMail: config.missionPlatinumRewardSendMail,
+        dailyCap: config.missionPlatinumRewardDailyCap,
+        pity: config.missionPlatinumRewardPityCompletions
+    };
+    config.antiCheat = {
+        ...(config.antiCheat ?? {}),
+        enabled: true,
+        responseMode: "observe",
+        minMissionTimeSec: 20
+    };
+    config.missionPlatinumRewardMin = 1;
+    config.missionPlatinumRewardMax = 1;
+    config.missionPlatinumRewardChance = 100;
+    config.missionPlatinumRewardSendMail = true;
+    config.missionPlatinumRewardDailyCap = 100;
+    config.missionPlatinumRewardPityCompletions = 0;
+
+    try {
+        const account = await new Account({
+            email: "suspicious-mission-currency@example.com",
+            password: "password",
+            DisplayName: "SuspiciousMission",
+            Nonce: 654,
+            BuildLabel: "2026.10.22.13.12/"
+        }).save();
+        const inventory = await new Inventory({ accountOwnerId: account._id, PremiumCredits: 0 }).save();
+        const report = {
+            LevelKeyName: "",
+            MissionFailed: false,
+            MissionStatus: "GS_SUCCESS",
+            AliveTime: 1,
+            MissionTime: 1,
+            GameModeId: 0,
+            hosts: [],
+            currentClients: [],
+            ChallengeProgress: [],
+            PS: "",
+            ActiveDojoColorResearch: "",
+            ReceivedCeremonyMsg: false,
+            LastCeremonyResetDate: 0,
+            MissionPTS: 84,
+            RepHash: "suspicious-mission-currency-report",
+            EndOfMatchUpload: true,
+            ObjectiveReached: true,
+            sharedSessionId: "0123456789abcdef01234570",
+            FpsAvg: 0,
+            FpsMin: 0,
+            FpsMax: 0,
+            FpsSamples: 0,
+            PlayerSkillGains: {},
+            Missions: { Tag: "SolNode1", Completes: 1 },
+            RewardInfo: { node: "SolNode1", rewardSeed: 123 }
+        } as unknown as IMissionInventoryUpdateRequest;
+
+        const response = {
+            json(value: unknown) {
+                return value;
+            }
+        } as unknown as Response;
+        const request = {
+            query: { accountId: account._id.toString(), nonce: "654", xpBasedLevelCapDisabled: "1" },
+            body: JSON.stringify(report),
+            ip: "127.0.0.1"
+        } as unknown as Request;
+
+        const originalStringify = JSON.stringify;
+        try {
+            JSON.stringify = JSONStringify;
+            await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+        } finally {
+            JSON.stringify = originalStringify;
+        }
+
+        assert.equal((await Inventory.findById(inventory._id))?.PremiumCredits, 0);
+        assert.equal(await Inbox.countDocuments({ ownerId: account._id, PremiumCredits: { $gt: 0 } }), 0);
+    } finally {
+        config.antiCheat = previousAntiCheat;
+        config.missionPlatinumRewardMin = previousMissionReward.min;
+        config.missionPlatinumRewardMax = previousMissionReward.max;
+        config.missionPlatinumRewardChance = previousMissionReward.chance;
+        config.missionPlatinumRewardSendMail = previousMissionReward.sendMail;
+        config.missionPlatinumRewardDailyCap = previousMissionReward.dailyCap;
+        config.missionPlatinumRewardPityCompletions = previousMissionReward.pity;
+    }
 });
 
 void test("failed arbitration pays completed rotations but quitting and zero rotations do not", async () => {

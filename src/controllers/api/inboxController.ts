@@ -1,8 +1,8 @@
 import type { RequestHandler } from "express";
 import type { IMessageClient } from "../../types/inboxTypes.ts";
-import { Inbox } from "../../models/inboxModel.ts";
 import {
     createMessage,
+    claimMessage,
     deleteAllMessagesRead,
     deleteAllMessagesReadNonCin,
     deleteMessageRead,
@@ -55,19 +55,17 @@ export const inboxController: RequestHandler = async (req, res) => {
         } else if (deleteId === "DeleteAllReadNonCin") {
             await deleteAllMessagesReadNonCin(account._id);
         } else {
-            await deleteMessageRead(parseOid(deleteId as string));
+            await deleteMessageRead(parseOid(deleteId as string), account._id);
         }
         res.status(200).end();
     } else if (messageId) {
-        const message = await Inbox.findById(parseOid(messageId as string));
+        const message = await claimMessage(parseOid(messageId as string), account._id);
         if (!message) {
-            // in this case, we must send a 200 response to avoid softlocking the client
-            logger.warn(`client just read a message we don't know (anymore), attachments will not be received`);
+            // A claimed message is intentionally idempotent: retries must not grant its payload again.
+            logger.warn(`client just read a missing or already claimed message, attachments will not be received`);
             res.end();
             return;
         }
-        message.r = true;
-        await message.save();
 
         const attachmentItems = message.attVisualOnly ? undefined : message.att;
         const attachmentCountedItems = message.attVisualOnly ? undefined : message.countedAtt;

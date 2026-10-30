@@ -286,7 +286,14 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         ConquestCompletedMissionsCount,
         NemesisTaxInfo,
         RecoveredItemInfo
-    } = await addMissionRewards(account, buildLabel, inventory, missionReport, firstCompletion);
+    } = await addMissionRewards(
+        account,
+        buildLabel,
+        inventory,
+        missionReport,
+        firstCompletion,
+        missionTimesOk && rewardSeedOk && clientInventoryUpdatesOk && xpGainOk && missionCompletesOk
+    );
     await handleConservation(
         inventory,
         buildLabel,

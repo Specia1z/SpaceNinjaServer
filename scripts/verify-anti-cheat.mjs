@@ -203,8 +203,9 @@ const BASE_REPORT = {
 };
 
 // rewardSeed must reach the parser as a raw JSON integer so json-with-bigint yields a BigInt.
-const buildReportText = ({ seed = SESSION_SEED, ...overrides } = {}) =>
-    JSON.stringify({ ...BASE_REPORT, ...overrides }).replace('"__SEED__"', seed);
+let nextMissionPts = 1;
+const buildReportText = ({ seed = SESSION_SEED, missionPts = nextMissionPts++, ...overrides } = {}) =>
+    JSON.stringify({ ...BASE_REPORT, MissionPTS: missionPts, ...overrides }).replace('"__SEED__"', seed);
 
 const callController = async reportText => {
     const req = {
@@ -241,8 +242,10 @@ const antiCheatConfig = {
     maxMissionCompletesPerReport: 10,
     maxXpPerMissionSecond: 100000,
     maxClientItemCountPerReport: 10000,
+    maxClientFusionPointsPerReport: 100000,
     maxClientInventoryEntriesPerReport: 250,
-    maxClientCreditsPerReport: 10000000
+    maxClientCreditsPerReport: 10000000,
+    maxEidolonCapturesPerReport: 1
 };
 const setConfig = patch => {
     config.antiCheat = { ...antiCheatConfig, ...patch };
@@ -685,8 +688,10 @@ STEP("the anti-cheat settings round-trip through the config controllers");
         "antiCheat.maxMissionCompletesPerReport",
         "antiCheat.maxXpPerMissionSecond",
         "antiCheat.maxClientItemCountPerReport",
+        "antiCheat.maxClientFusionPointsPerReport",
         "antiCheat.maxClientInventoryEntriesPerReport",
-        "antiCheat.maxClientCreditsPerReport"
+        "antiCheat.maxClientCreditsPerReport",
+        "antiCheat.maxEidolonCapturesPerReport"
     ];
     const before = await callPanel(getConfigController, { body: ids });
     assert(before["antiCheat.enabled"] === true, `enabled reads back (got ${before["antiCheat.enabled"]})`);
@@ -711,6 +716,10 @@ STEP("the anti-cheat settings round-trip through the config controllers");
         `maxClientItemCountPerReport reads back (got ${before["antiCheat.maxClientItemCountPerReport"]})`
     );
     assert(
+        before["antiCheat.maxClientFusionPointsPerReport"] === 100000,
+        `maxClientFusionPointsPerReport reads back (got ${before["antiCheat.maxClientFusionPointsPerReport"]})`
+    );
+    assert(
         before["antiCheat.maxClientInventoryEntriesPerReport"] === 250,
         `maxClientInventoryEntriesPerReport reads back (got ${before["antiCheat.maxClientInventoryEntriesPerReport"]})`
     );
@@ -723,8 +732,10 @@ STEP("the anti-cheat settings round-trip through the config controllers");
         body: {
             "antiCheat.minMissionTimeSec": 45,
             "antiCheat.responseMode": "sanitize",
+            "antiCheat.maxClientFusionPointsPerReport": 50000,
             "antiCheat.maxClientInventoryEntriesPerReport": 75,
-            "antiCheat.maxClientCreditsPerReport": 500000
+            "antiCheat.maxClientCreditsPerReport": 500000,
+            "antiCheat.maxEidolonCapturesPerReport": 2
         }
     });
     assert(config.antiCheat.minMissionTimeSec === 45, "the number reaches the live config");
@@ -733,6 +744,11 @@ STEP("the anti-cheat settings round-trip through the config controllers");
         config.antiCheat.maxClientInventoryEntriesPerReport === 75,
         "the inventory-entry cap reaches the live config"
     );
+    assert(
+        config.antiCheat.maxClientFusionPointsPerReport === 50000,
+        "the FusionPoints cap reaches the live config"
+    );
+    assert(config.antiCheat.maxEidolonCapturesPerReport === 2, "the Eidolon capture cap reaches the live config");
     assert(config.antiCheat.maxClientCreditsPerReport === 500000, "the credits cap reaches the live config");
 
     const after = await callPanel(getConfigController, { body: ids });
@@ -751,8 +767,10 @@ STEP("the anti-cheat settings round-trip through the config controllers");
         body: {
             "antiCheat.minMissionTimeSec": 20,
             "antiCheat.responseMode": "observe",
+            "antiCheat.maxClientFusionPointsPerReport": 100000,
             "antiCheat.maxClientInventoryEntriesPerReport": 250,
-            "antiCheat.maxClientCreditsPerReport": 10000000
+            "antiCheat.maxClientCreditsPerReport": 10000000,
+            "antiCheat.maxEidolonCapturesPerReport": 1
         }
     });
     setConfig({});
@@ -774,14 +792,16 @@ STEP("every config control in the page markup resolves on the server");
             [
                 "antiCheat.enabled",
                 "antiCheat.maxClientCreditsPerReport",
+                "antiCheat.maxClientFusionPointsPerReport",
                 "antiCheat.maxClientInventoryEntriesPerReport",
                 "antiCheat.maxClientItemCountPerReport",
+                "antiCheat.maxEidolonCapturesPerReport",
                 "antiCheat.maxMissionCompletesPerReport",
                 "antiCheat.maxXpPerMissionSecond",
                 "antiCheat.minMissionTimeSec",
                 "antiCheat.responseMode"
             ].join(","),
-        `the page exposes exactly the eight documented controls (got ${ids.join(", ")})`
+        `the page exposes exactly the ten documented controls (got ${ids.join(", ")})`
     );
     assert(page.includes('class="config-form"'), "the controls live inside a .config-form container");
 

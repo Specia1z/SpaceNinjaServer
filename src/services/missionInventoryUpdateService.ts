@@ -1033,7 +1033,8 @@ export const addMissionRewards = async (
         ChallengeInstanceStates: challengeInstanceStates,
         MissionStatus: missionStatus
     }: IMissionInventoryUpdateRequest,
-    firstCompletion: boolean
+    firstCompletion: boolean,
+    grantCustomMissionRewards = true
 ): Promise<AddMissionRewardsReturnType> => {
     AffiliationMods ??= [];
     const accountRates = getAccountRateProfile(account);
@@ -1053,7 +1054,7 @@ export const addMissionRewards = async (
     const inventoryChanges: IInventoryChanges = {};
     let platinumReward = 0;
 
-    if (missionStatus === undefined || missionStatus == "GS_SUCCESS") {
+    if (grantCustomMissionRewards && (missionStatus === undefined || missionStatus == "GS_SUCCESS")) {
         platinumReward = await addMissionPlatinumReward(
             inventory,
             getEffectiveAccountRate(accountRates, "missionPlatinumMultiplier")

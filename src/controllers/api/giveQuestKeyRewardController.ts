@@ -1,5 +1,5 @@
 import { getJSONfromString } from "../../helpers/stringHelpers.ts";
-import { addItem, getInventory } from "../../services/inventoryService.ts";
+import { addItem, getInventory, isCurrencyItemName } from "../../services/inventoryService.ts";
 import { getAccountIdForRequest } from "../../services/loginService.ts";
 import type { IOid } from "../../types/commonTypes.ts";
 import type { RequestHandler } from "express";
@@ -12,7 +12,19 @@ export const giveQuestKeyRewardController: RequestHandler = async (req, res) => 
         throw new Error("Multiple rewards not expected");
     }
 
-    const reward = rewardRequest.reward;
+    const reward = rewardRequest.reward as Partial<IQuestKeyReward> | undefined;
+    if (
+        reward == null ||
+        typeof reward.ItemType != "string" ||
+        !reward.ItemType.startsWith("/Lotus/") ||
+        isCurrencyItemName(reward.ItemType) ||
+        typeof reward.Amount != "number" ||
+        !Number.isSafeInteger(reward.Amount) ||
+        reward.Amount <= 0
+    ) {
+        res.status(400).send("Invalid quest reward").end();
+        return;
+    }
     const inventory = await getInventory(accountId, undefined);
     const inventoryChanges = await addItem(inventory, reward.ItemType, reward.Amount);
     await inventory.save();

@@ -27,8 +27,36 @@ export const getMessagesSorted = async (
     return await Inbox.find(query).sort({ date: -1 });
 };
 
-export const deleteMessageRead = async (messageId: string | Types.ObjectId): Promise<void> => {
-    await Inbox.findOneAndDelete({ _id: messageId, r: true });
+export const deleteMessageRead = async (
+    messageId: string | Types.ObjectId,
+    ownerId: string | Types.ObjectId
+): Promise<void> => {
+    await Inbox.findOneAndDelete({ _id: messageId, ownerId, r: true });
+};
+
+/**
+ * Atomically claim a message for its owner and remove every one-shot payload.
+ * Returning the document before the update lets the caller apply the payload exactly once.
+ */
+export const claimMessage = async (
+    messageId: string | Types.ObjectId,
+    ownerId: string | Types.ObjectId
+): Promise<TMessageDocument | null> => {
+    return await Inbox.findOneAndUpdate(
+        { _id: messageId, ownerId, r: { $ne: true } },
+        {
+            $set: { r: true },
+            $unset: {
+                att: 1,
+                countedAtt: 1,
+                gifts: 1,
+                RegularCredits: 1,
+                PremiumCredits: 1,
+                PrimeTokens: 1
+            }
+        },
+        { returnDocument: "before" }
+    );
 };
 
 export const deleteAllMessagesRead = async (accountId: string | Types.ObjectId): Promise<void> => {
