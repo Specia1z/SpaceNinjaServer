@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { IWorldState, ISyndicateMissionInfo, IVoidTrader } from "../types/worldStateTypes.ts";
+import { config } from "./configService.ts";
+import { ROAD_TO_TAU_CURRENCY } from "../constants/roadToTauVendor.ts";
 import {
     getActiveVoidTrader,
     getCompatibleSeasonInfo,
@@ -17,6 +19,7 @@ import {
     getSeasonChallengePools,
     getVarziaRotationPeriodMs,
     getVarziaRotationWindow,
+    getWorldState,
     getRoadToTauGoal,
     pushWeeklyActs,
     VARZIA_ROTATION_EPOCH
@@ -128,6 +131,29 @@ void test("local Road to Tau goals use the official metadata and configured prog
     assert.equal(goal.ItemType, "/Lotus/Types/Gameplay/Events/RoadToTauEvent/RoadToTauEventResource");
 });
 
+void test("local Road to Tau goals expose recurring Moonflesh alerts", () => {
+    const previousWorldState = config.worldState;
+    try {
+        config.worldState = { ...previousWorldState, roadToTau: true };
+        const worldState = getWorldState("2026.10.22.13.12/");
+        const alerts = worldState.Alerts.filter(alert => alert.Tag == "RoadToTauEvent");
+        assert.equal(alerts.length, 4);
+        assert.ok(
+            alerts.every(alert => alert.MissionInfo.minEnemyLevel == 50 && alert.MissionInfo.maxEnemyLevel == 50)
+        );
+        assert.ok(
+            alerts.every(
+                alert =>
+                    alert.MissionInfo.missionReward?.countedItems?.some(
+                        item => item.ItemType == ROAD_TO_TAU_CURRENCY && item.ItemCount == 50
+                    ) == true
+            )
+        );
+    } finally {
+        config.worldState = previousWorldState;
+    }
+});
+
 void test("active void trader is selected from the effective world-state window", () => {
     const trader = (node: string, activation: number, expiry: number): IVoidTrader => ({
         _id: { $oid: `${node}-${activation}` },
@@ -197,7 +223,10 @@ void test("expired persisted goals are not reintroduced after upstream omission"
         now
     );
 
-    assert.deepEqual(merged.map(value => value._id.$oid), ["active"]);
+    assert.deepEqual(
+        merged.map(value => value._id.$oid),
+        ["active"]
+    );
 });
 
 void test("official goal metadata wins while persisted progress is retained", () => {

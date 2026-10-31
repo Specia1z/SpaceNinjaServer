@@ -4,16 +4,24 @@ import type { Request, RequestHandler, Response } from "express";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 import { JSONStringify } from "json-with-bigint";
-import { getInfestedLichItemRewards, getKillTokenRewardCount } from "../../helpers/nemesisHelpers.ts";
+import {
+    generateNemesisProfile,
+    getInfestedLichItemRewards,
+    getKillTokenRewardCount,
+    getNemesisManifest
+} from "../../helpers/nemesisHelpers.ts";
 import { Inventory } from "../../models/inventoryModels/inventoryModel.ts";
 import { Account } from "../../models/loginModel.ts";
 import { MissionSettlementClaim } from "../../models/missionSettlementClaimModel.ts";
 import { Inbox } from "../../models/inboxModel.ts";
-import { fromStoreItem } from "../../services/itemDataService.ts";
+import { fromStoreItem, toStoreItem } from "../../services/itemDataService.ts";
 import { config } from "../../services/configService.ts";
+import { getWorldState } from "../../services/worldStateService.ts";
+import { ROAD_TO_TAU_CURRENCY } from "../../constants/roadToTauVendor.ts";
 import type { IMissionInventoryUpdateResponse } from "../../types/missionTypes.ts";
 import type { IMissionInventoryUpdateRequest } from "../../types/requestTypes.ts";
 import { getMissionSettlementKey } from "../../services/missionSettlementClaimService.ts";
+import { addMissionInventoryUpdates } from "../../services/missionInventoryUpdateService.ts";
 import { missionInventoryUpdateController } from "./missionInventoryUpdateController.ts";
 
 let mongod: MongoMemoryServer;
@@ -664,6 +672,150 @@ void test("sessionless Infested Nemesis final settlement clears the lich and gra
         item => item.ItemType == "/Lotus/Types/Items/MiscItems/CodaWeaponBucks"
     )?.ItemCount;
     assert.equal(codaWeaponBucks, getKillTokenRewardCount(BigInt(fingerprint)));
+});
+
+void test("Kuva Nemesis settlement returns pending weapon recipe and ephemera metadata", async () => {
+    const account = await new Account({
+        email: "kuva-nemesis-response@example.com",
+        password: "password",
+        DisplayName: "KuvaNemesisResponse",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/"
+    }).save();
+    const fingerprint = 123456789;
+    const manifestPath = "/Lotus/Types/Game/Nemesis/KuvaLich/KuvaLichManifestVersionSeven";
+    const killingSuit = "/Lotus/Powersuits/Excalibur/ExcaliburPrime";
+    const inventory = await new Inventory({
+        accountOwnerId: account._id,
+        Nemesis: {
+            fp: fingerprint,
+            manifest: manifestPath,
+            KillingSuit: killingSuit,
+            killingDamageType: 22,
+            ShoulderHelmet: "/Lotus/Upgrades/Skins/Excalibur/ExcaliburProtoHelmet",
+            WeaponIdx: 0,
+            AgentIdx: 2,
+            BirthNode: "SolNode854",
+            Faction: "FC_GRINEER",
+            Rank: 0,
+            k: false,
+            Traded: false,
+            d: new Date(),
+            PrevOwners: 0,
+            SecondInCommand: false,
+            Weakened: true,
+            InfNodes: [{ Node: "SolNode854", Influence: 1 }],
+            HenchmenKilled: 100,
+            HintProgress: 0,
+            Hints: [],
+            GuessHistory: [],
+            MissionCount: 0,
+            LastEnc: 0
+        }
+    }).save();
+    const report = {
+        Nemesis: 1,
+        NemesisKillConvert: {
+            nemesisName: "TEST KUVA LICH",
+            weaponLoc: "/Lotus/Language/Weapons/KuvaDrakgoonName",
+            petLoc: "",
+            fingerprint,
+            killed: true
+        }
+    } as unknown as IMissionInventoryUpdateRequest;
+
+    const buildLabel = "2026.10.22.13.12/";
+    const inventoryUpdates = await addMissionInventoryUpdates(account, buildLabel, inventory, report);
+    const profile = generateNemesisProfile(BigInt(fingerprint), getNemesisManifest(manifestPath), killingSuit);
+    const weaponRecipes = inventoryUpdates.WeaponRecipes!;
+    assert.equal(weaponRecipes.length, 1);
+    assert.equal(weaponRecipes[0].ItemType, inventory.PendingRecipes[0].ItemType);
+    assert.ok(weaponRecipes[0].ItemId.$oid);
+    assert.equal(inventoryUpdates.EphemeraReward, profile.ephemera);
+});
+
+void test("Road to Tau alert settlement pays 50 normal or 75 Steel Path currency", async () => {
+    const previousWorldState = config.worldState;
+    const buildLabel = "2026.10.22.13.12/";
+    const roadToTauStoreItem = toStoreItem(ROAD_TO_TAU_CURRENCY);
+    try {
+        config.worldState = { ...previousWorldState, roadToTau: true, liveSync: false };
+        const alert = getWorldState(buildLabel).Alerts.find(alert => alert.Tag == "RoadToTauEvent");
+        assert.ok(alert?._id.$oid);
+        assert.ok(alert);
+
+        for (const [index, tier] of [0, 1].entries()) {
+            const account = await new Account({
+                email: `road-to-tau-${index}@example.com`,
+                password: "password",
+                DisplayName: `RoadToTau${index}`,
+                Nonce: 654,
+                BuildLabel: buildLabel
+            }).save();
+            const inventory = await new Inventory({ accountOwnerId: account._id }).save();
+            const report = {
+                LevelKeyName: "",
+                MissionFailed: false,
+                MissionStatus: "GS_SUCCESS",
+                AliveTime: 900,
+                MissionTime: 900,
+                GameModeId: 0,
+                hosts: [],
+                currentClients: [],
+                ChallengeProgress: [],
+                PS: "",
+                ActiveDojoColorResearch: "",
+                ReceivedCeremonyMsg: false,
+                LastCeremonyResetDate: 0,
+                MissionPTS: 42,
+                RepHash: `road-to-tau-${index}`,
+                EndOfMatchUpload: true,
+                ObjectiveReached: true,
+                sharedSessionId: `0123456789abcdef012345${70 + index}`,
+                FpsAvg: 0,
+                FpsMin: 0,
+                FpsMax: 0,
+                FpsSamples: 0,
+                PlayerSkillGains: {},
+                Missions: { Tag: alert.MissionInfo.location, Completes: 1, Tier: tier },
+                RewardInfo: {
+                    node: alert.MissionInfo.location,
+                    alertId: alert._id.$oid,
+                    rewardSeed: 123
+                }
+            } as IMissionInventoryUpdateRequest;
+            let responseBody: IMissionInventoryUpdateResponse | undefined;
+            const response = {
+                json(value: typeof responseBody) {
+                    responseBody = value;
+                    return this;
+                }
+            } as unknown as Response;
+            const request = {
+                query: { accountId: account._id.toString(), nonce: "654" },
+                body: JSON.stringify(report),
+                ip: "127.0.0.1"
+            } as unknown as Request;
+
+            const originalStringify = JSON.stringify;
+            try {
+                JSON.stringify = JSONStringify;
+                await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+            } finally {
+                JSON.stringify = originalStringify;
+            }
+
+            const roadReward = responseBody!.MissionRewards?.find(reward => reward.StoreItem == roadToTauStoreItem);
+            assert.equal(roadReward?.ItemCount, tier == 1 ? 75 : 50);
+            assert.equal(
+                (await Inventory.findById(inventory._id))!.MiscItems.find(item => item.ItemType == ROAD_TO_TAU_CURRENCY)
+                    ?.ItemCount,
+                tier == 1 ? 75 : 50
+            );
+        }
+    } finally {
+        config.worldState = previousWorldState;
+    }
 });
 
 void test("aborted Hex bounties sync pickups without paying completion rewards", async () => {

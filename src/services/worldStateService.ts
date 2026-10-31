@@ -71,6 +71,7 @@ import {
     getVarziaRotationCache
 } from "./varziaRotationService.ts";
 import { createInvasionAt, getLocalInvasionByOid } from "./invasionRotationService.ts";
+import { ROAD_TO_TAU_CURRENCY } from "../constants/roadToTauVendor.ts";
 import {
     getNightwaveSyndicateTag,
     getSeasonDailyChallenge,
@@ -513,6 +514,26 @@ const alertGeneratorConfig: Record<
             },
             descText: "/Lotus/Language/JadeShadows/EventAlertTitle",
             questReq: "/Lotus/Types/Keys/JadeShadows/JadeShadowQuestKeyChain",
+            leadersAlwaysAllowed: true
+        }
+    },
+    RoadToTauEvent: {
+        alertInterval: unixTimesInMs.hour / 2,
+        alertLength: unixTimesInMs.hour * 1.5,
+        allowedSystemIndexes: [10],
+        baseAlert: {
+            Tag: "RoadToTauEvent",
+            Icon: "/Lotus/Interface/Icons/StoreIcons/Resources/Moonflesh.png"
+        },
+        baseMissionInfo: {
+            minEnemyLevel: 50,
+            maxEnemyLevel: 50,
+            maxRotations: 1,
+            missionReward: {
+                credits: 17_000,
+                countedItems: [{ ItemType: ROAD_TO_TAU_CURRENCY, ItemCount: 50 }]
+            },
+            descText: "/Lotus/Language/TauPrologue/EventAlertTitle",
             leadersAlwaysAllowed: true
         }
     }
@@ -3296,6 +3317,7 @@ export const getWorldState = (
 
     if (config.worldState?.roadToTau && buildVersion >= gameToBuildVersionInt["44.0.0"]) {
         worldState.Goals.push(getRoadToTauGoal(buildLabel, config.worldState.roadToTauProgressOverride ?? 0));
+        pushGoalAlerts(worldState, "RoadToTauEvent", buildVersion);
     }
 
     // <U39

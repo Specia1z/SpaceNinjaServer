@@ -598,7 +598,7 @@ const updateLiveGoals = async (goals: IWorldState["Goals"]): Promise<void> => {
                             : {
                                   progressInitialized: true,
                                   initialProgressSource: initialProgress.initialProgressSource
-                              }),
+                              })
                     }
                 },
                 { upsert: true }
@@ -1416,6 +1416,14 @@ export const getLiveGoalByOid = (oid: string, buildLabel: string): IWorldState["
         return undefined;
     }
     return structuredClone(goal);
+};
+
+export const getLiveAlertByOid = (oid: string): IWorldState["Alerts"][number] | undefined => {
+    if (!config.worldState?.liveSync) {
+        return undefined;
+    }
+    const alert = cachedWorldState?.Alerts.find(alert => (alert._id.$oid ?? alert._id.$id) == oid);
+    return alert ? structuredClone(alert) : undefined;
 };
 
 export const getLiveSyndicateMissionByOid = (oid: string): IWorldState["SyndicateMissions"][number] | undefined => {

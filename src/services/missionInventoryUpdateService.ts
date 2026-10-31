@@ -66,7 +66,13 @@ import {
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import { getEntriesUnsafe } from "../utils/ts-utils.ts";
 import { handleStoreItemAcquisition } from "./purchaseService.ts";
-import type { IMissionCredits, IMissionReward, INemesisTaxInfo, IRecoveredItemInfo } from "../types/missionTypes.ts";
+import type {
+    IMissionCredits,
+    IMissionReward,
+    INemesisTaxInfo,
+    INemesisWeaponRecipe,
+    IRecoveredItemInfo
+} from "../types/missionTypes.ts";
 import { crackRelic, ensureRelicRewardIsCorrect } from "../helpers/relicHelper.ts";
 import { createMessage } from "./inboxService.ts";
 import {
@@ -91,7 +97,7 @@ import {
     pushClassicBounties,
     getAlertByOid
 } from "./worldStateService.ts";
-import { advanceLiveGoalProgress, getLiveSyndicateMissionByOid } from "./liveWorldStateService.ts";
+import { advanceLiveGoalProgress, getLiveAlertByOid, getLiveSyndicateMissionByOid } from "./liveWorldStateService.ts";
 import { processInvasionProgress } from "./invasionProgressService.ts";
 import { config, shouldDoServerQol } from "./configService.ts";
 import { getAccountCheatValue } from "./accountCheatService.ts";
@@ -128,6 +134,7 @@ import type { IGoal, ISyndicateJob, ISyndicateMissionInfo } from "../types/world
 import {
     convertFromLegacyFingerprint,
     fromOid,
+    toOid,
     toObjectId,
     toOid2,
     version_compare
@@ -152,6 +159,8 @@ import baro from "../constants/baro.ts";
 interface MissionInventoryUpdatesReturnType {
     InventoryChanges: IInventoryChanges;
     ProcessedWeeklyMissionChallengeInfos?: IWeeklyMissionChallengeInfo[];
+    WeaponRecipes?: INemesisWeaponRecipe[];
+    EphemeraReward?: string;
 }
 
 export const addMissionInventoryUpdates = async (
@@ -818,6 +827,21 @@ export const addMissionInventoryUpdates = async (
 
                     const extraWeaponCheat = inventory.nemesisExtraWeapon ?? 0; // 0 means no extra weapon and token
 
+                    const addWeaponRecipeResponse = (): void => {
+                        const pendingRecipe = inventory.PendingRecipes.at(-1);
+                        if (!pendingRecipe?.TargetFingerprint) return;
+                        const pendingRecipeWithId = pendingRecipe as typeof pendingRecipe & { _id: Types.ObjectId };
+                        ret.WeaponRecipes ??= [];
+                        ret.WeaponRecipes.push({
+                            ItemType: pendingRecipe.ItemType,
+                            CompletionDate: {
+                                $date: { $numberLong: pendingRecipe.CompletionDate.getTime().toString() }
+                            },
+                            TargetFingerprint: pendingRecipe.TargetFingerprint,
+                            ItemId: toOid(pendingRecipeWithId._id)
+                        });
+                    };
+
                     if (value.killed) {
                         if (
                             value.weaponLoc &&
@@ -825,6 +849,7 @@ export const addMissionInventoryUpdates = async (
                         ) {
                             const weaponType = manifest.weapons[inventory.Nemesis.WeaponIdx];
                             giveNemesisWeaponRecipe(inventory, weaponType, value.nemesisName, value.weaponLoc, profile);
+                            addWeaponRecipeResponse();
                             att.push(weaponType);
                             if (extraWeaponCheat >= 1) {
                                 for (let i = 0; i < extraWeaponCheat; i++) {
@@ -837,6 +862,7 @@ export const addMissionInventoryUpdates = async (
                                         undefined,
                                         profile
                                     );
+                                    addWeaponRecipeResponse();
                                     att.push(randomWeapon);
                                 }
                             }
@@ -860,6 +886,7 @@ export const addMissionInventoryUpdates = async (
                     // "Players will receive a Lich's Ephemera regardless of whether they Vanquish or Convert them."
                     if (profile.ephemera) {
                         combineInventoryChanges(ret.InventoryChanges, addSkin(inventory, profile.ephemera));
+                        ret.EphemeraReward = profile.ephemera;
                         att.push(profile.ephemera);
                     }
 
@@ -1104,6 +1131,9 @@ export const addMissionRewards = async (
             const worldState = getWorldState(buildLabel);
             alert = worldState.Alerts.find(x => fromOid(x._id) == rewardInfo.alertId);
         }
+        if (!alert) {
+            alert = getLiveAlertByOid(rewardInfo.alertId);
+        }
 
         if (!alert) {
             logger.warn(`mission completed unknown alert`, { alertId: rewardInfo.alertId });
@@ -1116,7 +1146,11 @@ export const addMissionRewards = async (
                 }
                 if (alert.MissionInfo.missionReward) {
                     const missionReward = structuredClone(alert.MissionInfo.missionReward);
-                    if (alert.Tag && ["12MinWarEvent", "JadeShadows"].includes(alert.Tag) && isSteelPath) {
+                    if (
+                        alert.Tag &&
+                        ["12MinWarEvent", "JadeShadows", "RoadToTauEvent"].includes(alert.Tag) &&
+                        isSteelPath
+                    ) {
                         if (missionReward.countedItems) {
                             missionReward.countedItems = missionReward.countedItems.map(item => ({
                                 ...item,
@@ -2484,6 +2518,9 @@ async function getRandomMissionDrops(
             if (!alert) {
                 const worldState = getWorldState(buildLabel);
                 alert = worldState.Alerts.find(x => fromOid(x._id) == RewardInfo.alertId);
+            }
+            if (!alert) {
+                alert = getLiveAlertByOid(RewardInfo.alertId);
             }
             if (alert && alert.MissionInfo.enemyCacheOverride) {
                 const deck = ExportRewards[alert.MissionInfo.enemyCacheOverride];

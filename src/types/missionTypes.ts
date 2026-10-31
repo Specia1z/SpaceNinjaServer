@@ -23,15 +23,17 @@ export interface IMissionCredits {
 }
 
 // These fields will only be respected by the client when completing a showdown mission.
+export interface INemesisWeaponRecipe {
+    ItemType: string;
+    CompletionDate: IMongoDate;
+    TargetFingerprint: string;
+    ItemId: IOid;
+}
+
 interface INemsisEndBody {
-    WeaponRecipes?: {
-        ItemType: string;
-        CompletionDate: IMongoDate;
-        TargetFingerprint: string;
-        ItemId: IOid;
-    }[]; // TODO: We should probably send this sometimes when defeating a nemesis?
+    WeaponRecipes?: INemesisWeaponRecipe[];
     RecoveredItemInfo?: IRecoveredItemInfo;
-    EphemeraReward?: string; // TODO: We should probably send this sometimes when defeating a nemesis?
+    EphemeraReward?: string;
     BaitReward?: "/Lotus/StoreItems/Types/Restoratives/Consumable/NemesisBait"; // TODO: We should probably send this sometimes when defeating a nemesis?
     history?: INemesisBaseClient; // TODO: We should probably send this sometimes when defeating a nemesis?
 }
