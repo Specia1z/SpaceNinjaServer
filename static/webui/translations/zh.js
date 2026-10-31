@@ -1142,6 +1142,8 @@ dict = {
     admin_antiCheatMaxFusionPointsHint: `单次结算中客户端 FusionBundles 可代表的最大内融核心数量。0 表示不限制；商店专用 bundle 仍会被阻止。`,
     admin_antiCheatMaxEidolonCaptures: `单次结算 Eidolon 捕获上限`,
     admin_antiCheatMaxEidolonCapturesHint: `单次结算中每种 Eidolon 掉落表最多计入的捕获次数。0 表示不限制。`,
+    admin_antiCheatAllowClientEidolonCapturePlatinum: `允许客户端上报的 Eidolon 捕获白金`,
+    admin_antiCheatAllowClientEidolonCapturePlatinumHint: `不安全的兼容开关。开启后，客户端 StrippedItems 可以发放 Eidolon 捕获白金；除非有可信的服务端捕获来源，否则应保持关闭。`,
     navbar_metadataPatches: `元数据补丁`,
     metadataPatches_eyebrow: `服务端配置`,
     metadataPatches_title: `元数据补丁`,

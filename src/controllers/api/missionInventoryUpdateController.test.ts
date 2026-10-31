@@ -176,6 +176,90 @@ void test("solo end-of-match settlement saves equipment XP without a shared sess
     assert.equal(clientInventory.LongGuns[0].XP, 1200);
 });
 
+void test("Railjack checkpoint settlement without final-match identity applies inventory deltas once", async () => {
+    const account = await new Account({
+        email: "railjack-checkpoint@example.com",
+        password: "password",
+        DisplayName: "RailjackCheckpoint",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/"
+    }).save();
+    const inventory = await new Inventory({ accountOwnerId: account._id, RegularCredits: 100 }).save();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: false,
+        MissionStatus: "GS_SUCCESS",
+        AliveTime: 60,
+        MissionTime: 60,
+        GameModeId: 98000,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        MissionPTS: 1793428182,
+        ObjectiveReached: true,
+        FpsAvg: 60,
+        FpsMin: 60,
+        FpsMax: 60,
+        FpsSamples: 1,
+        PlayerSkillGains: {},
+        RJ: true,
+        Missions: { Tag: "CrewBattleNode556", Completes: 1, Tier: 1 },
+        RewardInfo: {
+            node: "CrewBattleNode556",
+            ConsecutiveRJ: 1,
+            CheckpointCounter: 2,
+            rewardSeed: 123n
+        },
+        RegularCredits: 25,
+        BonusMiscItems: [
+            {
+                ItemType: "/Lotus/Types/Items/RailjackMiscItems/TitaniumRailjackItem",
+                ItemCount: 240
+            }
+        ]
+    } as unknown as IMissionInventoryUpdateRequest;
+
+    let responseBody: IMissionInventoryUpdateResponse | undefined;
+    const response = {
+        json(value: typeof responseBody) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654" },
+        body: JSONStringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+
+    let savedInventory = (await Inventory.findById(inventory._id))!;
+    assert.equal(savedInventory.RegularCredits, 125);
+    assert.equal(
+        savedInventory.MiscItems.find(
+            item => item.ItemType == "/Lotus/Types/Items/RailjackMiscItems/TitaniumRailjackItem"
+        )?.ItemCount,
+        240
+    );
+
+    await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+
+    savedInventory = (await Inventory.findById(inventory._id))!;
+    assert.equal(savedInventory.RegularCredits, 125);
+    assert.equal(
+        savedInventory.MiscItems.find(
+            item => item.ItemType == "/Lotus/Types/Items/RailjackMiscItems/TitaniumRailjackItem"
+        )?.ItemCount,
+        240
+    );
+    assert.deepEqual(responseBody!.MissionRewards, []);
+});
+
 void test("mission settlement cannot turn Prime Vault FusionBundles into Endo", async () => {
     const account = await new Account({
         email: "prime-vault-endo@example.com",
@@ -333,6 +417,99 @@ void test("observe-mode suspicious settlements do not grant custom mission curre
         config.missionPlatinumRewardSendMail = previousMissionReward.sendMail;
         config.missionPlatinumRewardDailyCap = previousMissionReward.dailyCap;
         config.missionPlatinumRewardPityCompletions = previousMissionReward.pity;
+    }
+});
+
+void test("client-reported Eidolon captures do not grant capture platinum by default", async () => {
+    const previousAntiCheat = config.antiCheat;
+    const previousMissionReward = {
+        chance: config.missionPlatinumRewardChance,
+        sendMail: config.missionPlatinumRewardSendMail
+    };
+    config.antiCheat = {
+        ...(config.antiCheat ?? {}),
+        enabled: true,
+        responseMode: "observe",
+        minMissionTimeSec: 20,
+        allowClientEidolonCapturePlatinum: false
+    };
+    config.missionPlatinumRewardChance = 0;
+    config.missionPlatinumRewardSendMail = true;
+
+    try {
+        const account = await new Account({
+            email: "client-eidolon-platinum@example.com",
+            password: "password",
+            DisplayName: "ClientEidolonPlatinum",
+            Nonce: 654,
+            BuildLabel: "2026.10.22.13.12/"
+        }).save();
+        const inventory = await new Inventory({
+            accountOwnerId: account._id,
+            PremiumCredits: 0,
+            hydrolystCapturePlatinumBonus: 500
+        }).save();
+        const report = {
+            LevelKeyName: "",
+            MissionFailed: false,
+            MissionStatus: "GS_SUCCESS",
+            AliveTime: 60,
+            MissionTime: 60,
+            GameModeId: 3228,
+            hosts: [],
+            currentClients: [],
+            ChallengeProgress: [],
+            PS: "",
+            ActiveDojoColorResearch: "",
+            ReceivedCeremonyMsg: false,
+            LastCeremonyResetDate: 0,
+            MissionPTS: 901,
+            RepHash: "client-eidolon-platinum-report",
+            EndOfMatchUpload: true,
+            ObjectiveReached: true,
+            sharedSessionId: "0123456789abcdef01234571",
+            FpsAvg: 60,
+            FpsMin: 60,
+            FpsMax: 60,
+            FpsSamples: 1,
+            PlayerSkillGains: {},
+            Missions: { Tag: "SolNode228", Completes: 1, Tier: 0 },
+            RewardInfo: { node: "SolNode228", rewardSeed: 123 },
+            StrippedItems: [
+                {
+                    DropTable: "/Lotus/Types/DropTables/EidolonDropTables/TeralystRainCapturedDropTable",
+                    DROP_MOD: Array.from({ length: 100 }, () => 10)
+                }
+            ]
+        } as unknown as IMissionInventoryUpdateRequest;
+
+        const response = {
+            json(value: unknown) {
+                return value;
+            }
+        } as unknown as Response;
+        const request = {
+            query: { accountId: account._id.toString(), nonce: "654", xpBasedLevelCapDisabled: "1" },
+            body: JSON.stringify(report),
+            ip: "127.0.0.1"
+        } as unknown as Request;
+
+        const originalStringify = JSON.stringify;
+        try {
+            JSON.stringify = JSONStringify;
+            await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+        } finally {
+            JSON.stringify = originalStringify;
+        }
+
+        const savedInventory = (await Inventory.findById(inventory._id))!;
+        assert.equal(savedInventory.pendingPremiumCredits, undefined);
+        assert.equal(savedInventory.PremiumCredits, 0);
+        assert.equal(await Inbox.countDocuments({ ownerId: account._id, PremiumCredits: { $gt: 0 } }), 0);
+    } finally {
+        config.antiCheat = previousAntiCheat;
+        config.missionPlatinumRewardChance = previousMissionReward.chance;
+        config.missionPlatinumRewardSendMail = previousMissionReward.sendMail;
     }
 });
 

@@ -975,6 +975,8 @@ dict = {
     admin_antiCheatMaxFusionPointsHint: `[UNTRANSLATED] Maximum Endo represented by client-supplied FusionBundles in one settlement. 0 disables the limit; store-only bundles remain blocked.`,
     admin_antiCheatMaxEidolonCaptures: `[UNTRANSLATED] Max Eidolon captures per report`,
     admin_antiCheatMaxEidolonCapturesHint: `[UNTRANSLATED] Maximum captures credited for each Eidolon drop table in one settlement. 0 disables the cap.`,
+    admin_antiCheatAllowClientEidolonCapturePlatinum: `[UNTRANSLATED] Allow client-reported Eidolon capture platinum`,
+    admin_antiCheatAllowClientEidolonCapturePlatinumHint: `[UNTRANSLATED] Unsafe compatibility switch. It lets client StrippedItems grant Eidolon capture platinum; keep it off unless a trusted server-side capture source is available.`,
     navbar_metadataPatches: `[UNTRANSLATED] Metadata Patches`,
     metadataPatches_eyebrow: `[UNTRANSLATED] Server configuration`,
     metadataPatches_title: `[UNTRANSLATED] Metadata Patches`,

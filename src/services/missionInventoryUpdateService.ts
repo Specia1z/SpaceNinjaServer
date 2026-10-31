@@ -1656,6 +1656,25 @@ export const addMissionRewards = async (
                 });
             }
             const maxEidolonCaptures = config.antiCheat?.maxEidolonCapturesPerReport ?? 1;
+            const allowClientEidolonCapturePlatinum =
+                grantCustomMissionRewards && config.antiCheat?.allowClientEidolonCapturePlatinum === true;
+            const eidolonCaptureDropTables = new Set([
+                "/Lotus/Types/DropTables/EidolonDropTables/TeralystCapturedDropTable",
+                "/Lotus/Types/DropTables/EidolonDropTables/TeralystBigCapturedDropTable",
+                "/Lotus/Types/DropTables/EidolonDropTables/TeralystRainCapturedDropTable"
+            ]);
+            const reportedEidolonCaptures = strippedItems.reduce(
+                (total, item) =>
+                    total + (eidolonCaptureDropTables.has(item.DropTable) && item.DROP_MOD ? item.DROP_MOD.length : 0),
+                0
+            );
+            if (reportedEidolonCaptures > 0 && !allowClientEidolonCapturePlatinum) {
+                logger.warn(`ignoring client-reported Eidolon capture platinum`, {
+                    account: account.DisplayName,
+                    reported: reportedEidolonCaptures,
+                    reason: grantCustomMissionRewards ? "disabled" : "suspiciousSettlement"
+                });
+            }
             let teralystCapturesCredited = 0;
             let gantulystCapturesCredited = 0;
             let hydrolystCapturesCredited = 0;
@@ -1675,6 +1694,7 @@ export const addMissionRewards = async (
                     si.DROP_MISC_ITEM = undefined;
                 }
                 if (
+                    allowClientEidolonCapturePlatinum &&
                     si.DropTable == "/Lotus/Types/DropTables/EidolonDropTables/TeralystCapturedDropTable" &&
                     si.DROP_MOD &&
                     inventory.teralystCapturePlatinumBonus != null &&
@@ -1700,6 +1720,7 @@ export const addMissionRewards = async (
                     );
                 }
                 if (
+                    allowClientEidolonCapturePlatinum &&
                     si.DropTable == "/Lotus/Types/DropTables/EidolonDropTables/TeralystBigCapturedDropTable" &&
                     si.DROP_MOD &&
                     inventory.gantulystCapturePlatinumBonus != null &&
@@ -1725,6 +1746,7 @@ export const addMissionRewards = async (
                     );
                 }
                 if (
+                    allowClientEidolonCapturePlatinum &&
                     si.DropTable == "/Lotus/Types/DropTables/EidolonDropTables/TeralystRainCapturedDropTable" &&
                     si.DROP_MOD &&
                     inventory.hydrolystCapturePlatinumBonus != null &&

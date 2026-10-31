@@ -504,7 +504,8 @@ export const validateConfig = (): void => {
             maxClientFusionPointsPerReport: 100000,
             maxClientInventoryEntriesPerReport: 250,
             maxClientCreditsPerReport: 10000000,
-            maxEidolonCapturesPerReport: 1
+            maxEidolonCapturesPerReport: 1,
+            allowClientEidolonCapturePlatinum: false
         };
         modified = true;
     } else {
@@ -595,6 +596,17 @@ export const validateConfig = (): void => {
         }
         if (config.antiCheat.maxEidolonCapturesPerReport === undefined) {
             config.antiCheat.maxEidolonCapturesPerReport = 1;
+            modified = true;
+        }
+        if (
+            config.antiCheat.allowClientEidolonCapturePlatinum !== undefined &&
+            typeof config.antiCheat.allowClientEidolonCapturePlatinum != "boolean"
+        ) {
+            config.antiCheat.allowClientEidolonCapturePlatinum = false;
+            modified = true;
+        }
+        if (config.antiCheat.allowClientEidolonCapturePlatinum === undefined) {
+            config.antiCheat.allowClientEidolonCapturePlatinum = false;
             modified = true;
         }
     }

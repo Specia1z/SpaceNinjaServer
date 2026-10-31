@@ -359,6 +359,8 @@ export interface IConfig {
         maxClientCreditsPerReport?: number;
         /** Maximum number of captures credited by one client Eidolon drop-table entry. 0 disables the limit. */
         maxEidolonCapturesPerReport?: number;
+        /** Unsafe compatibility switch: allow client-reported Eidolon drop tables to grant capture platinum. */
+        allowClientEidolonCapturePlatinum?: boolean;
     };
     webui?: IWebuiConfig;
     client?: IClientConfig;

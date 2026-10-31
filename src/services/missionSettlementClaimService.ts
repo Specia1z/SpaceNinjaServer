@@ -7,7 +7,7 @@ const CLAIM_LEASE_MS = 5 * 60_000;
 
 type TMissionSettlementIdentity = Pick<
     IMissionInventoryUpdateRequest,
-    "sharedSessionId" | "MissionPTS" | "RepHash" | "EndOfMatchUpload" | "Missions" | "RewardInfo"
+    "sharedSessionId" | "MissionPTS" | "RepHash" | "EndOfMatchUpload" | "RJ" | "Missions" | "RewardInfo"
 >;
 
 export type TMissionSettlementClaimResult =
@@ -32,12 +32,21 @@ export const getMissionSettlementKey = (report: TMissionSettlementIdentity): str
         Boolean(rewardInfo?.jobId) &&
         Number.isSafeInteger(rewardInfo?.JobStage) &&
         rewardInfo!.JobStage! >= 0;
+    // Railjack interstitial reports omit both final-match identity fields; the node, checkpoint and mission timestamp
+    // identify the report while keeping the exception limited to actual Railjack nodes.
+    const checkpointCounter = rewardInfo?.CheckpointCounter;
+    const isRailjackCheckpoint =
+        report.RJ === true &&
+        /^CrewBattleNode\d+$/.test(rewardInfo?.node ?? "") &&
+        checkpointCounter !== undefined &&
+        Number.isSafeInteger(checkpointCounter) &&
+        checkpointCounter >= 1;
     const hasValidRepHash = Boolean(repHash) && repHash.length <= 256;
     const hasSessionIdentity = /^[\da-f]{24}$/i.test(sessionId) && hasValidRepHash;
     const isSessionlessEndOfMatch = report.EndOfMatchUpload === true && !sessionId && hasValidRepHash;
     if (
         !Number.isSafeInteger(report.MissionPTS) ||
-        (!isStageOnlyBounty && !hasSessionIdentity && !isSessionlessEndOfMatch)
+        (!isStageOnlyBounty && !hasSessionIdentity && !isSessionlessEndOfMatch && !isRailjackCheckpoint)
     ) {
         return undefined;
     }

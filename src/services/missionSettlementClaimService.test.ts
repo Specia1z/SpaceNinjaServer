@@ -77,6 +77,39 @@ void test("stage-only bounty reports use job and checkpoint identity when final-
     assert.equal(getMissionSettlementKey(makeReport({ ...first, RepHash: "rep-hash-1" })), undefined);
 });
 
+void test("Railjack checkpoint reports use node, checkpoint, and mission identity without final-match fields", () => {
+    const first = makeReport({
+        sharedSessionId: undefined,
+        RepHash: undefined,
+        EndOfMatchUpload: undefined,
+        RJ: true,
+        MissionPTS: 1793428182,
+        Missions: { Tag: "CrewBattleNode556", Completes: 1, Tier: 1 },
+        RewardInfo: {
+            node: "CrewBattleNode556",
+            rewardSeed: 123n,
+            CheckpointCounter: 2
+        }
+    });
+    const key = getMissionSettlementKey(first);
+    assert.ok(key);
+    assert.equal(getMissionSettlementKey(makeReport({ ...first, RegularCredits: 999 })), key);
+    assert.notEqual(
+        getMissionSettlementKey(makeReport({ ...first, RewardInfo: { ...first.RewardInfo!, CheckpointCounter: 3 } })),
+        key
+    );
+    assert.notEqual(getMissionSettlementKey(makeReport({ ...first, MissionPTS: 1793428183 })), key);
+    assert.equal(
+        getMissionSettlementKey(makeReport({ ...first, RewardInfo: { ...first.RewardInfo!, node: "SolNode1" } })),
+        undefined
+    );
+    assert.equal(getMissionSettlementKey(makeReport({ ...first, RJ: false })), undefined);
+    assert.equal(
+        getMissionSettlementKey(makeReport({ ...first, RewardInfo: { node: "CrewBattleNode556", rewardSeed: 123n } })),
+        undefined
+    );
+});
+
 void test("solo end-of-match reports use mission points and report hash without a session ID", () => {
     const first = makeReport({ sharedSessionId: undefined, EndOfMatchUpload: true });
     const key = getMissionSettlementKey(first);

@@ -189,7 +189,8 @@
     "maxClientFusionPointsPerReport": 100000,
     "maxClientInventoryEntriesPerReport": 250,
     "maxClientCreditsPerReport": 10000000,
-    "maxEidolonCapturesPerReport": 1
+    "maxEidolonCapturesPerReport": 1,
+    "allowClientEidolonCapturePlatinum": false
   },
   "webui": {
     "enabled": true,
