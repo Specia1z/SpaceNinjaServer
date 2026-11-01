@@ -6,6 +6,8 @@ import { ePurchaseSource } from "../types/purchaseTypes.ts";
 import { handlePurchase } from "./purchaseService.ts";
 import { getVendor } from "./itemDataService.ts";
 import { getVendorManifestByTypeName } from "./serversideVendorsService.ts";
+import { getWorldState } from "./worldStateService.ts";
+import { fromOid } from "../helpers/inventoryHelpers.ts";
 
 const MELICA_VENDOR_MANIFEST = "/Lotus/Types/Game/VendorManifests/Hubs/MelicaVendorManifest";
 const MELICA_CURRENCY = "/Lotus/Types/Gameplay/Zariman/Resources/EntropicKuvaItem";
@@ -329,6 +331,39 @@ void test("market fusion bundles grant their advertised fusion points", async ()
         assert.equal(inventory.FusionPoints, fusionBundle.fusionPoints);
         assert.equal(inventory.PremiumCredits, 0);
     }
+});
+
+void test("Void Surplus returns its rolled reward and enforces the one-per-visit limit", async () => {
+    const buildLabel = "2026.10.22.13.12/";
+    const voidTrader = getWorldState(buildLabel).VoidTraders.find(trader =>
+        trader.Manifest.some(offer => offer.ItemType == "/Lotus/StoreItems/Types/BoosterPacks/BaroTreasureBox")
+    );
+    assert.ok(voidTrader);
+
+    const inventory = new Inventory({
+        accountOwnerId: "000000000000000000000001",
+        RegularCredits: 100_000
+    });
+    const request = (): Parameters<typeof handlePurchase>[0] => ({
+        PurchaseParams: {
+            Source: ePurchaseSource.VoidTrader,
+            SourceId: fromOid(voidTrader._id),
+            StoreItem: "/Lotus/StoreItems/Types/BoosterPacks/BaroTreasureBox",
+            Quantity: 1,
+            UsePremium: false,
+            ExpectedPrice: 0
+        },
+        buildLabel
+    });
+
+    const response = await handlePurchase(request(), inventory);
+    assert.ok(response.BoosterPackItems);
+    assert.ok(response.Body);
+    assert.equal(inventory.RegularCredits, 50_000);
+
+    await assert.rejects(() => handlePurchase(request(), inventory), /void trader purchase limit reached/);
+    assert.equal(inventory.RegularCredits, 50_000);
+    assert.equal(inventory.RecentVendorPurchases?.[0].PurchaseHistory[0].NumPurchased, 1);
 });
 
 void test("market purchase of a Riven cipher charges 20 platinum", async () => {

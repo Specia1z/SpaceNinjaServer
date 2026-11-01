@@ -22,6 +22,7 @@ import type {
 import { ePurchaseSource } from "../types/purchaseTypes.ts";
 import { logger } from "../utils/logger.ts";
 import { getWorldState } from "./worldStateService.ts";
+import type { IVoidTrader, IVoidTraderOffer } from "../types/worldStateTypes.ts";
 import {
     ExportBoosters,
     ExportCreditBundles,
@@ -194,6 +195,22 @@ const tallyVendorPurchase = (
     }
 };
 
+const getVoidTraderOffer = (
+    purchaseRequest: IPurchaseRequest
+): { voidTrader: IVoidTrader; offer: IVoidTraderOffer } => {
+    const worldState = getWorldState(purchaseRequest.buildLabel);
+    applyLiveWorldState(worldState);
+    const voidTrader = worldState.VoidTraders.find(x => fromOid(x._id) == purchaseRequest.PurchaseParams.SourceId!);
+    if (!voidTrader) {
+        throw new Error("invalid request source");
+    }
+    const offer = voidTrader.Manifest.find(x => x.ItemType == purchaseRequest.PurchaseParams.StoreItem);
+    if (!offer) {
+        throw new Error(`unknown void trader offer: ${purchaseRequest.PurchaseParams.StoreItem}`);
+    }
+    return { voidTrader, offer };
+};
+
 export const handlePurchase = async (
     purchaseRequest: IPurchaseRequest,
     inventory: TInventoryDatabaseDocument
@@ -258,6 +275,29 @@ export const handlePurchase = async (
 
     const prePurchaseInventoryChanges: IInventoryChanges = {};
     let seed: bigint | undefined;
+    let voidTraderPurchase: ReturnType<typeof getVoidTraderOffer> | undefined;
+    if (purchaseRequest.PurchaseParams.Source == ePurchaseSource.VoidTrader) {
+        if (
+            !Number.isInteger(purchaseRequest.PurchaseParams.Quantity) ||
+            purchaseRequest.PurchaseParams.Quantity <= 0
+        ) {
+            throw new Error("invalid purchase quantity");
+        }
+        if (purchaseRequest.PurchaseParams.ExpectedPrice) {
+            throw new Error(`vendor purchase should not have an expected price`);
+        }
+        voidTraderPurchase = getVoidTraderOffer(purchaseRequest);
+        const { offer } = voidTraderPurchase;
+        if (offer.Limit !== undefined && !inventory.noVendorPurchaseLimits) {
+            const history = inventory.RecentVendorPurchases?.find(
+                x => x.VendorType == "VoidTrader"
+            )?.PurchaseHistory.find(x => x.ItemId == offer.ItemType);
+            const purchased = history && history.Expiry.getTime() > Date.now() ? history.NumPurchased : 0;
+            if (purchased + purchaseRequest.PurchaseParams.Quantity > offer.Limit) {
+                throw new Error("void trader purchase limit reached");
+            }
+        }
+    }
     if (purchaseRequest.PurchaseParams.Source == ePurchaseSource.Vendor) {
         let manifest = getVendorManifestByOid(purchaseRequest.PurchaseParams.SourceId!, buildVersion);
         if (manifest) {
@@ -372,6 +412,11 @@ export const handlePurchase = async (
             purchaseRequest.buildLabel
         );
         combineInventoryChanges(purchaseResponse.InventoryChanges, acquisitionResponse.InventoryChanges);
+        if (acquisitionResponse.BoosterPackItems) {
+            purchaseResponse.BoosterPackItems =
+                (purchaseResponse.BoosterPackItems ?? "") + acquisitionResponse.BoosterPackItems;
+            purchaseResponse.Body = purchaseResponse.BoosterPackItems.replace(/[{}"]+/g, "").replace(/:/g, "=");
+        }
     }
     combineInventoryChanges(purchaseResponse.InventoryChanges, prePurchaseInventoryChanges);
 
@@ -391,43 +436,35 @@ export const handlePurchase = async (
             }
             break;
         case ePurchaseSource.VoidTrader: {
-            const worldState = getWorldState(purchaseRequest.buildLabel);
-            applyLiveWorldState(worldState);
-            const voidTrader = worldState.VoidTraders.find(
-                x => fromOid(x._id) == purchaseRequest.PurchaseParams.SourceId!
-            );
-            if (!voidTrader) {
-                throw new Error("invalid request source");
+            const { voidTrader, offer } = voidTraderPurchase ?? getVoidTraderOffer(purchaseRequest);
+            if (!inventory.dontSubtractPurchaseCreditCost) {
+                updateCurrency(
+                    inventory,
+                    offer.RegularPrice * purchaseRequest.PurchaseParams.Quantity,
+                    false,
+                    purchaseResponse.InventoryChanges
+                );
             }
-            const offer = voidTrader.Manifest.find(x => x.ItemType == purchaseRequest.PurchaseParams.StoreItem);
-            if (offer) {
-                if (!inventory.dontSubtractPurchaseCreditCost) {
-                    updateCurrency(inventory, offer.RegularPrice, false, purchaseResponse.InventoryChanges);
-                }
-                if (purchaseRequest.PurchaseParams.ExpectedPrice) {
-                    throw new Error(`vendor purchase should not have an expected price`);
-                }
 
-                if (offer.PrimePrice && !inventory.dontSubtractPurchaseItemCost) {
-                    const invItem: IMiscItem = {
-                        ItemType: "/Lotus/Types/Items/MiscItems/PrimeBucks",
-                        ItemCount: offer.PrimePrice * purchaseRequest.PurchaseParams.Quantity * -1
-                    };
-                    addMiscItems(inventory, [invItem]);
-                    purchaseResponse.InventoryChanges.MiscItems ??= [];
-                    purchaseResponse.InventoryChanges.MiscItems.push(invItem);
-                }
+            if (offer.PrimePrice && !inventory.dontSubtractPurchaseItemCost) {
+                const invItem: IMiscItem = {
+                    ItemType: "/Lotus/Types/Items/MiscItems/PrimeBucks",
+                    ItemCount: offer.PrimePrice * purchaseRequest.PurchaseParams.Quantity * -1
+                };
+                addMiscItems(inventory, [invItem]);
+                purchaseResponse.InventoryChanges.MiscItems ??= [];
+                purchaseResponse.InventoryChanges.MiscItems.push(invItem);
+            }
 
-                if (offer.Limit) {
-                    tallyVendorPurchase(
-                        inventory,
-                        purchaseResponse.InventoryChanges,
-                        "VoidTrader",
-                        offer.ItemType,
-                        purchaseRequest.PurchaseParams.Quantity,
-                        fromMongoDate(voidTrader.Expiry)
-                    );
-                }
+            if (offer.Limit) {
+                tallyVendorPurchase(
+                    inventory,
+                    purchaseResponse.InventoryChanges,
+                    "VoidTrader",
+                    offer.ItemType,
+                    purchaseRequest.PurchaseParams.Quantity,
+                    fromMongoDate(voidTrader.Expiry)
+                );
             }
             break;
         }
