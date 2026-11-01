@@ -12,6 +12,7 @@ import {
 } from "../../helpers/nemesisHelpers.ts";
 import { Inventory } from "../../models/inventoryModels/inventoryModel.ts";
 import { Account } from "../../models/loginModel.ts";
+import { InvasionRewardClaim } from "../../models/invasionRewardClaimModel.ts";
 import { MissionSettlementClaim } from "../../models/missionSettlementClaimModel.ts";
 import { Inbox } from "../../models/inboxModel.ts";
 import { fromStoreItem, toStoreItem } from "../../services/itemDataService.ts";
@@ -30,6 +31,7 @@ before(async () => {
     mongod = await MongoMemoryServer.create({ binary: { version: "7.0.34", downloadDir: "node_modules/.cache" } });
     await mongoose.connect(`${mongod.getUri()}mission-inventory-update-controller-test`);
     await MissionSettlementClaim.init();
+    await InvasionRewardClaim.init();
 });
 
 after(async () => {
@@ -100,6 +102,92 @@ void test("a completed settlement replay does not apply client inventory deltas"
 
     assert.deepEqual(responseBody, {});
     assert.equal((await Inventory.findById(inventory._id))?.RegularCredits, 100);
+});
+
+void test("completed invasion battle pay is claimed during mission settlement", async () => {
+    const account = await new Account({
+        email: "invasion-settlement-reward@example.com",
+        password: "password",
+        DisplayName: "InvasionSettlementReward",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/"
+    }).save();
+    const completedInvasion = getWorldState(account.BuildLabel).Invasions.find(
+        invasion =>
+            invasion.Completed &&
+            (invasion.AttackerReward.countedItems?.length || invasion.DefenderReward.countedItems?.length)
+    );
+    assert.ok(completedInvasion);
+    const invasionId = completedInvasion._id.$oid ?? completedInvasion._id.$id;
+    assert.ok(invasionId);
+
+    const sidingWithAttacker = Boolean(completedInvasion.AttackerReward.countedItems?.length);
+    const inventory = await new Inventory({
+        accountOwnerId: account._id,
+        QualifyingInvasions: [
+            {
+                invasionId: new mongoose.Types.ObjectId(invasionId),
+                Delta: sidingWithAttacker ? 3 : -3,
+                AttackerScore: sidingWithAttacker ? 3 : 0,
+                DefenderScore: sidingWithAttacker ? 0 : 3
+            }
+        ]
+    }).save();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: true,
+        MissionStatus: "GS_FAILURE",
+        AliveTime: 0,
+        MissionTime: 0,
+        GameModeId: 0,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        MissionPTS: 43,
+        RepHash: "invasion-settlement-reward-report",
+        EndOfMatchUpload: true,
+        ObjectiveReached: false,
+        sharedSessionId: "0123456789abcdef01234568",
+        FpsAvg: 0,
+        FpsMin: 0,
+        FpsMax: 0,
+        FpsSamples: 0,
+        PlayerSkillGains: {}
+    } as unknown as IMissionInventoryUpdateRequest;
+
+    let responseBody: unknown;
+    const response = {
+        json(value: unknown) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654" },
+        body: JSON.stringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    const originalStringify = JSON.stringify;
+    try {
+        JSON.stringify = JSONStringify;
+        await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+        await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+    } finally {
+        JSON.stringify = originalStringify;
+    }
+
+    assert.ok(responseBody);
+    assert.equal((await Inventory.findById(inventory._id))?.QualifyingInvasions.length, 0);
+    assert.equal(await Inbox.countDocuments({ ownerId: account._id, contextInfo: `invasion-reward:${invasionId}` }), 1);
+    assert.equal(
+        await InvasionRewardClaim.countDocuments({ accountId: account._id, invasionId, status: "completed" }),
+        1
+    );
 });
 
 void test("solo end-of-match settlement saves equipment XP without a shared session ID", async () => {

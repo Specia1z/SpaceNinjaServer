@@ -44,6 +44,8 @@ import {
     getMissionSettlementKey,
     type TClaimedMissionSettlement
 } from "../../services/missionSettlementClaimService.ts";
+import { processInvasionRewards } from "../../services/invasionRewardService.ts";
+import { completeInvasionRewardClaim } from "../../services/invasionRewardClaimService.ts";
 
 /*
 **** INPUT ****
@@ -246,6 +248,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
     }
 
     const inventoryUpdates = await addMissionInventoryUpdates(account, buildLabel, inventory, missionReport);
+    const completedInvasionRewardClaims = await processInvasionRewards(account._id, buildLabel, inventory);
 
     if (missionReport.MissionStatus ? missionReport.MissionStatus !== "GS_SUCCESS" : missionReport.MissionFailed) {
         logger.debug(`aborted or failed mission, syncing inventory`);
@@ -265,6 +268,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
             inventory.RewardSeed = generateRewardSeed();
         }
         await inventory.save();
+        await Promise.all(completedInvasionRewardClaims.map(claim => completeInvasionRewardClaim(claim)));
         if (settlementClaim) await completeMissionSettlementClaim(settlementClaim);
         const inventoryResponse = await getInventoryResponse(req, inventory, true, buildLabel);
         const failureResponse: IMissionInventoryUpdateResponse = {
@@ -312,6 +316,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         inventory.RewardSeed = generateRewardSeed();
     }
     await inventory.save();
+    await Promise.all(completedInvasionRewardClaims.map(claim => completeInvasionRewardClaim(claim)));
     if (settlementClaim) await completeMissionSettlementClaim(settlementClaim);
 
     if (version_compare(buildLabel, gameToBuildVersion["18.18.0"]) < 0) {
