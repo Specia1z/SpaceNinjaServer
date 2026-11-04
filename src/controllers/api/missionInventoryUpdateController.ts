@@ -6,7 +6,8 @@ import {
     addFailedArbitrationRewards,
     addMissionInventoryUpdates,
     addMissionRewards,
-    handleConservation
+    handleConservation,
+    applyEvolutionProgress
 } from "../../services/missionInventoryUpdateService.ts";
 import { isArbitrationMission } from "../../services/missionRewardService.ts";
 import {
@@ -218,6 +219,12 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
         sendWsBroadcastTo(account._id.toString(), { update_inventory: true });
     };
 
+    const syncEvolutionProgressOnly = async (): Promise<void> => {
+        if (applyEvolutionProgress(inventory, missionReport.EvolutionProgress)) {
+            await inventory.save();
+        }
+    };
+
     let settlementClaim: TClaimedMissionSettlement | undefined;
     if (missionReport.EndOfMatchUpload === true || missionReport.RewardInfo !== undefined) {
         const settlementKey = getMissionSettlementKey(missionReport);
@@ -229,6 +236,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
                 sessionId: missionReport.sharedSessionId || undefined,
                 missionTag: missionReport.Missions?.Tag ?? missionReport.RewardInfo?.node
             });
+            await syncEvolutionProgressOnly();
             await respondWithoutSettlementRewards();
             return;
         }
@@ -241,6 +249,7 @@ export const missionInventoryUpdateController: RequestHandler = async (req, res)
                 settlementKey,
                 claimStatus: claim.status
             });
+            if (claim.status == "completed") await syncEvolutionProgressOnly();
             await respondWithoutSettlementRewards();
             return;
         }

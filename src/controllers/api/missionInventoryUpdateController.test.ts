@@ -104,6 +104,175 @@ void test("a completed settlement replay does not apply client inventory deltas"
     assert.equal((await Inventory.findById(inventory._id))?.RegularCredits, 100);
 });
 
+void test("a completed settlement replay synchronizes legacy and Genesis Incarnon progress", async () => {
+    const account = await new Account({
+        email: "incarnon-settlement-replay@example.com",
+        password: "password",
+        DisplayName: "IncarnonSettlementReplay",
+        Nonce: 654,
+        BuildLabel: "2013.01.04.10.41/"
+    }).save();
+    const inventory = await new Inventory({
+        accountOwnerId: account._id,
+        RegularCredits: 100,
+        EvolutionProgress: [
+            { ItemType: "/Lotus/Weapons/Tenno/LongGuns/LegacyIncarnon", Progress: 1, Rank: 1 },
+            { ItemType: "/Lotus/Weapons/Tenno/LongGuns/GenesisIncarnon", Progress: 2, Rank: 1 }
+        ]
+    }).save();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: true,
+        MissionStatus: "GS_FAILURE",
+        AliveTime: 0,
+        MissionTime: 0,
+        GameModeId: 0,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        MissionPTS: 43,
+        RepHash: "incarnon-replay-report",
+        EndOfMatchUpload: true,
+        ObjectiveReached: false,
+        sharedSessionId: "0123456789abcdef01234569",
+        FpsAvg: 0,
+        FpsMin: 0,
+        FpsMax: 0,
+        FpsSamples: 0,
+        PlayerSkillGains: {},
+        RegularCredits: 25,
+        EvolutionProgress: [
+            { ItemType: "/Lotus/Weapons/Tenno/LongGuns/LegacyIncarnon", Progress: 8, Rank: 1 },
+            { ItemType: "/Lotus/Weapons/Tenno/LongGuns/GenesisIncarnon", Progress: 4, Rank: 2 }
+        ]
+    } as IMissionInventoryUpdateRequest;
+    const settlementKey = getMissionSettlementKey(report);
+    assert.ok(settlementKey);
+    await MissionSettlementClaim.create({
+        accountId: account._id,
+        settlementKey,
+        status: "completed",
+        claimToken: "previous-incarnon-claim",
+        claimedAt: new Date(),
+        completedAt: new Date()
+    });
+
+    let responseBody: unknown;
+    const response = {
+        json(value: unknown) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654" },
+        body: JSON.stringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+
+    assert.deepEqual(responseBody, {});
+    const savedInventory = (await Inventory.findById(inventory._id))!;
+    assert.equal(savedInventory.RegularCredits, 100);
+    assert.deepEqual(
+        savedInventory.EvolutionProgress?.map(({ ItemType, Progress, Rank }) => ({ ItemType, Progress, Rank })),
+        [
+            {
+                ItemType: "/Lotus/Weapons/Tenno/LongGuns/LegacyIncarnon",
+                Progress: 8,
+                Rank: 1
+            },
+            {
+                ItemType: "/Lotus/Weapons/Tenno/LongGuns/GenesisIncarnon",
+                Progress: 4,
+                Rank: 2
+            }
+        ]
+    );
+});
+
+void test("a settlement without a stable identity still saves Incarnon progress without rewards", async () => {
+    const account = await new Account({
+        email: "incarnon-no-settlement-key@example.com",
+        password: "password",
+        DisplayName: "IncarnonNoSettlementKey",
+        Nonce: 654,
+        BuildLabel: "2013.01.04.10.41/"
+    }).save();
+    const inventory = await new Inventory({ accountOwnerId: account._id, RegularCredits: 100 }).save();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: true,
+        MissionStatus: "GS_FAILURE",
+        AliveTime: 0,
+        MissionTime: 0,
+        GameModeId: 0,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        ObjectiveReached: false,
+        MissionPTS: 44,
+        RepHash: "",
+        sharedSessionId: "",
+        RJ: true,
+        RewardInfo: { node: "CrewBattleNode556", CheckpointCounter: 0 },
+        FpsAvg: 0,
+        FpsMin: 0,
+        FpsMax: 0,
+        FpsSamples: 0,
+        PlayerSkillGains: {},
+        RegularCredits: 25,
+        EvolutionProgress: [
+            { ItemType: "/Lotus/Weapons/Tenno/Melee/LegacyIncarnon", Progress: 6, Rank: 1 },
+            { ItemType: "/Lotus/Weapons/Tenno/Melee/GenesisIncarnon", Progress: 3, Rank: 2 }
+        ],
+        EndOfMatchUpload: true
+    } as IMissionInventoryUpdateRequest;
+
+    let responseBody: unknown;
+    const response = {
+        json(value: unknown) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654" },
+        body: JSON.stringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+
+    assert.deepEqual(responseBody, { MissionRewards: [] });
+    const savedInventory = (await Inventory.findById(inventory._id))!;
+    assert.equal(savedInventory.RegularCredits, 100);
+    assert.deepEqual(
+        savedInventory.EvolutionProgress?.map(({ ItemType, Progress, Rank }) => ({ ItemType, Progress, Rank })),
+        [
+            {
+                ItemType: "/Lotus/Weapons/Tenno/Melee/LegacyIncarnon",
+                Progress: 6,
+                Rank: 1
+            },
+            {
+                ItemType: "/Lotus/Weapons/Tenno/Melee/GenesisIncarnon",
+                Progress: 3,
+                Rank: 2
+            }
+        ]
+    );
+});
+
 void test("completed invasion battle pay is claimed during mission settlement", async () => {
     const account = await new Account({
         email: "invasion-settlement-reward@example.com",
