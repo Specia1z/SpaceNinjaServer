@@ -6,9 +6,9 @@ import {
     addFailedArbitrationRewards,
     addMissionInventoryUpdates,
     addMissionRewards,
-    handleConservation,
-    applyEvolutionProgress
+    handleConservation
 } from "../../services/missionInventoryUpdateService.ts";
+import { applyEvolutionProgress } from "../../services/inventoryProgressService.ts";
 import { isArbitrationMission } from "../../services/missionRewardService.ts";
 import {
     combineInventoryChanges,

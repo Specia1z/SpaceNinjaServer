@@ -105,6 +105,7 @@ import { getAccountRateProfile, getEffectiveAccountRate } from "./accountRateSer
 import { addMissionPlatinumReward, addMissionRegalAyaReward } from "./missionPlatinumRewardService.ts";
 import { addMissionCredits } from "./missionCreditService.ts";
 import { getConquestMissionScore } from "./conquestScoreService.ts";
+import { applyEvolutionProgress } from "./inventoryProgressService.ts";
 import {
     addFixedLevelRewards,
     droptableAliases,
@@ -162,35 +163,6 @@ interface MissionInventoryUpdatesReturnType {
     WeaponRecipes?: INemesisWeaponRecipe[];
     EphemeraReward?: string;
 }
-
-/**
- * EvolutionProgress is a client snapshot rather than a reward delta. Keep it
- * separate from settlement rewards so a replay can still synchronize progress
- * without applying the rest of the report twice.
- */
-export const applyEvolutionProgress = (
-    inventory: Pick<TInventoryDatabaseDocument, "EvolutionProgress">,
-    evolutionProgress: IMissionInventoryUpdateRequest["EvolutionProgress"]
-): boolean => {
-    if (!evolutionProgress?.length) return false;
-
-    let changed = false;
-    for (const evoProgress of evolutionProgress) {
-        const entry = inventory.EvolutionProgress?.find(entry => entry.ItemType == evoProgress.ItemType);
-        if (entry) {
-            if (entry.Progress != evoProgress.Progress || entry.Rank != evoProgress.Rank) {
-                entry.Progress = evoProgress.Progress;
-                entry.Rank = evoProgress.Rank;
-                changed = true;
-            }
-        } else {
-            inventory.EvolutionProgress ??= [];
-            inventory.EvolutionProgress.push(evoProgress);
-            changed = true;
-        }
-    }
-    return changed;
-};
 
 export const addMissionInventoryUpdates = async (
     account: TAccountDocument,

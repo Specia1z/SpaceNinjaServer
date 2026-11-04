@@ -4,6 +4,7 @@ import { getAccountForRequest, getBuildVersion } from "../../services/loginServi
 import { addCalendarProgress, addChallenges, addKahlProgress, getInventory } from "../../services/inventoryService.ts";
 import type {
     IChallengeProgress,
+    IEvolutionProgress,
     ISeasonChallenge,
     IWeeklyMissionChallengeInfo
 } from "../../types/inventoryTypes/inventoryTypes.ts";
@@ -11,6 +12,7 @@ import type { IAffiliationMods, IInventoryChanges } from "../../types/purchaseTy
 import { getEntriesUnsafe } from "../../utils/ts-utils.ts";
 import { logger } from "../../utils/logger.ts";
 import { getAccountRateProfile, getEffectiveAccountRate } from "../../services/accountRateService.ts";
+import { applyEvolutionProgress } from "../../services/inventoryProgressService.ts";
 
 export const updateChallengeProgressController: RequestHandler = async (req, res) => {
     const challenges = getJSONfromString<IUpdateChallengeProgressRequest>(String(req.body));
@@ -22,6 +24,9 @@ export const updateChallengeProgressController: RequestHandler = async (req, res
         AffiliationMods: [],
         InventoryChanges: {}
     };
+    if (challenges.EvolutionProgress) {
+        applyEvolutionProgress(inventory, challenges.EvolutionProgress);
+    }
     if (challenges.ChallengeProgress) {
         const buildVersion = getBuildVersion(req, account);
         response.AffiliationMods = await addChallenges(
@@ -66,6 +71,7 @@ export const updateChallengeProgressController: RequestHandler = async (req, res
             case "ChallengeProgress":
             case "SeasonChallengeCompletions":
             case "ChallengePTS":
+            case "EvolutionProgress":
             case "crossPlaySetting":
                 break;
             default:
@@ -81,6 +87,7 @@ interface IUpdateChallengeProgressRequest {
     ChallengePTS?: number;
     ChallengesFixVersion?: number;
     ChallengeProgress?: IChallengeProgress[];
+    EvolutionProgress?: IEvolutionProgress[];
     SeasonChallengeHistory?: ISeasonChallenge[];
     SeasonChallengeCompletions?: ISeasonChallenge[];
     CalendarProgress?: { challenge: string }[];
