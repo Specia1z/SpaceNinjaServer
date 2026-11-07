@@ -110,6 +110,52 @@ void test("Railjack checkpoint reports use node, checkpoint, and mission identit
     );
 });
 
+void test("Duviri job checkpoints use node, type, checkpoint, and mission identity without final-match fields", () => {
+    const first = makeReport({
+        sharedSessionId: "",
+        RepHash: "",
+        EndOfMatchUpload: undefined,
+        MissionPTS: 1794033577,
+        Missions: { Tag: "/Lotus/Types/Gameplay/Duviri/Jobs/DuviriScaredJob", Completes: 1, Tier: 0 },
+        RewardInfo: {
+            node: "SolNode236",
+            JobTier: -5,
+            EncounterEnemyLevel: 3000,
+            T: 1,
+            CheckpointCounter: 1
+        }
+    });
+    const key = getMissionSettlementKey(first);
+
+    assert.ok(key);
+    assert.equal(
+        getMissionSettlementKey(
+            makeReport({
+                ...first,
+                MiscItems: [{ ItemType: "/Lotus/Types/Items/MiscItems/AlloyPlate", ItemCount: 20 }]
+            })
+        ),
+        key
+    );
+    assert.notEqual(getMissionSettlementKey(makeReport({ ...first, MissionPTS: 1794033578 })), key);
+    assert.notEqual(
+        getMissionSettlementKey(makeReport({ ...first, RewardInfo: { ...first.RewardInfo!, CheckpointCounter: 2 } })),
+        key
+    );
+    assert.notEqual(
+        getMissionSettlementKey(makeReport({ ...first, RewardInfo: { ...first.RewardInfo!, node: "SolNode237" } })),
+        key
+    );
+    assert.equal(
+        getMissionSettlementKey(makeReport({ ...first, RewardInfo: { ...first.RewardInfo!, T: undefined } })),
+        undefined
+    );
+    assert.equal(
+        getMissionSettlementKey(makeReport({ ...first, Missions: { ...first.Missions!, Tag: "SolNode236" } })),
+        undefined
+    );
+});
+
 void test("solo end-of-match reports use mission points and report hash without a session ID", () => {
     const first = makeReport({ sharedSessionId: undefined, EndOfMatchUpload: true });
     const key = getMissionSettlementKey(first);

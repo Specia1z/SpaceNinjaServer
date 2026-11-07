@@ -104,6 +104,71 @@ void test("a completed settlement replay does not apply client inventory deltas"
     assert.equal((await Inventory.findById(inventory._id))?.RegularCredits, 100);
 });
 
+void test("Duviri job settlements without final-match identity save Drifter skill points once", async () => {
+    const account = await new Account({
+        email: "duviri-job-settlement@example.com",
+        password: "password",
+        DisplayName: "DuviriJobSettlement",
+        Nonce: 654,
+        BuildLabel: "2026.10.22.13.12/"
+    }).save();
+    const inventory = await new Inventory({ accountOwnerId: account._id }).save();
+    const report = {
+        LevelKeyName: "",
+        MissionFailed: true,
+        MissionStatus: "GS_FAILURE",
+        AliveTime: 0,
+        MissionTime: 0,
+        GameModeId: 23236,
+        hosts: [],
+        currentClients: [],
+        ChallengeProgress: [],
+        PS: "",
+        ActiveDojoColorResearch: "",
+        ReceivedCeremonyMsg: false,
+        LastCeremonyResetDate: 0,
+        MissionPTS: 1794033577,
+        RepHash: "",
+        EndOfMatchUpload: false,
+        ObjectiveReached: false,
+        sharedSessionId: "",
+        FpsAvg: 0,
+        FpsMin: 0,
+        FpsMax: 0,
+        FpsSamples: 0,
+        PlayerSkillGains: { LPP_DRIFTER: 3000 },
+        Missions: { Tag: "/Lotus/Types/Gameplay/Duviri/Jobs/DuviriScaredJob", Completes: 1, Tier: 0 },
+        RewardInfo: {
+            node: "SolNode236",
+            JobTier: -5,
+            EncounterEnemyLevel: 3000,
+            T: 1,
+            CheckpointCounter: 1
+        }
+    } as IMissionInventoryUpdateRequest;
+
+    let responseBody: unknown;
+    const response = {
+        json(value: unknown) {
+            responseBody = value;
+            return this;
+        }
+    } as unknown as Response;
+    const request = {
+        query: { accountId: account._id.toString(), nonce: "654" },
+        body: JSONStringify(report),
+        ip: "127.0.0.1"
+    } as unknown as Request;
+
+    await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+    assert.equal((await Inventory.findById(inventory._id))?.PlayerSkills.LPP_DRIFTER, 3000);
+
+    await (missionInventoryUpdateController as RequestHandler)(request, response, () => {});
+    assert.equal((await Inventory.findById(inventory._id))?.PlayerSkills.LPP_DRIFTER, 3000);
+    assert.equal(await MissionSettlementClaim.countDocuments({ accountId: account._id, status: "completed" }), 1);
+    assert.ok(responseBody);
+});
+
 void test("a completed settlement replay synchronizes legacy and Genesis Incarnon progress", async () => {
     const account = await new Account({
         email: "incarnon-settlement-replay@example.com",

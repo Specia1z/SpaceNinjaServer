@@ -41,12 +41,29 @@ export const getMissionSettlementKey = (report: TMissionSettlementIdentity): str
         checkpointCounter !== undefined &&
         Number.isSafeInteger(checkpointCounter) &&
         checkpointCounter >= 1;
+    // Some Duviri job checkpoints omit sharedSessionId, RepHash, jobId, and JobStage.
+    // Restrict the fallback to Duviri job reports with an explicit node, type, checkpoint, and mission timestamp.
+    const isDuviriJobCheckpoint =
+        report.EndOfMatchUpload !== true &&
+        !sessionId &&
+        !repHash &&
+        /^\/Lotus\/Types\/Gameplay\/Duviri\/Jobs\/[A-Za-z0-9]+$/.test(report.Missions?.Tag ?? "") &&
+        /^SolNode\d+$/.test(rewardInfo?.node ?? "") &&
+        rewardInfo?.T !== undefined &&
+        Number.isSafeInteger(rewardInfo.T) &&
+        checkpointCounter !== undefined &&
+        Number.isSafeInteger(checkpointCounter) &&
+        checkpointCounter >= 1;
     const hasValidRepHash = Boolean(repHash) && repHash.length <= 256;
     const hasSessionIdentity = /^[\da-f]{24}$/i.test(sessionId) && hasValidRepHash;
     const isSessionlessEndOfMatch = report.EndOfMatchUpload === true && !sessionId && hasValidRepHash;
     if (
         !Number.isSafeInteger(report.MissionPTS) ||
-        (!isStageOnlyBounty && !hasSessionIdentity && !isSessionlessEndOfMatch && !isRailjackCheckpoint)
+        (!isStageOnlyBounty &&
+            !hasSessionIdentity &&
+            !isSessionlessEndOfMatch &&
+            !isRailjackCheckpoint &&
+            !isDuviriJobCheckpoint)
     ) {
         return undefined;
     }
